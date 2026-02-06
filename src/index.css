@@ -41,3 +41,15 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* Ensure form controls have visible borders */
+.input,
+.select,
+.textarea {
+  border: 1px solid oklch(75% 0 0);
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: oklch(60% 0.15 230);
+}

@@ -12,24 +12,24 @@ export function DateNavigation({ date, onDateChange }: DateNavigationProps) {
   return (
     <div className="flex items-center justify-between">
       <button
-        className="btn btn-ghost btn-sm"
+        className="btn btn-ghost btn-lg text-2xl"
         onClick={() => onDateChange(addDays(date, -1))}
         aria-label="Previous day"
       >
         &larr;
       </button>
 
-      <div className="text-center">
-        <span className={`font-semibold ${isToday ? "text-primary" : ""}`}>
+      <div className="flex items-center gap-2">
+        <span className={`text-xl font-semibold ${isToday ? "text-primary" : ""}`}>
           {formatDate(date)}
         </span>
         {isToday && (
-          <span className="badge badge-primary badge-sm ml-2">Today</span>
+          <span className="badge badge-primary">Today</span>
         )}
       </div>
 
       <button
-        className="btn btn-ghost btn-sm"
+        className="btn btn-ghost btn-lg text-2xl"
         onClick={() => onDateChange(addDays(date, 1))}
         disabled={isToday}
         aria-label="Next day"
@@ -39,7 +39,7 @@ export function DateNavigation({ date, onDateChange }: DateNavigationProps) {
 
       {!isToday && (
         <button
-          className="btn btn-ghost btn-xs"
+          className="btn btn-ghost btn-sm"
           onClick={() => onDateChange(today)}
         >
           Today

@@ -1,10 +1,28 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { HamburgerMenu } from "./HamburgerMenu";
 import { OfflineBanner } from "./OfflineBanner";
 
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/profile": "Profile",
+  "/setup/daily": "Daily Data Setup",
+  "/setup/outcomes": "Outcomes Setup",
+  "/track/body": "My Body",
+  "/track/outcomes": "My Sport",
+  "/admin": "Admin",
+};
+
+function getPageTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith("/track/body/")) return "Metric Detail";
+  return "DataGOAT";
+}
+
 export function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { pathname } = useLocation();
+  const pageTitle = getPageTitle(pathname);
 
   return (
     <div className="drawer">
@@ -43,8 +61,7 @@ export function AppLayout() {
             </label>
           </div>
           <div className="flex-1">
-            <span className="text-xl font-bold">DataGOAT</span>
-            <span className="text-sm ml-2 opacity-80">#Sport_is_Science</span>
+            <span className="text-xl font-bold">{pageTitle}</span>
           </div>
         </header>
 

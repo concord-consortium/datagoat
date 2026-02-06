@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "staging": "datagoat-staging",
+    "production": "datagoat-production"
+  }
+}

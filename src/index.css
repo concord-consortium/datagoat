@@ -1,0 +1,43 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: datagoat --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "datagoat";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(96.5% 0 0);
+  --color-base-300: oklch(91% 0 0);
+  --color-base-content: oklch(20% 0 0);
+  --color-primary: oklch(60% 0.15 230);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(83% 0.16 85);
+  --color-secondary-content: oklch(20% 0 0);
+  --color-accent: oklch(82% 0.1 165);
+  --color-accent-content: oklch(20% 0 0);
+  --color-neutral: oklch(30% 0.01 250);
+  --color-neutral-content: oklch(100% 0 0);
+  --color-info: oklch(60% 0.15 230);
+  --color-success: oklch(82% 0.1 165);
+  --color-warning: oklch(83% 0.16 85);
+  --color-error: oklch(55% 0.2 25);
+  --rounded-box: 0.75rem;
+  --rounded-btn: 0.5rem;
+  --rounded-badge: 1rem;
+  --animation-btn: 0.2s;
+  --animation-input: 0.2s;
+  --btn-focus-scale: 0.97;
+  --border-btn: 1px;
+  --tab-border: 1px;
+  --tab-radius: 0.5rem;
+}
+
+body {
+  font-family: "Lato", system-ui, -apple-system, sans-serif;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}

@@ -1,27 +1,14 @@
 # DataGOAT — Initial Web App Spec
 
 **Jira**: https://concord-consortium.atlassian.net/browse/DGT-25
-**Repo**: https://github.com/concord-consortium/datagoat
-**Implementation Spec**: [implementation.md](implementation.md)
-**Status**: **In Development**
+
+**Status**: **Closed**
 
 ## Overview
 
 DataGOAT is a mobile-first PWA that helps student athletes track daily health metrics (hydration, sleep, mood, fatigue) and sport-specific performance outcomes (wins, points, assists), earn badges for consistency and healthy habits, and visualize trends over time. Built with React + Vite, Firebase (Firestore + Auth + Hosting), Tailwind CSS + DaisyUI, and Chart.js, the app supports offline use and is designed to help athletes see themselves as data scientists through the "#Sport is Science" lens.
 
-## Project Owner Overview
-
-DataGOAT ("Own Your Sports Data for Peak Performance") is an NSF-funded project (U Maryland, Concord Consortium, UNC) that bridges sports and STEM education. The core idea is legitimate peripheral participation — athletes develop data science skills by tracking and analyzing their own training data, making the abstract concrete through personal relevance.
-
-Athletes choose their sport (Baseball, Basketball, Football, Lacrosse, Track & Field, or Tennis) and receive tailored default metrics. They log daily body metrics (hydration via color scale, sleep hours and efficiency, mood, fatigue, protein, and more) and sport-specific outcomes (wins/losses, goals, assists, yards, etc.). The app rewards consistency with streak and threshold badges grounded in NCAA and sports science guidelines, displays motivational messages driven by admin-editable rules, and provides sparkline trends plus detailed charts. All metric definitions, badge thresholds, sport mappings, and motivational messages are admin-editable via a dedicated admin interface — no code deploys required. Data is versioned for schema evolution, exportable as CSV, and the app is designed for future CODAP integration to support deeper cross-metric analysis.
-
-## Background
-
-This is a greenfield project. The repository currently contains only a LICENSE and README. The Jira ticket (DGT-25) under Epic DGT-5 "Web Data Entry" describes building a web app from PDF mockups created by Leslie Bondaryk. A linked design task (DGT-24 "DataGOAT Website") is also in To Do status.
-
-The PDF mockups define 7 key screens: Landing/Login, Profile Setup, Daily Data Setup, Today/Dashboard, Track Data: My Body, Metric Detail, and Track Data: My Sports Outcomes. The mockups include annotations about behavior rules, sport-specific defaults, threshold-based badges, and CODAP integration.
-
-The app will be built with **React + Vite** as a PWA with a **Firebase** backend (Firestore + Auth), deployed to **Firebase Hosting** with a staging environment from the start. The Firebase Emulator Suite will be used for local development. The app is mobile-first but also works well on desktop, styled with **Tailwind CSS + DaisyUI** using a custom theme derived from CODAP's color palette. Visualizations use **Chart.js with react-chartjs-2**.
+DataGOAT ("Own Your Sports Data for Peak Performance") is an NSF-funded project (U Maryland, Concord Consortium, UNC) that bridges sports and STEM education. The core idea is legitimate peripheral participation — athletes develop data science skills by tracking and analyzing their own training data. Athletes choose their sport (Baseball, Basketball, Football, Lacrosse, Track & Field, or Tennis) and receive tailored default metrics. They log daily body metrics and sport-specific outcomes, earn streak and threshold badges grounded in NCAA and sports science guidelines, and view sparkline trends and detailed charts. All metric definitions, badge thresholds, sport mappings, and motivational messages are admin-editable via a dedicated admin interface — no code deploys required. Data is versioned for schema evolution, exportable as CSV, and the app is designed for future CODAP integration.
 
 ## Requirements
 
@@ -45,18 +32,18 @@ The app will be built with **React + Vite** as a PWA with a **Firebase** backend
 - At least one of the two data setups (Daily Data or Outcomes Data) must be completed before the user can proceed to tracking
 - Both setups are independent — completing one does not require completing the other
 - Users can return to set up the second data type later from their profile
-- The profile screen must be accessible from any page in the app via persistent navigation (e.g., header/nav bar link or menu item)
+- The profile screen must be accessible from any page in the app via persistent navigation
 
 ### UX States
-- **Empty state**: First-use screens show a friendly message with a call-to-action (e.g., dashboard says "Welcome! Start by logging today's metrics" with a button to the tracking screen). Charts show a placeholder message instead of an empty graph
+- **Empty state**: First-use screens show a friendly message with a call-to-action. Charts show a placeholder message instead of an empty graph
 - **Loading state**: Skeleton/placeholder UI while data loads — no blank screens or full-page spinners
-- **Error state**: Inline error messages for failed operations (e.g., save failures); offline banner when network is unavailable. Firestore offline persistence keeps the app functional while offline
+- **Error state**: Inline error messages for failed operations; offline banner when network is unavailable. Firestore offline persistence keeps the app functional while offline
 - **Sparse data**: Charts with fewer than 3 data points show the available points without a trend line. Sparklines show "Not enough data" as the text alternative until 3+ entries exist
 
 ### Navigation
 - Persistent hamburger menu icon in the header on all authenticated screens (hidden on login/registration)
 - Menu items: Dashboard (Today), My Body, My Sports, Profile, Logout
-- Current page is visually indicated in the menu (e.g., bold or highlighted)
+- Current page is visually indicated in the menu
 - Menu is a slide-out drawer on mobile; can remain a hamburger or expand to an inline menu on desktop at the implementer's discretion
 - Header also displays the DataGOAT / #Sport_is_Science branding
 
@@ -163,18 +150,18 @@ Users earn badges when meeting consistency and health metric thresholds. All bad
 - Clear visual indicator of "today"
 - Date navigation (can go back but cannot log data in the future)
 - Table with columns: 14-Day Trend (sparkline) | Metric | Value
-- Sparkline charts must include screen-reader-only text alternatives summarizing trend direction and recent average (e.g., "Hydration: trending up, 5.2 avg over 14 days") and a `title` attribute for desktop hover tooltips
+- Sparkline charts must include screen-reader-only text alternatives summarizing trend direction and recent average and a `title` attribute for desktop hover tooltips
 - Multiple input types per metric:
-  - Hydration: color blocks with numeric labels (1-8) and ARIA labels describing each level (e.g., "1 — well hydrated", "8 — severely dehydrated")
+  - Hydration: color blocks with numeric labels (1-8) and ARIA labels describing each level
   - Sleep Time: numeric hours
   - Sleep Efficiency: numeric hours
   - Protein: grams
-  - Mood: numeric scale 1-5 with ARIA labels (e.g., "1 — very poor", "5 — excellent")
-  - Fatigue: numeric scale 1-5 with ARIA labels (e.g., "1 — fully rested", "5 — exhausted")
+  - Mood: numeric scale 1-5 with ARIA labels
+  - Fatigue: numeric scale 1-5 with ARIA labels
   - Availability: checkbox (Played)
   - Sport-specific metrics (e.g., Deadlift in lbs, Reps as count)
 - All inputs must include proper ARIA labels; no input relies solely on color, icons, or non-text indicators
-- All numeric inputs enforce non-negative values. Built-in metrics include default min/max ranges (e.g., Sleep Time 0-24h, Sleep Efficiency 0-100%, Resting Heart Rate 20-250 bpm). Admin-editable metric definitions support optional min/max fields for validation. Out-of-range values show an inline error and are not saved
+- All numeric inputs enforce non-negative values. Built-in metrics include default min/max ranges. Admin-editable metric definitions support optional min/max fields for validation. Out-of-range values show an inline error and are not saved
 - Click on metric name to open "More Info" detail screen
 - Tags/descriptors to qualify entries (e.g., what caused fatigue)
 - Users can edit previously entered values for any past date
@@ -227,17 +214,17 @@ Users earn badges when meeting consistency and health metric thresholds. All bad
 
 ## Technical Notes
 
-- **Repo state**: Greenfield — no existing code, framework, or build tooling yet
+- **Repo state**: Greenfield — no existing code, framework, or build tooling at spec time
 - **Framework**: React with Vite — lightweight, fast dev server, good ecosystem
 - **Hosting**: Firebase Hosting with staging environment from the start, enabling early stakeholder review
 - **PWA**: Requires a service worker, manifest.json, and offline-capable architecture
-- **Firestore schema**: Needs design — user profiles, daily entries, outcome entries, metric definitions. Every document type includes a `schemaVersion` integer field. A central migrations registry maps `(documentType, fromVersion)` → migration function, applied on read when the document's version is older than the app's current expected version. This keeps the migration logic in the client (no Cloud Functions needed for this prototype) and allows offline-created documents to be migrated when the user upgrades the app
-- **Sport-specific defaults**: All 6 sports have default metric mappings (see Sport-to-Metric Defaults). These are stored in Firestore and admin-editable.
-- **Behavior rule engine**: The motivational messaging system uses a rule set stored in Firestore (streak detection, threshold achievement). Admin-editable without code deploys.
+- **Firestore schema**: Every document type includes a `schemaVersion` integer field. A central migrations registry maps `(documentType, fromVersion)` → migration function, applied on read when the document's version is older than the app's current expected version. This keeps the migration logic in the client (no Cloud Functions needed for this prototype) and allows offline-created documents to be migrated when the user upgrades the app
+- **Sport-specific defaults**: All 6 sports have default metric mappings stored in Firestore and admin-editable
+- **Behavior rule engine**: The motivational messaging system uses a rule set stored in Firestore (streak detection, threshold achievement). Admin-editable without code deploys
 - **Charts/Visualizations**: Chart.js with react-chartjs-2 — sparklines on the tracking table, full line charts with goal lines on the detail screen, canvas-based rendering
-- **Admin / security rules**: The admin interface will need Firestore security rules that grant admin-role users broader read access — specifically the ability to read across user data to gather summary/aggregate statistics (e.g., active users, entry counts, compliance rates). Standard user rules restrict access to own data only, so a separate admin role and corresponding rule set will be needed
-- **Admin role assignment**: Admin roles use Firebase custom claims (e.g., `{ admin: true }`), set via a CLI script (`node scripts/set-admin.js <email>`). Custom claims are checked in Firestore security rules and available client-side via `auth.currentUser.getIdTokenResult()`. No in-app admin-granting UI needed for the initial prototype.
-- **Minor data handling**: Age and minor data handling will be governed by the project's IRB protocol. The initial prototype assumes users are 18+ (college athletes per the mocks). If the app is extended to younger athletes, COPPA compliance and parental consent flows will need to be added.
+- **Admin / security rules**: The admin interface needs Firestore security rules that grant admin-role users broader read access — specifically the ability to read across user data to gather summary/aggregate statistics. Standard user rules restrict access to own data only, so a separate admin role and corresponding rule set are needed
+- **Admin role assignment**: Admin roles use Firebase custom claims (e.g., `{ admin: true }`), set via a CLI script (`node scripts/set-admin.js <email>`). Custom claims are checked in Firestore security rules and available client-side via `auth.currentUser.getIdTokenResult()`. No in-app admin-granting UI for the initial prototype
+- **Minor data handling**: Age and minor data handling will be governed by the project's IRB protocol. The initial prototype assumes users are 18+ (college athletes per the mocks). If extended to younger athletes, COPPA compliance and parental consent flows will need to be added
 - **Styling / Component Library**: Tailwind CSS + DaisyUI. Custom `datagoat` theme derived from CODAP's color palette for visual continuity with the broader Concord ecosystem:
   - `primary`: #0693e3 (CODAP cyan-blue — links, primary actions)
   - `secondary`: #ffc222 (CODAP/DataGOAT gold — header, branding accent)
@@ -259,113 +246,158 @@ Users earn badges when meeting consistency and health metric thresholds. All bad
 - Sport-specific performance badges (e.g., yardage targets) — deferred until more data on reasonable thresholds
 - Push notifications / daily reminders for data entry — high-priority follow-up for a future spec
 
-## Open Questions
+## Decisions
 
-### RESOLVED: What frontend framework should be used?
+### What frontend framework should be used?
 **Context**: The repo is greenfield. The choice of framework affects project structure, build tooling, routing, and developer experience. Concord Consortium has experience with React.
+
 **Decision**: **React with Vite** — lightweight, fast, well-known at Concord.
 
-### RESOLVED: How should the CODAP integration button behave in this initial version?
+### How should the CODAP integration button behave in this initial version?
 **Context**: The mocks show "Analyze your Data in CODAP" buttons, but full CODAP integration is a future story.
+
 **Decision**: **Show the buttons but disabled with a "Coming Soon" tooltip.**
 
-### RESOLVED: What is the initial set of sport-to-metric mappings?
+### What is the initial set of sport-to-metric mappings?
 **Context**: The mocks state that sport and weight determine default tracked metrics, goals, and threshold targets.
+
 **Decision**: **Define a basic mapping for all 6 sports upfront.** See Sport-to-Metric Defaults section in Requirements. All mappings stored in Firestore and admin-editable.
 
-### RESOLVED: What should the badge/threshold system look like in this initial version?
+### What should the badge/threshold system look like in this initial version?
 **Context**: The mocks mention badges for meeting thresholds based on sport and sex, but the specifics aren't defined.
+
 **Decision**: **Implement both streak and threshold badges** using the defaults in the Badge & Threshold System section. All badge definitions stored in Firestore and admin-editable.
 
-### RESOLVED: Should the app be deployed to Firebase Hosting from the start?
+### Should the app be deployed to Firebase Hosting from the start?
 **Context**: Firebase Hosting is a natural fit and would allow sharing with stakeholders early.
+
 **Decision**: **Set up Firebase Hosting from the start with a staging environment.**
 
-### RESOLVED: What charting library should be used for visualizations?
+### What charting library should be used for visualizations?
 **Context**: The app needs sparklines in tables, line charts with goal lines, and potentially bar charts. The library should be lightweight and mobile-friendly.
+
 **Decision**: **Chart.js with react-chartjs-2** — versatile, canvas-based, good for the variety of chart types needed.
 
-## Self-Review
+### Should there be a password reset / forgot password flow?
+**Context**: Senior Engineer self-review noted this was missing from the original spec.
 
-### Senior Engineer
+**Decision**: Added "Users can reset their password via email (forgot password flow)" to Authentication & User Management.
 
-#### RESOLVED: No password reset / forgot password flow specified
-Added "Users can reset their password via email (forgot password flow)" to Authentication & User Management.
+### Should there be a logout requirement?
+**Context**: Senior Engineer self-review noted this was missing.
 
-#### RESOLVED: No logout requirement specified
-Added "Users can log out from any screen via the persistent navigation" to Authentication & User Management.
+**Decision**: Added "Users can log out from any screen via the persistent navigation" to Authentication & User Management.
 
-#### RESOLVED: Edit/delete existing entries not specified
-Added edit and delete capabilities to both Track Data: My Body and Track Data: My Sports Outcomes sections.
+### Should users be able to edit/delete existing entries?
+**Context**: Senior Engineer self-review noted this was unspecified.
 
-#### RESOLVED: "Add Measurement" custom metric definition is underspecified
-Defined custom metric fields: Name (required), Unit (required), Input type (numeric/scale 1-10/binary, required), Date (optional), Min/max range (optional). Custom metrics limited to these input types; color scales and emoji inputs reserved for built-in metrics.
+**Decision**: Added edit and delete capabilities to both Track Data: My Body and Track Data: My Sports Outcomes sections.
 
----
+### How should custom "Add Measurement" metrics be defined?
+**Context**: Senior Engineer self-review flagged the custom metric definition as underspecified.
 
-### Security Engineer
+**Decision**: Defined custom metric fields: Name (required), Unit (required), Input type (numeric/scale 1-10/binary, required), Date (optional), Min/Max range (optional). Custom metrics are limited to these input types; color scales and emoji inputs are reserved for built-in metrics.
 
-#### RESOLVED: No email verification requirement
-Added email verification on registration with non-blocking flow — users can proceed immediately but are reminded to verify. Unverified accounts flagged after 7 days.
+### Should email verification be required?
+**Context**: Security Engineer self-review noted no email verification requirement.
 
-#### RESOLVED: Age consideration — COPPA / minor data handling
-Deferred to IRB protocol. Added note to Technical Notes: initial prototype assumes 18+ college athletes. COPPA/parental consent needed if extended to younger athletes.
+**Decision**: Added email verification on registration with non-blocking flow — users can proceed immediately but are reminded to verify. Unverified accounts flagged after 7 days.
 
-#### RESOLVED: Admin role assignment mechanism not defined
-Admin roles use Firebase custom claims, set via a CLI script (`node scripts/set-admin.js <email>`). Added to Technical Notes.
+### How should age / minor data handling be handled (COPPA)?
+**Context**: Security Engineer self-review raised COPPA / minor data handling concerns.
 
----
+**Decision**: Deferred to IRB protocol. Initial prototype assumes 18+ college athletes. COPPA / parental consent flows would be needed if the app is extended to younger athletes.
 
-### Product Manager
+### How are admin roles assigned?
+**Context**: Security Engineer self-review noted the admin role assignment mechanism wasn't defined.
 
-#### RESOLVED: Onboarding flow for the 17 daily metrics is potentially overwhelming
-Added to Daily Data Setup: sport-specific defaults shown first and pre-checked; off-by-default metrics in a collapsed "Additional Metrics" section.
+**Decision**: Admin roles use Firebase custom claims, set via a CLI script (`node scripts/set-admin.js <email>`). No in-app admin-granting UI for the initial prototype.
 
-#### RESOLVED: No data export requirement beyond CODAP (deferred)
-Added CSV export to Technical/Platform Requirements. Users can export body metrics and sport outcomes separately.
+### Is the onboarding flow for 17 daily metrics overwhelming?
+**Context**: Product Manager self-review flagged that asking users to opt-in/out of 17 metrics could be overwhelming.
 
----
+**Decision**: In Daily Data Setup, sport-specific defaults are shown first and pre-checked; off-by-default metrics live in a collapsed "Additional Metrics" section.
 
-### Student (Athlete/User)
+### Should there be data export beyond CODAP?
+**Context**: Product Manager self-review noted CODAP integration is deferred and there was no other export path.
 
-#### RESOLVED: No notification or reminder system for daily entry
-Deferred to a future spec as a high-priority follow-up. Added to Out of Scope.
+**Decision**: Added CSV export to Technical/Platform Requirements. Users can export body metrics and sport outcomes separately.
 
-#### RESOLVED: Dashboard "quick entry" interaction unclear
-Clarified: dashboard shows a "X of Y metrics logged today" progress indicator, plus simple quick entry buttons (e.g., "Enter Hydration") that open a focused single-metric input modal. The "+N" from the mocks is replaced by the progress indicator.
+### Should there be a notification or reminder system for daily entry?
+**Context**: Student/User self-review noted that without reminders, users may forget to log daily.
 
----
+**Decision**: Deferred to a future spec as a high-priority follow-up. Added to Out of Scope.
 
-### WCAG Accessibility Expert
+### How should dashboard "quick entry" interaction work?
+**Context**: Student/User self-review found the dashboard "+N" interaction unclear from the mocks.
 
-#### RESOLVED: Hydration color scale and emoji inputs need accessible alternatives
-Removed emoji scales entirely. Mood and Fatigue now use numeric 1-5 scales with descriptive ARIA labels. Hydration color blocks now include numeric labels (1-8) and ARIA labels describing each hydration level. Added a general requirement that all inputs include proper ARIA labels and no input relies solely on color, icons, or non-text indicators.
+**Decision**: The dashboard shows a "X of Y metrics logged today" progress indicator plus simple quick entry buttons (e.g., "Enter Hydration") that open a focused single-metric input modal. The "+N" element from the mocks is replaced by the progress indicator.
 
-#### RESOLVED: Sparkline charts need text alternatives
-Added: sparklines include sr-only text summarizing trend direction and recent average, plus `title` attributes for desktop hover tooltips.
+### How should the hydration color scale and emoji inputs be made accessible?
+**Context**: WCAG Accessibility self-review flagged that color blocks and emoji-based inputs aren't accessible.
 
----
+**Decision**: Removed emoji scales entirely. Mood and Fatigue use numeric 1-5 scales with descriptive ARIA labels. Hydration color blocks include numeric labels (1-8) and ARIA labels describing each hydration level. Added a general requirement that all inputs include proper ARIA labels and that no input relies solely on color, icons, or non-text indicators.
 
-### QA Engineer
+### How should sparkline charts provide text alternatives?
+**Context**: WCAG Accessibility self-review noted that sparklines need accessible alternatives for screen readers.
 
-#### RESOLVED: No validation rules specified for metric inputs
-Added: all numeric inputs enforce non-negative values, built-in metrics ship with default min/max ranges, admin metric definitions support optional min/max, out-of-range values show inline errors and are not saved.
+**Decision**: Sparklines include sr-only text summarizing trend direction and recent average, plus `title` attributes for desktop hover tooltips.
 
-#### RESOLVED: Offline conflict resolution not specified
-Added: Firestore's default last-write-wins semantics are acceptable for this single-user prototype. Custom conflict resolution deferred.
+### What validation rules apply to metric inputs?
+**Context**: QA self-review found no validation rules were specified.
 
-#### RESOLVED: Streak calculation edge cases undefined
-Added streak rules: calendar day in user's local timezone, at least one metric logged counts, backfilling repairs streaks, calculated from entry dates not entry timestamps.
+**Decision**: All numeric inputs enforce non-negative values. Built-in metrics ship with default min/max ranges. Admin metric definitions support optional min/max. Out-of-range values show inline errors and are not saved.
 
----
+### How is offline conflict resolution handled?
+**Context**: QA self-review noted that offline conflict resolution wasn't specified.
 
-### UI Expert/Designer
+**Decision**: Use Firestore's default last-write-wins semantics. Acceptable for this single-user prototype. Custom conflict resolution (merge or prompt) is deferred.
 
-#### RESOLVED: No navigation structure defined beyond "persistent nav to profile"
-Added Navigation section: hamburger menu with slide-out drawer on mobile, items for Dashboard, My Body, My Sports, Profile, Logout. Current page indicated. Header includes branding.
+### How are streak edge cases handled?
+**Context**: QA self-review flagged streak calculation edge cases as undefined.
 
-#### RESOLVED: No loading, empty, or error states defined
-Added UX States section: empty states with CTAs, skeleton loading UI, inline error messages, offline banner, and sparse data handling for charts (fewer than 3 points show without trend line).
+**Decision**: A "day" is a calendar day in the user's local timezone. At least one logged metric counts. Backfilling a missed day repairs the streak. Streaks are calculated from entry dates, not the timestamp of when data was entered.
 
-#### RESOLVED: Color palette and branding not specified
-Added DaisyUI with a custom `datagoat` theme derived from CODAP's color palette (codap.concord.org): gold header (#ffc222), cyan-blue primary (#0693e3), green-cyan accent (#7bdcb5), Lato typography. Provides visual continuity with the CODAP ecosystem.
+### What is the navigation structure?
+**Context**: UI/Designer self-review noted that no navigation structure was defined beyond "persistent nav to profile."
+
+**Decision**: Hamburger menu with slide-out drawer on mobile, items for Dashboard, My Body, My Sports, Profile, Logout. Current page is visually indicated. Header includes branding.
+
+### What loading, empty, and error states are needed?
+**Context**: UI/Designer self-review noted these were undefined.
+
+**Decision**: Empty states with CTAs, skeleton loading UI, inline error messages, offline banner, and sparse-data handling for charts (fewer than 3 points show without trend line).
+
+### What color palette and branding should be used?
+**Context**: UI/Designer self-review noted no palette or branding was specified.
+
+**Decision**: DaisyUI with a custom `datagoat` theme derived from CODAP's color palette: gold header (#ffc222), cyan-blue primary (#0693e3), green-cyan accent (#7bdcb5), Lato typography. Provides visual continuity with the CODAP ecosystem.
+
+### Should Firestore data be structured as subcollections or flat documents?
+**Context**: Body entries could be stored as `users/{uid}/bodyEntries/{date}` (one doc per date with all metrics) or `users/{uid}/bodyEntries/{date}/metrics/{metricId}` (subcollection per metric). The flat approach is simpler and uses fewer reads but the doc could grow large if many metrics are tracked.
+
+**Options considered**:
+- A) Flat: one document per date with a `metrics` map — fewer reads, simpler queries, sufficient for the expected ~20 metrics per day
+- B) Subcollection: one document per metric per date — more granular, but many more reads and writes
+
+**Decision**: **A) Flat** — one document per date with a metrics map. Sufficient for ~20 metrics per day, fewer Firestore reads, simpler queries.
+
+### Should the app use React Context or a state management library for global state?
+**Context**: The app needs to share auth state, profile data, metric definitions, and badge state across components. React Context is simple but can cause unnecessary re-renders with frequently changing data.
+
+**Options considered**:
+- A) React Context only — simpler, no extra dependency, sufficient for this app's moderate state needs
+- B) Zustand — lightweight, minimal boilerplate, good devtools, avoids context re-render issues
+- C) React Context + useMemo/useCallback optimization — middle ground, no extra dep
+
+**Decision**: **A) React Context only** — simple, no extra dependency, sufficient for this prototype's moderate state needs.
+
+### How should the seeding script handle existing config data?
+**Context**: The seed script writes default metrics, sport mappings, badges, and motivational messages to Firestore. If run against a Firestore instance that already has config data (e.g., after an admin has made edits), should it overwrite, merge, or skip?
+
+**Options considered**:
+- A) Skip if exists — safe, never overwrites admin edits, may miss new defaults on upgrades
+- B) Merge — add new entries, don't overwrite existing ones. Allows adding new defaults without losing admin edits
+- C) Overwrite with `--force` flag — default is skip, optional flag to force-reset to defaults
+
+**Decision**: **B) Merge** — add new entries without overwriting existing ones. Preserves admin edits while allowing new defaults to be added on upgrades.

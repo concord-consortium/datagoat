@@ -1,8 +1,8 @@
 # DataGOAT
 
-Own Your Sports Data for Peak Performance
+Own Your Sports Data for Peak Performance.
 
-A mobile-first PWA for student athletes to track daily health metrics, sport outcomes, and earn badges for consistency. Built with React, Firebase, Tailwind CSS, and DaisyUI.
+A mobile-first PWA for student athletes to track daily health metrics, sport outcomes, and earn badges for consistency. Built with React, TypeScript, Vite, and Firebase.
 
 ## Prerequisites
 
@@ -53,43 +53,18 @@ npm run emulators
 npm run dev
 ```
 
-The app will automatically connect to the local emulators when running in development mode.
-
-### Seeding Default Data
-
-To populate the emulator's Firestore with default metrics, sport mappings, and badge definitions:
-
-```bash
-npm run seed
-```
-
-This uses a merge strategy — it adds new entries without overwriting existing ones.
-
-### Setting an Admin User
-
-To grant admin access to a user (for the admin dashboard):
-
-```bash
-node scripts/set-admin.js user@example.com
-```
-
 ## Available Scripts
 
-| Script                | Description                                           |
-| --------------------- | ----------------------------------------------------- |
-| `npm run dev`         | Start Vite dev server with hot reload                 |
-| `npm run build`       | TypeScript check + production Vite build              |
-| `npm run preview`     | Preview the production build locally                  |
-| `npm run lint`        | Run ESLint                                            |
-| `npm run emulators`   | Start Firebase emulators (Auth, Firestore, Hosting)   |
-| `npm run seed`        | Seed Firestore with default config data               |
-| `npm run deploy:staging`    | Build and deploy to Firebase Hosting (staging)  |
-| `npm run deploy:production` | Build and deploy to Firebase Hosting (production) |
+| Script              | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `npm run dev`       | Start Vite dev server with hot reload               |
+| `npm run build`     | TypeScript check + production Vite build            |
+| `npm run preview`   | Preview the production build locally                |
+| `npm run emulators` | Start Firebase emulators (Auth, Firestore, Hosting) |
+| `npm run deploy`    | Build and deploy to Firebase Hosting                |
 
 ## Tech Stack
 
 - **React 19** + TypeScript + Vite
-- **Tailwind CSS v4** + **DaisyUI v5** (custom `datagoat` theme)
-- **Firebase** — Authentication (email/password), Firestore (offline persistence), Hosting
-- **Chart.js** + react-chartjs-2 + chartjs-plugin-annotation
+- **Firebase** — Authentication (email/password), Firestore, Hosting
 - **vite-plugin-pwa** for service worker and offline support

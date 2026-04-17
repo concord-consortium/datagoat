@@ -18,14 +18,23 @@ export default function App() {
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
+      if (!u) {
+        setRegisteredDisplayName("");
+      }
       setUser(u);
       setLoading(false);
     });
   }, []);
 
+  const renderContent = () => {
+    if (loading) return <Loading />;
+    if (user) return <Authed user={user} registeredDisplayName={registeredDisplayName} />;
+    return <Login onRegistered={setRegisteredDisplayName} />;
+  };
+
   return (
     <main className={css.app} tabIndex={0}>
-      {loading ? <Loading /> : user ? <Authed user={user} registeredDisplayName={registeredDisplayName} /> : <Login onRegistered={setRegisteredDisplayName} />}
+      {renderContent()}
       <footer className={css.footer}>{APP_VERSION} - {APP_VERSION_DESC}</footer>
     </main>
   );

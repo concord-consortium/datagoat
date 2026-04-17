@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -44,7 +44,7 @@ export function Login({ onRegistered }: LoginProps) {
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const handleEmailAuth = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailAuth = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     try {

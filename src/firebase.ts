@@ -12,6 +12,12 @@ const app = initializeApp({
 
 export const auth = getAuth(app);
 
-if (import.meta.env.VITE_USE_EMULATORS === "true") {
+let emulatorConnected = false;
+if (
+  import.meta.env.DEV &&
+  import.meta.env.VITE_USE_EMULATORS === "true" &&
+  !emulatorConnected
+) {
+  emulatorConnected = true;
   connectAuthEmulator(auth, "http://localhost:9099");
 }

@@ -1,0 +1,65 @@
+.form {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.button {
+  appearance: none;
+  width: 100%;
+  padding: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: normal;
+  font-family: inherit;
+  color: #0693e3;
+  background: #f5f5f5;
+  border: 1px solid #d6dde3;
+  border-radius: 0.375rem;
+}
+
+.button:first-child {
+  margin-top: 0;
+}
+
+.divider {
+  margin: 1.5rem 0;
+  border-color: #d6dde3;
+}
+
+.emailForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.input {
+  appearance: none;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 1px solid #d6dde3;
+  border-radius: 0.375rem;
+}
+
+.error {
+  color: #e53e3e;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}

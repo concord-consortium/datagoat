@@ -13,6 +13,7 @@ import { ProfileForm } from "../components/profile/ProfileForm";
 import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
 import { WellnessLog } from "../components/logs/WellnessLog";
 import { PerformanceLog } from "../components/logs/PerformanceLog";
+import { Dashboard } from "../components/dashboard/Dashboard";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
@@ -48,7 +49,7 @@ export function AppRoutes() {
         {/* Authed routes. ProtectedRoute redirects 'missing' profiles to
             /profile (onboarding entry point). */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<ScreenStub name="Dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/wellness" element={<WellnessLog />} />
           <Route
             path="/wellness/:metricId"

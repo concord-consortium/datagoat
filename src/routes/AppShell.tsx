@@ -1,18 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppHeader } from "../components/layout/AppHeader";
 import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import { VerificationBanner } from "../components/auth/VerificationBanner";
+import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
 // Routes that opt out of the AppHeader. Per spec the dashboard owns its
-// own header-slide carousel and replaces AppHeader; this set is the
-// dashboard-step's eventual exclusion target. While the dashboard is still
-// a <ScreenStub /> in this foundation session, leave the set empty so the
-// hamburger trigger is reachable from /dashboard. The dashboard step adds
-// '/dashboard' here when the carousel lands.
-const HIDE_HEADER_PATHS = new Set<string>();
+// own header-slide carousel (DashboardHeaderSlide) and replaces AppHeader.
+const HIDE_HEADER_PATHS = new Set<string>(["/dashboard"]);
 
 // Auth-time routes don't render the hamburger trigger - they get plain auth
 // chrome instead. AppShell still hosts the menu state so any rendered
@@ -39,7 +36,18 @@ const AUTH_PATHS = new Set<string>([
 const SKIP_LINK_EXCLUDED_ATTR = "data-skip-link-exclude";
 
 export function AppShell() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  // NavMenuProvider hosts the open/close state so non-menu components
+  // (DashboardHeaderSlide) can pause the carousel while the menu is open.
+  // Inner shell consumes the context for the AppHeader trigger + Dialog.
+  return (
+    <NavMenuProvider>
+      <AppShellInner />
+    </NavMenuProvider>
+  );
+}
+
+function AppShellInner() {
+  const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
   const { pathname } = useLocation();
   const showHeader =
     !HIDE_HEADER_PATHS.has(pathname) && !AUTH_PATHS.has(pathname);
@@ -152,7 +160,7 @@ export function AppShell() {
         <header>
           <AppHeader
             menuOpen={menuOpen}
-            onToggleMenu={() => setMenuOpen((o) => !o)}
+            onToggleMenu={() => setMenuOpen(!menuOpen)}
           />
         </header>
       )}
@@ -176,7 +184,7 @@ export function AppShell() {
         <Outlet
           context={{
             menuOpen,
-            toggleMenu: () => setMenuOpen((o) => !o),
+            toggleMenu: () => setMenuOpen(!menuOpen),
           }}
         />
         {/* Mounted inside <main> so the Dialog's absolute-positioned

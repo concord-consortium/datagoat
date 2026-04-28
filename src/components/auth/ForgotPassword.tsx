@@ -1,0 +1,162 @@
+import { useState, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../firebase";
+import { logError } from "../../utils/logError";
+import { AuthLayout } from "./AuthLayout";
+import {
+  forgotPasswordSchema,
+  type ForgotPasswordValues,
+} from "./signupSchema";
+import authCss from "./AuthLayout.module.css";
+import fields from "../form/fields.module.css";
+import buttons from "../form/buttons.module.css";
+
+export function ForgotPassword() {
+  const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+    getValues,
+  } = useForm<ForgotPasswordValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
+    mode: "onChange",
+  });
+
+  // Single confirm copy for both happy + error paths so we never leak
+  // whether an account exists for the entered email. Errors are logged but
+  // never surfaced to the user.
+  async function attemptSend(email: string) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err: unknown) {
+      logError(err, { stage: "forgotPassword.send" });
+    }
+  }
+
+  async function onSubmit(values: ForgotPasswordValues) {
+    await attemptSend(values.email);
+    setSubmitted(true);
+  }
+
+  async function handleResend(e: FormEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    const email = getValues("email");
+    if (email) await attemptSend(email);
+  }
+
+  if (submitted) {
+    return (
+      <AuthLayout heading="Check your email">
+        <div>
+          <div className={authCss.confirmIcon} aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect
+                x="3"
+                y="6.67"
+                width="34"
+                height="26.67"
+                rx="2"
+                fill="rgba(0,179,192,0.35)"
+              />
+              <polyline
+                points="37,8.5 20,20.5 3,8.5"
+                stroke="var(--subtext)"
+                strokeWidth="2.5"
+                fill="none"
+              />
+            </svg>
+          </div>
+          <p className={authCss.authSubtext}>
+            If an account exists for that email, we sent a reset link. Check
+            your inbox. If it doesn&rsquo;t appear within a few minutes, check
+            your spam folder.
+          </p>
+
+          <button
+            type="button"
+            className={`${buttons.ctaBtn} ${buttons.ctaBtnSecondary}`}
+            onClick={handleResend}
+            aria-label="Resend password reset email"
+          >
+            Resend Link
+          </button>
+
+          <p className={authCss.authAltLink}>
+            <button
+              type="button"
+              className={authCss.authSwitchBtn}
+              onClick={() => navigate("/login")}
+            >
+              Return to log in
+            </button>
+          </p>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout heading="Reset your password">
+      <div>
+        <p className={authCss.authSubtext}>
+          Enter the email associated with your account and we&rsquo;ll send you
+          a password reset link.
+        </p>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className={fields.fieldWrap}>
+            <label className={fields.fieldLabel} htmlFor="forgot-email">
+              Email
+              <span className={fields.requiredMark} aria-hidden="true">
+                *
+              </span>
+            </label>
+            <input
+              id="forgot-email"
+              type="email"
+              autoComplete="email"
+              className={`${fields.fieldInput}${errors.email ? ` ${fields.fieldError}` : ""}`}
+              placeholder="you@school.edu"
+              aria-required="true"
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? "forgot-email-error" : undefined}
+              {...register("email")}
+            />
+            {errors.email && (
+              <p
+                id="forgot-email-error"
+                className={fields.fieldErrorMsg}
+                role="alert"
+              >
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className={buttons.ctaBtn}
+            disabled={isSubmitting || !isValid}
+          >
+            Send Reset Link
+          </button>
+        </form>
+
+        <p className={authCss.authAltLink}>
+          <button
+            type="button"
+            className={authCss.authSwitchBtn}
+            onClick={() => navigate("/login")}
+          >
+            Return to log in
+          </button>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}

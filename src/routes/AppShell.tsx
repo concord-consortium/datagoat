@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppHeader } from "../components/layout/AppHeader";
 import { HamburgerMenu } from "../components/layout/HamburgerMenu";
+import { VerificationBanner } from "../components/auth/VerificationBanner";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
@@ -45,6 +46,12 @@ export function AppShell() {
         </header>
       )}
       <main id="main-content" tabIndex={0} className={css.main}>
+        {/* VerificationBanner mounts as the first child of <main> per spec.
+            It self-gates on useAuth() (renders nothing on auth routes
+            where user is null, on verified accounts, on accounts younger
+            than 7 days, or after the per-uid dismiss flag is set in
+            localStorage), so no per-route opt-out is needed. */}
+        <VerificationBanner />
         <Outlet
           context={{
             menuOpen,

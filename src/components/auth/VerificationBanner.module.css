@@ -1,0 +1,79 @@
+/* VerificationBanner - in-app reminder banner shown when
+   !isEmailVerified && daysUnverified >= 7. No prototype counterpart -
+   designed against existing tokens (var(--surface2) bg, var(--secondary)
+   border accent). Renders in normal document flow as the first child of
+   <main>; not sticky. */
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface2);
+  border-left: 3px solid var(--secondary);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 16px;
+  margin: 0 24px 16px;
+  font-family: 'Barlow', sans-serif;
+}
+
+.body {
+  flex: 1;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.bodyEmphasis {
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.action {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.dismiss {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: var(--subtext);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color var(--dur-quick) var(--ease-default),
+              background var(--dur-quick) var(--ease-default);
+}
+
+.dismiss:hover {
+  color: var(--text);
+  background: rgba(155, 175, 196, 0.12);
+}
+
+.dismiss:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dismiss svg {
+  pointer-events: none;
+}

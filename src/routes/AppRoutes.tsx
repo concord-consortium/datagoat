@@ -4,29 +4,30 @@ import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 import { RedirectIfAuthed } from "../components/auth/RedirectIfAuthed";
 import { LoginForm } from "../components/auth/LoginForm";
 import { SignupForm } from "../components/auth/SignupForm";
+import { ForgotPassword } from "../components/auth/ForgotPassword";
+import { EmailVerification } from "../components/auth/EmailVerification";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        {/* Auth routes — LoginForm + SignupForm landed in Step 7;
-            ForgotPassword + EmailVerification land in Step 8 (still stubbed
-            via SignupForm so the routes are reachable for now).
-            RedirectIfAuthed sends signed-in users on to /dashboard so
-            signInWithPopup success actually leaves the auth screen. */}
+        {/* Auth routes. RedirectIfAuthed sends signed-in users on to
+            /dashboard so signInWithPopup success actually leaves the auth
+            screen. /verify-email is intentionally OUTSIDE the
+            RedirectIfAuthed wrapper because the just-signed-up user is
+            authenticated when they reach it (createUser puts them in an
+            authed state, then SignupForm navigates to /verify-email);
+            redirecting them away on auth state would prevent them from
+            ever seeing the screen. Deviation from the Session 1 hand-off
+            note "RedirectIfAuthed wraps the auth routes" - documented in
+            implementation.md auth-screens-2 step. */}
         <Route element={<RedirectIfAuthed />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/signup" element={<SignupForm />} />
-          <Route
-            path="/forgot-password"
-            element={<ScreenStub name="ForgotPassword" />}
-          />
-          <Route
-            path="/verify-email"
-            element={<ScreenStub name="EmailVerification" />}
-          />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
+        <Route path="/verify-email" element={<EmailVerification />} />
 
         {/* Authed routes. Onboarding-route gating arrives with UserContext. */}
         <Route element={<ProtectedRoute />}>

@@ -1,11 +1,15 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppShell } from "./AppShell";
-import { ProtectedRoute } from "../components/auth/ProtectedRoute";
+import {
+  ProtectedRoute,
+  OnboardingRoute,
+} from "../components/auth/ProtectedRoute";
 import { RedirectIfAuthed } from "../components/auth/RedirectIfAuthed";
 import { LoginForm } from "../components/auth/LoginForm";
 import { SignupForm } from "../components/auth/SignupForm";
 import { ForgotPassword } from "../components/auth/ForgotPassword";
 import { EmailVerification } from "../components/auth/EmailVerification";
+import { ProfileForm } from "../components/profile/ProfileForm";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
@@ -29,13 +33,21 @@ export function AppRoutes() {
         </Route>
         <Route path="/verify-email" element={<EmailVerification />} />
 
-        {/* Authed routes. Onboarding-route gating arrives with UserContext. */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/profile" element={<ScreenStub name="ProfileForm" />} />
+        {/* Onboarding routes - gate only on loadState !== 'loading' so new
+            users (status='missing') can reach the form and existing users
+            (status='loaded') can edit. ProtectedRoute would redirect them
+            to /profile, which is where they already are. */}
+        <Route element={<OnboardingRoute />}>
+          <Route path="/profile" element={<ProfileForm />} />
           <Route
             path="/setup/tracking"
             element={<ScreenStub name="TrackedDataSetup" />}
           />
+        </Route>
+
+        {/* Authed routes. ProtectedRoute redirects 'missing' profiles to
+            /profile (onboarding entry point). */}
+        <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<ScreenStub name="Dashboard" />} />
           <Route path="/wellness" element={<ScreenStub name="WellnessLog" />} />
           <Route

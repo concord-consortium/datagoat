@@ -1,0 +1,12 @@
+/* Inline info button alongside the select. Matches the prototype's
+   .field-with-info pattern (a small helper next to the select). */
+.selectWithInfo {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.selectWithInfo > select {
+  flex: 1;
+  min-width: 0;
+}

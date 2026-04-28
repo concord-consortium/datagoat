@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Dialog } from "../common/Dialog";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUser } from "../../contexts/UserContext";
 import HomeIcon from "@/icons/home.svg?react";
 import CalendarIcon from "@/icons/calendar.svg?react";
 import StopwatchIcon from "@/icons/stopwatch.svg?react";
@@ -14,9 +15,6 @@ import css from "./HamburgerMenu.module.css";
 interface HamburgerMenuProps {
   open: boolean;
   onClose: () => void;
-  // Onboarding gate placeholder. Wired up in this step but always passes (no
-  // profile state yet); the gate becomes meaningful once UserContext lands.
-  isOnboarding?: boolean;
 }
 
 interface MenuItem {
@@ -34,13 +32,26 @@ const ITEMS: MenuItem[] = [
   { label: "About", to: "/about", Icon: InfoCircleIcon },
 ];
 
-export function HamburgerMenu({
-  open,
-  onClose,
-  isOnboarding = false,
-}: HamburgerMenuProps) {
+export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
   const { signOut } = useAuth();
+  const { loadState } = useUser();
   const { pathname } = useLocation();
+
+  // Narrowed onboarding gate per spec:
+  //   loading -> false (showing all items briefly is the right failure
+  //              mode; menu lives in AppShell, outside ProtectedRoute, so
+  //              this branch fires during the brief Firestore-fetch window
+  //              on cold start. A flash of disabled items would be more
+  //              disruptive than a flash of unlocked items.)
+  //   missing -> true  (new user; lock everything except Profile)
+  //   loaded  -> gate on profileComplete && trackingSetupComplete
+  const isOnboarding =
+    loadState.status === "missing"
+      ? true
+      : loadState.status === "loaded"
+        ? !loadState.profile.profileComplete ||
+          !loadState.profile.trackingSetupComplete
+        : false;
 
   function handleNavigate() {
     onClose();
@@ -62,17 +73,26 @@ export function HamburgerMenu({
       <ul className={css.menuList}>
         {ITEMS.map(({ label, to, Icon }) => {
           const isActive = pathname === to;
+          // Profile is always reachable so a partway-onboarded user can
+          // finish their profile. Every other route is gated.
+          const isGated = isOnboarding && to !== "/profile";
           return (
             <li
               key={to}
-              className={`${css.menuItem} ${isOnboarding ? css.menuItemDisabled : ""}`}
+              className={`${css.menuItem} ${isGated ? css.menuItemDisabled : ""}`}
             >
               <Link
                 to={to}
                 className={`${css.navItem} ${isActive ? css.active : ""}`}
                 aria-current={isActive ? "page" : undefined}
-                aria-disabled={isOnboarding || undefined}
-                onClick={handleNavigate}
+                aria-disabled={isGated || undefined}
+                onClick={(e) => {
+                  if (isGated) {
+                    e.preventDefault();
+                    return;
+                  }
+                  handleNavigate();
+                }}
               >
                 <span className={css.navItemIcon}>
                   <Icon />

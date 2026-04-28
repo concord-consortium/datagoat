@@ -1,0 +1,88 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html.
+   Prototype class names are kebab-case (.profile-welcome, .field-unit, etc.);
+   per the conversion's CSS Module convention they're camelCased here so JSX
+   can reference them as `css.profileWelcome` without bracket access. */
+
+/* .screen-content - prototype line 1025
+   padding: 20px 24px 100px (the 100px bottom keeps the last form row clear
+   of the iOS browser chrome / on-screen keyboard). */
+.screenContent {
+  padding: 20px 24px 100px;
+}
+.screenContent > *:last-child,
+.screenContent > *:last-child > *:last-child {
+  margin-bottom: 0;
+}
+
+/* .profile-welcome - prototype lines 918-927
+   Onboarding-mode welcome block above the form fields. The prototype's
+   `.profile-welcome.show` toggle is replaced by conditional render in JSX -
+   the rule below lands the visible state directly. */
+.profileWelcome {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Barlow', sans-serif;
+}
+
+/* .profile-welcome-title - prototype lines 928-934 */
+.profileWelcomeTitle {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+/* .inline-field - prototype lines 1210-1220
+   Inline row for Age / Height (Ft + In) / Weight. */
+.inlineField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.inlineField .fieldErrorMsg {
+  flex-basis: 100%;
+  margin-top: 2px;
+}
+.inlineField input {
+  flex: 1;
+  max-width: 120px;
+}
+
+/* .field-unit - prototype lines 1221-1226 */
+.fieldUnit {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--subtext);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The TextField component wraps its input in .fieldWrap with margin-bottom
+   18px. Inside an .inlineField that bottom margin causes a wrap-line gap;
+   suppress it so the whole row visually behaves as one. */
+.inlineField > div {
+  margin-bottom: 0;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+/* Inline-field inputs need a tighter label - the prototype uses a small
+   inline label above the input, but the inputs sit on a single row. We
+   collapse TextField's default 8px label-bottom-gap inside an inline-field
+   to keep the row visually compact. */
+.inlineField > div > label {
+  margin-bottom: 4px;
+  min-width: 70px;
+}
+
+/* Setup button is rendered via the shared `.cta-btn` primitive in
+   form/buttons.module.css; no per-screen rule needed here. */

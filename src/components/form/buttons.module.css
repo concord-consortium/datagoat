@@ -83,3 +83,81 @@
   filter: none;
   transform: none;
 }
+
+/* .setup-btn - prototype lines 1368-1398.
+   Onboarding-flow primary action (Profile -> Tracked Data -> Dashboard).
+   Visually identical to .cta-btn but with the prototype's bottom margin
+   instead of top, plus internal slots for an arrow/svg. */
+.setupBtn {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 24px;
+  background: var(--accent);
+  color: #080A0E;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-bottom: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter var(--dur-quick) var(--ease-default),
+              transform var(--dur-tap) var(--ease-default);
+}
+
+.setupBtn .arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.setupBtn > svg {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.setupBtn:hover {
+  filter: brightness(1.08);
+}
+
+.setupBtn:active {
+  transform: scale(0.98);
+}
+
+.setupBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.setupBtn:disabled {
+  background: var(--border);
+  color: var(--subtext);
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctaBtn,
+  .ctaBtnSecondary,
+  .setupBtn {
+    transition: none;
+  }
+  .ctaBtn:active,
+  .ctaBtnSecondary:active,
+  .setupBtn:active {
+    transform: none;
+  }
+}

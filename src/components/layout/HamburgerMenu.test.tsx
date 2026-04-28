@@ -1,0 +1,126 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+
+import type { ProfileLoadState, UserProfile } from "../../types/profile";
+
+const ctx = vi.hoisted(() => ({
+  loadState: { status: "loading" } as ProfileLoadState,
+}));
+
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuth: () => ({ signOut: vi.fn() }),
+}));
+
+vi.mock("../../contexts/UserContext", () => ({
+  useUser: () => ({ loadState: ctx.loadState }),
+}));
+
+import { HamburgerMenu } from "./HamburgerMenu";
+import css from "./HamburgerMenu.module.css";
+
+function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
+  return {
+    version: 1,
+    fullName: "T",
+    email: "t@e.com",
+    nickname: "",
+    age: 18,
+    heightFt: 5,
+    heightIn: 9,
+    weight: 150,
+    gender: "unspecified",
+    athleteType: "endurance",
+    competitionTerm: "game",
+    trackedWellnessMetrics: [],
+    trackedPerformanceMetrics: [],
+    profileComplete: true,
+    trackingSetupComplete: true,
+    ...overrides,
+  };
+}
+
+function renderMenu() {
+  render(
+    <MemoryRouter>
+      <HamburgerMenu open onClose={() => {}} />
+    </MemoryRouter>,
+  );
+}
+
+// Locate the dashboard <li> wrapper (gated when isOnboarding=true). Profile
+// stays unlocked so a partway-onboarded user can finish their profile.
+function dashboardLi(): HTMLElement {
+  return screen.getByRole("link", { name: /dashboard/i }).closest("li")!;
+}
+
+function dashboardLink(): HTMLElement {
+  return screen.getByRole("link", { name: /dashboard/i });
+}
+
+describe("HamburgerMenu narrowed isOnboarding derivation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("loadState 'loading' -> NOT gated (default-false during the cold-start window)", () => {
+    ctx.loadState = { status: "loading" };
+    renderMenu();
+    expect(dashboardLink()).not.toHaveAttribute("aria-disabled");
+    expect(dashboardLi()).not.toHaveClass(css.menuItemDisabled);
+  });
+
+  it("loadState 'missing' -> gated", () => {
+    ctx.loadState = { status: "missing" };
+    renderMenu();
+    expect(dashboardLink()).toHaveAttribute("aria-disabled", "true");
+    expect(dashboardLi()).toHaveClass(css.menuItemDisabled);
+  });
+
+  it("loadState 'loaded' with both flags true -> NOT gated", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: true,
+        trackingSetupComplete: true,
+      }),
+    };
+    renderMenu();
+    expect(dashboardLink()).not.toHaveAttribute("aria-disabled");
+    expect(dashboardLi()).not.toHaveClass(css.menuItemDisabled);
+  });
+
+  it("loadState 'loaded' with profileComplete=false -> gated", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: false,
+        trackingSetupComplete: true,
+      }),
+    };
+    renderMenu();
+    expect(dashboardLink()).toHaveAttribute("aria-disabled", "true");
+    expect(dashboardLi()).toHaveClass(css.menuItemDisabled);
+  });
+
+  it("loadState 'loaded' with trackingSetupComplete=false -> gated", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: true,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderMenu();
+    expect(dashboardLink()).toHaveAttribute("aria-disabled", "true");
+    expect(dashboardLi()).toHaveClass(css.menuItemDisabled);
+  });
+
+  it("Profile menu item is NEVER gated (so partway-onboarded users can finish)", () => {
+    ctx.loadState = { status: "missing" };
+    renderMenu();
+    const profileLink = screen.getByRole("link", { name: /^profile$/i });
+    expect(profileLink).not.toHaveAttribute("aria-disabled");
+  });
+});

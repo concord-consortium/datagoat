@@ -12,6 +12,7 @@ import { EmailVerification } from "../components/auth/EmailVerification";
 import { ProfileForm } from "../components/profile/ProfileForm";
 import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
 import { WellnessLog } from "../components/logs/WellnessLog";
+import { PerformanceLog } from "../components/logs/PerformanceLog";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
@@ -53,10 +54,7 @@ export function AppRoutes() {
             path="/wellness/:metricId"
             element={<ScreenStub name="MetricDetail (wellness)" />}
           />
-          <Route
-            path="/performance"
-            element={<ScreenStub name="PerformanceLog" />}
-          />
+          <Route path="/performance" element={<PerformanceLog />} />
           <Route
             path="/performance/:metricId"
             element={<ScreenStub name="MetricDetail (performance)" />}

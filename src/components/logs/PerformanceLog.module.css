@@ -1,0 +1,175 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html. */
+
+/* .screen-content + .date-nav padding adjustment - prototype line 1031. */
+.screenContent {
+  padding: 20px 24px 100px;
+}
+.dateNavSibling + .screenContent {
+  padding-top: 10px;
+}
+
+/* .profile-welcome shared with wellness log + #performance-log-welcome anchor. */
+.profileWelcome {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Barlow', sans-serif;
+}
+
+.profileWelcomeTitle {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+/* .performance-log-table - prototype lines 2631-2705 (verbatim). */
+.performanceLogTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.performanceLogTable thead th {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.performanceLogTable tbody td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.performanceLogTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* .col-total - the "Total" column header + cell. */
+.colTotal {
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+}
+
+/* .col-metric - the "Metric" column. */
+.colMetric {
+  font-weight: 600;
+}
+
+.metricLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  display: inline;
+  position: relative;
+  padding: 0 0 5px;
+  transition: filter var(--dur-quick) var(--ease-default);
+}
+
+.metricLink::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 44px;
+}
+
+.metricLink:hover {
+  filter: brightness(1.2);
+}
+
+.metricLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* .col-record / .value-input - the record-input column. */
+.colRecord {
+  width: 100px;
+  text-align: left;
+}
+
+.valueInput {
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  width: 60px;
+  text-align: center;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur-base) var(--ease-default),
+              box-shadow var(--dur-base) var(--ease-default);
+}
+
+.valueInput::placeholder {
+  color: #7A8DA6;
+}
+
+.valueInput:hover {
+  border-color: var(--accent);
+}
+
+.valueInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.valueInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.valueInput.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.valueInput.hasValue:hover {
+  border-color: var(--accent);
+}
+
+.valueInput.hasValue:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+/* Designer-note hint - prototype line 4541 (italicized note about
+   placeholder set finalization). Renders below the table while the
+   placeholder set ships. */
+.designerNote {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--subtext);
+  margin: 16px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .valueInput,
+  .metricLink {
+    transition: none;
+  }
+}

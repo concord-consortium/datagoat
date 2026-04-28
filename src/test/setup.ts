@@ -1,5 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
+import { cleanup } from "@testing-library/react";
+
+// vitest.config has globals: false, which disables RTL's auto-cleanup hook
+// so we run cleanup manually here. Without this, dialogs and other rendered
+// trees from prior tests stay in the DOM and trip up the next test's queries.
+afterEach(() => {
+  cleanup();
+});
 
 // jsdom's matchMedia is missing addEventListener / removeEventListener; the
 // dashboard carousel + reduced-motion guards subscribe to mq.change events,

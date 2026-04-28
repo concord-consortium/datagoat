@@ -1,0 +1,57 @@
+.menuList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.menuItem {
+  display: flex;
+}
+
+.menuLink,
+.menuButton {
+  appearance: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  padding: 14px 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  border-bottom: 1px solid var(--surface2);
+  transition: background var(--dur-quick) var(--ease-default);
+}
+
+.menuLink:hover,
+.menuButton:hover {
+  background: rgba(0, 179, 192, 0.12);
+}
+
+.menuLink:focus-visible,
+.menuButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.menuItemDisabled .menuLink,
+.menuItemDisabled .menuButton {
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.signOutItem {
+  margin-top: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuLink,
+  .menuButton {
+    transition: none;
+  }
+}

@@ -8,10 +8,21 @@
   margin: 0 auto;
   background: var(--bg);
   color: var(--text);
-  overflow: auto;
+  overflow: hidden;
 }
 
-.app:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
+@media (min-width: 1024px) {
+  .app {
+    height: 95vh;
+    height: 95dvh;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .app {
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+  }
 }

@@ -90,17 +90,4 @@ body {
     align-items: center;
     justify-content: center;
   }
-  #root > main {
-    height: 95vh;
-    height: 95dvh;
-  }
-}
-
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
-  #root > main {
-    width: 100%;
-    max-width: none;
-    height: 100vh;
-    height: 100dvh;
-  }
 }

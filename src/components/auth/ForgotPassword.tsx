@@ -9,7 +9,7 @@ import { AuthLayout } from "./AuthLayout";
 import {
   forgotPasswordSchema,
   type ForgotPasswordValues,
-} from "./signupSchema";
+} from "./authSchemas";
 import authCss from "./AuthLayout.module.css";
 import fields from "../form/fields.module.css";
 import buttons from "../form/buttons.module.css";

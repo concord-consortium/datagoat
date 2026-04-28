@@ -31,6 +31,16 @@ export type SignInResult =
   | { ok: false; kind: "blocked-no-email"; message: string }
   | { ok: false; kind: "other"; code: string };
 
+// Component-local linking-mode state shape, consumed by LoginForm and
+// SignupForm when an account-collision result triggers the inline
+// LinkAccountPanel flow. Lives here so the two forms share one source of
+// truth instead of duplicating the interface.
+export interface LinkingState {
+  email: string;
+  pendingCredential: AuthCredential;
+  existingMethods: string[];
+}
+
 function isAuthError(err: unknown): err is AuthError {
   return (
     typeof err === "object" &&

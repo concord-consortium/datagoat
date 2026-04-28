@@ -2,11 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import {
-  signInWithEmailAndPassword,
-  type AuthCredential,
-  type User,
-} from "firebase/auth";
+import { signInWithEmailAndPassword, type User } from "firebase/auth";
 import { auth } from "../../firebase";
 import { logError } from "../../utils/logError";
 import { AuthLayout } from "./AuthLayout";
@@ -17,19 +13,14 @@ import {
   signInWithProvider,
   googleProvider,
   facebookProvider,
+  type LinkingState,
 } from "./authProviders";
 import { authErrorMessageFor } from "./authErrorMessages";
-import { loginSchema, type LoginValues } from "./signupSchema";
+import { loginSchema, type LoginValues } from "./authSchemas";
 import authCss from "./AuthLayout.module.css";
 import fields from "../form/fields.module.css";
 import buttons from "../form/buttons.module.css";
 import css from "./LoginForm.module.css";
-
-interface LinkingState {
-  email: string;
-  pendingCredential: AuthCredential;
-  existingMethods: string[];
-}
 
 export function LoginForm() {
   const navigate = useNavigate();

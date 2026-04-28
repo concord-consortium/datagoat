@@ -99,17 +99,18 @@ export function EmailVerification() {
           Continue to log in
         </button>
 
-        <p className={authCss.authAltLink}>
-          <button
-            type="button"
-            className={authCss.authSwitchBtn}
-            onClick={handleResend}
-            aria-label="Resend verification email"
-            disabled={resending}
-          >
-            {resending ? "Sending..." : "Resend Link"}
-          </button>
-        </p>
+        {/* Resend uses cta-btn-secondary to match ForgotPassword's resend
+            affordance. Both screens are post-form confirm panels with the
+            same "primary continue / secondary resend" pattern. */}
+        <button
+          type="button"
+          className={`${buttons.ctaBtn} ${buttons.ctaBtnSecondary}`}
+          onClick={handleResend}
+          aria-label="Resend verification email"
+          disabled={resending}
+        >
+          {resending ? "Sending..." : "Resend Link"}
+        </button>
 
         {resendError && (
           <p className={css.formError} role="alert">

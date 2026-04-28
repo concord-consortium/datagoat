@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
-  type AuthCredential,
   type User,
 } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -18,19 +17,14 @@ import {
   signInWithProvider,
   googleProvider,
   facebookProvider,
+  type LinkingState,
 } from "./authProviders";
 import { authErrorMessageFor } from "./authErrorMessages";
-import { signupSchema, type SignupValues } from "./signupSchema";
+import { signupSchema, type SignupValues } from "./authSchemas";
 import authCss from "./AuthLayout.module.css";
 import fields from "../form/fields.module.css";
 import buttons from "../form/buttons.module.css";
 import css from "./SignupForm.module.css";
-
-interface LinkingState {
-  email: string;
-  pendingCredential: AuthCredential;
-  existingMethods: string[];
-}
 
 export function SignupForm() {
   const navigate = useNavigate();

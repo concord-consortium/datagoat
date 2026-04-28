@@ -26,12 +26,17 @@ const AUTH_PATHS = new Set<string>([
   "/verify-email",
 ]);
 
-// Selectors of section-heading chrome buttons that the skip link must not
-// land on (per spec, prototype HTML around line 5453). Skip-link target is
-// <main tabIndex={-1}>, but if SectionHeading buttons sit at the top of
-// <main>, focus may walk into them on the next Tab; keeping them out of
-// the skip-target focus advance is the load-bearing behavior.
-const SKIP_LINK_EXCLUDED = ".nav-menu-btn, .nav-home-btn, .back-nav-btn";
+// Skip-link target excludes section-heading chrome buttons (per spec,
+// prototype HTML around line 5453). Skip-link target is <main>, but if
+// SectionHeading buttons sit at the top of <main>, focus may walk into
+// them on the next Tab; the load-bearing behavior is to advance past
+// them to the first content focusable.
+//
+// Match on `data-skip-link-exclude` rather than CSS Module class names -
+// CSS Modules hash the class names ("_navMenuBtn_a5cf63"), so the raw
+// kebab-case selectors that worked in the prototype's vanilla JS would
+// never match here. The data attribute is stable across modules.
+const SKIP_LINK_EXCLUDED_ATTR = "data-skip-link-exclude";
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -80,6 +85,16 @@ export function AppShell() {
       return total;
     }
 
+    // Honor prefers-reduced-motion: skip the corrective scrollBy when
+    // the user requested reduced motion. The base scrollIntoView call
+    // remains because keeping a focused element visible is essential
+    // motion (per requirements "Reduced motion": focus indicators are
+    // essential and not zeroed under the media query); the corrective
+    // sticky-offset compensation is decorative.
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+
     function onFocusIn(e: FocusEvent) {
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
@@ -87,13 +102,14 @@ export function AppShell() {
       // Ignore the main element itself.
       if (target === main) return;
       target.scrollIntoView({ block: "nearest" });
+      if (reducedMotion.matches) return;
       const offset = findStickyOffset(target);
       if (offset <= 0) return;
       const rect = target.getBoundingClientRect();
       const mainRect = main!.getBoundingClientRect();
       const overlap = offset - (rect.top - mainRect.top);
       if (overlap > 0) {
-        main!.scrollBy({ top: -overlap, behavior: "auto" });
+        main!.scrollBy({ top: -overlap, behavior: "instant" });
       }
     }
 
@@ -114,7 +130,7 @@ export function AppShell() {
         'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
       for (const node of focusables) {
-        if (node.matches(SKIP_LINK_EXCLUDED)) continue;
+        if (node.hasAttribute(SKIP_LINK_EXCLUDED_ATTR)) continue;
         node.focus();
         return;
       }

@@ -18,6 +18,7 @@ export function AppHeader({ menuOpen, onToggleMenu }: AppHeaderProps) {
         aria-haspopup="true"
         aria-expanded={menuOpen}
         onClick={onToggleMenu}
+        data-skip-link-exclude
       >
         <HamburgerIcon />
       </button>

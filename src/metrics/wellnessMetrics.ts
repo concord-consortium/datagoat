@@ -19,8 +19,9 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
   },
   {
     id: "sleepTime",
-    name: "Sleep Time",
+    name: "Total Sleep Time",
     unit: "hr/night",
+    displayUnit: "hr",
     type: "wellness",
     whoCollects: "Self",
     howCollected:
@@ -45,8 +46,9 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
   },
   {
     id: "protein",
-    name: "Protein",
+    name: "Protein Intake",
     unit: "g/kg/day",
+    displayUnit: "g",
     type: "wellness",
     whoCollects: "Self",
     howCollected:
@@ -59,6 +61,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     id: "leanMass",
     name: "Lean Mass",
     unit: "kg",
+    hint: "Entered 2-3×/yr",
     type: "wellness",
     whoCollects:
       "SC (Strength and Conditioning Coach), AT (Athletic Trainer), Nutrition",

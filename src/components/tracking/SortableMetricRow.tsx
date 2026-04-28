@@ -58,15 +58,18 @@ export function SortableMetricRow({
         </button>
       </td>
       <td>
-        {editing ? null : (
-          <input
-            type="checkbox"
-            className={css.trackCheck}
-            checked={checked}
-            onChange={onToggleCheck}
-            aria-label={`Track ${name}`}
-          />
-        )}
+        {/* Track checkbox stays visible in edit mode per prototype - the
+            edit-mode chrome is the delete column sliding in via the
+            .colDel width/opacity transition, not the checkbox going
+            away. The implementor's earlier short-circuit was wrong. */}
+        <input
+          type="checkbox"
+          className={css.trackCheck}
+          checked={checked}
+          onChange={onToggleCheck}
+          aria-label={`Track ${name}`}
+          disabled={editing}
+        />
       </td>
       <td className={css.metricName}>{name}</td>
       <td>

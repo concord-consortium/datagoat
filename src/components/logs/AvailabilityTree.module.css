@@ -61,8 +61,10 @@
   width: 100%;
 }
 
+/* Hidden by default - prototype controls open/closed via .avail-option.open
+   selector. The Y/N for held=Y triggers the React-side .availOpen class. */
 .availSubs {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   flex-direction: row;
   align-items: center;

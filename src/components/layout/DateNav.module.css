@@ -161,8 +161,21 @@
   background: var(--accent);
 }
 
+/* Match the chip's color+shape encoding so the legend preview reflects
+   the live chip - per spec RESOLVED issue, "Some" uses a diagonal stripe
+   for non-color cue. The prototype's legend uses solid #007A84; the
+   spec's a11y improvement applies the stripe to BOTH chip and legend
+   for visual consistency. */
 .swatchSome {
-  background: var(--accent-dark);
+  background: linear-gradient(
+    45deg,
+    var(--accent-dark) 0%,
+    var(--accent-dark) 40%,
+    rgba(255, 255, 255, 0.3) 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    var(--accent-dark) 50%,
+    var(--accent-dark) 100%
+  );
 }
 
 .swatchNone {

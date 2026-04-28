@@ -110,22 +110,31 @@ function NumericInput({ metric, value, onChange }: NumericInputProps) {
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) =>
     onChange(e.target.value);
   const filled = value !== "" && value != null;
+  // Prefer the short-form displayUnit ("hr", "g") in the log column;
+  // metric.unit's long form ("hr/night", "g/kg/day") is reserved for
+  // MetricDetail and info screens. "level" sentinel suppresses unit
+  // suffix (used by colorScale rows like Hydration which never reach
+  // this branch but kept for safety).
+  const shortUnit = metric.displayUnit ?? metric.unit;
   return (
-    <div className={css.recordCell}>
-      <input
-        id={reactId}
-        type="text"
-        inputMode="decimal"
-        className={`${css.recordInput} ${filled ? css.hasValue : ""}`}
-        value={value}
-        onChange={handleChange}
-        aria-label={metric.name}
-        placeholder={metric.unit}
-      />
-      {metric.unit && metric.unit !== "level" && (
-        <span className={css.fieldUnit}>{metric.unit}</span>
-      )}
-    </div>
+    <>
+      <div className={css.recordCell}>
+        <input
+          id={reactId}
+          type="text"
+          inputMode="decimal"
+          className={`${css.recordInput} ${filled ? css.hasValue : ""}`}
+          value={value}
+          onChange={handleChange}
+          aria-label={metric.name}
+          placeholder={shortUnit}
+        />
+        {shortUnit && shortUnit !== "level" && (
+          <span className={css.fieldUnit}>{shortUnit}</span>
+        )}
+      </div>
+      {metric.hint && <div className={css.fieldHint}>{metric.hint}</div>}
+    </>
   );
 }
 
@@ -159,12 +168,16 @@ function ColorScale({ metric, value, onChange }: ColorScaleProps) {
   function onKeyDown(e: KeyboardEvent<HTMLButtonElement>, idx: number) {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      select(idx + 2);
+      // idx is 0-based, swatch values are 1..max; clamp at the right edge.
+      const next = Math.min(max, idx + 2);
+      select(next);
       return;
     }
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      select(idx);
+      // Left edge: stay on the current swatch (no wraparound).
+      const next = Math.max(1, idx);
+      select(next);
       return;
     }
     if (/^[1-9]$/.test(e.key)) {

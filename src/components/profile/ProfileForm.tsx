@@ -8,7 +8,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
 import { TextField } from "../form/TextField";
 import { SelectField } from "../form/SelectField";
-import { PasswordField } from "../auth/PasswordField";
 import { logError } from "../../utils/logError";
 import {
   profileSchema,
@@ -167,14 +166,11 @@ export function ProfileForm() {
           {...register("email")}
         />
 
-        {mode === "onboarding" && (
-          <PasswordField
-            id="profile-password"
-            label="Password"
-            autoComplete="new-password"
-            placeholder="Create a password"
-          />
-        )}
+        {/* The prototype's #profile-screen renders a password field in
+            onboarding mode, but the React app collects email + password
+            during signup (SignupForm) before reaching /profile, so the
+            user is already authenticated. Re-collecting a password here
+            is dead UI - removed in the Step 9 audit follow-up. */}
 
         <TextField
           id="profile-nickname"

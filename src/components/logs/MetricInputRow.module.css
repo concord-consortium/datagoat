@@ -82,6 +82,16 @@
   white-space: nowrap;
 }
 
+/* Per-metric hint rendered below the record-input (e.g., Lean Mass:
+   "Entered 2-3×/yr"). Prototype HTML line 4342. */
+.fieldHint {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--subtext);
+  margin: 6px 0 0;
+  max-width: 194px;
+}
+
 .recordInput {
   background: var(--surface2);
   border: 1.5px solid #546888;

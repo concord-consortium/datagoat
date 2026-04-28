@@ -82,33 +82,31 @@ export function AvailabilityTree({
             N
           </label>
         </div>
-        {value.practiceHeld === true && (
-          <div className={css.availSubs}>
-            <span className={css.availSubPrompt}>Did you participate?</span>
-            <label className={css.availSubLabel}>
-              <input
-                type="radio"
-                className={css.availRadio}
-                name="avail-practice-status"
-                value="played"
-                checked={value.practiceParticipation === "played"}
-                onChange={() => setPracticeParticipation("played")}
-              />{" "}
-              Y
-            </label>
-            <label className={css.availSubLabel}>
-              <input
-                type="radio"
-                className={css.availRadio}
-                name="avail-practice-status"
-                value="dnp"
-                checked={value.practiceParticipation === "dnp"}
-                onChange={() => setPracticeParticipation("dnp")}
-              />{" "}
-              N
-            </label>
-          </div>
-        )}
+        <div className={css.availSubs}>
+          <span className={css.availSubPrompt}>Did you participate?</span>
+          <label className={css.availSubLabel}>
+            <input
+              type="radio"
+              className={css.availRadio}
+              name="avail-practice-status"
+              value="played"
+              checked={value.practiceParticipation === "played"}
+              onChange={() => setPracticeParticipation("played")}
+            />{" "}
+            Y
+          </label>
+          <label className={css.availSubLabel}>
+            <input
+              type="radio"
+              className={css.availRadio}
+              name="avail-practice-status"
+              value="dnp"
+              checked={value.practiceParticipation === "dnp"}
+              onChange={() => setPracticeParticipation("dnp")}
+            />{" "}
+            N
+          </label>
+        </div>
       </div>
       <hr className={css.availDivider} />
       <div
@@ -139,33 +137,31 @@ export function AvailabilityTree({
             N
           </label>
         </div>
-        {value.gameHeld === true && (
-          <div className={css.availSubs}>
-            <span className={css.availSubPrompt}>Did you participate?</span>
-            <label className={css.availSubLabel}>
-              <input
-                type="radio"
-                className={css.availRadio}
-                name="avail-game-status"
-                value="played"
-                checked={value.gameParticipation === "played"}
-                onChange={() => setGameParticipation("played")}
-              />{" "}
-              Y
-            </label>
-            <label className={css.availSubLabel}>
-              <input
-                type="radio"
-                className={css.availRadio}
-                name="avail-game-status"
-                value="dnp"
-                checked={value.gameParticipation === "dnp"}
-                onChange={() => setGameParticipation("dnp")}
-              />{" "}
-              N
-            </label>
-          </div>
-        )}
+        <div className={css.availSubs}>
+          <span className={css.availSubPrompt}>Did you participate?</span>
+          <label className={css.availSubLabel}>
+            <input
+              type="radio"
+              className={css.availRadio}
+              name="avail-game-status"
+              value="played"
+              checked={value.gameParticipation === "played"}
+              onChange={() => setGameParticipation("played")}
+            />{" "}
+            Y
+          </label>
+          <label className={css.availSubLabel}>
+            <input
+              type="radio"
+              className={css.availRadio}
+              name="avail-game-status"
+              value="dnp"
+              checked={value.gameParticipation === "dnp"}
+              onChange={() => setGameParticipation("dnp")}
+            />{" "}
+            N
+          </label>
+        </div>
       </div>
     </div>
   );

@@ -24,12 +24,16 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   return (
     <h2 className={css.sectionHeading}>
+      {/* data-skip-link-exclude: AppShell's skip-link focus advance
+          skips these chrome buttons, landing focus on the first content
+          focusable instead. */}
       {(backTo || onBack) &&
         (backTo ? (
           <Link
             to={backTo}
             className={css.backNavBtn}
             aria-label={`Back`}
+            data-skip-link-exclude
           >
             <BackChevron />
           </Link>
@@ -39,6 +43,7 @@ export function SectionHeading({
             onClick={onBack}
             className={css.backNavBtn}
             aria-label="Back"
+            data-skip-link-exclude
           >
             <BackChevron />
           </button>
@@ -46,7 +51,12 @@ export function SectionHeading({
       {icon && <span className={css.iconSlot}>{icon}</span>}
       <span className={css.titleText}>{title}</span>
       {showHome && (
-        <Link to="/dashboard" className={css.navHomeBtn} aria-label="Dashboard">
+        <Link
+          to="/dashboard"
+          className={css.navHomeBtn}
+          aria-label="Dashboard"
+          data-skip-link-exclude
+        >
           <HomeIcon />
         </Link>
       )}
@@ -56,6 +66,7 @@ export function SectionHeading({
         aria-label="Menu"
         aria-haspopup="true"
         onClick={onOpenMenu}
+        data-skip-link-exclude
       >
         <HamburgerIcon />
       </button>

@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 const app = initializeApp({
@@ -13,6 +14,7 @@ const app = initializeApp({
 });
 
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 let emulatorConnected = false;
 if (
@@ -22,6 +24,7 @@ if (
 ) {
   emulatorConnected = true;
   connectAuthEmulator(auth, "http://localhost:9099");
+  connectFirestoreEmulator(db, "localhost", 8080);
 }
 
 let analyticsPromise: Promise<Analytics | null> | null = null;

@@ -1,0 +1,39 @@
+import type { DocType, MigrationFn } from "./types";
+
+const registry = new Map<string, MigrationFn>();
+
+export function registerMigration(
+  docType: DocType,
+  fromVersion: number,
+  fn: MigrationFn,
+): void {
+  registry.set(`${docType}:${fromVersion}`, fn);
+}
+
+// Test-only escape hatch (no production caller). Lets per-test setup register
+// throwing migrations and the next test reset cleanly.
+export function _resetRegistryForTests(): void {
+  registry.clear();
+}
+
+export function migrateDocument(
+  docType: DocType,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  let current = data;
+  let version =
+    typeof current.version === "number" ? (current.version as number) : 1;
+  while (registry.has(`${docType}:${version}`)) {
+    current = registry.get(`${docType}:${version}`)!(current);
+    version++;
+    current.version = version;
+  }
+  return current;
+}
+
+export function docTypeFromPath(path: string): DocType {
+  if (path.endsWith("/profile")) return "userProfile";
+  if (path.includes("/wellnessEntries/")) return "wellnessEntry";
+  if (path.includes("/performanceEntries/")) return "performanceEntry";
+  throw new Error(`Unknown document path: ${path}`);
+}

@@ -1,3 +1,35 @@
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-semibold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-extrabold.woff2') format('woff2');
+}
+
 :root {
   /* Color tokens (from prototype 2026-04-27) */
   --bg:        #080A0E;

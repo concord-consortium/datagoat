@@ -5,9 +5,13 @@ import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
-// Routes that opt out of the AppHeader (currently just the dashboard, which
-// has its own header-slide carousel landed in a later step).
-const HIDE_HEADER_PATHS = new Set<string>(["/dashboard"]);
+// Routes that opt out of the AppHeader. Per spec the dashboard owns its
+// own header-slide carousel and replaces AppHeader; this set is the
+// dashboard-step's eventual exclusion target. While the dashboard is still
+// a <ScreenStub /> in this foundation session, leave the set empty so the
+// hamburger trigger is reachable from /dashboard. The dashboard step adds
+// '/dashboard' here when the carousel lands.
+const HIDE_HEADER_PATHS = new Set<string>();
 
 // Auth-time routes don't render the hamburger trigger - they get plain auth
 // chrome instead. AppShell still hosts the menu state so any rendered

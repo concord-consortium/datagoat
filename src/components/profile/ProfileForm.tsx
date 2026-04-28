@@ -186,9 +186,8 @@ export function ProfileForm() {
           <TextField
             id="profile-age"
             label="Age"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={3}
+            type="number"
+            min={0}
             short
             required
             value={watched.age ?? ""}
@@ -202,9 +201,8 @@ export function ProfileForm() {
           <TextField
             id="profile-height-ft"
             label="Height"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={1}
+            type="number"
+            min={0}
             short
             required
             value={watched.heightFt ?? ""}
@@ -215,9 +213,8 @@ export function ProfileForm() {
           <TextField
             id="profile-height-in"
             label="In"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={2}
+            type="number"
+            min={0}
             short
             required
             ariaLabel="Height inches"
@@ -232,9 +229,8 @@ export function ProfileForm() {
           <TextField
             id="profile-weight"
             label="Weight"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={3}
+            type="number"
+            min={0}
             short
             required
             value={watched.weight ?? ""}

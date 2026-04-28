@@ -12,6 +12,11 @@ export interface TextFieldProps {
   inputMode?: "text" | "decimal" | "numeric" | "tel" | "email" | "url";
   pattern?: string;
   maxLength?: number;
+  // type="number" attrs - forwarded onto the <input>. min/max default to
+  // unset (no enforcement); step defaults to "any".
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
   placeholder?: string;
   short?: boolean;
   ariaLabel?: string;
@@ -51,6 +56,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       inputMode,
       pattern,
       maxLength,
+      min,
+      max,
+      step,
       placeholder,
       short,
       ariaLabel,
@@ -102,6 +110,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           inputMode={inputMode}
           pattern={pattern}
           maxLength={maxLength}
+          min={min}
+          max={max}
+          step={step}
           placeholder={placeholder}
           aria-required={required || undefined}
           aria-invalid={error ? true : undefined}

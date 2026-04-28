@@ -8,11 +8,15 @@ import { z } from "zod";
 // gets a numeric keypad on iOS/Android without losing copy/paste); the schema
 // coerces the string to a number so the writer hands typed data to Firestore.
 
+// Validates a numeric string from a <input type="number">. Required +
+// non-negative, no upper bound. type="number" inputs surface their value
+// as a string (RHF default), so we coerce + range-check here.
 const numericString = (label: string) =>
   z
     .string()
     .min(1, `${label} is required`)
-    .refine((s) => /^\d+$/.test(s), `${label} must be a whole number`);
+    .refine((s) => /^\d+(\.\d+)?$/.test(s), `${label} must be a number`)
+    .refine((s) => Number(s) >= 0, `${label} must be 0 or greater`);
 
 export const profileSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
@@ -22,22 +26,10 @@ export const profileSchema = z.object({
   // Resolver<TInput, _, TOutput> divergence when the schema has a
   // default()).
   nickname: z.string(),
-  age: numericString("Age").refine((s) => {
-    const n = Number(s);
-    return n >= 5 && n <= 100;
-  }, "Age must be between 5 and 100"),
-  heightFt: numericString("Height (ft)").refine((s) => {
-    const n = Number(s);
-    return n >= 3 && n <= 8;
-  }, "Height in feet must be between 3 and 8"),
-  heightIn: numericString("Height (in)").refine((s) => {
-    const n = Number(s);
-    return n >= 0 && n <= 11;
-  }, "Height in inches must be between 0 and 11"),
-  weight: numericString("Weight").refine((s) => {
-    const n = Number(s);
-    return n >= 50 && n <= 500;
-  }, "Weight must be between 50 and 500 lbs"),
+  age: numericString("Age"),
+  heightFt: numericString("Height (ft)"),
+  heightIn: numericString("Height (in)"),
+  weight: numericString("Weight"),
   gender: z.enum(["male", "female", "non-binary", "unspecified"], {
     message: "Please select a gender",
   }),

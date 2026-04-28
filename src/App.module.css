@@ -2,25 +2,16 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 640px;
+  max-width: 440px;
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
-  background: #ffffff;
+  background: var(--bg);
+  color: var(--text);
   overflow: auto;
 }
 
 .app:focus-visible {
-  outline: 2px solid #0693e3;
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
-}
-
-.footer {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
-  padding: 1rem;
-  font-size: 0.75rem;
-  color: #999;
-  text-align: center;
 }

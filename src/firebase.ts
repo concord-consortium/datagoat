@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 const app = initializeApp({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -8,6 +9,7 @@ const app = initializeApp({
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 });
 
 export const auth = getAuth(app);
@@ -20,4 +22,15 @@ if (
 ) {
   emulatorConnected = true;
   connectAuthEmulator(auth, "http://localhost:9099");
+}
+
+let analyticsPromise: Promise<Analytics | null> | null = null;
+
+export function getAnalyticsLazy(): Promise<Analytics | null> {
+  if (analyticsPromise === null) {
+    analyticsPromise = isSupported()
+      .then((supported) => (supported ? getAnalytics(app) : null))
+      .catch(() => null);
+  }
+  return analyticsPromise;
 }

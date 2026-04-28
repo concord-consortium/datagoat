@@ -1,0 +1,234 @@
+/* AuthLayout - dark-theme container for /login, /signup, /forgot-password,
+   /verify-email. Ports the prototype's auth-screen chrome (header zone with
+   brand mark, animated accent line, auth heading, content scroll block,
+   form-area). The skip link itself lives in common.module.css; AuthLayout
+   pins id="main-content" + tabIndex={-1} on the form-area target so the
+   anchor jump lands focus there programmatically. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  position: relative;
+  background: var(--bg);
+}
+
+.headerZone {
+  padding: 18px 24px 24px;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.headerZone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(0, 80, 100, 0.18) 0%, transparent 60%);
+  clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+  pointer-events: none;
+}
+
+.identityBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandLogoImg {
+  width: 48px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.wordmarkRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.wordmark {
+  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-size: 52px;
+  line-height: 1;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wordmark .data {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-right: 1px;
+}
+
+.wordmark .goat {
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+}
+
+.wordmark .goatG {
+  margin-right: 1px;
+}
+
+.wordmark .goatT {
+  margin-left: -0.077em;
+}
+
+.tagline {
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--subtext);
+  line-height: 1.45;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+@keyframes accent-grow {
+  0%   { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes accent-shimmer {
+  0%   { background-position: 200% 0, 0 0; }
+  40%  { background-position: -100% 0, 0 0; }
+  100% { background-position: -100% 0, 0 0; }
+}
+
+.accentLine {
+  height: 2px;
+  flex-shrink: 0;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100%),
+    linear-gradient(90deg, var(--accent) 0%, rgba(0, 179, 192, 0.4) 60%, transparent 100%);
+  background-size: 50% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+  background-position: -100% 0, 0 0;
+  margin: 0;
+  animation:
+    accent-grow var(--dur-carousel-x) var(--ease-out) 100ms both,
+    accent-shimmer 6s var(--ease-in-out) 1.5s infinite;
+  position: relative;
+  z-index: 3;
+}
+
+.contentBlock {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  position: relative;
+}
+
+.contentBlock::-webkit-scrollbar {
+  display: none;
+}
+
+.contentBlock::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  display: block;
+  height: 16px;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.authHeading {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text);
+  margin: 8px 24px 0;
+}
+
+.authSubtext {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.45;
+  text-align: left;
+  margin: 0 0 20px;
+}
+
+.authAltLink {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--subtext);
+  font-size: 16px;
+}
+
+.authSwitchBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 2px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.authSwitchBtn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  min-width: 44px;
+  height: 44px;
+}
+
+.authSwitchBtn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  filter: brightness(1.2);
+}
+
+.authSwitchBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.confirmIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.formArea {
+  padding: 16px 24px 100px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accentLine {
+    animation: none;
+    /* Render the end state of accent-grow (full width) so the line is visible */
+    background-position: 0 0, 0 0;
+  }
+}

@@ -58,13 +58,17 @@ Each component has its own CSS Module file next to it. To change how a specific 
 
 | To style... | Edit this file |
 |---|---|
-| Login form (buttons, inputs, labels, layout) | `src/components/Login.module.css` |
-| Authenticated view (user info display) | `src/components/Authed.module.css` |
-| Sign-out button | `src/components/Logout.module.css` |
+| Login form layout overrides | `src/components/auth/LoginForm.module.css` |
+| Signup form layout overrides | `src/components/auth/SignupForm.module.css` |
+| Auth-screen chrome (logo, accent line, headings) | `src/components/auth/AuthLayout.module.css` |
+| Social sign-in buttons + "or" divider | `src/components/auth/SocialButtons.module.css` |
+| Password input + eye toggle + forgot link | `src/components/auth/PasswordField.module.css` |
+| Field primitives (input, label, error, hint) | `src/components/form/fields.module.css` |
+| CTA buttons (primary teal, secondary outline) | `src/components/form/buttons.module.css` |
 | Loading screen | `src/components/Loading.module.css` |
-| App container and version footer | `src/App.module.css` |
-| Shared layout (centered containers, page titles) | `src/components/common.module.css` |
-| Page background, responsive breakpoints, borders | `src/index.css` |
+| App container | `src/App.module.css` |
+| Shared utilities (visually-hidden, skip link) | `src/components/common.module.css` |
+| Page background, responsive breakpoints, design tokens | `src/index.css` |
 
 ### How to change a component's style
 

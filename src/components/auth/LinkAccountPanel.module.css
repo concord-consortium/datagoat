@@ -1,0 +1,33 @@
+/* LinkAccountPanel — inline linking-mode view shown when
+   auth/account-exists-with-different-credential fires. Designed against
+   existing tokens; reuses .ctaBtn / .socialBtn / .fieldInput / .authHeading
+   from shared modules. Layout-only rules live here. */
+
+.panelHeading {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.panelBody {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.45;
+  margin: 0 0 16px;
+}
+
+.providerLabel {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.cancelRow {
+  text-align: center;
+  margin-top: 20px;
+}

@@ -2,23 +2,30 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AppShell } from "./AppShell";
 import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 import { RedirectIfAuthed } from "../components/auth/RedirectIfAuthed";
-import { Login } from "../components/Login";
+import { LoginForm } from "../components/auth/LoginForm";
+import { SignupForm } from "../components/auth/SignupForm";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        {/* Auth routes - existing Login.tsx until the auth-screens step rewrites
-            them into separate LoginForm / SignupForm / ForgotPassword /
-            EmailVerification components. RedirectIfAuthed sends signed-in
-            users on to /dashboard so signInWithPopup success actually leaves
-            the login screen. */}
+        {/* Auth routes — LoginForm + SignupForm landed in Step 7;
+            ForgotPassword + EmailVerification land in Step 8 (still stubbed
+            via SignupForm so the routes are reachable for now).
+            RedirectIfAuthed sends signed-in users on to /dashboard so
+            signInWithPopup success actually leaves the auth screen. */}
         <Route element={<RedirectIfAuthed />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Login />} />
-          <Route path="/forgot-password" element={<Login />} />
-          <Route path="/verify-email" element={<Login />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/signup" element={<SignupForm />} />
+          <Route
+            path="/forgot-password"
+            element={<ScreenStub name="ForgotPassword" />}
+          />
+          <Route
+            path="/verify-email"
+            element={<ScreenStub name="EmailVerification" />}
+          />
         </Route>
 
         {/* Authed routes. Onboarding-route gating arrives with UserContext. */}

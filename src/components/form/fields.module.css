@@ -1,0 +1,156 @@
+/* Shared field primitives ported from prototype 2026-04-27.
+   First consumers are LoginForm / SignupForm / ForgotPassword (auth screens
+   step). ProfileForm + log screens consume the same module in later steps. */
+
+.fieldWrap {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.fieldLabel {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.requiredMark {
+  color: var(--accent);
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.labelRow .fieldLabel {
+  margin-bottom: 0;
+}
+
+.fieldInput {
+  width: 100%;
+  min-height: 48px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;  /* 3.06:1 UI contrast */
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur-base) var(--ease-default),
+              box-shadow var(--dur-base) var(--ease-default);
+}
+
+.fieldInput:hover {
+  border-color: var(--accent);
+}
+
+.fieldInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.fieldInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.fieldInput::placeholder {
+  color: #7A8DA6;  /* 5.10:1 on surface2 */
+}
+
+.fieldInput.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.fieldInput.hasValue:hover {
+  border-color: var(--accent);
+}
+
+.fieldInput.hasValue:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.fieldInput.short {
+  max-width: 120px;
+}
+
+.fieldInput.fieldError {
+  border-color: #E5484D;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.18);
+}
+
+.fieldInput.fieldError:focus {
+  border-color: #E5484D;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.25);
+}
+
+.fieldErrorMsg {
+  font-family: 'Barlow', sans-serif;
+  color: #F98080;
+  font-size: 16px;
+  margin: 6px 0 0;
+}
+
+.fieldHint {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--subtext);
+  margin: 6px 0 0;
+  max-width: 194px;
+}
+
+.fieldSelect {
+  width: 100%;
+  min-height: 48px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.fieldInfoBtn {
+  flex-shrink: 0;
+  width: 44px;
+  min-height: 44px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  color: var(--subtext);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--dur-quick), border-color var(--dur-quick),
+              background var(--dur-quick);
+}
+
+.fieldInfoBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(0, 179, 192, 0.12);
+}
+
+.fieldInfoBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

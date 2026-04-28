@@ -13,7 +13,7 @@ function Harness({
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  variant?: "centered" | "drawer";
+  variant?: "centered" | "topSheet";
 }) {
   return (
     <Dialog open={open} onClose={onClose} title="Test" variant={variant}>
@@ -125,23 +125,6 @@ describe("Dialog", () => {
     });
     expect(document.activeElement).toBe(trigger);
     document.body.removeChild(trigger);
-  });
-
-  it("locks body scroll while open and restores on close", () => {
-    document.body.style.overflow = "auto";
-    const onClose = vi.fn();
-    const { rerender } = render(
-      <Harness open onClose={onClose}>
-        <button>x</button>
-      </Harness>,
-    );
-    expect(document.body.style.overflow).toBe("hidden");
-    rerender(
-      <Harness open={false} onClose={onClose}>
-        <button>x</button>
-      </Harness>,
-    );
-    expect(document.body.style.overflow).toBe("auto");
   });
 
   it("has role=dialog, aria-modal=true, and aria-labelledby pointing at title", () => {

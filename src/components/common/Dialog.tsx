@@ -14,7 +14,7 @@ interface DialogProps {
   onClose: () => void;
   title: string;
   titleVisuallyHidden?: boolean;
-  variant?: "centered" | "drawer";
+  variant?: "centered" | "topSheet";
   children: ReactNode;
 }
 
@@ -56,9 +56,6 @@ export function Dialog({
       surface.focus();
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.key === "Escape") {
         e.stopPropagation();
@@ -69,7 +66,6 @@ export function Dialog({
 
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
       if (previouslyFocused && typeof previouslyFocused.focus === "function") {
         previouslyFocused.focus();
       }
@@ -103,9 +99,9 @@ export function Dialog({
     }
   }
 
-  const layoutClass = variant === "drawer" ? css.drawer : css.centered;
+  const layoutClass = variant === "topSheet" ? css.topSheet : css.centered;
   const surfaceClass =
-    variant === "drawer" ? css.dialogSurfaceDrawer : css.dialogSurfaceCentered;
+    variant === "topSheet" ? css.dialogSurfaceTopSheet : css.dialogSurfaceCentered;
 
   return (
     <div

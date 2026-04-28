@@ -1,8 +1,14 @@
+/* Backdrop is position: absolute (not fixed) so it scopes to its nearest
+   positioned ancestor. AppShell mounts the HamburgerMenu's Dialog inside
+   <main> (position: relative), so the overlay covers the content area
+   only and the AppHeader stays visible above it. The same primitive
+   inside the .app container (max-width 440px, position: relative) keeps
+   the menu inside the column on desktop. */
 .dialogBackdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 1000;
+  background: rgba(8, 10, 14, 0.85);
+  z-index: 50;
   display: flex;
   animation: fadeIn var(--dur-base) var(--ease-out);
 }
@@ -12,9 +18,15 @@
   justify-content: center;
 }
 
-.drawer {
-  align-items: stretch;
-  justify-content: flex-end;
+/* topSheet: a top-anchored panel that drops in from above
+   (translateY(-100%) -> translateY(0)) inside its container. Material
+   Design's "top sheet" — paired conceptually with bottom-sheet and
+   side-sheet. Used by the prototype's .nav-menu and any future
+   top-anchored overlay (notifications, banners, etc.). */
+.topSheet {
+  align-items: flex-start;
+  justify-content: stretch;
+  flex-direction: column;
 }
 
 .dialogSurfaceCentered {
@@ -31,17 +43,19 @@
   animation: rise var(--dur-base) var(--ease-out);
 }
 
-.dialogSurfaceDrawer {
+.dialogSurfaceTopSheet {
   position: relative;
-  background: var(--surface);
+  background: var(--surface2);
   color: var(--text);
-  border-left: 1px solid var(--border);
-  height: 100%;
-  width: min(85%, 320px);
-  padding: 24px 16px;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
-  animation: drawerSlideIn var(--dur-base) var(--ease-out);
-  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  margin: 0 12px;
+  width: calc(100% - 24px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: topSheetSlideDown var(--dur-base) var(--ease-out);
+  transform-origin: top center;
 }
 
 .dialogTitle {
@@ -64,15 +78,15 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes drawerSlideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+@keyframes topSheetSlideDown {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dialogBackdrop,
   .dialogSurfaceCentered,
-  .dialogSurfaceDrawer {
+  .dialogSurfaceTopSheet {
     animation: none;
   }
 }

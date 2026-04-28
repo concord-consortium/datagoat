@@ -1,6 +1,14 @@
-import { Link } from "react-router-dom";
+import type { ComponentType, SVGProps } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Dialog } from "../common/Dialog";
 import { useAuth } from "../../contexts/AuthContext";
+import HomeIcon from "@/icons/home.svg?react";
+import CalendarIcon from "@/icons/calendar.svg?react";
+import StopwatchIcon from "@/icons/stopwatch.svg?react";
+import ProfilePersonIcon from "@/icons/profile-person.svg?react";
+import GearIcon from "@/icons/gear.svg?react";
+import InfoCircleIcon from "@/icons/info-circle.svg?react";
+import LogoutIcon from "@/icons/logout.svg?react";
 import css from "./HamburgerMenu.module.css";
 
 interface HamburgerMenuProps {
@@ -11,13 +19,19 @@ interface HamburgerMenuProps {
   isOnboarding?: boolean;
 }
 
-const ITEMS: Array<{ label: string; to: string }> = [
-  { label: "Dashboard", to: "/dashboard" },
-  { label: "Health & Wellness Log", to: "/wellness" },
-  { label: "Performance Log", to: "/performance" },
-  { label: "Profile", to: "/profile" },
-  { label: "Tracked Data Setup", to: "/setup/tracking" },
-  { label: "About", to: "/about" },
+interface MenuItem {
+  label: string;
+  to: string;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+}
+
+const ITEMS: MenuItem[] = [
+  { label: "Dashboard", to: "/dashboard", Icon: HomeIcon },
+  { label: "Health & Wellness Log", to: "/wellness", Icon: CalendarIcon },
+  { label: "Performance Log", to: "/performance", Icon: StopwatchIcon },
+  { label: "Profile", to: "/profile", Icon: ProfilePersonIcon },
+  { label: "Tracked Data Setup", to: "/setup/tracking", Icon: GearIcon },
+  { label: "About", to: "/about", Icon: InfoCircleIcon },
 ];
 
 export function HamburgerMenu({
@@ -26,6 +40,7 @@ export function HamburgerMenu({
   isOnboarding = false,
 }: HamburgerMenuProps) {
   const { signOut } = useAuth();
+  const { pathname } = useLocation();
 
   function handleNavigate() {
     onClose();
@@ -42,30 +57,40 @@ export function HamburgerMenu({
       onClose={onClose}
       title="Navigation menu"
       titleVisuallyHidden
-      variant="drawer"
+      variant="topSheet"
     >
       <ul className={css.menuList}>
-        {ITEMS.map((item) => (
-          <li
-            key={item.to}
-            className={`${css.menuItem} ${isOnboarding ? css.menuItemDisabled : ""}`}
-          >
-            <Link
-              to={item.to}
-              className={css.menuLink}
-              aria-disabled={isOnboarding || undefined}
-              onClick={handleNavigate}
+        {ITEMS.map(({ label, to, Icon }) => {
+          const isActive = pathname === to;
+          return (
+            <li
+              key={to}
+              className={`${css.menuItem} ${isOnboarding ? css.menuItemDisabled : ""}`}
             >
-              {item.label}
-            </Link>
-          </li>
-        ))}
-        <li className={`${css.menuItem} ${css.signOutItem}`}>
+              <Link
+                to={to}
+                className={`${css.navItem} ${isActive ? css.active : ""}`}
+                aria-current={isActive ? "page" : undefined}
+                aria-disabled={isOnboarding || undefined}
+                onClick={handleNavigate}
+              >
+                <span className={css.navItemIcon}>
+                  <Icon />
+                </span>
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+        <li className={css.menuItem}>
           <button
             type="button"
-            className={css.menuButton}
+            className={css.navItem}
             onClick={handleSignOut}
           >
+            <span className={css.navItemIcon}>
+              <LogoutIcon />
+            </span>
             Log Out
           </button>
         </li>

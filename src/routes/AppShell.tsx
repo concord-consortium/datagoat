@@ -38,13 +38,28 @@ export function AppShell() {
       </a>
       {showHeader && (
         <header>
-          <AppHeader onOpenMenu={() => setMenuOpen(true)} />
+          <AppHeader
+            menuOpen={menuOpen}
+            onToggleMenu={() => setMenuOpen((o) => !o)}
+          />
         </header>
       )}
       <main id="main-content" tabIndex={0} className={css.main}>
-        <Outlet context={{ openMenu: () => setMenuOpen(true) }} />
+        <Outlet
+          context={{
+            menuOpen,
+            toggleMenu: () => setMenuOpen((o) => !o),
+          }}
+        />
+        {/* Mounted inside <main> so the Dialog's absolute-positioned
+            backdrop scopes to the content area below the AppHeader,
+            matching the prototype's "menu drops below the section
+            heading; header stays visible" pattern. */}
+        <HamburgerMenu
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
       </main>
-      <HamburgerMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
   );
 }

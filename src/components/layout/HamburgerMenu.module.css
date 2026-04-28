@@ -10,48 +10,71 @@
   display: flex;
 }
 
-.menuLink,
-.menuButton {
+/* Ported from prototype's .nav-item: Barlow Condensed uppercase label,
+   icon + text row, 14x18 padding, min-height 44px touch target,
+   border-bottom between rows, hover rgba(0,179,192,0.12). */
+.navItem {
   appearance: none;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  text-align: left;
-  background: transparent;
-  color: var(--text);
+  min-height: 44px;
+  padding: 14px 18px;
+  background: none;
   border: none;
-  padding: 14px 8px;
-  font-family: 'Barlow', sans-serif;
-  font-size: 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
-  border-bottom: 1px solid var(--surface2);
   transition: background var(--dur-quick) var(--ease-default);
 }
 
-.menuLink:hover,
-.menuButton:hover {
+.menuItem:last-child .navItem {
+  border-bottom: none;
+}
+
+.navItem:hover {
   background: rgba(0, 179, 192, 0.12);
 }
 
-.menuLink:focus-visible,
-.menuButton:focus-visible {
+.navItem:focus-visible {
   outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
+  outline-offset: -3px;
 }
 
-.menuItemDisabled .menuLink,
-.menuItemDisabled .menuButton {
+.navItem.active {
+  color: var(--accent);
+}
+
+.navItemIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--subtext);
+}
+
+.navItem.active .navItemIcon {
+  color: var(--accent);
+}
+
+.menuItemDisabled .navItem {
   color: var(--muted);
   pointer-events: none;
 }
 
-.signOutItem {
-  margin-top: 16px;
+.menuItemDisabled .navItemIcon {
+  color: var(--muted);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .menuLink,
-  .menuButton {
+  .navItem {
     transition: none;
   }
 }

@@ -2,10 +2,11 @@ import HamburgerIcon from "@/icons/hamburger.svg?react";
 import css from "./AppHeader.module.css";
 
 interface AppHeaderProps {
-  onOpenMenu: () => void;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
 }
 
-export function AppHeader({ onOpenMenu }: AppHeaderProps) {
+export function AppHeader({ menuOpen, onToggleMenu }: AppHeaderProps) {
   return (
     <div className={css.appHeader}>
       <h1 className={css.appWordmark}>DataGOAT</h1>
@@ -15,7 +16,8 @@ export function AppHeader({ onOpenMenu }: AppHeaderProps) {
         className={css.menuBtn}
         aria-label="Menu"
         aria-haspopup="true"
-        onClick={onOpenMenu}
+        aria-expanded={menuOpen}
+        onClick={onToggleMenu}
       >
         <HamburgerIcon />
       </button>

@@ -13,6 +13,17 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_BUILD_TIME": JSON.stringify(new Date().toISOString()),
   },
+  // Cross-Origin-Opener-Policy: 'same-origin' (browser default in some
+  // contexts) blocks Firebase signInWithPopup from completing the
+  // window.close handshake with the OAuth popup. 'same-origin-allow-popups'
+  // keeps the same-origin isolation for the main page while letting Firebase
+  // talk to its own popup. Firebase Hosting gets the same header in
+  // firebase.json.
+  server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
+  },
   plugins: [
     react(),
     svgr({

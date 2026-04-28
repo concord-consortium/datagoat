@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppShell } from "./AppShell";
 import { ProtectedRoute } from "../components/auth/ProtectedRoute";
+import { RedirectIfAuthed } from "../components/auth/RedirectIfAuthed";
 import { Login } from "../components/Login";
 import { ScreenStub } from "../components/ScreenStub";
 
@@ -10,11 +11,15 @@ export function AppRoutes() {
       <Route element={<AppShell />}>
         {/* Auth routes - existing Login.tsx until the auth-screens step rewrites
             them into separate LoginForm / SignupForm / ForgotPassword /
-            EmailVerification components. */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Login />} />
-        <Route path="/forgot-password" element={<Login />} />
-        <Route path="/verify-email" element={<Login />} />
+            EmailVerification components. RedirectIfAuthed sends signed-in
+            users on to /dashboard so signInWithPopup success actually leaves
+            the login screen. */}
+        <Route element={<RedirectIfAuthed />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Login />} />
+          <Route path="/forgot-password" element={<Login />} />
+          <Route path="/verify-email" element={<Login />} />
+        </Route>
 
         {/* Authed routes. Onboarding-route gating arrives with UserContext. */}
         <Route element={<ProtectedRoute />}>

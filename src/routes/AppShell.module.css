@@ -9,7 +9,9 @@
   position: relative;
   flex: 1;
   overflow: auto;
-  background: var(--bg);
+  /* Background omitted on purpose so the .app::before ambient teal tint
+     (port of prototype's .phone::before) shows through. The .app column
+     itself supplies var(--bg) below the gradient. */
   color: var(--text);
 }
 

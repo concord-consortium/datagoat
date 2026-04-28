@@ -9,6 +9,8 @@ import css from "./AuthLayout.module.css";
 // <link rel="preload" as="image" href="/icons/datagoat-logo-login.svg">
 // already in index.html (Foundations step).
 const datagoatLogoLogin = "/icons/datagoat-logo-login.svg";
+const concordLogo = "/icons/concord-logo.svg";
+const speedLines = "/icons/speed-lines.svg";
 
 interface AuthLayoutProps {
   heading: string;
@@ -25,6 +27,16 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
       </a>
 
       <div className={css.headerZone}>
+        {/* Diagonal speed-lines port of the prototype's `.speed-lines`
+            decoration. Mounted inside the headerZone so the zone's
+            overflow:hidden clips the bottom edge flush with the top of
+            the accent line. aria-hidden because purely decorative. */}
+        <img
+          className={css.speedLines}
+          src={speedLines}
+          alt=""
+          aria-hidden="true"
+        />
         <div className={css.identityBar}>
           <div className={css.brandRow} aria-label="DataGOAT">
             <img
@@ -32,6 +44,9 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
               src={datagoatLogoLogin}
               alt="DataGOAT logo"
             />
+          </div>
+          <div className={css.concordLogoWrap} aria-label="Concord Consortium">
+            <img src={concordLogo} alt="Concord Consortium" />
           </div>
         </div>
 

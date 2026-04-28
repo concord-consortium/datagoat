@@ -12,6 +12,29 @@
   overflow: hidden;
 }
 
+/* Top-of-column ambient teal tint, port of prototype's .phone::before.
+   Renders from y=0 down 210px (the prototype's 260px reaches too far
+   into our column; this height keeps the visible portion confined to
+   the header zone area). Alphas match the prototype's literal values
+   exactly. z-index: 0 keeps it behind in-flow content but above the
+   column's bg. */
+.app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 210px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 90, 115, 0.7) 0%,
+    rgba(0, 70, 90, 0.45) 45%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 @media (min-width: 1024px) {
   .app {
     height: 95vh;

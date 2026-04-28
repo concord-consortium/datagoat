@@ -7,12 +7,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` - Vite dev server (port 5173)
 - `npm run build` - TypeScript check + production Vite build
 - `npm run preview` - Preview production build locally
-- `npm run emulators` - Firebase emulators (Auth 9099, Firestore 8080, Hosting 5000)
-- `npm run deploy` - Build and deploy to Firebase Hosting
+- `npm run emulators` - Firebase emulators (Auth 9099, Firestore 8080, Functions 5001, Hosting 5000)
+- `npm run deploy` - Build and deploy hosting + functions + Firestore rules
+- `npm run deploy:functions` - Redeploy only the Cloud Functions (e.g., to flip a kill-switch param)
 
-Local dev requires two terminals: `npm run emulators` and `npm run dev`. Set `VITE_USE_EMULATORS=true` in `.env.local` to connect to emulators.
+Local dev requires two terminals: `npm run emulators` and `npm run dev`. Set `VITE_USE_EMULATORS=true` in `.env.local` to connect to emulators. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.
 
-No test framework is configured yet. No linter is configured.
+No linter is configured. Tests run via `npm test` (Vitest, colocated `*.test.ts` / `*.test.tsx`).
+
+### Cloud Functions — Identity Platform requirement
+
+The `beforeUserCreated` blocking trigger that rejects Facebook sign-ins missing an email (`functions/src/auth/blockFacebookMissingEmail.ts`) requires Firebase Identity Platform. Before the first `firebase deploy --only functions` succeeds, an admin must upgrade the project once via the Firebase console: **Auth → Settings → "Upgrade to Identity Platform"**. Free tier covers up to 50K MAU. Without the upgrade, blocking-function deploys fail with an explicit Identity Platform error from the CLI. The local emulator runs the trigger regardless of upgrade state.
+
+Kill switch: the trigger reads a `FACEBOOK_BLOCKER_ENABLED` runtime parameter (default `'true'`); set it to `'false'` in the Firebase console (Functions → Configuration) and run `npm run deploy:functions` to disable the rule without a code change. Existing instances pick up the new value on next cold-start.
 
 ## Architecture
 

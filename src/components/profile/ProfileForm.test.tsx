@@ -125,9 +125,11 @@ describe("ProfileForm mode derivation", () => {
     expect(
       document.getElementById("profile-fullname"),
     ).toHaveValue("Existing User");
-    expect(document.getElementById("profile-email")).toHaveValue(
-      "u@example.com",
-    );
+    // Email is rendered as read-only "Signed in as ..." text from
+    // useAuth().user.email, not as a form input. Confirm the read-only
+    // display is present.
+    expect(screen.getByText(/signed in as/i)).toBeInTheDocument();
+    expect(screen.getByText("u@example.com")).toBeInTheDocument();
   });
 });
 
@@ -240,7 +242,6 @@ function setSelectById(id: string, value: string) {
 
 function fillRequiredOnboardingFields() {
   setInputById("profile-fullname", "Test Athlete");
-  setInputById("profile-email", "athlete@example.com");
   setInputById("profile-age", "18");
   setInputById("profile-height-ft", "5");
   setInputById("profile-height-in", "9");

@@ -20,7 +20,13 @@ const numericString = (label: string) =>
 
 export const profileSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
-  email: z.string().email("Please enter a valid email address"),
+  // Email is NOT collected as a form field. Firebase Auth is the
+  // canonical source (set during signup or OAuth); ProfileForm renders
+  // it as read-only "Signed in as ..." muted text above the form. On
+  // submit, the user's auth.email is copied into the Firestore profile
+  // .email field for self-containment, but it's never editable here.
+  // A future "change email" flow would go through Firebase's re-auth
+  // + updateEmail() pattern in its own surface.
   // Optional nickname - default to empty string if blank rather than
   // undefined so the form value type stays string-only (avoids
   // Resolver<TInput, _, TOutput> divergence when the schema has a

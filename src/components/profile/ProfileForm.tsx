@@ -42,7 +42,6 @@ export function ProfileForm() {
     if (profile) {
       return {
         fullName: profile.fullName ?? "",
-        email: profile.email ?? user?.email ?? "",
         nickname: profile.nickname ?? "",
         age: profile.age ? String(profile.age) : "",
         heightFt: profile.heightFt ? String(profile.heightFt) : "",
@@ -55,7 +54,6 @@ export function ProfileForm() {
     }
     return {
       fullName: user?.displayName ?? "",
-      email: user?.email ?? "",
       nickname: "",
       age: "",
       heightFt: "",
@@ -102,7 +100,11 @@ export function ProfileForm() {
 
     const profilePartial = {
       fullName: values.fullName,
-      email: values.email,
+      // Copy the auth-side email into the Firestore profile so other
+      // consumers (Dashboard, MetricDetail, future export flows) can
+      // read profile.email without a roundtrip through auth. The user
+      // never edits this on the screen - Firebase Auth is canonical.
+      email: user.email ?? "",
       nickname: values.nickname ?? "",
       age: Number(values.age),
       heightFt: Number(values.heightFt),
@@ -142,6 +144,17 @@ export function ProfileForm() {
         </p>
       )}
 
+      {/* Account context. Email is set when the user signed up (or chose
+          an OAuth provider) and is canonically held by Firebase Auth -
+          read-only display here, no edit affordance. A future
+          "change email" flow would re-auth + call updateEmail() in its
+          own surface. */}
+      {user?.email && (
+        <p className={css.signedInAs}>
+          Signed in as <strong>{user.email}</strong>
+        </p>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <TextField
           id="profile-fullname"
@@ -154,23 +167,12 @@ export function ProfileForm() {
           {...register("fullName")}
         />
 
-        <TextField
-          id="profile-email"
-          label="Email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="you@school.edu"
-          value={watched.email ?? ""}
-          error={errors.email?.message}
-          {...register("email")}
-        />
-
-        {/* The prototype's #profile-screen renders a password field in
-            onboarding mode, but the React app collects email + password
-            during signup (SignupForm) before reaching /profile, so the
-            user is already authenticated. Re-collecting a password here
-            is dead UI - removed in the Step 9 audit follow-up. */}
+        {/* Email is NOT a form field. The prototype's #profile-screen
+            shows an editable email + a password field; the React app
+            relies on Firebase Auth as the canonical source for both,
+            so neither is editable here. Email is rendered above the
+            form as read-only "Signed in as ..." muted text; a future
+            change-email flow goes through re-auth + updateEmail(). */}
 
         <TextField
           id="profile-nickname"

@@ -14,6 +14,25 @@
   margin-bottom: 0;
 }
 
+/* "Signed in as ..." read-only account context above the form. No
+   prototype counterpart - the prototype's #profile-screen renders an
+   editable email + password field that the React app drops because
+   Firebase Auth is canonical. Visual: muted Barlow body text with a
+   bold-accent email; right under the welcome (or section heading in
+   edit mode). */
+.signedInAs {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--subtext);
+  margin: 0 0 18px;
+}
+
+.signedInAs strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
 /* .profile-welcome - prototype lines 918-927
    Onboarding-mode welcome block above the form fields. The prototype's
    `.profile-welcome.show` toggle is replaced by conditional render in JSX -

@@ -1,6 +1,7 @@
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { DataProvider } from "./contexts/DataContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import css from "./App.module.css";
 
@@ -13,7 +14,9 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <UserProvider>
-            <AppRoutes />
+            <DataProvider>
+              <AppRoutes />
+            </DataProvider>
           </UserProvider>
         </AuthProvider>
       </BrowserRouter>

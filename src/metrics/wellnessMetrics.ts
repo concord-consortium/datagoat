@@ -15,7 +15,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
       "State of total body water balance reflecting the relationship between fluid intake and fluid loss required to maintain normal physiological function and homeostasis. Hydration levels are best measured by urine color. Optimal hydration is indicated by pale yellow, similar to lemonade. Darker yellow or amber indicates a need for water, while, conversely, completely clear urine may indicate overhydration.",
     min: 1,
     max: 8,
-    inputType: "numeric",
+    inputType: "colorScale",
   },
   {
     id: "sleepTime",

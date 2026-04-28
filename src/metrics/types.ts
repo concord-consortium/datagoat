@@ -1,5 +1,5 @@
 export type MetricType = "wellness" | "performance";
-export type MetricInputType = "numeric" | "radio" | "tree";
+export type MetricInputType = "numeric" | "radio" | "tree" | "colorScale";
 
 export interface MetricDefinition {
   id: string;

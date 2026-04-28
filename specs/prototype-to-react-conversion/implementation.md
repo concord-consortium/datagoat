@@ -23,7 +23,7 @@ The prototype's vanilla-JS data structures (`window._wellnessData`, `_profileVar
 Every component step in this plan ports the corresponding prototype CSS rules into the component's `.module.css` file. The pattern, applied uniformly:
 
 - **Markup is ported by element ID or class** (e.g., "port `#login-panel`"). The prototype HTML is searchable by these identifiers, so no line numbers are quoted — they would drift as the prototype is updated.
-- **CSS rules are ported by class name**. Each step lists the prototype class names that move into its CSS Module under "CSS classes ported." Class names follow the prototype's BEM-ish naming (`.cta-btn`, `.field-input`, `.section-cal`, etc.) and convert to CSS Modules' camelCase (`cssClass.ctaBtn`, `cssClass.fieldInput`, `cssClass.sectionCal`) at the JSX-consumer site.
+- **CSS rules are ported by class name**. Each step lists the prototype class names that move into its CSS Module under "CSS classes ported." The prototype uses BEM-ish kebab-case (`.cta-btn`, `.field-input`, `.section-cal`); when ported into a `.module.css` file, the class name itself is rewritten to **camelCase in the CSS source** (`.ctaBtn`, `.fieldInput`, `.sectionCal`) so JSX consumers can reference them as `css.ctaBtn` without bracket-access — this is the convention this codebase uses across every CSS Module (including the pre-existing `common.module.css`). Vite's CSS Modules default doesn't auto-convert kebab to camel, and bracket access (`css['cta-btn']`) is uglier than camelCase at every call site, so we make the conversion in the CSS file. Reviewers verifying a port grep the kebab-case prototype class name, then look for the camelCased equivalent in the matching `.module.css`.
 - **Hardcoded values that match a token are replaced** with `var(--token)` references. (e.g., the prototype's `transition: background 150ms ease` becomes `transition: background var(--dur-quick) var(--ease-default)`.)
 - **Decorative / ambient `@keyframes` and long transitions are wrapped in `@media (prefers-reduced-motion: reduce)` blocks** that set them to `none` — per requirements "Reduced motion."
 - **Shared utility classes** (`.cta-btn`, `.cta-btn-secondary`, `.field-wrap`, `.field-input`, `.field-label`, `.field-error-msg`, `.field-hint`, `.field-select`, `.field-info-btn`, `.skip-link`, `.section-heading`, `.nav-menu-btn`, `.nav-home-btn`, `.back-nav-btn`, `.eye-btn`) live in shared CSS Modules introduced in the steps that first need them; subsequent steps import the shared module rather than re-porting the rule. Ownership is called out per step.
@@ -49,7 +49,7 @@ A reviewer can verify the port by grepping each prototype class name and checkin
 - `.env.example` — add `VITE_FIREBASE_MEASUREMENT_ID=` (empty placeholder). Required for Analytics events to actually flow; without it, `isSupported()` may still return true but `logEvent` calls land in the void. Implementor docs the value alongside the other Firebase env vars in `.env.local`. **Operator action**: confirm Analytics is enabled in the Firebase console (Analytics → "Get started" if it isn't) so the `app_error` events have a destination. If Analytics is intentionally disabled for the project, leave the env var empty — the `isSupported()` gate keeps `logError` clean.
 - `src/utils/logError.test.ts` — smoke test that `console.error` is called with both args; mock-based test that `logEvent` is **not** called when `import.meta.env.PROD === false` (covers dev/emulator no-op behavior); mock-based test that `logEvent` **is** called with the expected `app_error` event name and serialized payload when `import.meta.env.PROD === true` and `getAnalyticsLazy()` resolves to a non-null instance.
 - `src/components/common.module.css` — add `.visuallyHidden` utility (canonical clip-path rule from requirements) and `.skipLink` (the shared "Skip to main content" rule, visually-hidden until focused, jumps into view at top-left on focus). Both AppShell and AuthLayout consume `.skipLink` from this module.
-- `tsconfig.app.json` — add `"baseUrl": "."` + `"paths": { "@/*": ["src/*"] }` (used by svgr imports per spec) — and mirror in `vite.config.ts` via `resolve.alias`
+- `tsconfig.app.json` — add `"paths": { "@/*": ["./src/*"] }` (used by svgr imports per spec) — and mirror in `vite.config.ts` via `resolve.alias`. Note: `baseUrl` is **not** set; TypeScript 7.0 deprecates it (the IDE flags it as an error) and modern bundler-mode TS resolves `paths` relative to the tsconfig location automatically. The Vite config side is what actually drives module resolution at build time; the tsconfig `paths` entry is purely so the TS language server / `tsc -b` doesn't complain about the `@/...` imports.
 - `index.html` — add two `<link rel="preload" as="font" type="font/woff2" crossorigin>` tags (`barlow-regular.woff2` for body text and `barlow-condensed-extrabold.woff2` for the DataGOAT wordmark — these are the two faces visible above the fold on auth-screen first paint) + one `<link rel="preload" as="image" href="/icons/datagoat-logo-login.svg">` tag. The other two faces (`barlow-bold.woff2`, `barlow-condensed-semibold.woff2`) load via `@font-face` references at lower priority — they're not above-the-fold on first paint, and `font-display: swap` covers the brief gap with the fallback font. PWA offline behavior is unaffected: the SW `globPatterns` precache (`**/*.{js,css,ico,png,svg,woff2}` in `vite.config.ts`) caches all four faces regardless of preload tags.
 
 **Estimated diff size**: ~250 lines (most are CSS variable definitions copied from prototype `:root`)
@@ -60,7 +60,7 @@ A reviewer can verify the port by grepping each prototype class name and checkin
 
 *Body background unification.* The prototype renders inside a phone shell on a separate page-surround color. The React app drops the surround. Set `body { background: var(--bg) }` and remove the `#eef2f6` body color. The 440px column shares the same background as the body — no border, no shadow, no surround.
 
-*svgr template.* `vite.config.ts` configures svgr with a custom template that adds `aria-hidden="true"` to the root `<svg>`:
+*svgr config.* `vite.config.ts` configures svgr to inject `aria-hidden="true"` on the root `<svg>` of every generated component. The `svgrOptions.svgProps` shorthand is sufficient — no custom `template` function needed; svgr's default template spreads the `svgProps` onto the root element:
 
 ```ts
 // vite.config.ts (relevant excerpt)
@@ -68,13 +68,6 @@ import svgr from 'vite-plugin-svgr';
 
 svgr({
   svgrOptions: {
-    template: (variables, { tpl }) => tpl`
-      ${variables.imports};
-      const ${variables.componentName} = (${variables.props}) => (
-        ${variables.jsx}
-      );
-      ${variables.exports};
-    `,
     svgProps: { 'aria-hidden': 'true' },
   },
   include: '**/*.svg?react',

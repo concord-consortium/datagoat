@@ -1,0 +1,26 @@
+/* Ported VERBATIM from /home/doug/docs/datagoat-2026-04-27.html
+   .dash-chart-card rules (lines 1996-2008). */
+
+.chartCard {
+  background: #141A22;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.chartCardControls {
+  margin-bottom: 12px;
+}
+
+/* Inline metric picker - the prototype uses .field-select with inline
+   sizing overrides (HTML line 4200). Reuses the form primitive's class
+   via the shared fields module. The dropdown itself comes from
+   SelectField; the wrapper just gives it the inline-row layout. */
+.metricSelectWrap {
+  display: flex;
+  align-items: center;
+}
+
+.metricSelectWrap > * {
+  width: 100%;
+}

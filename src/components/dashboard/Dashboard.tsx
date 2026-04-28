@@ -1,6 +1,8 @@
 import { DashboardHeaderSlide } from "./DashboardHeaderSlide";
 import { ActivityCalendar } from "./ActivityCalendar";
 import { DashLogHeader } from "./DashLogHeader";
+import { DashboardChartCard } from "./DashboardChartCard";
+import { CodapButton } from "./CodapButton";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
@@ -88,7 +90,11 @@ export function Dashboard() {
             highlight={wellnessStatusHighlight}
             post={wellnessStatusPost}
           />
-          {/* Chart card placeholder lands in Step 14. */}
+          <DashboardChartCard
+            type="wellness"
+            trackedMetricIds={trackedWellnessIds}
+            wellnessEntries={wellnessEntries}
+          />
         </div>
 
         <hr className={css.sectionRule} aria-hidden="true" />
@@ -112,10 +118,16 @@ export function Dashboard() {
                 : "No perf. data logged today."
             }
           />
-          {/* Chart card + CodapButton land in Step 14. */}
+          <DashboardChartCard
+            type="performance"
+            trackedMetricIds={trackedPerformanceIds}
+            performanceEntries={performanceEntries}
+          />
         </div>
 
         <hr className={css.sectionRule} aria-hidden="true" />
+
+        <CodapButton />
       </div>
     </div>
   );

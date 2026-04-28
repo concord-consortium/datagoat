@@ -10,6 +10,7 @@ import { SignupForm } from "../components/auth/SignupForm";
 import { ForgotPassword } from "../components/auth/ForgotPassword";
 import { EmailVerification } from "../components/auth/EmailVerification";
 import { ProfileForm } from "../components/profile/ProfileForm";
+import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
@@ -39,10 +40,7 @@ export function AppRoutes() {
             to /profile, which is where they already are. */}
         <Route element={<OnboardingRoute />}>
           <Route path="/profile" element={<ProfileForm />} />
-          <Route
-            path="/setup/tracking"
-            element={<ScreenStub name="TrackedDataSetup" />}
-          />
+          <Route path="/setup/tracking" element={<TrackedDataSetup />} />
         </Route>
 
         {/* Authed routes. ProtectedRoute redirects 'missing' profiles to

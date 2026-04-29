@@ -8,10 +8,34 @@
 
 @font-face {
   font-family: 'Barlow';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-semibold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow';
   font-weight: 700;
   font-style: normal;
   font-display: swap;
   src: url('/fonts/barlow-bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-medium.woff2') format('woff2');
 }
 
 @font-face {
@@ -24,10 +48,26 @@
 
 @font-face {
   font-family: 'Barlow Condensed';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
   font-weight: 800;
   font-style: normal;
   font-display: swap;
   src: url('/fonts/barlow-condensed-extrabold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-black.woff2') format('woff2');
 }
 
 :root {

@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   initializePlugin,
-  createDataContext,
+  createTable,
   createItems,
+  getDataContext,
+  updateAttribute,
+  codapInterface,
 } from "@concord-consortium/codap-plugin-api";
 import { logError } from "../utils/logError";
 
 // Thin DataGOAT-specific wrapper around @concord-consortium/codap-plugin-api.
 // The library tracks the CODAP postMessage protocol authoritatively;
 // this wrapper exposes a single useCodapApi() hook so app components
-// don't need to know about initializePlugin / createDataContext /
-// createItems individually.
+// don't need to know about the multi-step create dance.
 
 export type CodapStatus = "disconnected" | "connecting" | "connected";
 
@@ -22,7 +24,20 @@ export interface DatasetRow {
 }
 
 export interface SendDatasetArgs {
+  // Resource-safe identifier for the data context (e.g.
+  // "DataGOAT-Wellness"). Used in CODAP's bracket-notation resource
+  // paths, so it must avoid spaces and `&`.
   name: string;
+  // Display label CODAP shows on the table tab. Set on the data
+  // context's `title` field. Free-form - can include spaces and `&`.
+  // Defaults to `name` when omitted.
+  title?: string;
+  // Name of the single collection inside the data context.
+  collectionName: string;
+  // Internal component name for the case-table CODAP renders. The
+  // visible label comes from the data context's `title`, not this -
+  // setting it just gives the component a stable identifier.
+  tableName?: string;
   attributes: string[];
   rows: DatasetRow[];
 }
@@ -31,25 +46,56 @@ export interface UseCodapApiResult {
   status: CodapStatus;
   error?: string;
   // Sends a dataset to CODAP. If the data context does not exist, it
-  // is created with the given attributes on first send and reused
-  // afterwards.
+  // is created with a flat collection (named "Cases"), the attribute
+  // schema is set up, and a CODAP case-table component is opened so
+  // the rows are visible. Subsequent sends for the same dataset name
+  // skip the create dance and just append items.
   sendDataset: (args: SendDatasetArgs) => Promise<void>;
 }
 
 const PLUGIN_OPTIONS = {
-  // Display label for the plugin component as it appears in CODAP's
-  // chrome. "DataGOAT" matches the brand wordmark.
   pluginName: "DataGOAT",
   version: "0.1.0",
   dimensions: { width: 380, height: 520 },
 };
 
+// Subset of the data-context shape returned by getDataContext that we
+// actually consume during type reconciliation on re-send.
+interface ExistingDataContextShape {
+  collections?: Array<{
+    name: string;
+    attrs?: Array<{ name: string; type?: string }>;
+  }>;
+}
+
+function ensureSuccess(
+  result: { success?: boolean } | undefined,
+  step: string,
+): void {
+  if (!result || result.success === false) {
+    throw new Error(`CODAP ${step} failed`);
+  }
+}
+
+// Infer a CODAP attribute type from the attribute name + sample rows.
+// Special-cases "date" by name (the only date column we send today);
+// otherwise scans rows for the first non-null value at that key. A
+// number gets `numeric`, anything else `categorical`. With no non-null
+// samples (empty data), falls back to `categorical` - CODAP's default
+// when the type isn't set.
+function inferAttributeType(name: string, rows: DatasetRow[]): string {
+  if (name === "date") return "date";
+  for (const row of rows) {
+    const v = row[name];
+    if (v == null) continue;
+    return typeof v === "number" ? "numeric" : "categorical";
+  }
+  return "categorical";
+}
+
 export function useCodapApi(): UseCodapApiResult {
   const [status, setStatus] = useState<CodapStatus>("disconnected");
   const [error, setError] = useState<string | undefined>(undefined);
-  // Track which data contexts we've already created so repeat sends
-  // skip the createDataContext step (CODAP errors on duplicate names).
-  const createdContexts = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -74,21 +120,84 @@ export function useCodapApi(): UseCodapApiResult {
 
   async function sendDataset({
     name,
+    title,
+    collectionName,
+    tableName,
     attributes,
     rows,
   }: SendDatasetArgs): Promise<void> {
-    if (!createdContexts.current.has(name)) {
-      const result = await createDataContext(name);
-      createdContexts.current.add(name);
-      // First-time context creation also needs the attribute schema
-      // scaffolded. The library's createDataContext helper builds the
-      // collection with a default name; we rely on createItems to
-      // populate the attributes as we go (CODAP infers schema from
-      // the first batch).
-      void attributes;
-      void result;
+    // Source of truth is CODAP itself, not in-memory state - a page
+    // reload of the plugin would otherwise re-trigger create and fail
+    // with a duplicate-name error.
+    const existing = await getDataContext(name);
+    if (!existing?.success) {
+      // Create the data context with name + title + collection in one
+      // shot via the lower-level sendRequest, matching the noaa-codap-
+      // plugin pattern. The library's createDataContext helper only
+      // accepts a name, so it can't set the title (which is what CODAP
+      // uses as the visible table-tab label).
+      ensureSuccess(
+        (await codapInterface.sendRequest({
+          action: "create",
+          resource: "dataContext",
+          values: {
+            name,
+            title: title ?? name,
+            collections: [
+              {
+                name: collectionName,
+                title: collectionName,
+                attrs: attributes.map((attrName) => ({
+                  name: attrName,
+                  type: inferAttributeType(attrName, rows),
+                })),
+              },
+            ],
+          },
+        })) as { success?: boolean },
+        "createDataContext",
+      );
+      // Open a case-table component (attached to the data context, not
+      // the collection) so the rows are visible. Without this, items
+      // land in CODAP's data model but no UI surfaces them.
+      ensureSuccess(await createTable(name, tableName), "createTable");
+    } else if (rows.length > 0) {
+      // Context already exists. Reconcile attribute types: if the
+      // first send happened with empty/sparse rows we'd have defaulted
+      // a numeric column to `categorical`; on a populated re-send we
+      // can now infer correctly and updateAttribute. Skipped on
+      // empty-rows re-sends so we don't downgrade an accurate type
+      // back to categorical for lack of samples.
+      const existingValues = (
+        existing as { values?: ExistingDataContextShape }
+      ).values;
+      const existingCollection = existingValues?.collections?.find(
+        (c) => c.name === collectionName,
+      );
+      if (existingCollection?.attrs) {
+        for (const attrName of attributes) {
+          const inferred = inferAttributeType(attrName, rows);
+          const current = existingCollection.attrs.find(
+            (a) => a.name === attrName,
+          );
+          if (current && current.type !== inferred) {
+            ensureSuccess(
+              await updateAttribute(
+                name,
+                collectionName,
+                attrName,
+                { name: attrName },
+                { type: inferred },
+              ),
+              "updateAttribute",
+            );
+          }
+        }
+      }
     }
-    await createItems(name, rows);
+    if (rows.length > 0) {
+      ensureSuccess(await createItems(name, rows), "createItems");
+    }
   }
 
   return { status, error, sendDataset };

@@ -69,3 +69,90 @@
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+.signOutBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.signedInAs {
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  color: var(--subtext);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.signedInAs strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.signOutBtn {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.signOutBtn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.signOutBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.signInError {
+  font-family: 'Barlow', sans-serif;
+  color: #f98080;
+  font-size: 16px;
+  margin: 12px 0 0;
+}
+
+.signInNotice {
+  font-family: 'Barlow', sans-serif;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+}
+
+.signInNotice a {
+  color: var(--accent);
+}
+
+.signInAltLink {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--subtext);
+  font-size: 16px;
+}
+
+.signInAltLinkAnchor {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.signInAltLinkAnchor:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

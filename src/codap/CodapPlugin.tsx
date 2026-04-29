@@ -10,15 +10,15 @@ import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import type { WellnessEntry, PerformanceEntry } from "../types/data";
 import { logError } from "../utils/logError";
 import { useCodapApi, type DatasetRow } from "./codapApi";
+import { CodapPluginSignIn } from "./CodapPluginSignIn";
 import buttons from "../components/form/buttons.module.css";
 import css from "./CodapPlugin.module.css";
 
 // CODAP plugin view. Reads useAuth() directly (not wrapped in
-// <ProtectedRoute> per spec). Authenticated branch renders the
-// dataset-selection UI + send-to-CODAP button. Unauthenticated branch
-// renders the static "Log into DataGOAT first, then reload this plugin"
-// message - login via popup/redirect is not supported inside cross-
-// origin iframes.
+// <ProtectedRoute> per spec). Auth state lives in the iframe's
+// partitioned IndexedDB - storage partitioning means the iframe can't
+// see the top-level datagoat.concord.org tab's session, so the plugin
+// runs its own signInWithPopup flow via <CodapPluginSignIn>.
 //
 // This is the LAZY-LOADED component (the only lazy-load seam in the
 // conversion per resolved Lazy-loading interview question). Importing
@@ -37,17 +37,54 @@ export default function CodapPlugin() {
   }
 
   if (!user) {
-    return (
-      <div className={css.pluginShell}>
-        <h1 className={css.heading}>DataGOAT in CODAP</h1>
-        <p className={css.statusText}>
-          Log into DataGOAT first, then reload this plugin.
-        </p>
-      </div>
-    );
+    return <CodapPluginSignIn />;
+  }
+
+  if (!user.emailVerified) {
+    return <CodapPluginUnverified />;
   }
 
   return <CodapPluginAuthed />;
+}
+
+function PluginSignOutBar() {
+  const { user, signOut } = useAuth();
+  return (
+    <div className={css.signOutBar}>
+      {user?.email && (
+        <span className={css.signedInAs}>
+          Signed in as <strong>{user.email}</strong>
+        </span>
+      )}
+      <button
+        type="button"
+        className={css.signOutBtn}
+        onClick={() => void signOut()}
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+function CodapPluginUnverified() {
+  return (
+    <div className={css.pluginShell}>
+      <PluginSignOutBar />
+      <h1 className={css.heading}>DataGOAT in CODAP</h1>
+      <p className={css.signInNotice} role="status">
+        Please verify your email at{" "}
+        <a
+          href={`${window.location.origin}/verify-email`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          datagoat.concord.org
+        </a>
+        , then reload this plugin.
+      </p>
+    </div>
+  );
 }
 
 function CodapPluginAuthed() {
@@ -82,24 +119,33 @@ function CodapPluginAuthed() {
     setSending(true);
     setLastSent(undefined);
     try {
-      if (selected.wellness && wellnessEntries.length > 0) {
+      // Always send if the dataset is selected, even when there are no
+      // entries yet - CODAP needs the create-context + create-collection
+      // + create-table calls to surface the table at all. Skipping on
+      // empty data hides the table from the user.
+      if (selected.wellness) {
         const attrs = ["date", ...trackedWellness];
         const rows = wellnessEntries.map((e) =>
           wellnessEntryToRow(e, trackedWellness),
         );
         await sendDataset({
-          name: "DataGOAT Health & Wellness",
+          name: "DataGOAT-Wellness",
+          title: "Health & Wellness",
+          collectionName: "Health-and-Wellness",
+          tableName: "Health-and-Wellness",
           attributes: attrs,
           rows,
         });
       }
-      if (selected.performance && performanceEntries.length > 0) {
+      if (selected.performance) {
         const attrs = ["date", ...trackedPerformance];
         const rows = performanceEntries.map((e) =>
           performanceEntryToRow(e, trackedPerformance),
         );
         await sendDataset({
-          name: "DataGOAT Performance",
+          name: "DataGOAT-Performance",
+          title: "Performance",
+          collectionName: "Performance",
           attributes: attrs,
           rows,
         });
@@ -119,6 +165,7 @@ function CodapPluginAuthed() {
 
   return (
     <div className={css.pluginShell}>
+      <PluginSignOutBar />
       <h1 className={css.heading}>DataGOAT in CODAP</h1>
       <p className={css.statusText}>
         {status === "connecting" && "Connecting to CODAP…"}

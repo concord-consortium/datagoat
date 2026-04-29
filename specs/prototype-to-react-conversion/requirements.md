@@ -712,7 +712,9 @@ src/
   codap/
     CodapPlugin.tsx          - main plugin view (dataset selection, export controls)
     CodapPlugin.module.css
+    CodapPluginSignIn.tsx    - in-plugin sign-in panel (signInWithPopup-based)
     codapApi.ts              - thin wrapper around @concord-consortium/codap-plugin-api
+    codapUrl.ts              - shared helpers for the wrapped CODAP URL + iframe-aware redirect
 ```
 
 ### Detection
@@ -723,17 +725,33 @@ Plugin mode is triggered by **route, not iframe detection**. The app exposes a `
 /codap              -> CodapPlugin (plugin view, no mobile container)
 ```
 
-The DataGOAT app constructs the CODAP URL as `https://codap3.concord.org?di=<origin>/codap`, where `<origin>` is `http://localhost:<port>` when running on localhost (so CODAP loads the local dev `/codap` route) and `https://datagoat.concord.org` otherwise. CODAP loads the `/codap` route directly in its iframe. An iframe-detection hook (`useIsCodap`) is deliberately not used - `window !== window.parent` is a false-positive magnet (dev-tool previews, unrelated embeds) and the URL construction is already under our control. Route-based gating is simpler, explicit, and avoids a post-message handshake for a boundary that doesn't carry auth weight.
+The DataGOAT app constructs the CODAP URL as `https://codap3.concord.org?di=<origin>/codap`, where `<origin>` is `http://localhost:<port>` when running on localhost (so CODAP loads the local dev `/codap` route) and `https://datagoat.concord.org` otherwise. CODAP loads the `/codap` route directly in its iframe. An iframe-detection hook (`useIsCodap`) is deliberately not used to choose between plugin-mode and app-mode rendering - `window !== window.parent` is a false-positive magnet (dev-tool previews, unrelated embeds) and the URL construction is already under our control. Route-based gating is simpler, explicit, and avoids a post-message handshake for a boundary that doesn't carry auth weight.
 
-The `/codap` route is **not** wrapped in `ProtectedRoute`. `CodapPlugin` inspects `AuthContext.user` directly and renders either the data-export UI (authenticated) or the "Log into DataGOAT first, then reload this plugin" message (unauthenticated) - matching the auth behavior described in the "Auth in iframe" subsection below.
+**Iframe-aware redirect.** `main.tsx` *does* use iframe detection for one narrow purpose: a top-level visit to `/codap` (a bookmark, a shared link, a refresh that lost the iframe context) is bounced to the CODAP-wrapped URL via `window.location.replace(buildCodapWrappedUrl())` so the plugin always loads inside CODAP. This caveat about iframe detection's unreliability *does not* apply here because the failure modes are benign: a false positive (top-level looks framed) means no redirect, which is the existing pre-redirect behavior; a false negative (framed looks top-level) triggers one redirect cycle, after which we *are* framed and detection is correct - no loop. Detection uses `window.self !== window.parent` rather than `window.top` to avoid rare cross-origin SecurityErrors on `top` access.
+
+The redirect runs *before* `createRoot()` so a top-level visit doesn't pay the SPA-bundle / lazy-chunk cost just to redirect away from itself. A `?noredirect=1` query-param escape hatch lets developers load `/codap` top-level for debugging the panel without spinning up CODAP.
+
+**Why keep the CodapButton's direct URL construction.** The "Analyze Your Data in CODAP" button on the Dashboard still opens the wrapped URL directly via `buildCodapWrappedUrl()` rather than opening `/codap` and relying on the redirect. Going straight to CODAP saves ~200-500ms of bundle parse + redirect time on every click. The shared helper means there's still one source of truth for the URL shape.
+
+The `/codap` route is **not** wrapped in `ProtectedRoute`. `CodapPlugin` inspects `AuthContext.user` directly and branches three ways: unauthenticated renders `<CodapPluginSignIn>`, authenticated-but-unverified renders a "verify your email at datagoat.concord.org" notice plus a sign-out button, and authenticated-and-verified renders the data-export UI - matching the auth behavior described in the "Auth in iframe" subsection below.
 
 ### Auth in iframe
 
-Firebase Auth uses IndexedDB for persistence, scoped to the origin. Since the plugin iframe is served from the same origin as the main app, the user's existing auth session is available automatically - no login needed in the plugin.
+Modern browsers (Chrome Storage Partitioning, Firefox dFPI, Safari ITP) key client-side storage by `(top-level site, embedded site)`, not by the embedded origin alone. So even though the plugin iframe is served from the same origin as the main DataGOAT app, the iframe's IndexedDB is a **separate partition** keyed by `datagoat.concord.org embedded under codap3.concord.org`. The user's top-level Firebase Auth session is in unpartitioned `datagoat.concord.org` storage, which the iframe cannot read. Treating the plugin as its own auth context is the only reliable cross-browser option.
 
-If the user hasn't logged into DataGOAT yet, the plugin shows: "Log into DataGOAT first, then reload this plugin."
+The plugin therefore runs its own sign-in flow via `<CodapPluginSignIn>`, which mirrors `LoginForm`'s three sign-in methods:
 
-Login via popup/redirect is intentionally **not** supported inside the iframe - browsers block these in cross-origin iframes and the behavior is unreliable.
+- **Google / Facebook OAuth via `signInWithPopup`**. The popup is a top-level window (not subject to the iframe's storage partition), so OAuth completes against the provider normally; Firebase posts the credential back to the iframe and the resulting session is written to the iframe's partitioned IndexedDB. Subsequent reloads of the plugin under `codap3.concord.org` see the user as authed.
+- **Email / password** via `signInWithEmailAndPassword`. No popup involved; the session lands in the same partitioned bucket.
+- **Account-collision** is handled by reusing `<LinkAccountPanel>`. No router navigation - successful linking flips the plugin to the authed branch via the AuthContext subscription.
+
+`signInWithRedirect` is **not** used: the redirect handler relies on third-party storage that's now partitioned away in cross-site iframes.
+
+"Sign up" and "Forgot password" links open `https://<origin>/signup` and `/forgot-password` in a new top-level tab rather than navigating in-plugin; onboarding and password-reset flows live in the main app's router and are not duplicated inside the plugin.
+
+After sign-in, if `user.emailVerified` is false (Facebook can return unverified emails; email/password users may not have clicked the verification link yet), the plugin signs the user back out and shows a notice pointing to the main DataGOAT app for verification. This matches `LoginForm`'s `/verify-email` redirect; the plugin enforces it via sign-out instead of routing because it has no router.
+
+The plugin assumes `window.open` is permitted by CODAP's iframe sandbox (i.e., `allow-popups` is set, which is standard for plugin hosts). If popups are blocked, OAuth surfaces an `auth/popup-blocked` error message via `authErrorMessageFor`; email/password sign-in still works.
 
 ### What the plugin skips
 
@@ -752,11 +770,11 @@ Login via popup/redirect is intentionally **not** supported inside the iframe - 
 
 ### User flow
 
-1. Student logs into DataGOAT app normally in a browser tab
-2. Student taps "Analyze Your Data in CODAP" on the Dashboard (always visible; behavior depends on viewport - see below)
-3. Clicking it opens CODAP with `?di=https://datagoat-b07dd.web.app` (or a dedicated `/codap` route)
-4. CODAP loads the plugin in an iframe
-5. Plugin finds the existing Firebase Auth session - user is already authenticated
+1. Student taps "Analyze Your Data in CODAP" on the Dashboard (always visible; behavior depends on viewport - see below)
+2. Clicking it opens `https://codap3.concord.org?di=<origin>/codap` in a new tab
+3. CODAP loads the plugin in an iframe pointed at the `/codap` route
+4. The plugin's iframe storage partition is independent of the top-level DataGOAT tab; the user signs in inside the plugin (Google / Facebook popup or email / password) the first time they use it
+5. Subsequent visits skip the sign-in step - the partitioned IndexedDB session persists across reloads
 6. Student selects which metrics to analyze, plugin sends data to CODAP
 7. Student explores their data in CODAP's analysis tools
 

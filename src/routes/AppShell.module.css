@@ -25,9 +25,11 @@
   position: relative;
   flex: 1;
   overflow: auto;
-  /* Background omitted on purpose so the .app::before ambient teal tint
-     (port of prototype's .phone::before) shows through. The .app column
-     itself supplies var(--bg) below the gradient. */
+  /* Solid var(--bg) matches the prototype's .screen-body (HTML line 962),
+     which blocks the .phone::before ambient gradient from bleeding into
+     the screen content. The header above still shows the gradient via
+     its own ::before overlay (AppHeader / DashboardHeaderSlide). */
+  background: var(--bg);
   color: var(--text);
 }
 

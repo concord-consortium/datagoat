@@ -1,5 +1,6 @@
 import { forwardRef, useId, type Ref } from "react";
 import { Link } from "react-router-dom";
+import ChevronDownIcon from "@/icons/chevron-down.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import fields from "./fields.module.css";
 import css from "./SelectField.module.css";
@@ -84,29 +85,32 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
           )}
         </label>
         <div className={css.selectWithInfo}>
-          <select
-            ref={ref}
-            id={selectId}
-            name={name ?? selectId}
-            className={selectCls}
-            aria-required={required || undefined}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={describedBy}
-            value={value}
-            defaultValue={defaultValue}
-            onChange={onChange}
-            onBlur={onBlur}
-            disabled={disabled}
-          >
-            <option value="" disabled>
-              {placeholder}
-            </option>
-            {options.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+          <div className={css.selectInner}>
+            <select
+              ref={ref}
+              id={selectId}
+              name={name ?? selectId}
+              className={selectCls}
+              aria-required={required || undefined}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={describedBy}
+              value={value}
+              defaultValue={defaultValue}
+              onChange={onChange}
+              onBlur={onBlur}
+              disabled={disabled}
+            >
+              <option value="" disabled>
+                {placeholder}
               </option>
-            ))}
-          </select>
+              {options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDownIcon className={css.chevron} aria-hidden="true" />
+          </div>
           {infoTopic && (
             <Link
               to={`/info/${infoTopic}`}

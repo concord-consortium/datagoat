@@ -144,6 +144,11 @@
               background var(--dur-quick);
 }
 
+.fieldInfoBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
 .fieldInfoBtn:hover {
   color: var(--accent);
   border-color: var(--accent);

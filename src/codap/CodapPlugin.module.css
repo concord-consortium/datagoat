@@ -1,0 +1,71 @@
+/* CODAP plugin view. No prototype counterpart - the plugin view is
+   designed from existing tokens (var(--bg) background, var(--surface)
+   panels, .ctaBtn for the send action) since CODAP loads the plugin
+   inside its own iframe at the size dictated by the plugin's
+   initializePlugin dimensions. The container deliberately doesn't
+   inherit the AppShell mobile-column constraints (the plugin route
+   sits OUTSIDE the AppShell layout route). */
+
+.pluginShell {
+  /* No max-width - CODAP iframes the plugin at the dimensions we
+     pass to initializePlugin. Use 100% so the content fills the
+     iframe without the 440px column constraint. */
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 20px;
+  box-sizing: border-box;
+  font-family: 'Barlow', sans-serif;
+}
+
+.heading {
+  margin: 0 0 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.statusText {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+}
+
+.fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 0 0 20px;
+  background: var(--surface);
+}
+
+.legend {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  padding: 0 6px;
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.checkRow input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

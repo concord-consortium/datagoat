@@ -34,6 +34,12 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: "autoUpdate",
+      // We register manually in src/main.tsx so we can skip registration
+      // on the /codap route (the CODAP plugin iframe is loaded by CODAP
+      // itself; offline support inside the iframe has no value and a
+      // registered SW would caching-conflict with the parent CODAP
+      // origin's expectations).
+      injectRegister: false,
       workbox: {
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         navigateFallback: null,

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppShell } from "./AppShell";
 import {
@@ -18,11 +19,31 @@ import { MetricDetail } from "../charts/MetricDetail";
 import { AddMetric } from "../components/tracking/AddMetric";
 import { InfoScreen } from "../components/info/InfoScreen";
 import { About } from "../components/about/About";
-import { ScreenStub } from "../components/ScreenStub";
+import { Loading } from "../components/Loading";
+
+// /codap is the ONLY lazy-loaded route in the conversion (per resolved
+// Lazy-loading interview question). React.lazy keeps both codapApi.ts
+// and the @concord-consortium/codap-plugin-api library out of the
+// initial bundle for non-CODAP visitors (the 99% case).
+const CodapPlugin = lazy(() => import("@/codap/CodapPlugin"));
 
 export function AppRoutes() {
   return (
     <Routes>
+      {/* /codap lives at the TOP LEVEL of <Routes>, as a sibling of the
+          AppShell layout route. The route-tree position is what
+          excludes /codap from the AppShell - no AppHeader, no
+          HamburgerMenu, no VerificationBanner - by virtue of where it
+          sits in the tree, not by any path-checking elsewhere. */}
+      <Route
+        path="/codap"
+        element={
+          <Suspense fallback={<Loading />}>
+            <CodapPlugin />
+          </Suspense>
+        }
+      />
+
       <Route element={<AppShell />}>
         {/* Auth routes. RedirectIfAuthed sends signed-in users on to
             /dashboard so signInWithPopup success actually leaves the auth
@@ -73,12 +94,6 @@ export function AppRoutes() {
           <Route path="/add-metric/:type" element={<AddMetric />} />
           <Route path="/about" element={<About />} />
         </Route>
-
-        {/* /codap is intentionally not wrapped in ProtectedRoute - it inspects
-            useAuth() directly. Lands as a top-level sibling of the AppShell
-            layout route in the CODAP plugin step (this stub keeps the route
-            reachable until then). */}
-        <Route path="/codap" element={<ScreenStub name="CodapPlugin" />} />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

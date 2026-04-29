@@ -23,6 +23,15 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     min: 1,
     max: 8,
     inputType: "colorScale",
+    learnMoreUrl: "https://pubmed.ncbi.nlm.nih.gov/9303999/",
+    references: [
+      {
+        title: "NCAA Hydration Status Assessment",
+        url: "https://ncaaorg.s3.amazonaws.com/ssi/nutrition/SSI_AssessHydration.pdf",
+      },
+    ],
+    estimatedRange: "8 levels (pale yellow → dark yellow/amber)",
+    whenCollected: "Daily",
   },
   {
     id: "sleepTime",
@@ -37,6 +46,23 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
       "Total amount of time spent asleep during a sleep period, typically measured from sleep onset to final awakening, expressed in minutes or hours.",
     inputType: "numeric",
     Icon: SleepTimeIcon,
+    learnMoreUrl: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6267703/",
+    references: [
+      {
+        title: "PSQI (Pittsburgh Quality Sleep Index)",
+        url: "https://drive.google.com/file/d/1mdkphTO2pRAnXzBJ0fJK1LgpU8MbYj9f/view",
+      },
+      {
+        title: "ASSQ (Athlete Sleep Screening Questionnaire)",
+        url: "https://drive.google.com/file/d/1y43OwBJOj8-nbaI0M4mzGZOOI2DXFRl2/view",
+      },
+      {
+        title: "ASSQ Scoring Key",
+        url: "https://docs.google.com/document/d/1VIiGo671Hs9t8PcKPdPZTe2oppCb7Ar8/edit",
+      },
+    ],
+    estimatedRange: "4–12 hours/night",
+    whenCollected: "Daily",
   },
   {
     id: "sleepEfficiency",
@@ -52,6 +78,23 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     max: 100,
     inputType: "numeric",
     Icon: SleepEfficiencyIcon,
+    learnMoreUrl: "https://pmc.ncbi.nlm.nih.gov/articles/PMC9960533/",
+    references: [
+      {
+        title: "PSQI (Pittsburgh Quality Sleep Index)",
+        url: "https://drive.google.com/file/d/1mdkphTO2pRAnXzBJ0fJK1LgpU8MbYj9f/view",
+      },
+      {
+        title: "ASSQ (Athlete Sleep Screening Questionnaire)",
+        url: "https://drive.google.com/file/d/1y43OwBJOj8-nbaI0M4mzGZOOI2DXFRl2/view",
+      },
+      {
+        title: "ASSQ Scoring Key",
+        url: "https://docs.google.com/document/d/1VIiGo671Hs9t8PcKPdPZTe2oppCb7Ar8/edit",
+      },
+    ],
+    estimatedRange: "0–100%",
+    whenCollected: "Daily",
   },
   {
     id: "protein",
@@ -66,6 +109,19 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
       "Amount of dietary protein consumed to support metabolic processes like repair and recovery.",
     inputType: "numeric",
     Icon: ProteinIcon,
+    learnMoreUrl: "https://bjsm.bmj.com/content/52/6/376",
+    references: [
+      {
+        title: "NCAA Nutrition, Hydration & Sleep",
+        url: "https://www.ncaa.org/sports/2016/8/4/nutrition-sleep-and-performance-educational-resources.aspx",
+      },
+      {
+        title: "USOPC Nutrition",
+        url: "https://www.usopc.org/nutrition",
+      },
+    ],
+    estimatedRange: "0.6–3 g/kg/day (0.3–1.4 g/lb/day)",
+    whenCollected: "Daily",
   },
   {
     id: "leanMass",
@@ -81,6 +137,9 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
       "Total mass of body excluding fat mass. This includes muscle, bone, organs, connective tissue, and body water.",
     inputType: "numeric",
     Icon: LeanMassIcon,
+    learnMoreUrl: "https://acsm.org/education-resources/books/fitness-assessment-manual/",
+    estimatedRange: "30–130 kg (66–287 lbs)",
+    whenCollected: "2–3×/year",
   },
   {
     id: "availability",
@@ -94,5 +153,8 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
       "Percentage of time an athlete is fit for full training or competition without restrictions.",
     inputType: "tree",
     Icon: AvailabilityIcon,
+    learnMoreUrl: "https://pubmed.ncbi.nlm.nih.gov/32362281/",
+    estimatedRange: "0–100%",
+    whenCollected: "Daily",
   },
 ];

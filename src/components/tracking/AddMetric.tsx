@@ -1,4 +1,4 @@
-import { Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { ADDABLE_WELLNESS, ADDABLE_PERFORMANCE } from "../../metrics/addableMetrics";
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
@@ -76,16 +76,21 @@ function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
         <ul className={css.addMetricList}>
           {visible.map((m) => {
             const Icon = m.Icon ?? InfoCircleIcon;
+            // Per prototype HTML around line 8623, the info button
+            // navigates to MetricDetail for that metric. The placeholder
+            // addable metrics in ADDABLE_* don't have full content, but
+            // the route handler renders whatever the registry provides.
+            const detailHref = `/${type}/${m.id}`;
             return (
               <li key={m.id}>
                 <span className={css.metricNameCol}>{m.name}</span>
-                <button
-                  type="button"
+                <Link
+                  to={detailHref}
                   className={css.metricInfoBtn}
                   aria-label={`${m.name} info`}
                 >
                   <Icon />
-                </button>
+                </Link>
                 <button
                   type="button"
                   className={css.addBtn}

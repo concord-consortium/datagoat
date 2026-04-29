@@ -8,11 +8,16 @@ import {
 } from "../components/dashboard/TimeRangePicker";
 import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import {
+  ADDABLE_WELLNESS,
+  ADDABLE_PERFORMANCE,
+} from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
 import {
   PROFILE_CHART_GOALS,
   DEFAULT_PROFILE_KEY,
 } from "../data/profileVariants";
+import { resolveGoalText } from "../data/metricGoals";
 import { useUser } from "../contexts/UserContext";
 import {
   useWellnessData,
@@ -20,25 +25,43 @@ import {
 } from "../contexts/DataContext";
 import type { PerformanceEntry, WellnessEntry } from "../types/data";
 import { HISTORY, dateOffsetFromISO } from "../utils/dates";
+import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
 interface MetricDetailProps {
   type: "wellness" | "performance";
 }
 
+// Hydration color-scale palette + bracket labels (verbatim port of the
+// prototype's hydrationHexes + label runs around HTML lines 6724-6739).
+// Renders only on the Hydration MetricDetail under "Estimated Range".
+const HYDRATION_HEXES = [
+  "#F9F7DA",
+  "#FFFAC7",
+  "#FFF585",
+  "#FFF234",
+  "#FFEE70",
+  "#FFEA41",
+  "#DBC37A",
+  "#A7944B",
+];
+
 // Single-metric deep-dive view. Reuses <MetricChart> (the placeholder from
 // Step 14). Adds metric info (Definition / Who Collects It / How Collected
-// / Estimated Range / When Collected), goal/average lines forwarded to the
-// placeholder, and the visually-hidden data table - which IS real and
-// works on this screen, so screen-reader users have a complete experience
-// even before the visual chart lands.
+// / Estimated Range / When Collected / References), a Learn-more link, a
+// per-profile goal line, and the visually-hidden data table.
 //
 // Unknown :metricId falls back via <Navigate replace /> to the parent log.
 // No dedicated 404 view - bouncing back is the right recovery.
 export function MetricDetail({ type }: MetricDetailProps) {
   const { metricId } = useParams<{ metricId: string }>();
+  // Tracked + addable registries are both searched so the AddMetric
+  // info button (which links into the addable space) doesn't
+  // dead-end. Tracked metrics shadow addable ones with the same id.
   const allMetrics =
-    type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
+    type === "wellness"
+      ? [...WELLNESS_METRICS, ...ADDABLE_WELLNESS]
+      : [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE];
   const metric = allMetrics.find((m) => m.id === metricId);
 
   const { loadState } = useUser();
@@ -94,6 +117,19 @@ export function MetricDetail({ type }: MetricDetailProps) {
     ? `${metric.name} chart is loading.`
     : composeDescription(metric, range, goalLine, average);
 
+  // Goal-line text under Estimated Range. Prototype renders only when
+  // gender + athleteType are known; React port defers to the profile
+  // when loaded, falls back to DEFAULT_PROFILE_KEY otherwise so the
+  // sentence still reads (with the fallback profile's mapping).
+  const compTermPlural = profile?.competitionTerm
+    ? `${profile.competitionTerm}s`
+    : "games";
+  const goalText = resolveGoalText(metric.id, profileKey, compTermPlural);
+  const profileLabel = profile
+    ? `${capitalizeGender(profile.gender)} ${capitalizeAthleteType(profile.athleteType)}`
+    : "[Gender] [Athlete Type]";
+  const article = /^[aeiou]/i.test(profileLabel) ? "an" : "a";
+
   return (
     <div className={css.detailScreen}>
       <div className={css.chartSection}>
@@ -120,6 +156,23 @@ export function MetricDetail({ type }: MetricDetailProps) {
       <h3 className={css.infoSectionHeading}>Definition</h3>
       <div className={css.metricDescription}>
         {renderMultiline(metric.description)}
+        {metric.learnMoreUrl && (
+          <p className={css.learnMoreWrap}>
+            <a
+              className={css.learnMore}
+              href={metric.learnMoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className={css.linkText}>
+                Learn more about {metric.name}{" "}
+                <span className={css.linkIconWrap}>
+                  <ExternalLinkIcon className={css.linkIcon} />
+                </span>
+              </span>
+            </a>
+          </p>
+        )}
       </div>
 
       <h3 className={css.infoSectionHeading}>Who Collects It</h3>
@@ -134,20 +187,114 @@ export function MetricDetail({ type }: MetricDetailProps) {
 
       <h3 className={css.infoSectionHeading}>Estimated Range</h3>
       <div className={css.metricDescription}>
-        {metric.min !== undefined && metric.max !== undefined
-          ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
-          : metric.unit || "—"}
+        {metric.estimatedRange ??
+          (metric.min !== undefined && metric.max !== undefined
+            ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
+            : metric.unit || "—")}
+        {metric.id === "hydration" && <HydrationColorScale />}
+        {goalText && (
+          <p className={css.goalLine}>
+            <GoalDot />
+            As {article} {profileLabel} athlete, your goal is {goalText}.
+          </p>
+        )}
       </div>
 
-      {metric.hint && (
+      {metric.whenCollected && (
         <>
           <h3 className={css.infoSectionHeading}>
             When / How Many Times Collected
           </h3>
-          <div className={css.metricDescription}>{metric.hint}</div>
+          <div className={css.metricDescription}>{metric.whenCollected}</div>
+        </>
+      )}
+
+      {metric.references && metric.references.length > 0 && (
+        <>
+          <h3 className={css.infoSectionHeading}>
+            {metric.references.length > 1 ? "References" : "Reference"}
+          </h3>
+          <div className={css.metricDescription}>
+            {metric.references.map((ref) => (
+              <p key={ref.url} className={css.referenceLinkWrap}>
+                <a
+                  className={`${css.learnMore} ${css.referenceLink}`}
+                  href={ref.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={css.linkText}>
+                    {ref.title}{" "}
+                    <span className={css.linkIconWrap}>
+                      <ExternalLinkIcon className={css.linkIcon} />
+                    </span>
+                  </span>
+                </a>
+              </p>
+            ))}
+          </div>
         </>
       )}
     </div>
+  );
+}
+
+// Hydration color-scale-static swatch grid (prototype HTML 6724-6739).
+// Three labeled brackets above the row of 8 numbered swatches:
+// 1-3 Hydrated / 4-6 Mildly to moderately dehydrated / 7-8 Dehydrated.
+function HydrationColorScale() {
+  return (
+    <div
+      className={css.colorScaleStatic}
+      aria-label="Hydration color scale"
+    >
+      <div className={css.scaleLabel} style={{ gridColumn: "1 / span 3" }}>
+        Hydrated
+      </div>
+      <div className={css.scaleLabel} style={{ gridColumn: "4 / span 3" }}>
+        Mildly to moderately dehydrated
+      </div>
+      <div
+        className={`${css.scaleLabel} ${css.scaleLabelNoWrap}`}
+        style={{ gridColumn: "7 / span 2" }}
+      >
+        Dehydrated
+      </div>
+      <div className={css.scaleBracket} style={{ gridColumn: "1 / span 3" }} />
+      <div className={css.scaleBracket} style={{ gridColumn: "4 / span 3" }} />
+      <div className={css.scaleBracket} style={{ gridColumn: "7 / span 2" }} />
+      {HYDRATION_HEXES.map((hex, i) => (
+        <div
+          key={hex}
+          className={css.colorSwatch}
+          style={{ background: hex }}
+          aria-label={`Level ${i + 1}`}
+        >
+          {i + 1}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Goal-line target dot (prototype's small SVG composed inline in
+// showMetricDetail at line 6720). Filled center with a stroked outer
+// ring; uses var(--text) so it inherits theme color.
+function GoalDot() {
+  return (
+    <svg
+      className={css.goalDot}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={3}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+    </svg>
   );
 }
 

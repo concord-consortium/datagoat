@@ -9,6 +9,10 @@ import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import PlusCircleIcon from "@/icons/plus-circle.svg?react";
 import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import {
+  ADDABLE_WELLNESS,
+  ADDABLE_PERFORMANCE,
+} from "../metrics/addableMetrics";
 
 export interface RouteMeta {
   title: string;
@@ -76,7 +80,11 @@ const PATTERNS: Array<{
   {
     pattern: "/wellness/:metricId",
     resolve: (params) => {
-      const m = WELLNESS_METRICS.find((x) => x.id === params.metricId);
+      // Tracked + addable registries both feed MetricDetail's title
+      // since AddMetric's info button links into the addable space.
+      const m =
+        WELLNESS_METRICS.find((x) => x.id === params.metricId) ??
+        ADDABLE_WELLNESS.find((x) => x.id === params.metricId);
       if (!m) return null;
       return {
         title: m.name,
@@ -88,7 +96,9 @@ const PATTERNS: Array<{
   {
     pattern: "/performance/:metricId",
     resolve: (params) => {
-      const m = PERFORMANCE_METRICS.find((x) => x.id === params.metricId);
+      const m =
+        PERFORMANCE_METRICS.find((x) => x.id === params.metricId) ??
+        ADDABLE_PERFORMANCE.find((x) => x.id === params.metricId);
       if (!m) return null;
       return {
         title: m.name,

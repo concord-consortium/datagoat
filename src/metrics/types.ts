@@ -26,4 +26,20 @@ export interface MetricDefinition {
   // without a designer-final icon leave Icon undefined and fall back to a
   // generic placeholder at the call site.
   Icon?: ComponentType<SVGProps<SVGSVGElement>>;
+  // "Learn more about [metric]" external link rendered under MetricDetail's
+  // Definition section (prototype HTML around line 6664-6665).
+  learnMoreUrl?: string;
+  // Reference links rendered as a "References" / "Reference" section in
+  // MetricDetail (prototype lines 6742-6750). Each entry is a {title, url}
+  // pair; renders as a list of clickable external links.
+  references?: Array<{ title: string; url: string }>;
+  // Verbatim "Estimated Range" string from the prototype's metricDetails
+  // entry (e.g., "0-100%", "8 levels (pale yellow -> dark yellow/amber)").
+  // MetricDetail prefers this over min/max when set, since the prototype's
+  // string carries unit + qualifier context that min/max alone can't.
+  estimatedRange?: string;
+  // Verbatim "When / How Many Times Collected" string (e.g., "Daily",
+  // "2-3x/year"). MetricDetail's "When Collected" section reads this; the
+  // log-table per-row hint stays on `hint`.
+  whenCollected?: string;
 }

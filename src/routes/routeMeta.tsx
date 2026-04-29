@@ -99,11 +99,50 @@ const PATTERNS: Array<{
   },
   {
     pattern: "/add-metric/:type",
-    meta: { title: "Add Metric", icon: <PlusCircleIcon /> },
+    resolve: (params) => {
+      // Match the prototype's #add-metric-title text (HTML around line
+      // 8596: "Add Health & Wellness Metric" / "Add Performance Metric").
+      const t = params.type;
+      if (t !== "wellness" && t !== "performance") return null;
+      return {
+        title:
+          t === "wellness"
+            ? "Add Health & Wellness Metric"
+            : "Add Performance Metric",
+        icon: <PlusCircleIcon />,
+        backTo: "/setup/tracking",
+      };
+    },
   },
   {
     pattern: "/info/:topic",
-    meta: { title: "Information", icon: <InfoCircleIcon /> },
+    resolve: (params) => {
+      // Match the prototype's per-screen heading text (HTML lines 4410,
+      // 4434, 4450). Unknown topic returns null - InfoScreen issues
+      // <Navigate replace /> to /profile (the entry point).
+      switch (params.topic) {
+        case "athlete-type":
+          return {
+            title: "Athlete Type",
+            icon: <InfoCircleIcon />,
+            backTo: "/profile",
+          };
+        case "gender":
+          return {
+            title: "Gender",
+            icon: <InfoCircleIcon />,
+            backTo: "/profile",
+          };
+        case "comp-term":
+          return {
+            title: "Competition Term",
+            icon: <InfoCircleIcon />,
+            backTo: "/profile",
+          };
+        default:
+          return null;
+      }
+    },
   },
 ];
 

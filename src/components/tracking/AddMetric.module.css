@@ -1,0 +1,188 @@
+/* AddMetric screen. CSS ported verbatim from prototype lines 1651-1707
+   (.add-metric-col-headers, .add-metric-list, .add-metric-list li, the
+   info-btn / add-btn / remove-btn nested rules) into camelCased CSS
+   Modules. */
+
+.addMetricScreen {
+  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
+     100px bottom for the iOS Safari home-bar gap. */
+  padding: 20px 24px 100px;
+}
+
+/* ── Column headers (prototype lines 1652-1660) ── */
+
+.colHeaders {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px;
+  border-bottom: 1.5px solid var(--border);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtext);
+}
+
+.colHMetric {
+  flex: 1;
+  min-width: 0;
+}
+
+.colHInfo {
+  width: 44px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.colHAction {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+/* ── List (prototype lines 1661-1707) ── */
+
+.addMetricList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.addMetricList li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.addMetricList li:last-child {
+  border-bottom: none;
+}
+
+.metricNameCol {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Info button (prototype lines 1669-1678) ── */
+
+.metricInfoBtn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--subtext);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  transition: background var(--dur-base) var(--ease-default),
+              border-color var(--dur-base) var(--ease-default),
+              color var(--dur-base) var(--ease-default);
+}
+
+.metricInfoBtn:hover {
+  background: rgba(0, 179, 192, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.metricInfoBtn:active {
+  transform: scale(0.96);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.metricInfoBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.metricInfoBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ── Add button (prototype lines 1679-1697) ── */
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--subtext);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  transition: background var(--dur-base) var(--ease-default),
+              border-color var(--dur-base) var(--ease-default),
+              color var(--dur-base) var(--ease-default);
+}
+
+.addBtn:hover {
+  background: rgba(0, 179, 192, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.addBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.addBtn:active {
+  transform: scale(0.96);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.addBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metricInfoBtn,
+  .addBtn {
+    transition: none;
+  }
+  .metricInfoBtn:active,
+  .addBtn:active {
+    transform: none;
+  }
+}
+
+/* ── Empty state (added; no prototype counterpart - the prototype shows
+   already-tracked metrics with a remove button instead, but our spec
+   filters them out entirely). ── */
+
+.emptyState {
+  margin: 24px 0 0;
+  padding: 20px;
+  text-align: center;
+  color: var(--subtext);
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}

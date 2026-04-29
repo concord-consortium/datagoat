@@ -1,0 +1,49 @@
+/* About screen. CSS modeled after the prototype's #about-screen inline
+   styles (HTML lines 3986-3998: 16px Barlow on var(--subtext), 1.6
+   line-height, NSF logo floated left with shape-outside, three logos
+   in a flex row). The version-footer styling is added (no prototype
+   counterpart - the prototype has no version footer). */
+
+.aboutScreen {
+  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
+     100px bottom for the iOS Safari home-bar gap. */
+  padding: 20px 24px 100px;
+}
+
+.bodyPara {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.bodyPara :global(strong),
+.creditsLabel {
+  color: var(--text);
+}
+
+.nsfLogo {
+  float: left;
+  margin: 5px 14px 4px 0;
+  shape-outside: margin-box;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Muted version footer line. Per requirements "Version display"
+   decision: APP_VERSION + APP_VERSION_DESC + build timestamp render
+   here on the About screen instead of the App.tsx sticky-bottom
+   footer (removed at conversion time). */
+.versionFooter {
+  margin: 32px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}

@@ -15,6 +15,9 @@ import { WellnessLog } from "../components/logs/WellnessLog";
 import { PerformanceLog } from "../components/logs/PerformanceLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { MetricDetail } from "../charts/MetricDetail";
+import { AddMetric } from "../components/tracking/AddMetric";
+import { InfoScreen } from "../components/info/InfoScreen";
+import { About } from "../components/about/About";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
@@ -45,6 +48,12 @@ export function AppRoutes() {
         <Route element={<OnboardingRoute />}>
           <Route path="/profile" element={<ProfileForm />} />
           <Route path="/setup/tracking" element={<TrackedDataSetup />} />
+          {/* /info/:topic lives under OnboardingRoute (not ProtectedRoute
+              as initially spec'd) because the info screens are reached
+              from the /profile field-info-btn buttons during onboarding,
+              when loadState.status === 'missing'. ProtectedRoute would
+              redirect back to /profile, dead-ending the info link. */}
+          <Route path="/info/:topic" element={<InfoScreen />} />
         </Route>
 
         {/* Authed routes. ProtectedRoute redirects 'missing' profiles to
@@ -61,12 +70,8 @@ export function AppRoutes() {
             path="/performance/:metricId"
             element={<MetricDetail type="performance" />}
           />
-          <Route
-            path="/add-metric/:type"
-            element={<ScreenStub name="AddMetric" />}
-          />
-          <Route path="/info/:topic" element={<ScreenStub name="InfoScreen" />} />
-          <Route path="/about" element={<ScreenStub name="About" />} />
+          <Route path="/add-metric/:type" element={<AddMetric />} />
+          <Route path="/about" element={<About />} />
         </Route>
 
         {/* /codap is intentionally not wrapped in ProtectedRoute - it inspects

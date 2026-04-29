@@ -1,0 +1,66 @@
+/* InfoScreen. CSS ported verbatim from prototype lines 675-706
+   (.info-content / .info-content p / .info-content strong /
+   .info-section-heading / .info-content .info-note) and lines
+   2770-2776 (.metric-description, used by the comp-term info screen
+   for inline definitions) into camelCased CSS Modules. */
+
+.infoContent {
+  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
+     100px bottom for the iOS Safari home-bar gap. */
+  padding: 20px 24px 100px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--subtext);
+}
+
+.infoContent :global(p) {
+  margin: 0 0 16px;
+}
+
+.infoContent :global(strong) {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Section heading (prototype lines 683-697) ── */
+
+.infoSectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Note callout (prototype lines 699-706) ── */
+
+.infoNote {
+  background: var(--surface2);
+  border-left: 3px solid var(--accent);
+  padding: 14px 16px;
+  border-radius: 0 6px 6px 0;
+  margin-top: 20px;
+}
+
+.infoNote :global(strong) {
+  color: var(--accent);
+}
+
+/* ── Metric description (prototype lines 2770-2776, used by comp-term
+   info screen for the inline sport definitions) ── */
+
+.metricDescription {
+  padding: 0;
+  margin-bottom: 20px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--subtext);
+}

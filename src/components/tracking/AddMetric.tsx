@@ -4,19 +4,17 @@ import { ADDABLE_WELLNESS, ADDABLE_PERFORMANCE } from "../../metrics/addableMetr
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import type { MetricDefinition } from "../../metrics/types";
-import PlusIcon from "@/icons/plus-circle.svg?react";
-import InfoCircleIcon from "@/icons/info-circle.svg?react";
+import PlusIcon from "@/icons/plus.svg?react";
+import MinusIcon from "@/icons/minus.svg?react";
+import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./AddMetric.module.css";
 
 // Browse + add new metrics. Reads :type ('wellness' | 'performance')
-// from the URL, lists ADDABLE_* (filtered to exclude already-tracked
-// IDs from the user's profile), and adds a chosen metric via the same
-// setTrackedMetrics() helper TrackedDataSetup uses.
-//
-// Per spec: addable metrics already in the tracked list are filtered
-// OUT entirely (un-tracking happens by unchecking the row on
-// TrackedDataSetup). When all addables are tracked, an empty-state
-// message shows.
+// from the URL, lists ADDABLE_* in full, and toggles each row's tracked
+// state via setTrackedMetrics(). Already-tracked rows show a red minus
+// button that un-tracks the metric; not-yet-tracked rows show a plus
+// button that tracks it. Per the prototype, rows never disappear from
+// this list — the toggle just flips state.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
   if (type !== "wellness" && type !== "performance") {
@@ -32,31 +30,29 @@ function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
   const addable = type === "wellness" ? ADDABLE_WELLNESS : ADDABLE_PERFORMANCE;
   const builtIn = type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
 
-  // Tracked IDs default to the full built-in registry for new users (the
-  // same default TrackedDataSetup uses when profile is absent), so the
-  // "already-tracked" filter Just Works on the onboarding path.
-  const trackedIds =
-    profile?.[
-      type === "wellness"
-        ? "trackedWellnessMetrics"
-        : "trackedPerformanceMetrics"
-    ] ?? builtIn.map((m) => m.id);
+  const trackedKey =
+    type === "wellness" ? "trackedWellnessMetrics" : "trackedPerformanceMetrics";
 
-  const visible = addable.filter((m) => !trackedIds.includes(m.id));
+  const trackedIds = profile?.[trackedKey] ?? builtIn.map((m) => m.id);
+
+  async function persist(next: string[]) {
+    if (!profile) {
+      await updateProfile({ [trackedKey]: next });
+      return;
+    }
+    await setTrackedMetrics(type, next);
+  }
 
   async function handleAdd(metric: MetricDefinition) {
     const next = [...trackedIds, metric.id].filter(
       (v, i, arr) => arr.indexOf(v) === i,
     );
-    if (!profile) {
-      await updateProfile({
-        [type === "wellness"
-          ? "trackedWellnessMetrics"
-          : "trackedPerformanceMetrics"]: next,
-      });
-      return;
-    }
-    await setTrackedMetrics(type, next);
+    await persist(next);
+  }
+
+  async function handleRemove(metric: MetricDefinition) {
+    const next = trackedIds.filter((id) => id !== metric.id);
+    await persist(next);
   }
 
   return (
@@ -66,31 +62,30 @@ function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
         <span className={css.colHInfo}>Info</span>
         <span className={css.colHAction} />
       </div>
-      {visible.length === 0 ? (
-        <p className={css.emptyState}>
-          {type === "wellness"
-            ? "All Health & Wellness metrics already tracked - check back as we add more."
-            : "All Performance metrics already tracked - check back as we add more."}
-        </p>
-      ) : (
-        <ul className={css.addMetricList}>
-          {visible.map((m) => {
-            const Icon = m.Icon ?? InfoCircleIcon;
-            // Per prototype HTML around line 8623, the info button
-            // navigates to MetricDetail for that metric. The placeholder
-            // addable metrics in ADDABLE_* don't have full content, but
-            // the route handler renders whatever the registry provides.
-            const detailHref = `/${type}/${m.id}`;
-            return (
-              <li key={m.id}>
-                <span className={css.metricNameCol}>{m.name}</span>
-                <Link
-                  to={detailHref}
-                  className={css.metricInfoBtn}
-                  aria-label={`${m.name} info`}
+      <ul className={css.addMetricList}>
+        {addable.map((m) => {
+          const isTracked = trackedIds.includes(m.id);
+          const detailHref = `/${type}/${m.id}`;
+          return (
+            <li key={m.id}>
+              <span className={css.metricNameCol}>{m.name}</span>
+              <Link
+                to={detailHref}
+                className={css.metricInfoBtn}
+                aria-label={`${m.name} info`}
+              >
+                <CustomMetricIcon />
+              </Link>
+              {isTracked ? (
+                <button
+                  type="button"
+                  className={css.removeBtn}
+                  aria-label={`Remove ${m.name}`}
+                  onClick={() => void handleRemove(m)}
                 >
-                  <Icon />
-                </Link>
+                  <MinusIcon />
+                </button>
+              ) : (
                 <button
                   type="button"
                   className={css.addBtn}
@@ -99,11 +94,11 @@ function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
                 >
                   <PlusIcon />
                 </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

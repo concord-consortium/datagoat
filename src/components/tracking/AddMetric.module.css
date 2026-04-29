@@ -115,9 +115,10 @@
   height: 24px;
 }
 
-/* ── Add button (prototype lines 1679-1697) ── */
+/* ── Add / remove button (prototype lines 1679-1702) ── */
 
-.addBtn {
+.addBtn,
+.removeBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +145,18 @@
   color: var(--accent);
 }
 
-.addBtn:focus-visible {
+.removeBtn {
+  border-color: rgba(220, 53, 69, 0.75);
+  color: #dc3545;
+}
+
+.removeBtn:hover {
+  background: rgba(220, 53, 69, 0.12);
+  border-color: #dc3545;
+}
+
+.addBtn:focus-visible,
+.removeBtn:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
@@ -155,34 +167,27 @@
   box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
 }
 
-.addBtn svg {
+.removeBtn:active {
+  transform: scale(0.96);
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.18);
+}
+
+.addBtn svg,
+.removeBtn svg {
   width: 24px;
   height: 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .metricInfoBtn,
-  .addBtn {
+  .addBtn,
+  .removeBtn {
     transition: none;
   }
   .metricInfoBtn:active,
-  .addBtn:active {
+  .addBtn:active,
+  .removeBtn:active {
     transform: none;
   }
-}
-
-/* ── Empty state (added; no prototype counterpart - the prototype shows
-   already-tracked metrics with a remove button instead, but our spec
-   filters them out entirely). ── */
-
-.emptyState {
-  margin: 24px 0 0;
-  padding: 20px;
-  text-align: center;
-  color: var(--subtext);
-  font-size: 16px;
-  line-height: 1.5;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
 }

@@ -3,8 +3,10 @@ import {
   initializePlugin,
   createTable,
   createItems,
+  getAllItems,
   getDataContext,
   updateAttribute,
+  updateItemByID,
   codapInterface,
 } from "@concord-consortium/codap-plugin-api";
 import { logError } from "../utils/logError";
@@ -40,6 +42,13 @@ export interface SendDatasetArgs {
   tableName?: string;
   attributes: string[];
   rows: DatasetRow[];
+  // Attribute used to match incoming rows against existing items in
+  // CODAP. Rows whose value at this key matches an existing item's
+  // value are updated in place; rows with no match are appended via
+  // createItems. Defaults to "date" because that is DataGOAT's
+  // natural per-day primary key. Pass `null` to disable upsert and
+  // append every row (the pre-existing behavior).
+  keyAttribute?: string | null;
 }
 
 export interface UseCodapApiResult {
@@ -125,6 +134,7 @@ export function useCodapApi(): UseCodapApiResult {
     tableName,
     attributes,
     rows,
+    keyAttribute = "date",
   }: SendDatasetArgs): Promise<void> {
     // Source of truth is CODAP itself, not in-memory state - a page
     // reload of the plugin would otherwise re-trigger create and fail
@@ -195,9 +205,43 @@ export function useCodapApi(): UseCodapApiResult {
         }
       }
     }
-    if (rows.length > 0) {
-      ensureSuccess(await createItems(name, rows), "createItems");
+    if (rows.length === 0) return;
+
+    // Upsert path: match incoming rows against existing items by
+    // keyAttribute (default "date") so re-pressing "Send to CODAP"
+    // updates rows in place rather than producing duplicates.
+    if (keyAttribute) {
+      const existingItems = await getAllItems(name);
+      const keyToId = new Map<string, number | string>();
+      if (existingItems?.success) {
+        const items = (existingItems.values as
+          | Array<{ id: number | string; values: DatasetRow }>
+          | undefined) ?? [];
+        for (const item of items) {
+          const k = item.values?.[keyAttribute];
+          if (k != null) keyToId.set(String(k), item.id);
+        }
+      }
+      const toCreate: DatasetRow[] = [];
+      for (const row of rows) {
+        const k = row[keyAttribute];
+        const id = k != null ? keyToId.get(String(k)) : undefined;
+        if (id !== undefined) {
+          ensureSuccess(
+            await updateItemByID(name, id, row),
+            "updateItemByID",
+          );
+        } else {
+          toCreate.push(row);
+        }
+      }
+      if (toCreate.length > 0) {
+        ensureSuccess(await createItems(name, toCreate), "createItems");
+      }
+      return;
     }
+
+    ensureSuccess(await createItems(name, rows), "createItems");
   }
 
   return { status, error, sendDataset };

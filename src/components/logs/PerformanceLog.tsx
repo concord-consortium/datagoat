@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEventHandler,
+} from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { useUser } from "../../contexts/UserContext";
@@ -11,29 +16,8 @@ import {
   toISO,
 } from "../../utils/dates";
 import { performanceTotal } from "./PerformanceTotals";
-import type { PerformanceEntry } from "../../types/data";
+import { emptyPerformanceEntry } from "../../types/data";
 import css from "./PerformanceLog.module.css";
-
-const DEBOUNCE_MS = 500;
-
-function emptyEntry(date: string): PerformanceEntry {
-  return { version: 1, date, metrics: {} };
-}
-
-// Merge two PerformanceEntry partials. The top-level keys (date, version)
-// shallow-merge; the nested `metrics` map deep-merges so accumulating
-// writes across multiple metric inputs within the debounce window
-// preserves all fields.
-function mergePartials(
-  prev: Partial<PerformanceEntry>,
-  next: Partial<PerformanceEntry>,
-): Partial<PerformanceEntry> {
-  return {
-    ...prev,
-    ...next,
-    metrics: { ...(prev.metrics ?? {}), ...(next.metrics ?? {}) },
-  };
-}
 
 export function PerformanceLog() {
   const [searchParams] = useSearchParams();
@@ -71,80 +55,7 @@ export function PerformanceLog() {
 
   const entries = performance.status === "loaded" ? performance.entries : [];
   const currentEntry =
-    entries.find((e) => e.date === dateIso) ?? emptyEntry(dateIso);
-
-  // Debounced writes via accumulator pattern - identical contract to
-  // WellnessLog (per spec Step 12). Kept inline rather than extracted
-  // to a shared util because PerformanceEntry's nested `metrics` map
-  // requires a deep-merge for the partials, while WellnessEntry's flat
-  // shape works with a shallow spread; the merge function is the only
-  // shared seam and forcing it through a generic util adds friction.
-  const pendingRef = useRef<{
-    date: string | null;
-    partial: Partial<PerformanceEntry>;
-  }>({ date: null, partial: {} });
-  const timerRef = useRef<number | null>(null);
-
-  const flushPending = () => {
-    const { date, partial } = pendingRef.current;
-    // Object.keys check is load-bearing under Strict Mode's mount->unmount
-    // ->remount cycle - without it, the first cleanup fires a no-op write
-    // of an empty object. Look at both top-level partial keys and nested
-    // metrics keys: a partial that only sets metrics still has content.
-    const hasContent =
-      Object.keys(partial).length > 0 &&
-      (Object.keys(partial).some((k) => k !== "metrics") ||
-        Object.keys(partial.metrics ?? {}).length > 0);
-    if (date && hasContent) {
-      void setPerformanceEntry(date, partial);
-    }
-    pendingRef.current = { date: null, partial: {} };
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const queueWrite = (
-    date: string,
-    partial: Partial<PerformanceEntry>,
-  ) => {
-    // If the user just navigated to a different date, flush the prior
-    // date's pending writes before starting a new accumulator for the
-    // new date.
-    if (
-      pendingRef.current.date !== null &&
-      pendingRef.current.date !== date
-    ) {
-      flushPending();
-    }
-    pendingRef.current = {
-      date,
-      partial: mergePartials(pendingRef.current.partial, partial),
-    };
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-    }
-    timerRef.current = window.setTimeout(() => {
-      flushPending();
-    }, DEBOUNCE_MS);
-  };
-
-  // Flush pending writes on date change.
-  useEffect(() => {
-    return () => {
-      flushPending();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateIso]);
-
-  // Flush on unmount.
-  useEffect(() => {
-    return () => {
-      flushPending();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    entries.find((e) => e.date === dateIso) ?? emptyPerformanceEntry(dateIso);
 
   if (shouldRedirect) {
     return <Navigate to="/performance" replace />;
@@ -153,20 +64,7 @@ export function PerformanceLog() {
   function setMetricValue(metricId: string, raw: string) {
     const numeric = raw === "" ? 0 : Number(raw);
     if (!Number.isFinite(numeric)) return;
-    queueWrite(dateIso, { metrics: { [metricId]: numeric } });
-  }
-
-  // Live-display values overlay the pending accumulator on the committed
-  // entry so the user sees their just-typed value immediately.
-  function liveMetric(metricId: string): number | string | undefined {
-    const pending = pendingRef.current.partial.metrics ?? {};
-    if (
-      pendingRef.current.date === dateIso &&
-      Object.prototype.hasOwnProperty.call(pending, metricId)
-    ) {
-      return pending[metricId];
-    }
-    return currentEntry.metrics?.[metricId];
+    setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
 
   const displayedMetrics = PERFORMANCE_METRICS.filter((m) =>
@@ -208,7 +106,7 @@ export function PerformanceLog() {
           </thead>
           <tbody>
             {displayedMetrics.map((metric) => {
-              const live = liveMetric(metric.id);
+              const live = currentEntry.metrics?.[metric.id];
               const stringValue =
                 typeof live === "number" && live > 0
                   ? String(live)
@@ -231,14 +129,12 @@ export function PerformanceLog() {
                     </Link>
                   </td>
                   <td className={css.colRecord}>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      className={`${css.valueInput} ${filled ? css.hasValue : ""}`}
+                    <PerformanceMetricInput
+                      metricId={metric.id}
+                      metricName={metric.name}
                       value={stringValue}
-                      onChange={(e) => setMetricValue(metric.id, e.target.value)}
-                      aria-label={metric.name}
+                      filled={filled}
+                      onChange={(raw) => setMetricValue(metric.id, raw)}
                     />
                   </td>
                 </tr>
@@ -255,5 +151,55 @@ export function PerformanceLog() {
         </p>
       </div>
     </>
+  );
+}
+
+interface PerformanceMetricInputProps {
+  metricId: string;
+  metricName: string;
+  value: string;
+  filled: boolean;
+  onChange: (raw: string) => void;
+}
+
+// Per-row input. type="text" + inputMode="decimal" + a digits/single-dot
+// filter mirrors MetricInputRow's NumericInput contract: in-progress
+// strings like "1." and "07" survive the parent's Number() round-trip,
+// and non-numeric keystrokes are rejected outright. Local state holds
+// the user's exact keystrokes; the effect reconciles only when the
+// parent value doesn't round-trip to the local string (cross-tab edit,
+// form reset).
+function PerformanceMetricInput({
+  metricId,
+  metricName,
+  value,
+  filled,
+  onChange,
+}: PerformanceMetricInputProps) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => {
+    const localNumeric = local === "" ? 0 : Number(local);
+    const parentNumeric = value === "" ? 0 : Number(value);
+    if (!Number.isFinite(localNumeric) || localNumeric !== parentNumeric) {
+      setLocal(value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.target.value;
+    if (!/^[0-9]*\.?[0-9]*$/.test(raw)) return;
+    setLocal(raw);
+    onChange(raw);
+  };
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      className={`${css.valueInput} ${filled ? css.hasValue : ""}`}
+      value={local}
+      onChange={handleChange}
+      aria-label={metricName}
+      data-metric-id={metricId}
+    />
   );
 }

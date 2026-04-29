@@ -68,6 +68,7 @@ export function DateNav({ offset, withChip, chipState }: DateNavProps) {
             <span
               className={`${css.dateNavChip} ${chipClass(chipState ?? "none")}`}
               aria-hidden="true"
+              data-chip-state={chipState ?? "none"}
             />
           )}
           <span className={css.dateNavLabel}>{labelText}</span>

@@ -1,3 +1,6 @@
+import { CURRENT_WELLNESS_ENTRY_VERSION } from "../migrations/wellnessEntry";
+import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
+
 export interface WellnessEntry {
   version: number;
   date: string;
@@ -23,3 +26,29 @@ export interface PerformanceEntry {
 export type DataLoadState<T> =
   | { status: "loading" }
   | { status: "loaded"; entries: T[] };
+
+export function emptyWellnessEntry(date: string): WellnessEntry {
+  return {
+    version: CURRENT_WELLNESS_ENTRY_VERSION,
+    date,
+    hydration: 0,
+    sleepTime: 0,
+    sleepEfficiency: 0,
+    protein: 0,
+    leanMass: 0,
+    availability: {
+      practiceHeld: null,
+      practiceParticipation: null,
+      gameHeld: null,
+      gameParticipation: null,
+    },
+  };
+}
+
+export function emptyPerformanceEntry(date: string): PerformanceEntry {
+  return {
+    version: CURRENT_PERFORMANCE_ENTRY_VERSION,
+    date,
+    metrics: {},
+  };
+}

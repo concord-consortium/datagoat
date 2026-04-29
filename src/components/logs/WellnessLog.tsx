@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import {
   Navigate,
   useSearchParams,
@@ -15,30 +15,8 @@ import {
   toISO,
 } from "../../utils/dates";
 import { getChipState } from "../../utils/wellnessCompleteness";
-import type { WellnessEntry } from "../../types/data";
+import { emptyWellnessEntry, type WellnessEntry } from "../../types/data";
 import css from "./WellnessLog.module.css";
-
-const DEBOUNCE_MS = 500;
-
-const EMPTY_AVAILABILITY: WellnessEntry["availability"] = {
-  practiceHeld: null,
-  practiceParticipation: null,
-  gameHeld: null,
-  gameParticipation: null,
-};
-
-function emptyEntry(date: string): WellnessEntry {
-  return {
-    version: 1,
-    date,
-    hydration: 0,
-    sleepTime: 0,
-    sleepEfficiency: 0,
-    protein: 0,
-    leanMass: 0,
-    availability: EMPTY_AVAILABILITY,
-  };
-}
 
 export function WellnessLog() {
   const [searchParams] = useSearchParams();
@@ -74,79 +52,14 @@ export function WellnessLog() {
 
   const entries =
     wellness.status === "loaded" ? wellness.entries : [];
-  // Merge over emptyEntry defaults so partially-saved docs (e.g. saved
-  // before a metric was tracked) still expose every field the UI reads.
-  // Without this, toggling availability on after logging other metrics
-  // hands AvailabilityTree an undefined value and crashes the page.
+  // Merge over emptyWellnessEntry defaults so partially-saved docs
+  // (e.g. saved before a metric was tracked) still expose every field
+  // the UI reads. Without this, toggling availability on after logging
+  // other metrics hands AvailabilityTree an undefined value and crashes.
   const foundEntry = entries.find((e) => e.date === dateIso);
   const currentEntry: WellnessEntry = foundEntry
-    ? { ...emptyEntry(dateIso), ...foundEntry }
-    : emptyEntry(dateIso);
-
-  // Debounced writes via accumulator pattern. Merge incoming partials into
-  // a ref keyed by date; flush on a single timer. Required so typing across
-  // multiple fields within DEBOUNCE_MS doesn't lose the earlier-typed
-  // fields - a naive single-timer-with-latest-arg debounce would clobber.
-  // Per spec "Step 11 - debounce accumulator".
-  const pendingRef = useRef<{
-    date: string | null;
-    partial: Partial<WellnessEntry>;
-  }>({ date: null, partial: {} });
-  const timerRef = useRef<number | null>(null);
-
-  const flushPending = () => {
-    const { date, partial } = pendingRef.current;
-    // Object.keys check is load-bearing under Strict Mode's mount->unmount
-    // ->remount cycle - without it, the first cleanup fires a no-op write
-    // of an empty object.
-    if (date && Object.keys(partial).length > 0) {
-      void setWellnessEntry(date, partial);
-    }
-    pendingRef.current = { date: null, partial: {} };
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const queueWrite = (date: string, partial: Partial<WellnessEntry>) => {
-    // If the user just navigated to a different date, flush the prior
-    // date's pending writes before starting a new accumulator for the
-    // new date - so the last keystroke on the prior date isn't lost.
-    if (
-      pendingRef.current.date !== null &&
-      pendingRef.current.date !== date
-    ) {
-      flushPending();
-    }
-    pendingRef.current = {
-      date,
-      partial: { ...pendingRef.current.partial, ...partial },
-    };
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-    }
-    timerRef.current = window.setTimeout(() => {
-      flushPending();
-    }, DEBOUNCE_MS);
-  };
-
-  // Flush pending writes on date change, before the new date's data
-  // takes over.
-  useEffect(() => {
-    return () => {
-      flushPending();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateIso]);
-
-  // Flush on unmount.
-  useEffect(() => {
-    return () => {
-      flushPending();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    ? { ...emptyWellnessEntry(dateIso), ...foundEntry }
+    : emptyWellnessEntry(dateIso);
 
   const chipState = getChipState(currentEntry, trackedIds);
 
@@ -160,31 +73,15 @@ export function WellnessLog() {
   ) {
     const numeric = raw === "" ? 0 : Number(raw);
     if (!Number.isFinite(numeric)) return;
-    queueWrite(dateIso, { [field]: numeric } as Partial<WellnessEntry>);
+    setWellnessEntry(dateIso, { [field]: numeric } as Partial<WellnessEntry>);
   }
 
   function setHydration(level: number) {
-    queueWrite(dateIso, { hydration: level });
+    setWellnessEntry(dateIso, { hydration: level });
   }
 
   function setAvailability(next: WellnessEntry["availability"]) {
-    queueWrite(dateIso, { availability: next });
-  }
-
-  // Live-display values pull from the entry, with a write-through overlay
-  // from the pending accumulator so the user sees their just-typed value
-  // immediately even though the Firestore commit is debounced.
-  function liveValue<K extends keyof WellnessEntry>(
-    field: K,
-  ): WellnessEntry[K] {
-    const pending = pendingRef.current.partial as Partial<WellnessEntry>;
-    if (
-      pendingRef.current.date === dateIso &&
-      Object.prototype.hasOwnProperty.call(pending, field)
-    ) {
-      return pending[field] as WellnessEntry[K];
-    }
-    return currentEntry[field];
+    setWellnessEntry(dateIso, { availability: next });
   }
 
   // Welcome paragraph is shown only during onboarding (matches the
@@ -233,7 +130,7 @@ export function WellnessLog() {
                       key={metric.id}
                       metric={metric}
                       inputType="colorScale"
-                      value={liveValue("hydration") as number}
+                      value={currentEntry.hydration}
                       onChange={setHydration}
                       detailHref={`/wellness/${metric.id}`}
                     />
@@ -246,11 +143,7 @@ export function WellnessLog() {
                       metric={metric}
                       inputType="tree"
                       competitionTerm={competitionTerm}
-                      value={
-                        liveValue(
-                          "availability",
-                        ) as WellnessEntry["availability"]
-                      }
+                      value={currentEntry.availability}
                       onChange={setAvailability}
                       detailHref={`/wellness/${metric.id}`}
                     />
@@ -260,7 +153,7 @@ export function WellnessLog() {
                   WellnessEntry,
                   "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
                 >;
-                const live = liveValue(fieldKey);
+                const live = currentEntry[fieldKey];
                 const stringValue =
                   typeof live === "number" && live > 0 ? String(live) : "";
                 return (

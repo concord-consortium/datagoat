@@ -58,6 +58,8 @@
 .dashLogNavBtn svg {
   position: relative;
   z-index: 1;
+  width: 24px;
+  height: 24px;
   transition: transform var(--dur-tap) var(--ease-default);
 }
 

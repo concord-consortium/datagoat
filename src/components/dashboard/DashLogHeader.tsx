@@ -36,6 +36,8 @@ export function DashLogHeader({
       ? "Go to Health & Wellness Log"
       : "Go to Performance Log";
 
+  const preHasTrailingSpace = !!pre && /\s$/.test(pre);
+  const postHasLeadingSpace = !!post && /^\s/.test(post);
   const trimmedPre = pre?.replace(/\s+$/, "") ?? "";
   const trimmedPost = post?.replace(/^\s+/, "") ?? "";
 
@@ -53,9 +55,9 @@ export function DashLogHeader({
         {highlight ? (
           <>
             {trimmedPre}
-            {NBSP}
+            {preHasTrailingSpace && NBSP}
             <span className={css.statusHighlight}>{highlight}</span>
-            {NBSP}
+            {postHasLeadingSpace && NBSP}
             {trimmedPost}
           </>
         ) : (

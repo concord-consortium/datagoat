@@ -66,7 +66,7 @@ export function Dashboard() {
   } else if (wellnessLogged > 0) {
     wellnessPre = "Log ";
     wellnessHighlight = `${wellnessRemaining} remaining metric${wellnessRemaining === 1 ? "" : "s"}`;
-    wellnessPost = " for today.";
+    wellnessPost = ".";
     wellnessStatus = `${wellnessPre}${wellnessHighlight}${wellnessPost}`;
   } else {
     wellnessPre = "Log your ";

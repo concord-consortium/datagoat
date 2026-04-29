@@ -723,7 +723,7 @@ Plugin mode is triggered by **route, not iframe detection**. The app exposes a `
 /codap              -> CodapPlugin (plugin view, no mobile container)
 ```
 
-The DataGOAT app constructs the CODAP URL as `https://codap.concord.org?di=https://datagoat.concord.org/codap`, so CODAP loads the `/codap` route directly in its iframe. An iframe-detection hook (`useIsCodap`) is deliberately not used - `window !== window.parent` is a false-positive magnet (dev-tool previews, unrelated embeds) and the URL construction is already under our control. Route-based gating is simpler, explicit, and avoids a post-message handshake for a boundary that doesn't carry auth weight.
+The DataGOAT app constructs the CODAP URL as `https://codap3.concord.org?di=<origin>/codap`, where `<origin>` is `http://localhost:<port>` when running on localhost (so CODAP loads the local dev `/codap` route) and `https://datagoat.concord.org` otherwise. CODAP loads the `/codap` route directly in its iframe. An iframe-detection hook (`useIsCodap`) is deliberately not used - `window !== window.parent` is a false-positive magnet (dev-tool previews, unrelated embeds) and the URL construction is already under our control. Route-based gating is simpler, explicit, and avoids a post-message handshake for a boundary that doesn't carry auth weight.
 
 The `/codap` route is **not** wrapped in `ProtectedRoute`. `CodapPlugin` inspects `AuthContext.user` directly and renders either the data-export UI (authenticated) or the "Log into DataGOAT first, then reload this plugin" message (unauthenticated) - matching the auth behavior described in the "Auth in iframe" subsection below.
 
@@ -764,7 +764,7 @@ Login via popup/redirect is intentionally **not** supported inside the iframe - 
 
 The "Analyze Your Data in CODAP" button behavior differs by viewport:
 
-- **Desktop/tablet (>= 640px)**: Opens CODAP with `?di=https://datagoat.concord.org` in a new tab
+- **Desktop/tablet (>= 640px)**: Opens `https://codap3.concord.org?di=<origin>/codap` in a new tab, where `<origin>` is `http://localhost:<port>` on localhost and `https://datagoat.concord.org` otherwise
 - **Mobile (< 640px)**: Opens a modal telling the user to visit `datagoat.concord.org` on their desktop to use CODAP, since CODAP doesn't work well on small screens
 
 ## Dependencies

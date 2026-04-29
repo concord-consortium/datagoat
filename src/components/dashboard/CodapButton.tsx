@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { MobileCodapModal } from "./MobileCodapModal";
 import css from "./CodapButton.module.css";
 
-const CODAP_URL =
-  "https://codap.concord.org?di=https://datagoat.concord.org/codap";
+const CODAP_DI_URL =
+  typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? `http://localhost:${window.location.port}/codap`
+    : "https://datagoat.concord.org/codap";
+const CODAP_URL = `https://codap3.concord.org?di=${CODAP_DI_URL}`;
 const DESKTOP_QUERY = "(min-width: 640px)";
 
 // "Analyze Your Data in CODAP" button. Behavior split by viewport:

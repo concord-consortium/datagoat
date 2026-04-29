@@ -1,17 +1,13 @@
-import { DashboardHeaderSlide } from "./DashboardHeaderSlide";
 import { ActivityCalendar } from "./ActivityCalendar";
 import { DashLogHeader } from "./DashLogHeader";
 import { DashboardChartCard } from "./DashboardChartCard";
 import { CodapButton } from "./CodapButton";
-import { SectionHeading } from "../layout/SectionHeading";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
-import { useNavMenu } from "../../contexts/NavMenuContext";
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
 import { getChipState } from "../../utils/wellnessCompleteness";
-import HomeIcon from "@/icons/home.svg?react";
 import css from "./Dashboard.module.css";
 
 // Dashboard scaffold: header carousel + welcome + activity calendars +
@@ -20,7 +16,6 @@ import css from "./Dashboard.module.css";
 export function Dashboard() {
   const { loadState } = useUser();
   const { wellness, performance } = useData();
-  const { setIsOpen: setMenuOpen } = useNavMenu();
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
 
@@ -86,20 +81,22 @@ export function Dashboard() {
 
   return (
     <div className={css.dashboardScreen}>
-      <DashboardHeaderSlide />
-      <SectionHeading
-        title="Dashboard"
-        icon={<HomeIcon />}
-        showHome={false}
-        onOpenMenu={() => setMenuOpen(true)}
-      />
+      {/* DashboardHeaderSlide AND SectionHeading are rendered by
+          AppShell's <header> on /dashboard so the entire header stack
+          stays pinned outside the scroll container. */}
       <div className={css.screenContent}>
-        <p className={css.dashboardWelcome}>
-          <strong className={css.dashboardWelcomeTitle}>Your Dashboard</strong>
-          This is your home base. Here you’ll see a snapshot of your recent
-          activity, trends, and overall progress. Check back daily to stay on
-          top of your goals.
-        </p>
+        {/* Welcome shown only during onboarding (matches the prototype's
+            .profile-welcome.show gate keyed on window.isNewUser - HTML
+            around line 5088). Established users see the dashboard
+            content directly. */}
+        {profile && !profile.trackingSetupComplete && (
+          <p className={css.dashboardWelcome}>
+            <strong className={css.dashboardWelcomeTitle}>Your Dashboard</strong>
+            This is your home base. Here you’ll see a snapshot of your recent
+            activity, trends, and overall progress. Check back daily to stay
+            on top of your goals.
+          </p>
+        )}
 
         {/* Health & Wellness Log Section. Performance section omits the
             ActivityCalendar entirely, matching the prototype's dashboard

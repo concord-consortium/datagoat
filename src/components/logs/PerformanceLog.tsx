@@ -173,18 +173,28 @@ export function PerformanceLog() {
     trackedIds.includes(m.id),
   );
 
+  // Welcome shown only during onboarding (matches prototype's
+  // .profile-welcome.show gate keyed on window.isNewUser).
+  const isOnboarding =
+    loadState.status === "missing" ||
+    (loadState.status === "loaded" &&
+      (!loadState.profile.profileComplete ||
+        !loadState.profile.trackingSetupComplete));
+
   return (
     <>
       <DateNav offset={offset} withChip={false} />
       <div className={css.screenContent}>
-        <p className={css.profileWelcome}>
-          <strong className={css.profileWelcomeTitle}>
-            Your Performance Log
-          </strong>
-          Track your sport-specific performance data here. Log your numbers
-          after each practice or competition to build a complete picture of
-          your progress.
-        </p>
+        {isOnboarding && (
+          <p className={css.profileWelcome}>
+            <strong className={css.profileWelcomeTitle}>
+              Your Performance Log
+            </strong>
+            Track your sport-specific performance data here. Log your numbers
+            after each practice or competition to build a complete picture of
+            your progress.
+          </p>
+        )}
 
         <table className={css.performanceLogTable}>
           <thead>

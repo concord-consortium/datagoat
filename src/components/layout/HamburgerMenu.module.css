@@ -60,6 +60,16 @@
   color: var(--subtext);
 }
 
+/* Source SVGs in src/icons/ have viewBox but no explicit width/height -
+   browsers default unsized SVGs to 300x150. Pin to 24x24 here so the
+   menu rows display the per-item icon at the prototype's standard
+   size. */
+.navItemIcon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
 .navItem.active .navItemIcon {
   color: var(--accent);
 }

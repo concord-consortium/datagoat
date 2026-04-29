@@ -1,15 +1,22 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppHeader } from "../components/layout/AppHeader";
+import { DashboardHeaderSlide } from "../components/dashboard/DashboardHeaderSlide";
+import { SectionHeading } from "../components/layout/SectionHeading";
 import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import { VerificationBanner } from "../components/auth/VerificationBanner";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
+import { resolveRouteMeta } from "./routeMeta";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
-// Routes that opt out of the AppHeader. Per spec the dashboard owns its
-// own header-slide carousel (DashboardHeaderSlide) and replaces AppHeader.
-const HIDE_HEADER_PATHS = new Set<string>(["/dashboard"]);
+// /dashboard renders DashboardHeaderSlide (the wordmark<->motivation
+// carousel) instead of the static AppHeader. Both render inside the
+// AppShell's <header> element - OUTSIDE <main> - so the brand chrome
+// stays pinned at the top of the column while only the screen content
+// scrolls. (Matches the prototype: `.screen-header` lives outside
+// `.screen-body`, the latter being the scroll container.)
+const DASHBOARD_PATHS = new Set<string>(["/dashboard"]);
 
 // Auth-time routes don't render the hamburger trigger - they get plain auth
 // chrome instead. AppShell still hosts the menu state so any rendered
@@ -49,8 +56,10 @@ export function AppShell() {
 function AppShellInner() {
   const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
   const { pathname } = useLocation();
-  const showHeader =
-    !HIDE_HEADER_PATHS.has(pathname) && !AUTH_PATHS.has(pathname);
+  const isAuthRoute = AUTH_PATHS.has(pathname);
+  const showHeader = !isAuthRoute;
+  const isDashboard = DASHBOARD_PATHS.has(pathname);
+  const routeMeta = resolveRouteMeta(pathname);
   const mainRef = useRef<HTMLElement | null>(null);
 
   // Document focusin auto-scroll-into-view (port of prototype HTML around
@@ -157,11 +166,15 @@ function AppShellInner() {
         Skip to main content
       </a>
       {showHeader && (
-        <header>
-          <AppHeader
-            menuOpen={menuOpen}
-            onToggleMenu={() => setMenuOpen(!menuOpen)}
-          />
+        <header className={css.header}>
+          {isDashboard ? <DashboardHeaderSlide /> : <AppHeader />}
+          {routeMeta && (
+            <SectionHeading
+              title={routeMeta.title}
+              icon={routeMeta.icon}
+              showHome={routeMeta.showHome}
+            />
+          )}
         </header>
       )}
       {/* tabIndex={0} keeps DGT-6's keyboard-scroll affordance: keyboard

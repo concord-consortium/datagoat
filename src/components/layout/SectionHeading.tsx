@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useNavMenu } from "../../contexts/NavMenuContext";
 import BackChevron from "@/icons/back-chevron.svg?react";
 import HomeIcon from "@/icons/home.svg?react";
 import HamburgerIcon from "@/icons/hamburger.svg?react";
@@ -10,18 +11,24 @@ interface SectionHeadingProps {
   icon?: ReactNode;
   backTo?: string;
   onBack?: () => void;
-  onOpenMenu: () => void;
   showHome?: boolean;
 }
 
+// SectionHeading consumes NavMenuContext directly so the home + back
+// buttons can close the menu on click (matches prototype: any
+// navigation chrome action closes the open menu) and the hamburger
+// button shares the same source of truth as the Dialog's open state.
 export function SectionHeading({
   title,
   icon,
   backTo,
   onBack,
-  onOpenMenu,
   showHome = true,
 }: SectionHeadingProps) {
+  const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
+  const closeMenu = () => {
+    if (menuOpen) setMenuOpen(false);
+  };
   return (
     <h2 className={css.sectionHeading}>
       {/* data-skip-link-exclude: AppShell's skip-link focus advance
@@ -33,6 +40,7 @@ export function SectionHeading({
             to={backTo}
             className={css.backNavBtn}
             aria-label={`Back`}
+            onClick={closeMenu}
             data-skip-link-exclude
           >
             <BackChevron />
@@ -40,7 +48,10 @@ export function SectionHeading({
         ) : (
           <button
             type="button"
-            onClick={onBack}
+            onClick={() => {
+              closeMenu();
+              onBack?.();
+            }}
             className={css.backNavBtn}
             aria-label="Back"
             data-skip-link-exclude
@@ -55,6 +66,7 @@ export function SectionHeading({
           to="/dashboard"
           className={css.navHomeBtn}
           aria-label="Dashboard"
+          onClick={closeMenu}
           data-skip-link-exclude
         >
           <HomeIcon />
@@ -65,7 +77,8 @@ export function SectionHeading({
         className={css.navMenuBtn}
         aria-label="Menu"
         aria-haspopup="true"
-        onClick={onOpenMenu}
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen(!menuOpen)}
         data-skip-link-exclude
       >
         <HamburgerIcon />

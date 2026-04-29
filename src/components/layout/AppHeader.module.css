@@ -1,74 +1,173 @@
-.appHeader {
-  position: relative;
+/* AppHeader - the brand chrome rendered above the section-heading on
+   every authed route except /dashboard (which renders its own
+   DashboardHeaderSlide that includes the same chrome elements + a
+   carousel for the wordmark/tagline area).
+
+   Ports the prototype's `.screen-header` (HTML lines 940-961) +
+   `.wordmark` (lines 401-432) + `.tagline` + `.accent-line` (line 449)
+   plus the `brand-logo-img` injected by JS (lines 5043-5052) so authed
+   screens get a brand chrome consistent with the auth screens.
+
+   The hamburger button is INTENTIONALLY NOT here - it lives in
+   SectionHeading per the prototype's HTML structure (line 4273 etc.). */
+
+.shell {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 16px 16px 8px;
-  background: var(--bg);
-  color: var(--text);
+  flex-shrink: 0;
 }
 
-.appWordmark {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 800;
-  font-size: 1.75rem;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  text-transform: uppercase;
-  margin: 0;
-}
-
-.appTagline {
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  color: var(--subtext);
-  margin-top: 2px;
-}
-
-.menuBtn {
+/* Speed-lines decoration matches AuthLayout. The user requested "stripes
+   (like the login screen)" on every authed page, so the same SVG
+   renders here too. Mounted inside .headerZone so the zone's
+   overflow:hidden clips the bottom edge flush with the accent line. */
+.speedLines {
   position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  appearance: none;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  padding: 8px;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
+  height: 400px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* .screen-header (prototype 940-947) - flex row with the brand logo
+   img (left), wordmark, and tagline. */
+.headerZone {
+  padding: 18px 24px 24px;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--subtext);
-  cursor: pointer;
-  font: inherit;
-  transition:
-    background var(--dur-quick) var(--ease-default),
-    color var(--dur-quick) var(--ease-default),
-    transform var(--dur-tap) var(--ease-default);
+  gap: 12px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
 }
 
-.menuBtn:hover {
-  background: rgba(0, 179, 192, 0.12);
+/* Ambient teal gradient overlay - matches the prototype's
+   .screen-header::before rule (line 948). */
+.headerZone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(0, 80, 100, 0.18) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Brand logo - the small DataGOAT goat icon (43x36 per prototype JS at
+   line 5049-5050) that's injected at the start of every screen-header.
+   z-index: 3 keeps it above the speed-lines (z: 0) and gradient (z: 0). */
+.brandLogoImg {
+  width: 43px;
+  height: 36px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+}
+
+/* Wordmark - prototype line 955-958 (the .screen-header override at 32px
+   font-size, NOT the 52px auth-screen variant). */
+.wordmark {
+  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-size: 32px;
+  line-height: 1;
   color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
 }
 
-.menuBtn:active {
-  transform: translateY(-50%) scale(0.95);
+.wordmark .data {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-right: 1px;
 }
 
-.menuBtn:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+.wordmark .goat {
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+}
+
+.wordmark .goatG {
+  margin-right: 1px;
+}
+
+.wordmark .goatT {
+  margin-left: -0.077em;
+}
+
+/* Tagline - prototype line 959-961 (.screen-header override at 13px,
+   flex: 1 so it fills the remaining row width). */
+.tagline {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--subtext);
+  letter-spacing: 0.2px;
+  margin: 0;
+  flex: 1;
+  position: relative;
+  z-index: 3;
+}
+
+@keyframes accent-grow {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes accent-shimmer {
+  0% {
+    background-position: 200% 0, 0 0;
+  }
+  40% {
+    background-position: -100% 0, 0 0;
+  }
+  100% {
+    background-position: -100% 0, 0 0;
+  }
+}
+
+.accentLine {
+  height: 2px;
+  flex-shrink: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.25) 50%,
+      transparent 100%
+    ),
+    linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      rgba(0, 179, 192, 0.4) 60%,
+      transparent 100%
+    );
+  background-size: 50% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+  background-position: -100% 0, 0 0;
+  margin: 0;
+  animation:
+    accent-grow var(--dur-carousel-x) var(--ease-out) 100ms both,
+    accent-shimmer 6s var(--ease-in-out) 1.5s infinite;
+  position: relative;
+  z-index: 3;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .menuBtn {
-    transition: none;
-  }
-  .menuBtn:active {
-    transform: translateY(-50%);
+  .accentLine {
+    animation: none;
+    background-position: 0 0, 0 0;
   }
 }

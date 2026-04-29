@@ -181,18 +181,30 @@ export function WellnessLog() {
     return currentEntry[field];
   }
 
+  // Welcome paragraph is shown only during onboarding (matches the
+  // prototype's `.profile-welcome.show` gate keyed on `window.isNewUser`
+  // - HTML around line 5088). Established users with a complete profile
+  // see only the data-entry table.
+  const isOnboarding =
+    loadState.status === "missing" ||
+    (loadState.status === "loaded" &&
+      (!loadState.profile.profileComplete ||
+        !loadState.profile.trackingSetupComplete));
+
   return (
     <>
       <DateNav offset={offset} withChip chipState={chipState} />
       <div className={css.screenContent}>
-        <p className={css.profileWelcome}>
-          <strong className={css.profileWelcomeTitle}>
-            Your Health & Wellness Log
-          </strong>
-          Record your health & wellness metrics here. Logging consistently
-          - even on rest days - helps you and your team spot patterns
-          over time.
-        </p>
+        {isOnboarding && (
+          <p className={css.profileWelcome}>
+            <strong className={css.profileWelcomeTitle}>
+              Your Health & Wellness Log
+            </strong>
+            Record your health & wellness metrics here. Logging consistently
+            - even on rest days - helps you and your team spot patterns
+            over time.
+          </p>
+        )}
 
         <table className={css.bodyTable}>
           <thead>

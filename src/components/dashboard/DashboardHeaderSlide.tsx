@@ -3,6 +3,11 @@ import { useNavMenu } from "../../contexts/NavMenuContext";
 import { MotivationMessage } from "./MotivationMessage";
 import css from "./DashboardHeaderSlide.module.css";
 
+// Small 43x36 dashboard mark for the screen-header chrome. The large
+// hero logo (datagoat-logo-login.svg) stays on AuthLayout.
+const datagoatLogo = "/icons/datagoat-logo-dashboard.svg";
+const speedLines = "/icons/speed-lines.svg";
+
 // Per-slide hold timings ported VERBATIM from the prototype's
 // `_dashHoldTimes = [6750, 9000]` array (HTML around line 5242).
 // Asymmetric on purpose - wordmark holds longer than the streak/motivation
@@ -107,7 +112,19 @@ export function DashboardHeaderSlide() {
   }
 
   return (
-    <div className={css.screenHeader}>
+    <div className={css.shell}>
+      <div className={css.screenHeader}>
+        <img
+          className={css.speedLines}
+          src={speedLines}
+          alt=""
+          aria-hidden="true"
+        />
+        <img
+          className={css.brandLogoImg}
+          src={datagoatLogo}
+          alt="DataGOAT logo"
+        />
       <div className={css.headerSlideWrap}>
         <div
           className={`${css.headerSlideItem} ${css.headerContentDefault} ${slideClass(0)}`}
@@ -137,6 +154,8 @@ export function DashboardHeaderSlide() {
           <MotivationMessage active={slide === 1} />
         </div>
       </div>
+      </div>
+      <div className={css.accentLine} aria-hidden="true" />
     </div>
   );
 }

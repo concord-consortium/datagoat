@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
@@ -11,11 +10,6 @@ import screenCss from "./TrackedDataSetup.module.css";
 export function TrackedDataSetup() {
   const navigate = useNavigate();
   const { loadState, updateProfile, setTrackedMetrics } = useUser();
-
-  // Component-local edit-mode state per spec - not persisted, not in
-  // context. One toggle per table.
-  const [editingWellness, setEditingWellness] = useState(false);
-  const [editingPerformance, setEditingPerformance] = useState(false);
 
   const profile =
     loadState.status === "loaded" ? loadState.profile : null;
@@ -37,15 +31,6 @@ export function TrackedDataSetup() {
     const next = checked
       ? [...ids, id].filter((v, i, arr) => arr.indexOf(v) === i)
       : ids.filter((existing) => existing !== id);
-    await persistOrCache(type, next);
-  }
-
-  async function handleDelete(
-    type: "wellness" | "performance",
-    id: string,
-  ) {
-    const ids = type === "wellness" ? wellnessIds : performanceIds;
-    const next = ids.filter((existing) => existing !== id);
     await persistOrCache(type, next);
   }
 
@@ -96,13 +81,10 @@ export function TrackedDataSetup() {
         heading="Health & Wellness Log"
         registry={WELLNESS_METRICS}
         trackedIds={wellnessIds}
-        editing={editingWellness}
-        onToggleEdit={() => setEditingWellness((e) => !e)}
         onChangeOrder={(ids) => void handleChangeOrder("wellness", ids)}
         onToggleCheck={(id, checked) =>
           void handleToggleCheck("wellness", id, checked)
         }
-        onDelete={(id) => void handleDelete("wellness", id)}
         addToHref="/add-metric/wellness"
         addToLabel="Add Health & Wellness Metric"
       />
@@ -114,13 +96,10 @@ export function TrackedDataSetup() {
         heading="Performance Log"
         registry={PERFORMANCE_METRICS}
         trackedIds={performanceIds}
-        editing={editingPerformance}
-        onToggleEdit={() => setEditingPerformance((e) => !e)}
         onChangeOrder={(ids) => void handleChangeOrder("performance", ids)}
         onToggleCheck={(id, checked) =>
           void handleToggleCheck("performance", id, checked)
         }
-        onDelete={(id) => void handleDelete("performance", id)}
         addToHref="/add-metric/performance"
         addToLabel="Add Performance Metric"
       />

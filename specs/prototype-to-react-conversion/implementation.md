@@ -545,12 +545,12 @@ When the user's verification state flips to `true` (via `auth.currentUser.reload
 
 ### TrackedDataSetup with @dnd-kit drag reorder
 
-**Summary**: Port the Tracked Data Setup screen — two checkbox tables (Wellness + Performance) with edit-mode toggle that reveals delete buttons and enables `@dnd-kit/sortable` reorder. Persists `trackedWellnessMetrics` + `trackedPerformanceMetrics` arrays to UserContext (and thereby Firestore). Sets `trackingSetupComplete = true` on submit.
+**Summary**: Port the Tracked Data Setup screen — two checkbox tables (Wellness + Performance) with `@dnd-kit/sortable` drag-reorder. Persists `trackedWellnessMetrics` + `trackedPerformanceMetrics` arrays to UserContext (and thereby Firestore). Sets `trackingSetupComplete = true` on submit. **Deviation from prototype HTML**: the prototype's per-table edit toggle (which revealed a delete column + hid checkboxes) is dropped. The pinned design has no edit affordance — rows always show drag handle + Track checkbox + name + per-metric info button, and unchecking a row is the un-track action. Drag-reorder is always live.
 
 **Files affected**:
-- `src/components/tracking/TrackedDataSetup.tsx` + `.module.css` — port `#tracked-data-screen`. **One edit toggle PER TABLE** (not a single screen-level toggle): each `<TrackedMetricsTable>` owns its own `editing` state via `useState`, and renders the edit toggle in its `<h3 class="info-section-heading">` per the prototype's `#wellness-edit-toggle` / `#performance-edit-toggle` IDs (HTML around lines 4012 + 4084). A user can be editing wellness metrics without their performance table flipping into edit mode. Two `<TrackedMetricsTable type="wellness">` / `<TrackedMetricsTable type="performance">` instances. **CSS classes ported**: `.tracked-data-screen`, `.info-section-heading`, `.add-measurement-btn`.
-- `src/components/tracking/TrackedMetricsTable.tsx` + `.module.css` — single table component, wraps `DndContext` + `SortableContext`. Renders rows; each row is a `<SortableItem>` that toggles between read-mode (checkbox + name + info button) and edit-mode (drag handle + name + delete button). The `add-measurement-btn` lives below the table. In edit-mode, drag-and-drop reorders the array; persisted on edit-mode exit (debounced or on-toggle). **CSS classes ported**: `.data-table`, `.col-drag`, `.col-check`, `.col-name`, `.col-info`, `.col-delete`, `.track-check`, `.metric-info-btn`, `.edit-toggle-btn`.
-- `src/components/tracking/SortableMetricRow.tsx` + `.module.css` — uses `useSortable` from `@dnd-kit/sortable`; renders a `<tr>` with `transform`/`transition` styles applied. Drag handle has `aria-label="Reorder ${metric name}"`, `role="button"`, focusable. KeyboardSensor + TouchSensor + PointerSensor registered on the parent `DndContext`. **CSS classes ported**: `.drag-handle`, `.delete-row-btn`, `.sortable-row`, `.sortable-row-dragging`.
+- `src/components/tracking/TrackedDataSetup.tsx` + `.module.css` — port `#tracked-data-screen`. Two `<TrackedMetricsTable type="wellness">` / `<TrackedMetricsTable type="performance">` instances. **CSS classes ported**: `.tracked-data-screen`, `.info-section-heading`, `.add-measurement-btn`.
+- `src/components/tracking/TrackedMetricsTable.tsx` + `.module.css` — single table component, wraps `DndContext` + `SortableContext`. Renders rows; each row is a `<SortableItem>` showing drag handle + checkbox + name + info button. The `add-measurement-btn` lives below the table. **CSS classes ported**: `.data-table`, `.col-drag`, `.track-check`, `.metric-info-btn`.
+- `src/components/tracking/SortableMetricRow.tsx` + `.module.css` — uses `useSortable` from `@dnd-kit/sortable`; renders a `<tr>` with `transform`/`transition` styles applied. The info-column icon comes from each metric's `Icon` glyph (with the generic info-circle as a fallback for metrics that ship without one). Drag handle has `aria-label="Reorder ${metric name}"`, `role="button"`, focusable. KeyboardSensor + TouchSensor + PointerSensor registered on the parent `DndContext`. **CSS classes ported**: `.drag-handle`, `.sortable-row`, `.sortable-row-dragging`.
 - `src/components/tracking/announcements.ts` — `DndContext.accessibility.announcements` per requirements: `onDragStart` ("Picked up..."), `onDragOver` ("Moving..."), `onDragEnd` ("Dropped at position..."), `onDragCancel` ("Reorder cancelled, returned to position...").
 - `src/contexts/UserContext.tsx` — extend with `setTrackedMetrics(type: 'wellness' | 'performance', ids: string[])` helper (writes to Firestore at `users/{uid}/profile`, updating `trackedWellnessMetrics` or `trackedPerformanceMetrics`)
 - `src/routes/AppRoutes.tsx` — `/setup/tracking` → `<TrackedDataSetup />`
@@ -559,9 +559,9 @@ When the user's verification state flips to `true` (via `auth.currentUser.reload
 
 **Details**:
 
-*Edit-mode is component-local state.* Not persisted, not in context. `const [editing, setEditing] = useState(false)`. Toggling out of edit-mode persists the current order via `setTrackedMetrics()`.
+*No edit-mode state.* The pinned design dropped the prototype HTML's edit toggle / delete column. Rows always render drag handle + checkbox + name + info button.
 
-*Check/uncheck behavior.* In read-mode, checkboxes call `setTrackedMetrics()` immediately on each change. In edit-mode, checkboxes are hidden and rows show drag handle + delete button instead. Delete button calls `setTrackedMetrics()` with the row removed.
+*Check/uncheck behavior.* Checkboxes call `setTrackedMetrics()` immediately on each change. Unchecking is the un-track action; the row stays visible (un-tracked) so the user can re-check it without an "Add" trip. Drag-reorder writes are persisted on drag end.
 
 *`add-measurement-btn` per table.* Navigates to `/add-metric/wellness` or `/add-metric/performance`. The AddMetric screen (later step) is what lets users browse and add new metrics. In this step the button just `<Link>`s.
 
@@ -587,7 +587,7 @@ const sensors = useSensors(
 );
 ```
 
-*No lazy-loading of `@dnd-kit`.* Per the resolved Lazy-loading interview question, `@dnd-kit` is loaded eagerly. It runs during onboarding for every new user and again whenever a returning user edits their tracked-metrics list — it's not a niche path that would warrant the split-point complexity.
+*No lazy-loading of `@dnd-kit`.* Per the resolved Lazy-loading interview question, `@dnd-kit` is loaded eagerly. It runs during onboarding for every new user and again whenever a returning user reorders their tracked-metrics list — it's not a niche path that would warrant the split-point complexity.
 
 ---
 
@@ -871,7 +871,7 @@ useEffect(() => {
 *Per-cell acceptance script.* Run this end-to-end on every cell. The script is the golden path plus the most regression-prone interactions (drag-reorder, header carousel, chip-state transitions, calendar tappable cells, OAuth popup):
 
 1. Open `/login`, sign in with email/password (a pre-seeded test account).
-2. **New-user path**: complete `/profile` (fill every field), then `/setup/tracking` — toggle one wellness checkbox, enter edit mode, drag-reorder one row, exit edit mode (the reorder must persist).
+2. **New-user path**: complete `/profile` (fill every field), then `/setup/tracking` — toggle one wellness checkbox, drag-reorder one row (the reorder must persist immediately).
 3. Land on `/dashboard`. Watch the header carousel rotate at least once. Scroll the Health & Wellness calendar. Tap a non-inactive day → arrives at `/wellness?date=...`.
 4. Log a wellness entry: enter hydration, sleep time, protein. Watch the completeness chip flip `None → Some → All` as fields fill.
 5. Open hamburger, navigate to `/performance`, log one entry (pick any tracked metric).
@@ -900,7 +900,7 @@ Document the matrix-pass in the PR description as a 5×8 table; cells are ✓ / 
 
 ### RESOLVED: Lazy-loading discipline — front-loaded or follow-up
 
-**Decision**: **Only `/codap` is lazy-loaded.** `@dnd-kit` runs during onboarding (every new user) and again whenever any user edits their tracked-metrics list — it's not a niche path. The chart components are placeholders per the previous decision, so their bytes are negligible. CodapPlugin remains the one lazy-load seam because it's genuinely visited only by the small subset of users who export to CODAP. The "Pre-identified lazy-load seams" reference in requirements is updated to reflect this scope.
+**Decision**: **Only `/codap` is lazy-loaded.** `@dnd-kit` runs during onboarding (every new user) and again whenever any user reorders their tracked-metrics list — it's not a niche path. The chart components are placeholders per the previous decision, so their bytes are negligible. CodapPlugin remains the one lazy-load seam because it's genuinely visited only by the small subset of users who export to CODAP. The "Pre-identified lazy-load seams" reference in requirements is updated to reflect this scope.
 
 ### RESOLVED: PerformanceLog placeholder metrics — match requirements OPEN question
 

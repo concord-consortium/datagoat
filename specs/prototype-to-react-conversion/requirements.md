@@ -25,7 +25,7 @@ The designer's prototype is a single-page HTML file with 11 screens inside a pho
 |---|---|---|
 | auth-shell | Login / Signup / Forgot / Verify | Social sign-in buttons (Google, Facebook) + email/password forms, forgot flow, email verification (non-blocking) |
 | profile-screen | Profile setup (onboarding + edit) | Name, email, password, nickname, age, height, weight, gender, athlete type, competition term |
-| tracked-data-screen | Select which metrics to track | Two tables (Health & Wellness + Performance) with checkboxes, add-metric buttons. Has an edit-mode toggle that reveals per-row delete buttons and enables drag-and-drop reordering of tracked metrics. |
+| tracked-data-screen | Select which metrics to track | Two tables (Health & Wellness + Performance) with checkboxes, drag handles, per-metric info buttons, and add-metric buttons. Drag-and-drop reorders tracked metrics; unchecking a row un-tracks it. (Deviates from the prototype HTML's edit-toggle / delete-column affordance — the pinned design shows no edit button.) |
 | dashboard-screen | Home / summary view | Dashboard header slides between wordmark and a streak/motivation message (7 rotating messages, name-substituted). Section calendars (heatmap-style: All / Some / None / inactive) for Health & Wellness and Performance activity. **Health & Wellness calendar cells are interactive**: tapping/clicking (or pressing Enter/Space on focus) a non-inactive day navigates to the Health & Wellness Log on that date. Log-status buttons ("Log your X metrics for today") linking to each log screen. Two chart cards (Health & Wellness + Performance) with metric dropdown and time-range picker: 7d / 2w / 30d / 3mo / 6mo / All. "Analyze Your Data in CODAP" button. |
 | wellness-log-screen | Daily Health & Wellness data entry | Date nav with **dynamic completeness chip** + legend ("Data entered: All / Some / None"); table with inputs (hydration 1-8, sleep hours, sleep %, protein, lean mass, availability radios). Screen label is "Health & Wellness Log"; route remains `/wellness`. |
 | performance-log-screen | Daily performance data entry | Date nav (label-only, no chip/legend), table with inputs (wins/losses, goals, assists, yards, tackles), running totals column. Prototype still in flux per designer note — set of metrics per athlete type is not final. |
@@ -479,9 +479,7 @@ Core buttons:
 Icon/utility buttons:
 - `.field-info-btn` - small info icon button (triggers info modal)
 - `.metric-info-btn` - info button inside data tables
-- `.edit-toggle-btn` - toggles edit mode on Tracked Data Setup
-- `.delete-row-btn` - per-row delete (edit mode, Tracked Data Setup)
-- `.drag-handle` - drag-to-reorder handle (edit mode, Tracked Data Setup)
+- `.drag-handle` - drag-to-reorder handle on Tracked Data Setup
 - `.eye-btn` - password show/hide toggle
 - `.auth-switch-btn` / `.forgot-link` - inline text buttons in auth flows
 - `.nav-menu-btn` / `.nav-home-btn` - hamburger and home icons in section headings
@@ -672,7 +670,7 @@ Essential motion is retained: `:focus-visible` outlines, click/tap feedback (`tr
 
 ### Keyboard-accessible drag-and-drop (Tracked Data Setup)
 
-The drag-reorder interaction in edit mode must work for keyboard-only and screen-reader users, not just pointer/touch. `@dnd-kit/core` supports this natively via `KeyboardSensor`; the spec locks in the contract so it's implemented, not skipped.
+The drag-reorder interaction must work for keyboard-only and screen-reader users, not just pointer/touch. `@dnd-kit/core` supports this natively via `KeyboardSensor`; the spec locks in the contract so it's implemented, not skipped.
 
 - `.drag-handle` is a focusable element (`role="button"`, `tabindex=0`, `aria-label="Reorder <metric name>"`)
 - `DndContext` registers all three sensors: `TouchSensor` (mobile, primary), `KeyboardSensor` (a11y), `PointerSensor` (desktop/pen)
@@ -779,7 +777,7 @@ The conversion adds the following libraries to [package.json](package.json). No 
 | `react-hook-form` | Uncontrolled form state for profile + log-entry screens (many fields, performance-sensitive) |
 | `zod` | Schema validation composed per-metric; feeds Hook Form via the resolver below |
 | `@hookform/resolvers` | Glue between `react-hook-form` and `zod` |
-| `@dnd-kit/core` | Drag-and-drop reordering on Tracked Data Setup (edit mode). Chosen over `react-dnd` because it ships a dedicated `TouchSensor` (primary form factor is mobile) alongside `KeyboardSensor` (WCAG keyboard-drag support) and `PointerSensor` (desktop/pen) that compose cleanly. `react-dnd` has no first-class keyboard story and weaker touch handling. |
+| `@dnd-kit/core` | Drag-and-drop reordering on Tracked Data Setup. Chosen over `react-dnd` because it ships a dedicated `TouchSensor` (primary form factor is mobile) alongside `KeyboardSensor` (WCAG keyboard-drag support) and `PointerSensor` (desktop/pen) that compose cleanly. `react-dnd` has no first-class keyboard story and weaker touch handling. |
 | `@dnd-kit/sortable` | Sortable-list preset on top of `@dnd-kit/core` for the reorder UX |
 | `@concord-consortium/codap-plugin-api` | Concord-maintained client for the CODAP plugin postMessage handshake + data-context API. Used by `src/codap/codapApi.ts` (a thin DataGOAT-specific wrapper). Lazy-loaded with the rest of `/codap`, so no impact on the main bundle. Chosen over hand-rolled glue because it tracks CODAP's protocol authoritatively as it evolves. |
 | `vitest` (dev) | Test runner (see Testing section) |
@@ -851,7 +849,7 @@ The conversion adds many deps and components at once. To keep first-paint on sch
 
 The other two pre-identified seams (chart library, `@dnd-kit`) are **not** lazy-loaded:
 - The chart components are placeholder gray-box components in this conversion (real charts are a follow-up story), so their bytes are negligible.
-- `@dnd-kit/core` + `@dnd-kit/sortable` are loaded eagerly because `@dnd-kit` runs during onboarding for every new user (Tracked Data Setup → edit mode is part of the first-run flow when adding the initial set) and again whenever a returning user edits their metrics list. It's not a niche path that warrants a split-point.
+- `@dnd-kit/core` + `@dnd-kit/sortable` are loaded eagerly because `@dnd-kit` runs during onboarding for every new user (Tracked Data Setup is part of the first-run flow when adding the initial set) and again whenever a returning user reorders their metrics list. It's not a niche path that warrants a split-point.
 
 If the bundle budget is blown, **revisit `@dnd-kit` first** (it's the larger of the two) before widening the budget.
 
@@ -930,7 +928,7 @@ The PR reviewer can use this as a Definition of Done. Each checkbox below corres
 - [ ] Preserved auth logic from existing [Login.tsx](src/components/Login.tsx): handlers, `authErrorMessages` map, `registeredDisplayName` bridging pattern in App.tsx
 - [ ] New-user onboarding flow reaches Dashboard through Profile -> Tracked Data Setup; hamburger menu is disabled until `profileComplete && trackingSetupComplete`
 - [ ] `ProtectedRoute` uses the `ProfileLoadState` tri-state (loading / missing / loaded); returning users are not kicked to `/profile` while the Firestore fetch is in flight
-- [ ] Tracked Data Setup edit mode reveals delete buttons and a working drag-reorder; `@dnd-kit/core` is wired with `TouchSensor` + `KeyboardSensor` + `PointerSensor`; keyboard drag narrates via `announcements`
+- [ ] Tracked Data Setup rows render a drag handle, a Track checkbox, the metric name, and a per-metric info button (no edit toggle, no delete column — pinned design deviation from the prototype HTML); drag-reorder works via `@dnd-kit/core` wired with `TouchSensor` + `KeyboardSensor` + `PointerSensor`; keyboard drag narrates via `announcements`
 - [ ] CODAP plugin view renders at `/codap` route (no iframe detection); plugin view skips mobile container, PWA registration, hamburger, version footer
 - [ ] Dashboard includes: header slide + motivation carousel, wellness + performance activity calendars, log-status CTA buttons, two chart cards with time-range picker (7d / 2w / 30d / 3mo / 6mo / All), "Analyze Your Data in CODAP" button. **Charts inside the cards are placeholder gray-box components** at the final dimensions accepting the full final prop surface; real SVG chart rendering is a follow-up story (per Decisions: Chart library)
 - [ ] All `@keyframes` / long transitions and JS carousel timers honor `prefers-reduced-motion`

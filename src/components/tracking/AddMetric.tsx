@@ -14,9 +14,9 @@ import css from "./AddMetric.module.css";
 // setTrackedMetrics() helper TrackedDataSetup uses.
 //
 // Per spec: addable metrics already in the tracked list are filtered
-// OUT entirely (not shown with a remove button - that's the
-// TrackedDataSetup edit-mode UI). When all addables are tracked, an
-// empty-state message shows.
+// OUT entirely (un-tracking happens by unchecking the row on
+// TrackedDataSetup). When all addables are tracked, an empty-state
+// message shows.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
   if (type !== "wellness" && type !== "performance") {

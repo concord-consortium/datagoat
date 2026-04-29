@@ -1,7 +1,12 @@
-/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html.
+/* Ported from /home/doug/docs/datagoat-2026-04-27.html.
    Prototype class names are kebab-case; per the conversion's CSS Module
    convention they're camelCased here so JSX consumers reference them as
-   `css.dataTable`, `css.colDrag`, etc. */
+   `css.dataTable`, `css.colDrag`, etc.
+
+   Tracked Data Setup deviates from the prototype HTML: the prototype's
+   per-table edit toggle (which revealed a delete column + hid checkboxes)
+   is dropped. The user's pinned design has no edit affordance — rows
+   stay in their read shape, and unchecking a row is the un-track action. */
 
 /* .info-section-heading - prototype lines 683-695. Also used by InfoScreen
    in a later step; first consumer here. */
@@ -180,6 +185,11 @@
               border-color var(--dur-base) var(--ease-default),
               color var(--dur-base) var(--ease-default);
 }
+.addMeasurementBtn svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
 .addMeasurementBtn:hover {
   background: rgba(0, 179, 192, 0.12);
   border-color: var(--accent);
@@ -193,112 +203,12 @@
   outline-offset: 2px;
 }
 
-/* Drag handle + Delete columns - prototype lines 1569-1602 */
+/* Drag handle column - prototype lines 1569-1570 */
 .dataTable thead th.colDrag,
 .dataTable tbody td.colDrag {
   width: 44px;
   text-align: center;
   padding: 4px 2px 4px 6px;
-}
-.dataTable thead th.colDel,
-.dataTable tbody td.colDel {
-  width: 0;
-  max-width: 0;
-  padding: 0;
-  overflow: hidden;
-  border-bottom-color: transparent;
-  transition: width var(--dur-base) var(--ease-default),
-              max-width var(--dur-base) var(--ease-default),
-              padding var(--dur-base) var(--ease-default),
-              opacity var(--dur-base) var(--ease-default);
-  opacity: 0;
-}
-.dataTable.editMode tbody td.colDel {
-  overflow: visible;
-  opacity: 1;
-  line-height: 0;
-}
-.dataTable.editMode tbody td.colDel .deleteRowBtn {
-  margin-left: -50px;
-}
-.dataTable.editMode thead th:nth-child(4) {
-  transform: translateX(-28px);
-}
-.dataTable.editMode tbody .metricInfoBtn {
-  margin-right: 56px;
-}
-.deleteRowBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  background: transparent;
-  border: 1.5px solid rgba(220, 53, 69, 0.75);
-  border-radius: 50%;
-  color: #dc3545;
-  cursor: pointer;
-  transform-origin: center center;
-  transition: background var(--dur-base) var(--ease-default),
-              border-color var(--dur-base) var(--ease-default),
-              transform var(--dur-tap) var(--ease-default);
-}
-.deleteRowBtn:hover {
-  background: rgba(220, 53, 69, 0.12);
-  border-color: #dc3545;
-}
-.deleteRowBtn:active {
-  transform: scale(0.96);
-  border-color: #dc3545;
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.18);
-}
-.deleteRowBtn:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-/* edit-toggle-btn - prototype lines 1604-1617 */
-.editToggleBtn {
-  margin-left: auto;
-  margin-right: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  background: transparent;
-  border: 1.5px solid var(--border);
-  border-radius: 6px;
-  color: var(--subtext);
-  cursor: pointer;
-  position: relative;
-  transition: background var(--dur-quick) var(--ease-default),
-              border-color var(--dur-quick) var(--ease-default),
-              color var(--dur-quick) var(--ease-default);
-}
-.editToggleBtn:hover {
-  background: rgba(0, 179, 192, 0.12);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.editToggleBtnActive {
-  background: rgba(0, 179, 192, 0.15);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.editToggleBtn:active {
-  transform: scale(0.96);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
-}
-.editToggleBtn:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-.editToggleBtn svg {
-  pointer-events: none;
 }
 
 /* drag-handle - prototype lines 1618-1629 */
@@ -324,6 +234,8 @@
   color: var(--accent);
 }
 .dragHandle svg {
+  width: 24px;
+  height: 24px;
   pointer-events: none;
 }
 .dragHandle:focus-visible {
@@ -351,8 +263,6 @@
   .metricInfoBtn,
   .trackCheck,
   .addMeasurementBtn,
-  .deleteRowBtn,
-  .editToggleBtn,
   .dragHandle,
   .dataTable thead th,
   .dataTable tbody td {

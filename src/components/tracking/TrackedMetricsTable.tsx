@@ -17,7 +17,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import PlusCircleIcon from "@/icons/plus-circle.svg?react";
-import EditIcon from "@/icons/edit.svg?react";
 import { SortableMetricRow } from "./SortableMetricRow";
 import { makeAnnouncements } from "./announcements";
 import type { MetricDefinition } from "../../metrics/types";
@@ -32,12 +31,8 @@ interface TrackedMetricsTableProps {
   registry: MetricDefinition[];
   // The user's tracked-metric ordering for this type.
   trackedIds: string[];
-  // Edit mode toggles the column-del cell + drag handles + delete buttons.
-  editing: boolean;
-  onToggleEdit: () => void;
   onChangeOrder: (ids: string[]) => void;
   onToggleCheck: (id: string, checked: boolean) => void;
-  onDelete: (id: string) => void;
   addToHref: string;
   addToLabel: string;
 }
@@ -47,11 +42,8 @@ export function TrackedMetricsTable({
   heading,
   registry,
   trackedIds,
-  editing,
-  onToggleEdit,
   onChangeOrder,
   onToggleCheck,
-  onDelete,
   addToHref,
   addToLabel,
 }: TrackedMetricsTableProps) {
@@ -118,18 +110,7 @@ export function TrackedMetricsTable({
 
   return (
     <>
-      <h3 className={css.infoSectionHeading}>
-        {heading}
-        <button
-          type="button"
-          className={`${css.editToggleBtn} ${editing ? css.editToggleBtnActive : ""}`}
-          aria-label={editing ? "Done editing metrics" : "Edit metrics"}
-          aria-pressed={editing}
-          onClick={onToggleEdit}
-        >
-          <EditIcon />
-        </button>
-      </h3>
+      <h3 className={css.infoSectionHeading}>{heading}</h3>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -140,9 +121,7 @@ export function TrackedMetricsTable({
           items={sortableIds}
           strategy={verticalListSortingStrategy}
         >
-          <table
-            className={`${css.dataTable} ${editing ? css.editMode : ""}`}
-          >
+          <table className={css.dataTable}>
             <thead>
               <tr>
                 <th className={css.colDrag}></th>
@@ -151,7 +130,6 @@ export function TrackedMetricsTable({
                 </th>
                 <th>Metric</th>
                 <th>Info</th>
-                <th className={css.colDel}></th>
               </tr>
             </thead>
             <tbody>
@@ -161,12 +139,11 @@ export function TrackedMetricsTable({
                   id={m.id}
                   name={m.name}
                   type={type}
-                  editing={editing}
+                  Icon={m.Icon}
                   checked={trackedIds.includes(m.id)}
                   onToggleCheck={() =>
                     onToggleCheck(m.id, !trackedIds.includes(m.id))
                   }
-                  onDelete={() => onDelete(m.id)}
                 />
               ))}
             </tbody>

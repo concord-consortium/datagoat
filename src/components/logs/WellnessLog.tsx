@@ -74,8 +74,14 @@ export function WellnessLog() {
 
   const entries =
     wellness.status === "loaded" ? wellness.entries : [];
-  const currentEntry =
-    entries.find((e) => e.date === dateIso) ?? emptyEntry(dateIso);
+  // Merge over emptyEntry defaults so partially-saved docs (e.g. saved
+  // before a metric was tracked) still expose every field the UI reads.
+  // Without this, toggling availability on after logging other metrics
+  // hands AvailabilityTree an undefined value and crashes the page.
+  const foundEntry = entries.find((e) => e.date === dateIso);
+  const currentEntry: WellnessEntry = foundEntry
+    ? { ...emptyEntry(dateIso), ...foundEntry }
+    : emptyEntry(dateIso);
 
   // Debounced writes via accumulator pattern. Merge incoming partials into
   // a ref keyed by date; flush on a single timer. Required so typing across

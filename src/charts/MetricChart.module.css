@@ -22,6 +22,17 @@
   fill: var(--surface2);
 }
 
+/* Distinguishable from .placeholderRect so a reviewer can tell loading
+   from "TBD placeholder" at a glance. Per spec line 774: "skeleton (a
+   different gray-box variant - distinguishable from the 'TBD'
+   placeholder so a reviewer doesn't conflate the two states)." */
+.skeletonRect {
+  fill: var(--surface);
+  stroke: #567092;
+  stroke-dasharray: 4 4;
+  stroke-width: 1;
+}
+
 .placeholderLabel {
   fill: var(--subtext);
   font-family: 'Barlow', sans-serif;

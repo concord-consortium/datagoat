@@ -11,6 +11,11 @@ import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { PerformanceEntry, WellnessEntry } from "../../types/data";
 import { HISTORY, dateAtOffset, dateOffsetFromISO, toISO } from "../../utils/dates";
+import { useUser } from "../../contexts/UserContext";
+import {
+  PROFILE_CHART_GOALS,
+  DEFAULT_PROFILE_KEY,
+} from "../../data/profileVariants";
 import css from "./DashboardChartCard.module.css";
 
 interface DashboardChartCardProps {
@@ -18,6 +23,32 @@ interface DashboardChartCardProps {
   trackedMetricIds: string[];
   wellnessEntries?: WellnessEntry[];
   performanceEntries?: PerformanceEntry[];
+  // When true, the parent's DataContext is still loading. Render a
+  // distinguishable skeleton variant of the placeholder per spec
+  // "Empty data handling" - never flash zero-value axes during load.
+  loading?: boolean;
+}
+
+// Look up the per-metric goal value from PROFILE_CHART_GOALS for the
+// user's gender + athleteType combo. Only sleepEfficiency / protein /
+// leanMass have goal values in the prototype; other metrics return
+// undefined and the placeholder simply doesn't render a goal line.
+function lookupGoalLine(
+  metricId: string,
+  profileKey: string,
+): number | undefined {
+  const goals = PROFILE_CHART_GOALS[profileKey];
+  if (!goals) return undefined;
+  switch (metricId) {
+    case "sleepEfficiency":
+      return goals.sleepEffGoal;
+    case "protein":
+      return goals.proteinGoal;
+    case "leanMass":
+      return goals.leanMassGoal;
+    default:
+      return undefined;
+  }
 }
 
 // Wraps MetricChart placeholder + metric picker (SelectField) +
@@ -30,9 +61,15 @@ export function DashboardChartCard({
   trackedMetricIds,
   wellnessEntries,
   performanceEntries,
+  loading = false,
 }: DashboardChartCardProps) {
   const allMetrics: MetricDefinition[] =
     type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
+  const { loadState } = useUser();
+  const profile = loadState.status === "loaded" ? loadState.profile : null;
+  const profileKey = profile
+    ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
+    : DEFAULT_PROFILE_KEY;
   const tracked = useMemo(
     () => allMetrics.filter((m) => trackedMetricIds.includes(m.id)),
     [allMetrics, trackedMetricIds],
@@ -41,7 +78,7 @@ export function DashboardChartCard({
   const [selectedMetricId, setSelectedMetricId] = useState<string>(
     tracked[0]?.id ?? allMetrics[0]?.id ?? "",
   );
-  const [range, setRange] = useState<TimeRangeKey>("1w");
+  const [range, setRange] = useState<TimeRangeKey>("7d");
 
   const metric =
     tracked.find((m) => m.id === selectedMetricId) ?? tracked[0] ?? allMetrics[0];
@@ -62,13 +99,29 @@ export function DashboardChartCard({
     series.length > 0
       ? series.reduce((s, p) => s + p.value, 0) / series.length
       : undefined;
+  const goalLine =
+    metric && type === "wellness"
+      ? lookupGoalLine(metric.id, profileKey)
+      : undefined;
 
+  // Compose the chart description for SR users. Includes the goal AND
+  // average context the placeholder doesn't render visually but the
+  // <desc> exposes - giving SR users a complete experience even before
+  // the visual chart lands. Per spec line 770.
   const description = metric
-    ? `${metric.name} over the last ${range}.${
-        average !== undefined
-          ? ` Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
-          : ""
-      }`
+    ? loading
+      ? `${metric.name} chart is loading.`
+      : [
+          `${metric.name} over the last ${range}.`,
+          goalLine !== undefined
+            ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
+            : null,
+          average !== undefined
+            ? `Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" ")
     : "No metric selected.";
 
   const selectOptions = tracked.map((m) => ({ value: m.id, label: m.name }));
@@ -91,10 +144,12 @@ export function DashboardChartCard({
       </div>
       <MetricChart
         type="line"
-        data={series}
+        data={loading ? [] : series}
+        goalLine={goalLine}
         averageLine={average}
         title={metric ? metric.name : "Metric"}
         description={description}
+        loading={loading}
       />
       <TimeRangePicker
         value={range}
@@ -107,6 +162,26 @@ export function DashboardChartCard({
 
 function formatNumber(n: number): string {
   return Math.round(n * 10) / 10 + "";
+}
+
+// Profile keys in PROFILE_CHART_GOALS use prototype-style capitalized
+// strings ('Male/Strength and Power', 'Female/Endurance', ...). The
+// UserProfile type stores them as lowercase enum values, so map back.
+function capitalizeGender(g: string): string {
+  switch (g) {
+    case "male":
+      return "Male";
+    case "female":
+      return "Female";
+    case "non-binary":
+      return "Non-binary";
+    default:
+      return "Unspecified";
+  }
+}
+
+function capitalizeAthleteType(t: string): string {
+  return t === "endurance" ? "Endurance" : "Strength and Power";
 }
 
 interface BuildSeriesArgs {

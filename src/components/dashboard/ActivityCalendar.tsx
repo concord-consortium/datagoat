@@ -1,4 +1,9 @@
-import { memo, useMemo, useState } from "react";
+import {
+  memo,
+  useMemo,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import common from "../common.module.css";
 import css from "./ActivityCalendar.module.css";
@@ -30,20 +35,9 @@ const MONTH_NAMES_SHORT = [
   "Nov",
   "Dec",
 ];
-const MONTH_NAMES_LONG = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+// Long month names retained for chart description / future MetricDetail
+// usage; per-cell labels below use the short-month form per spec
+// example "Nov 3, 2026: all metrics logged".
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const DAY_FULL = [
   "Sunday",
@@ -409,9 +403,11 @@ function CellNode({
   }
 
   const dayNum = cell.date ? cell.date.getDate() : "";
+  // Short-month form per spec example "Nov 3, 2026: all metrics logged"
+  // (spec line 694 / 698).
   const dateLabel =
     cell.date !== null
-      ? `${MONTH_NAMES_LONG[cell.date.getMonth()]} ${cell.date.getDate()}, ${cell.date.getFullYear()}`
+      ? `${MONTH_NAMES_SHORT[cell.date.getMonth()]} ${cell.date.getDate()}, ${cell.date.getFullYear()}`
       : "";
   const visuallyHiddenLabel = `${dateLabel}${isToday ? " (today)" : ""}: ${stateLabel(
     cell.state,
@@ -443,8 +439,27 @@ function CellNode({
 
   if (tappable && cell.date) {
     const iso = toISO(cell.date);
+    // role='button' + tabIndex=0 + Space-key activation per spec
+    // acceptance criteria. Native <a> only activates on Enter; the
+    // prototype's calendar handler explicitly accepts both Enter and
+    // Space (HTML around line 7388-7394). Convert Space to a click on
+    // the Link.
+    const handleKeyDown = (
+      e: ReactKeyboardEvent<HTMLAnchorElement>,
+    ) => {
+      if (e.key === " ") {
+        e.preventDefault();
+        e.currentTarget.click();
+      }
+    };
     return (
-      <Link to={`/wellness?date=${iso}`} className={className}>
+      <Link
+        to={`/wellness?date=${iso}`}
+        className={className}
+        role="button"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+      >
         <span aria-hidden="true">{dayNum}</span>
         <span className={common.visuallyHidden}>{visuallyHiddenLabel}</span>
       </Link>

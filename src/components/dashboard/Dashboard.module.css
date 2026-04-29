@@ -36,6 +36,15 @@
   margin-bottom: 16px;
 }
 
+.dashWellnessSection {
+  /* prototype #dash-wellness-section anchor; reserved for future
+     wellness-only color rules. */
+}
+
+.dashPerformanceSection {
+  /* prototype #dash-performance-section anchor. */
+}
+
 .dashLogLabelRow {
   display: flex;
   justify-content: space-between;

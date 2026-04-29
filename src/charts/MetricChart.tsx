@@ -23,6 +23,9 @@ export interface MetricChartProps {
   height?: number;
   // Data table label override (defaults to the title).
   dataTableTitle?: string;
+  // Distinguishable skeleton variant during DataContext loading. Per
+  // spec "Empty data handling": never flash zero-value axes during load.
+  loading?: boolean;
 }
 
 const DEFAULT_WIDTH = 320;
@@ -38,6 +41,7 @@ export function MetricChart({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   dataTableTitle,
+  loading = false,
 }: MetricChartProps) {
   // type, data, goalLine, averageLine are all part of the final prop
   // surface but the placeholder doesn't draw them - referenced here so
@@ -63,7 +67,7 @@ export function MetricChart({
         <title id={titleId}>{title}</title>
         <desc id={descId}>{description}</desc>
         <rect
-          className={css.placeholderRect}
+          className={loading ? css.skeletonRect : css.placeholderRect}
           x="0"
           y="0"
           width={width}
@@ -74,7 +78,7 @@ export function MetricChart({
           x={width / 2}
           y={height / 2}
         >
-          Chart placeholder - TBD
+          {loading ? "Loading chart data..." : "Chart placeholder - TBD"}
         </text>
       </svg>
       <button

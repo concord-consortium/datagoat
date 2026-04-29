@@ -1,9 +1,10 @@
 import css from "./TimeRangePicker.module.css";
 
 // Day count per pill. Matches the prototype's data-range attribute values
-// (HTML around line 4211-4216).
+// (HTML around line 4211-4216). The pill label "7d" / "2w" / etc. is
+// purely display - the key/days are the load-bearing values.
 export const TIME_RANGE_DAYS = {
-  "1w": 7,
+  "7d": 7,
   "2w": 14,
   "30d": 30,
   "3mo": 90,
@@ -13,7 +14,7 @@ export const TIME_RANGE_DAYS = {
 
 export type TimeRangeKey = keyof typeof TIME_RANGE_DAYS;
 
-const RANGES: TimeRangeKey[] = ["1w", "2w", "30d", "3mo", "6mo", "All"];
+const RANGES: TimeRangeKey[] = ["7d", "2w", "30d", "3mo", "6mo", "All"];
 
 export interface TimeRangePickerProps {
   value: TimeRangeKey;

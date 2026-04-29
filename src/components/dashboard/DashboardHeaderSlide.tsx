@@ -16,13 +16,37 @@ const HOLD_TIMES = [WORDMARK_HOLD_MS, MOTIVATION_HOLD_MS];
 // Slide indexes. 0 = wordmark, 1 = motivation. Cycles 0 -> 1 -> 0.
 type SlideIndex = 0 | 1;
 
+// CSS carousel-x duration (var(--dur-carousel-x) = 600ms). The
+// "exit-left" class persists for this duration on the just-exited slide
+// so the slide-out animation completes before the slide is reset back
+// to its off-screen-right default position. Without this, the next time
+// that slide becomes active it would animate from the LEFT (where it
+// finished exiting), reversing the direction every other cycle.
+const EXIT_RESET_MS = 650;
+
 export function DashboardHeaderSlide() {
   const [slide, setSlide] = useState<SlideIndex>(0);
+  // Slide that JUST exited - render with .exitLeft so its slide-out
+  // animation plays. Cleared after EXIT_RESET_MS so the slide goes
+  // back to default (off-screen right) for its next entry.
+  const [exitingSlide, setExitingSlide] = useState<SlideIndex | null>(null);
   const { isOpen: navOpen } = useNavMenu();
   const timerRef = useRef<number | null>(null);
+  const resetRef = useRef<number | null>(null);
 
   const advance = useCallback(() => {
-    setSlide((prev) => ((prev + 1) % 2) as SlideIndex);
+    setSlide((prev) => {
+      const next = ((prev + 1) % 2) as SlideIndex;
+      setExitingSlide(prev);
+      // Clear the exit class after the animation completes so the
+      // outgoing slide returns to default (off-screen right).
+      if (resetRef.current !== null) window.clearTimeout(resetRef.current);
+      resetRef.current = window.setTimeout(() => {
+        setExitingSlide(null);
+        resetRef.current = null;
+      }, EXIT_RESET_MS);
+      return next;
+    });
   }, []);
 
   // Reduced-motion + nav-menu pause guard. Three reactive inputs:
@@ -59,6 +83,10 @@ export function DashboardHeaderSlide() {
 
     return () => {
       clear();
+      if (resetRef.current !== null) {
+        window.clearTimeout(resetRef.current);
+        resetRef.current = null;
+      }
       mq.removeEventListener("change", onMqChange);
     };
   }, [slide, navOpen, advance]);
@@ -72,13 +100,17 @@ export function DashboardHeaderSlide() {
     advance();
   };
 
+  function slideClass(idx: SlideIndex): string {
+    if (slide === idx) return css.active;
+    if (exitingSlide === idx) return css.exitLeft;
+    return ""; // default: off-screen right per .headerSlideItem rule
+  }
+
   return (
     <div className={css.screenHeader}>
       <div className={css.headerSlideWrap}>
         <div
-          className={`${css.headerSlideItem} ${css.headerContentDefault} ${
-            slide === 0 ? css.active : css.exitLeft
-          }`}
+          className={`${css.headerSlideItem} ${css.headerContentDefault} ${slideClass(0)}`}
           aria-hidden={slide !== 0}
         >
           <button
@@ -99,9 +131,7 @@ export function DashboardHeaderSlide() {
           </p>
         </div>
         <div
-          className={`${css.headerSlideItem} ${css.headerContentStreak} ${
-            slide === 1 ? css.active : css.exitLeft
-          }`}
+          className={`${css.headerSlideItem} ${css.headerContentStreak} ${slideClass(1)}`}
           aria-hidden={slide !== 1}
         >
           <MotivationMessage active={slide === 1} />

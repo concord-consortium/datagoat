@@ -4,6 +4,11 @@ import css from "./DashLogHeader.module.css";
 import CalendarIcon from "@/icons/calendar.svg?react";
 import StopwatchIcon from "@/icons/stopwatch.svg?react";
 
+// Non-breaking space (U+00A0) - keeps the highlight pill from wrapping
+// onto its own line at narrow widths, matching the prototype's HTML at
+// line 4196 where &nbsp; brackets the .status-highlight span.
+const NBSP = " ";
+
 interface DashLogHeaderProps {
   type: "wellness" | "performance";
   // Free text status: e.g. "Log your 5 metrics for today." for wellness
@@ -31,6 +36,9 @@ export function DashLogHeader({
       ? "Go to Health & Wellness Log"
       : "Go to Performance Log";
 
+  const trimmedPre = pre?.replace(/\s+$/, "") ?? "";
+  const trimmedPost = post?.replace(/^\s+/, "") ?? "";
+
   return (
     <Link
       to={to}
@@ -44,9 +52,11 @@ export function DashLogHeader({
       <p className={css.dashLogStatus}>
         {highlight ? (
           <>
-            {pre}
+            {trimmedPre}
+            {NBSP}
             <span className={css.statusHighlight}>{highlight}</span>
-            {post}
+            {NBSP}
+            {trimmedPost}
           </>
         ) : (
           status

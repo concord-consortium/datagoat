@@ -54,7 +54,13 @@ export function MotivationMessage({ active }: MotivationMessageProps) {
     loadState.status === "loaded" ? loadState.profile : null;
   const name = getMotivationName(profile?.nickname, profile?.fullName);
 
-  const [index, setIndex] = useState(0);
+  // Initial index of -1 so the FIRST inactive->active transition lands
+  // on index 0 (the streak greeting), matching the prototype's pattern
+  // where showNextMotivation() is invoked once on script load and the
+  // first slide-in shows message 0. A naive useState(0) would advance
+  // to index 1 ("We'll only show one message per session …") on the
+  // first show.
+  const [index, setIndex] = useState(-1);
   const prevActiveRef = useRef(false);
 
   // Advance to the next message each time the motivation slide goes
@@ -68,7 +74,8 @@ export function MotivationMessage({ active }: MotivationMessageProps) {
     prevActiveRef.current = active;
   }, [active]);
 
-  const msg = MOTIVATION_MESSAGES[index];
+  const safeIndex = index < 0 ? 0 : index;
+  const msg = MOTIVATION_MESSAGES[safeIndex];
   const Icon = msg.iconKey ? ICONS[msg.iconKey] : null;
   // Prototype substitutes {name} via plain string replacement; we render
   // dangerouslySetInnerHTML because the templates contain <br> tags. The

@@ -103,9 +103,10 @@ describe("ActivityCalendar", () => {
     expect(labels.length).toBeGreaterThanOrEqual(7);
     // Labels include both the formatted date and a state phrase.
     const labelTexts = Array.from(labels).map((n) => n.textContent ?? "");
+    // Short-month per spec example "Nov 3, 2026: all metrics logged".
     expect(
       labelTexts.some((t) =>
-        /[A-Z][a-z]+ \d+, \d{4}( \(today\))?: all metrics logged/.test(t),
+        /[A-Z][a-z]{2} \d+, \d{4}( \(today\))?: all metrics logged/.test(t),
       ),
     ).toBe(true);
   });

@@ -3,12 +3,15 @@ import { ActivityCalendar } from "./ActivityCalendar";
 import { DashLogHeader } from "./DashLogHeader";
 import { DashboardChartCard } from "./DashboardChartCard";
 import { CodapButton } from "./CodapButton";
+import { SectionHeading } from "../layout/SectionHeading";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
+import { useNavMenu } from "../../contexts/NavMenuContext";
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
 import { getChipState } from "../../utils/wellnessCompleteness";
+import HomeIcon from "@/icons/home.svg?react";
 import css from "./Dashboard.module.css";
 
 // Dashboard scaffold: header carousel + welcome + activity calendars +
@@ -17,6 +20,7 @@ import css from "./Dashboard.module.css";
 export function Dashboard() {
   const { loadState } = useUser();
   const { wellness, performance } = useData();
+  const { setIsOpen: setMenuOpen } = useNavMenu();
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
 
@@ -51,17 +55,44 @@ export function Dashboard() {
     })
   );
 
+  // Wellness CTA copy. Three states (matches prototype _updateDashStatus
+  // around HTML line 7662): all-logged success copy; partial "log N
+  // remaining metric(s)"; empty "log your N metrics for today". The
+  // &nbsp; on either side of the highlight prevents the bolded pill
+  // from wrapping onto its own line on narrow widths (prototype HTML
+  // line 4196).
   const wellnessRemaining = trackedWellnessIds.length - wellnessLogged;
-  const wellnessStatusPre = "Log your ";
-  const wellnessStatusHighlight =
-    wellnessChip === "all"
-      ? "all metrics"
-      : `${wellnessRemaining > 0 ? wellnessRemaining : trackedWellnessIds.length} metrics`;
-  const wellnessStatusPost = " for today.";
+  let wellnessPre: string | undefined;
+  let wellnessHighlight: string | undefined;
+  let wellnessPost: string | undefined;
+  let wellnessStatus: string;
+  if (wellnessChip === "all") {
+    wellnessStatus = "Great! You've logged all your health & wellness data!";
+  } else if (wellnessLogged > 0) {
+    wellnessPre = "Log ";
+    wellnessHighlight = `${wellnessRemaining} remaining metric${wellnessRemaining === 1 ? "" : "s"}`;
+    wellnessPost = " for today.";
+    wellnessStatus = `${wellnessPre}${wellnessHighlight}${wellnessPost}`;
+  } else {
+    wellnessPre = "Log your ";
+    wellnessHighlight = `${trackedWellnessIds.length} metric${trackedWellnessIds.length === 1 ? "" : "s"}`;
+    wellnessPost = " for today.";
+    wellnessStatus = `${wellnessPre}${wellnessHighlight}${wellnessPost}`;
+  }
+
+  const performanceStatus = performanceLoggedAny
+    ? "Great! You've logged your performance data!"
+    : "No performance data logged today.";
 
   return (
     <div className={css.dashboardScreen}>
       <DashboardHeaderSlide />
+      <SectionHeading
+        title="Dashboard"
+        icon={<HomeIcon />}
+        showHome={false}
+        onOpenMenu={() => setMenuOpen(true)}
+      />
       <div className={css.screenContent}>
         <p className={css.dashboardWelcome}>
           <strong className={css.dashboardWelcomeTitle}>Your Dashboard</strong>
@@ -70,8 +101,12 @@ export function Dashboard() {
           top of your goals.
         </p>
 
-        {/* Health & Wellness Log Section */}
-        <div className={css.dashLogSection}>
+        {/* Health & Wellness Log Section. Performance section omits the
+            ActivityCalendar entirely, matching the prototype's dashboard
+            layout (only wellness has a section calendar at HTML line
+            4170-4187; performance section starts with dash-log-label-row
+            directly at line 4225). */}
+        <div className={`${css.dashLogSection} ${css.dashWellnessSection}`}>
           <ActivityCalendar
             type="wellness"
             trackedMetricIds={trackedWellnessIds}
@@ -85,43 +120,33 @@ export function Dashboard() {
           </div>
           <DashLogHeader
             type="wellness"
-            status="Log your metrics for today."
-            pre={wellnessStatusPre}
-            highlight={wellnessStatusHighlight}
-            post={wellnessStatusPost}
+            status={wellnessStatus}
+            pre={wellnessPre}
+            highlight={wellnessHighlight}
+            post={wellnessPost}
           />
           <DashboardChartCard
             type="wellness"
             trackedMetricIds={trackedWellnessIds}
             wellnessEntries={wellnessEntries}
+            loading={wellness.status === "loading"}
           />
         </div>
 
         <hr className={css.sectionRule} aria-hidden="true" />
 
-        {/* Performance Log Section */}
-        <div className={css.dashLogSection}>
-          <ActivityCalendar
-            type="performance"
-            trackedMetricIds={trackedPerformanceIds}
-            performanceEntries={performanceEntries}
-          />
-          <hr className={css.sectionRule} aria-hidden="true" />
+        {/* Performance Log Section. Tracked-metric ids unused for the
+            section header itself but forwarded to the chart card. */}
+        <div className={`${css.dashLogSection} ${css.dashPerformanceSection}`}>
           <div className={css.dashLogLabelRow}>
             <span className={css.sectionCalToday}>Performance Data</span>
           </div>
-          <DashLogHeader
-            type="performance"
-            status={
-              performanceLoggedAny
-                ? "Performance data logged today."
-                : "No perf. data logged today."
-            }
-          />
+          <DashLogHeader type="performance" status={performanceStatus} />
           <DashboardChartCard
             type="performance"
             trackedMetricIds={trackedPerformanceIds}
             performanceEntries={performanceEntries}
+            loading={performance.status === "loading"}
           />
         </div>
 

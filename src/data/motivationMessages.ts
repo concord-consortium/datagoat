@@ -42,7 +42,9 @@ export const MOTIVATION_MESSAGES: MotivationMessage[] = [
     iconKey: "motivation-pb-clock",
   },
   {
-    template: "Big win, {name} — your<br>effort showed out there.",
+    // Em-dash from prototype designer copy replaced with hyphen per the
+    // project-wide CLAUDE.md "No em dashes - use regular hyphens" rule.
+    template: "Big win, {name} - your<br>effort showed out there.",
     iconKey: "motivation-trophy",
   },
   {

@@ -14,6 +14,7 @@ import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
 import { WellnessLog } from "../components/logs/WellnessLog";
 import { PerformanceLog } from "../components/logs/PerformanceLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
+import { MetricDetail } from "../charts/MetricDetail";
 import { ScreenStub } from "../components/ScreenStub";
 
 export function AppRoutes() {
@@ -53,12 +54,12 @@ export function AppRoutes() {
           <Route path="/wellness" element={<WellnessLog />} />
           <Route
             path="/wellness/:metricId"
-            element={<ScreenStub name="MetricDetail (wellness)" />}
+            element={<MetricDetail type="wellness" />}
           />
           <Route path="/performance" element={<PerformanceLog />} />
           <Route
             path="/performance/:metricId"
-            element={<ScreenStub name="MetricDetail (performance)" />}
+            element={<MetricDetail type="performance" />}
           />
           <Route
             path="/add-metric/:type"

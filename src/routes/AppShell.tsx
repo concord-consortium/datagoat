@@ -173,6 +173,7 @@ function AppShellInner() {
               title={routeMeta.title}
               icon={routeMeta.icon}
               showHome={routeMeta.showHome}
+              backTo={routeMeta.backTo}
             />
           )}
         </header>

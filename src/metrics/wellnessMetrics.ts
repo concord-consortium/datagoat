@@ -1,4 +1,10 @@
 import type { MetricDefinition } from "./types";
+import HydrationIcon from "@/icons/metric-hydration.svg?react";
+import SleepTimeIcon from "@/icons/metric-sleep-time.svg?react";
+import SleepEfficiencyIcon from "@/icons/metric-sleep-efficiency.svg?react";
+import ProteinIcon from "@/icons/metric-protein.svg?react";
+import LeanMassIcon from "@/icons/metric-lean-mass.svg?react";
+import AvailabilityIcon from "@/icons/metric-availability.svg?react";
 
 // Strings ported verbatim from the 2026-04-27 prototype's metricDetails
 // table (whoCollects, howCollected, desc). Do not paraphrase - the prototype
@@ -11,6 +17,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     type: "wellness",
     whoCollects: "Self",
     howCollected: "Morning urine color",
+    Icon: HydrationIcon,
     description:
       "State of total body water balance reflecting the relationship between fluid intake and fluid loss required to maintain normal physiological function and homeostasis. Hydration levels are best measured by urine color. Optimal hydration is indicated by pale yellow, similar to lemonade. Darker yellow or amber indicates a need for water, while, conversely, completely clear urine may indicate overhydration.",
     min: 1,
@@ -29,6 +36,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     description:
       "Total amount of time spent asleep during a sleep period, typically measured from sleep onset to final awakening, expressed in minutes or hours.",
     inputType: "numeric",
+    Icon: SleepTimeIcon,
   },
   {
     id: "sleepEfficiency",
@@ -43,6 +51,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     min: 0,
     max: 100,
     inputType: "numeric",
+    Icon: SleepEfficiencyIcon,
   },
   {
     id: "protein",
@@ -56,6 +65,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     description:
       "Amount of dietary protein consumed to support metabolic processes like repair and recovery.",
     inputType: "numeric",
+    Icon: ProteinIcon,
   },
   {
     id: "leanMass",
@@ -70,6 +80,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     description:
       "Total mass of body excluding fat mass. This includes muscle, bone, organs, connective tissue, and body water.",
     inputType: "numeric",
+    Icon: LeanMassIcon,
   },
   {
     id: "availability",
@@ -82,5 +93,6 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     description:
       "Percentage of time an athlete is fit for full training or competition without restrictions.",
     inputType: "tree",
+    Icon: AvailabilityIcon,
   },
 ];

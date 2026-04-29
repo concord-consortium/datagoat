@@ -7,12 +7,18 @@ import ProfilePersonIcon from "@/icons/profile-person.svg?react";
 import GearIcon from "@/icons/gear.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import PlusCircleIcon from "@/icons/plus-circle.svg?react";
+import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
+import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 
 export interface RouteMeta {
   title: string;
   icon: ReactNode;
   // Dashboard suppresses the Home button (it IS the home).
   showHome?: boolean;
+  // When set, SectionHeading renders a back chevron linking here.
+  // Prototype's #metric-detail-screen + info screens both have a back
+  // button in their section-heading (HTML around line 4394, 4410).
+  backTo?: string;
 }
 
 // Static path -> meta. Dynamic paths (metric detail, info, add-metric)
@@ -49,14 +55,47 @@ const STATIC: Record<string, RouteMeta> = {
   },
 };
 
-const PATTERNS: Array<{ pattern: string; meta: RouteMeta }> = [
+// Per-pattern dynamic resolver. Returning null falls through (AppShell
+// renders no SectionHeading - the route component is responsible for
+// recovering, e.g. MetricDetail issues <Navigate replace /> for unknown
+// metric IDs and the next route's meta takes over after the redirect).
+//
+// The routeMeta seam is "AppShell decides what header to show purely from
+// the URL, no useEffect coordination required" - keep dynamic resolution
+// synchronous + URL-only. If a route ever needs meta sourced from
+// component state, switch to a useRouteMetaOverride context at that point.
+type DynamicResolver = (
+  params: Record<string, string | undefined>,
+) => RouteMeta | null;
+
+const PATTERNS: Array<{
+  pattern: string;
+  meta?: RouteMeta;
+  resolve?: DynamicResolver;
+}> = [
   {
     pattern: "/wellness/:metricId",
-    meta: { title: "Metric Detail", icon: <CalendarIcon /> },
+    resolve: (params) => {
+      const m = WELLNESS_METRICS.find((x) => x.id === params.metricId);
+      if (!m) return null;
+      return {
+        title: m.name,
+        icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
+        backTo: "/wellness",
+      };
+    },
   },
   {
     pattern: "/performance/:metricId",
-    meta: { title: "Metric Detail", icon: <StopwatchIcon /> },
+    resolve: (params) => {
+      const m = PERFORMANCE_METRICS.find((x) => x.id === params.metricId);
+      if (!m) return null;
+      return {
+        title: m.name,
+        icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
+        backTo: "/performance",
+      };
+    },
   },
   {
     pattern: "/add-metric/:type",
@@ -70,8 +109,13 @@ const PATTERNS: Array<{ pattern: string; meta: RouteMeta }> = [
 
 export function resolveRouteMeta(pathname: string): RouteMeta | null {
   if (STATIC[pathname]) return STATIC[pathname];
-  for (const { pattern, meta } of PATTERNS) {
-    if (matchPath({ path: pattern, end: true }, pathname)) return meta;
+  for (const entry of PATTERNS) {
+    const match = matchPath({ path: entry.pattern, end: true }, pathname);
+    if (!match) continue;
+    if (entry.resolve) {
+      return entry.resolve(match.params as Record<string, string | undefined>);
+    }
+    return entry.meta ?? null;
   }
   return null;
 }

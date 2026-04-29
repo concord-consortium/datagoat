@@ -34,6 +34,10 @@ export function SectionHeading({
       {/* data-skip-link-exclude: AppShell's skip-link focus advance
           skips these chrome buttons, landing focus on the first content
           focusable instead. */}
+      {/* Back button takes the left slot; when present, the home button
+          is suppressed below to avoid overlap (per Session 4.5 hand-off:
+          back-nav-btn and nav-home-btn both sit at left:12px in the
+          prototype, and the prototype never combines them). */}
       {(backTo || onBack) &&
         (backTo ? (
           <Link
@@ -61,7 +65,7 @@ export function SectionHeading({
         ))}
       {icon && <span className={css.iconSlot}>{icon}</span>}
       <span className={css.titleText}>{title}</span>
-      {showHome && (
+      {showHome && !(backTo || onBack) && (
         <Link
           to="/dashboard"
           className={css.navHomeBtn}

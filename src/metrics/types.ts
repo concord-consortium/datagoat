@@ -1,3 +1,5 @@
+import type { ComponentType, SVGProps } from "react";
+
 export type MetricType = "wellness" | "performance";
 export type MetricInputType = "numeric" | "radio" | "tree" | "colorScale";
 
@@ -19,4 +21,9 @@ export interface MetricDefinition {
   min?: number;
   max?: number;
   inputType: MetricInputType;
+  // Per-metric glyph imported via vite-plugin-svgr from src/icons/metric-*.svg.
+  // MetricDetail's section heading consumes this; addable metrics that ship
+  // without a designer-final icon leave Icon undefined and fall back to a
+  // generic placeholder at the call site.
+  Icon?: ComponentType<SVGProps<SVGSVGElement>>;
 }

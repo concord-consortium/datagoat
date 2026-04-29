@@ -1,0 +1,103 @@
+/* MetricDetail screen. Verbatim CSS port of the prototype's
+   .metric-chart-section / .metric-chart-title / .metric-chart-date /
+   .chart-divider / .info-section-heading / .metric-description rules
+   (HTML lines 2770-2844, 683-697, 2529-2541) into camelCased CSS
+   Modules. The prototype injects this content into #detail-content via
+   showMetricDetail() (HTML around line 6631); the React port renders it
+   declaratively from the metric registry. */
+
+.detailScreen {
+  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
+     100px bottom for the iOS Safari home-bar gap. The screen-level
+     wrapper applies it once; inner sections don't add their own. */
+  padding: 20px 24px 100px;
+}
+
+/* ── Chart section (prototype lines 2827-2844) ── */
+
+.chartSection {
+  padding: 0;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.chartTitle {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.chartDate {
+  font-size: 16px;
+  color: var(--subtext);
+  margin-bottom: 16px;
+}
+
+/* ── Chart divider (prototype lines 2529-2541) ── */
+
+.chartDivider {
+  width: 60px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 4px auto 16px;
+}
+
+/* ── Info section heading (prototype lines 683-697) ── */
+
+.infoSectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The chart divider sits immediately above the first info-section-heading;
+   collapse the heading's top margin so the visual rhythm matches the
+   prototype (line 2539). */
+.chartDivider + .infoSectionHeading {
+  margin-top: 0;
+}
+
+/* ── Metric description (prototype lines 2770-2776) ── */
+
+.metricDescription {
+  padding: 0;
+  margin-bottom: 20px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--subtext);
+}
+
+.metricDescription p {
+  margin: 0 0 12px;
+}
+
+.metricDescription p:last-child {
+  margin-bottom: 0;
+}
+
+/* First paragraph in a multi-paragraph block has no top margin so the
+   heading + description rhythm reads consistently. */
+.firstPara {
+  margin-top: 0;
+}
+
+/* "Coming soon" placeholder for fields that don't have copy yet (e.g.,
+   the addable-metric placeholders that AddMetric will exercise in
+   Step 16, but reachable from MetricDetail by direct URL today). */
+.placeholder {
+  opacity: 0.55;
+  font-style: italic;
+}

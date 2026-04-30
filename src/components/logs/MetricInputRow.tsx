@@ -1,15 +1,13 @@
 import {
   useCallback,
-  useEffect,
   useId,
   useRef,
-  useState,
-  type ChangeEventHandler,
   type KeyboardEvent,
 } from "react";
 import { Link } from "react-router-dom";
 import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
+import { NumericInput } from "./NumericInput";
 import type { WellnessEntry } from "../../types/data";
 import css from "./MetricInputRow.module.css";
 
@@ -101,68 +99,6 @@ export function MetricInputRow(props: MetricInputRowProps) {
         )}
       </td>
     </tr>
-  );
-}
-
-interface NumericInputProps {
-  metric: MetricDefinition;
-  value: string;
-  onChange: (next: string) => void;
-  labelledBy: string;
-}
-function NumericInput({ metric, value, onChange, labelledBy }: NumericInputProps) {
-  // Local string state holds the user's exact keystrokes so the
-  // round-trip through Number(raw) -> String(numeric) at the parent
-  // doesn't revert in-progress typing for "1.", leading zeros, or
-  // bare "0". Reconcile with the parent prop only when it changes to
-  // a value that doesn't round-trip to the local string (e.g. cross-
-  // tab edit, form reset).
-  const [local, setLocal] = useState(value);
-  useEffect(() => {
-    const localNumeric = local === "" ? 0 : Number(local);
-    const parentNumeric = value === "" ? 0 : Number(value);
-    if (!Number.isFinite(localNumeric) || localNumeric !== parentNumeric) {
-      setLocal(value);
-    }
-    // Intentionally only depend on `value` - we don't want to refresh
-    // local state every time the user types (which would trigger this
-    // effect via the parent's controlled re-render).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    const raw = e.target.value;
-    // Allow only digits and a single decimal point. Rejected input
-    // (letters, multiple dots, negative signs) leaves the prior local
-    // string in place.
-    if (!/^[0-9]*\.?[0-9]*$/.test(raw)) return;
-    setLocal(raw);
-    onChange(raw);
-  };
-  const filled = local !== "" && local != null;
-  // Prefer the short-form displayUnit ("hr", "g") in the log column;
-  // metric.unit's long form ("hr/night", "g/kg/day") is reserved for
-  // MetricDetail and info screens. "level" sentinel suppresses unit
-  // suffix (used by colorScale rows like Hydration which never reach
-  // this branch but kept for safety).
-  const shortUnit = metric.displayUnit ?? metric.unit;
-  return (
-    <>
-      <div className={css.recordCell}>
-        <input
-          type="text"
-          inputMode="decimal"
-          className={`${css.recordInput} ${filled ? css.hasValue : ""}`}
-          value={local}
-          onChange={handleChange}
-          aria-labelledby={labelledBy}
-          placeholder={shortUnit}
-        />
-        {shortUnit && shortUnit !== "level" && (
-          <span className={css.fieldUnit}>{shortUnit}</span>
-        )}
-      </div>
-      {metric.hint && <div className={css.fieldHint}>{metric.hint}</div>}
-    </>
   );
 }
 

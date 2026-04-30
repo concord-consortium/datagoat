@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-  type ChangeEventHandler,
-} from "react";
+import { useId, useMemo } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { useUser } from "../../contexts/UserContext";
@@ -18,6 +12,7 @@ import {
 } from "../../utils/dates";
 import { performanceTotal } from "./PerformanceTotals";
 import { emptyPerformanceEntry } from "../../types/data";
+import { PerformanceMetricInput } from "./PerformanceMetricInput";
 import css from "./PerformanceLog.module.css";
 
 export function PerformanceLog() {
@@ -157,52 +152,3 @@ export function PerformanceLog() {
   );
 }
 
-interface PerformanceMetricInputProps {
-  metricId: string;
-  labelledBy: string;
-  value: string;
-  filled: boolean;
-  onChange: (raw: string) => void;
-}
-
-// Per-row input. type="text" + inputMode="decimal" + a digits/single-dot
-// filter mirrors MetricInputRow's NumericInput contract: in-progress
-// strings like "1." and "07" survive the parent's Number() round-trip,
-// and non-numeric keystrokes are rejected outright. Local state holds
-// the user's exact keystrokes; the effect reconciles only when the
-// parent value doesn't round-trip to the local string (cross-tab edit,
-// form reset).
-function PerformanceMetricInput({
-  metricId,
-  labelledBy,
-  value,
-  filled,
-  onChange,
-}: PerformanceMetricInputProps) {
-  const [local, setLocal] = useState(value);
-  useEffect(() => {
-    const localNumeric = local === "" ? 0 : Number(local);
-    const parentNumeric = value === "" ? 0 : Number(value);
-    if (!Number.isFinite(localNumeric) || localNumeric !== parentNumeric) {
-      setLocal(value);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    const raw = e.target.value;
-    if (!/^[0-9]*\.?[0-9]*$/.test(raw)) return;
-    setLocal(raw);
-    onChange(raw);
-  };
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      className={`${css.valueInput} ${filled ? css.hasValue : ""}`}
-      value={local}
-      onChange={handleChange}
-      aria-labelledby={labelledBy}
-      data-metric-id={metricId}
-    />
-  );
-}

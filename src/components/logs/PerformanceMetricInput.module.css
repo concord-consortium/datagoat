@@ -1,0 +1,56 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html. */
+
+.valueInput {
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  width: 60px;
+  text-align: center;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur-base) var(--ease-default),
+              box-shadow var(--dur-base) var(--ease-default);
+}
+
+.valueInput::placeholder {
+  color: #7A8DA6;
+}
+
+.valueInput:hover {
+  border-color: var(--accent);
+}
+
+.valueInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.valueInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.valueInput.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.valueInput.hasValue:hover {
+  border-color: var(--accent);
+}
+
+.valueInput.hasValue:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .valueInput {
+    transition: none;
+  }
+}

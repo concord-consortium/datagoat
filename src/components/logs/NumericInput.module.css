@@ -1,0 +1,88 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html. */
+
+/* record-cell + record-input (lines 3015-3091) */
+.recordCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 194px;
+}
+
+.recordCell .fieldUnit {
+  text-transform: none;
+}
+
+.fieldUnit {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--subtext);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Per-metric hint rendered below the record-input (e.g., Lean Mass:
+   "Entered 2-3×/yr"). Prototype HTML line 4342. */
+.fieldHint {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--subtext);
+  margin: 6px 0 0;
+  max-width: 194px;
+}
+
+.recordInput {
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  width: 100%;
+  max-width: 90px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur-base) var(--ease-default),
+              box-shadow var(--dur-base) var(--ease-default);
+}
+
+.recordInput::placeholder {
+  color: #7A8DA6;
+}
+
+.recordInput:hover {
+  border-color: var(--accent);
+}
+
+.recordInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.recordInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.recordInput.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.recordInput.hasValue:hover {
+  border-color: var(--accent);
+}
+
+.recordInput.hasValue:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recordInput {
+    transition: none;
+  }
+}

@@ -140,13 +140,6 @@ export function PerformanceLog() {
             })}
           </tbody>
         </table>
-
-        <p className={css.designerNote}>
-          <em>
-            Note: needs further work; do we differentiate game vs practice?
-            What are the default sets for E vs SP? etc.
-          </em>
-        </p>
       </div>
     </>
   );

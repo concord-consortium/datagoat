@@ -268,7 +268,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Advance floorISO at local midnight so the listener window stays at
   // "today - LISTENER_WINDOW_DAYS" across multi-day sessions. Each tick
   // changes floorISO, which (a) re-arms this timer for the next
-  // midnight and (b) re-issues both subscription effects below.
+  // midnight and (b) re-issues both subscription effects below. Pending
+  // writes are flushed BEFORE rotating so the subscription cleanup
+  // (which discards pending on dep change) sees nothing to drop -
+  // otherwise a user mid-typing across midnight loses the keystrokes
+  // buffered in their not-yet-fired debounce.
   useEffect(() => {
     const now = new Date();
     const nextMidnight = new Date(now);
@@ -276,10 +280,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     nextMidnight.setHours(0, 0, 0, 0);
     const ms = nextMidnight.getTime() - now.getTime();
     const t = window.setTimeout(() => {
+      for (const date of Array.from(wellnessTimersRef.current.keys())) {
+        flushWellnessDate(date);
+      }
+      for (const date of Array.from(performanceTimersRef.current.keys())) {
+        flushPerformanceDate(date);
+      }
       setFloorISO(isoAtDaysAgo(LISTENER_WINDOW_DAYS));
     }, ms);
     return () => window.clearTimeout(t);
-  }, [floorISO]);
+  }, [floorISO, flushWellnessDate, flushPerformanceDate]);
 
   // Wellness collection subscription. Cleanup discards pending state
   // - sign-out / user-switch must NOT flush (prior session is gone,
@@ -288,7 +298,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // effect declared above runs its cleanup FIRST under React's
   // declaration-order cleanup, so it flushes before this cleanup
   // clears - making unmount the only path that persists pending
-  // writes.
+  // writes. Floor rotation also re-fires this effect, but the
+  // midnight effect flushes pending BEFORE setFloorISO, so cleanup
+  // sees empty pending and the discard is a no-op.
   useEffect(() => {
     if (!user) {
       setWellnessServer({ status: "loading" });

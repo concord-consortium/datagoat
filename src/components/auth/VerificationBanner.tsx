@@ -14,7 +14,14 @@ export function VerificationBanner() {
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState<boolean>(() => {
     if (!user) return false;
-    return localStorage.getItem(dismissedKey(user.uid)) === "1";
+    // localStorage can throw in Safari Private Browsing and locked-down
+    // browser policies. Treat any failure as "not dismissed" rather than
+    // letting the throw escape and crash the authed route surface.
+    try {
+      return localStorage.getItem(dismissedKey(user.uid)) === "1";
+    } catch {
+      return false;
+    }
   });
 
   if (!user) return null;
@@ -24,7 +31,12 @@ export function VerificationBanner() {
 
   function handleDismiss() {
     if (!user) return;
-    localStorage.setItem(dismissedKey(user.uid), "1");
+    try {
+      localStorage.setItem(dismissedKey(user.uid), "1");
+    } catch {
+      // Persisting the dismissal failed (private mode, quota, policy).
+      // Still hide the banner for the rest of this session.
+    }
     setDismissed(true);
   }
 

@@ -338,6 +338,51 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     }
   });
 
+  it("4f midnight rotation flushes pending writes (does not lose mid-debounce typing)", () => {
+    // User starts typing 300ms before local midnight; debounce is 500ms.
+    // The midnight floorISO rotation fires (re-issuing the listener
+    // subscription) BEFORE the debounce flushes. The fix: rotation flushes
+    // pending first, so the subscription cleanup has nothing to discard.
+    vi.setSystemTime(new Date("2026-04-29T23:59:59.700"));
+    state.user.current = { uid: "u1" };
+    const wellnessSubsBefore = state.wellnessSubs.length;
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, { hydration: 5 });
+      result.current.setPerformanceEntry(WELLNESS_DATE, {
+        metrics: { goals: 3 },
+      });
+    });
+    expect(state.setDoc).not.toHaveBeenCalled();
+    // Advance past midnight (300ms) but NOT past the 500ms debounce.
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    // Both pending writes were flushed by the rotation hook.
+    expect(state.setDoc).toHaveBeenCalledTimes(2);
+    const calls = state.setDoc.mock.calls.map((c) => c[1]);
+    expect(calls).toContainEqual(
+      expect.objectContaining({ hydration: 5, date: WELLNESS_DATE }),
+    );
+    expect(calls).toContainEqual(
+      expect.objectContaining({
+        metrics: { goals: 3 },
+        date: WELLNESS_DATE,
+      }),
+    );
+    // Both flushes used the still-signed-in user's uid.
+    for (const call of state.setDoc.mock.calls) {
+      const ref = call[0] as { path: string };
+      expect(ref.path).toContain("u1");
+    }
+    // And the listener actually rotated (new subscription issued past
+    // the floor change), proving the test exercised the bug path.
+    expect(state.wellnessSubs.length).toBeGreaterThan(
+      wellnessSubsBefore + 1,
+    );
+  });
+
   it("Strict-Mode mount->unmount->remount cycle does not emit empty setDoc", () => {
     const { unmount } = renderHook(() => useData(), { wrapper });
     unmount();

@@ -38,20 +38,20 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
           aria-hidden="true"
         />
         <div className={css.identityBar}>
-          <div className={css.brandRow} aria-label="DataGOAT">
+          <div className={css.brandRow}>
             <img
               className={css.brandLogoImg}
               src={datagoatLogoLogin}
               alt="DataGOAT logo"
             />
           </div>
-          <div className={css.concordLogoWrap} aria-label="Concord Consortium">
+          <div className={css.concordLogoWrap}>
             <img src={concordLogo} alt="Concord Consortium" />
           </div>
         </div>
 
         <div className={css.wordmarkRow}>
-          <div className={css.wordmark} aria-label="DataGOAT">
+          <div className={css.wordmark}>
             <span className={css.data}>Data</span>
             <span className={css.goat}>
               <span className={css.goatG}>G</span>OA<span className={css.goatT}>T</span>

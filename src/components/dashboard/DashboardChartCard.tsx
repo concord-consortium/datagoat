@@ -10,7 +10,7 @@ import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { PerformanceEntry, WellnessEntry } from "../../types/data";
-import { dateAtOffset, daysAgoFromISO, toISO } from "../../utils/dates";
+import { daysAgoFromISO } from "../../utils/dates";
 import { useUser } from "../../contexts/UserContext";
 import {
   PROFILE_CHART_GOALS,
@@ -227,10 +227,6 @@ function buildSeries({
   // chronologically for SR users. Also produces a stable shape for the
   // future real chart's path generation.
   out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-  // Reference dateAtOffset / toISO so they're available if the future
-  // real-chart swap wants to fill in zero-valued days within the window.
-  void dateAtOffset;
-  void toISO;
   return out;
 }
 

@@ -127,6 +127,35 @@ describe("Dialog", () => {
     document.body.removeChild(trigger);
   });
 
+  it("falls back to #main-content when the opener was unmounted while open", () => {
+    const onClose = vi.fn();
+    const trigger = document.createElement("button");
+    trigger.textContent = "trigger";
+    document.body.appendChild(trigger);
+    const main = document.createElement("main");
+    main.id = "main-content";
+    main.tabIndex = 0;
+    document.body.appendChild(main);
+    trigger.focus();
+    const { rerender } = render(
+      <Harness open onClose={onClose}>
+        <button>x</button>
+      </Harness>,
+    );
+    // Simulate the surrounding tree removing the opener while the dialog
+    // is open (e.g. the open button was conditionally rendered).
+    document.body.removeChild(trigger);
+    act(() => {
+      rerender(
+        <Harness open={false} onClose={onClose}>
+          <button>x</button>
+        </Harness>,
+      );
+    });
+    expect(document.activeElement).toBe(main);
+    document.body.removeChild(main);
+  });
+
   it("has role=dialog, aria-modal=true, and aria-labelledby pointing at title", () => {
     const onClose = vi.fn();
     render(

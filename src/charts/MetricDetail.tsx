@@ -455,6 +455,10 @@ function readWellnessMetric(
     case "leanMass":
       return e.leanMass > 0 ? e.leanMass : undefined;
     case "availability":
+      // Availability is a tree, not a scalar. Return 1 if both subtrees
+      // are answered, otherwise undefined. The chart placeholder doesn't
+      // render this anyway; keeping it numeric avoids breaking the
+      // shape contract.
       return e.availability?.practiceHeld !== null &&
         e.availability?.gameHeld !== null
         ? 1

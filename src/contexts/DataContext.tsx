@@ -35,11 +35,12 @@ export interface DataContextValue {
   wellness: DataLoadState<WellnessEntry>;
   performance: DataLoadState<PerformanceEntry>;
   // Per-date partial-merge writes. Caller passes only the fields to
-  // update; the doc is identified by date string ("YYYY-MM-DD") and
-  // stamped with the current version. The exposed wellness/performance
-  // values include an optimistic overlay of the partial so all
-  // useData() consumers see the change synchronously - the actual
-  // Firestore setDoc is debounced to coalesce write-amp.
+  // update; the doc is identified by date string ("YYYY-MM-DD"). The
+  // exposed wellness/performance values include an optimistic overlay
+  // of the partial so all useData() consumers see the change
+  // synchronously - the actual Firestore setDoc is debounced to
+  // coalesce write-amp. The version field is stamped only on creation
+  // or upgrade; see firestoreSet* below.
   setWellnessEntry: (
     date: string,
     partial: Partial<WellnessEntry>,
@@ -63,37 +64,48 @@ const LISTENER_WINDOW_DAYS = 365;
 type PendingEntry<T> = { uid: string; partial: Partial<T> };
 type PendingMap<T> = Record<string, PendingEntry<T>>;
 
-// Every partial-merge write stamps the current version. A stale client
-// running an older schema will therefore downgrade the version field on
-// any doc it touches; the data fields written by the newer client are
-// preserved by `merge: true`, but `version` rolls backward. The reader
-// then re-runs the migration chain. **Migrations MUST be idempotent**
-// for this to be safe - see migrations/types.ts for the contract and
-// migrations/index.test.ts for the enforcing test.
+// Partial-merge writes only stamp `version` when the server doc is
+// either unknown to us (creation path) or known to be older than ours
+// (upgrade path). This keeps a stale client - whose CURRENT_*_VERSION
+// is behind the deployed code - from rolling the version field
+// backward on every write, which would force every reader to re-run
+// the migration chain on every keystroke. The "known server version"
+// is sniffed off each onSnapshot doc (pre-migration) into the
+// *ServerVersionsRef caches and read at flush time. Migrations remain
+// required to be idempotent (see migrations/types.ts) - the cache
+// just bounds how often we exercise that contract.
 function firestoreSetWellnessEntry(
   uid: string,
   date: string,
   partial: Partial<WellnessEntry>,
+  knownServerVersion: number | undefined,
 ): Promise<void> {
   const ref = doc(db, "users", uid, "wellnessEntries", date);
-  return setDoc(
-    ref,
-    { ...partial, date, version: CURRENT_WELLNESS_ENTRY_VERSION },
-    { merge: true },
-  );
+  const fields: Record<string, unknown> = { ...partial, date };
+  if (
+    knownServerVersion === undefined ||
+    knownServerVersion < CURRENT_WELLNESS_ENTRY_VERSION
+  ) {
+    fields.version = CURRENT_WELLNESS_ENTRY_VERSION;
+  }
+  return setDoc(ref, fields, { merge: true });
 }
 
 function firestoreSetPerformanceEntry(
   uid: string,
   date: string,
   partial: Partial<PerformanceEntry>,
+  knownServerVersion: number | undefined,
 ): Promise<void> {
   const ref = doc(db, "users", uid, "performanceEntries", date);
-  return setDoc(
-    ref,
-    { ...partial, date, version: CURRENT_PERFORMANCE_ENTRY_VERSION },
-    { merge: true },
-  );
+  const fields: Record<string, unknown> = { ...partial, date };
+  if (
+    knownServerVersion === undefined ||
+    knownServerVersion < CURRENT_PERFORMANCE_ENTRY_VERSION
+  ) {
+    fields.version = CURRENT_PERFORMANCE_ENTRY_VERSION;
+  }
+  return setDoc(ref, fields, { merge: true });
 }
 
 // One-level-deep equality. Reconciliation only needs to compare
@@ -202,6 +214,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const wellnessTimersRef = useRef<Map<string, number>>(new Map());
   const performanceTimersRef = useRef<Map<string, number>>(new Map());
 
+  // Pre-migration `version` per date, captured from each onSnapshot
+  // tick. Read at flush time so we can skip the version stamp when the
+  // server is already at or ahead of ours (see firestoreSet* above).
+  // Cleared on user change; preserved across floor rotations because
+  // the new listener may not redeliver every doc the cache knows about.
+  const wellnessServerVersionsRef = useRef<Map<string, number>>(new Map());
+  const performanceServerVersionsRef = useRef<Map<string, number>>(
+    new Map(),
+  );
+
   const flushWellnessDate = useCallback((date: string) => {
     const entry = wellnessPendingRef.current[date];
     const t = wellnessTimersRef.current.get(date);
@@ -210,19 +232,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
       wellnessTimersRef.current.delete(date);
     }
     if (!entry || Object.keys(entry.partial).length === 0) return;
+    const knownServerVersion = wellnessServerVersionsRef.current.get(date);
     // Pending is NOT dropped here. Reconciliation (driven by
     // onSnapshot) is the sole authority that removes pending entries
     // once the server confirms them. This preserves optimistic state
     // across the round-trip, and across transient setDoc failures.
-    firestoreSetWellnessEntry(entry.uid, date, entry.partial).catch(
-      (err) => {
-        logError(err, {
-          stage: "dataContext.wellness.flush",
-          uid: entry.uid,
-          date,
-        });
-      },
-    );
+    firestoreSetWellnessEntry(
+      entry.uid,
+      date,
+      entry.partial,
+      knownServerVersion,
+    ).catch((err) => {
+      logError(err, {
+        stage: "dataContext.wellness.flush",
+        uid: entry.uid,
+        date,
+      });
+    });
   }, []);
 
   const flushPerformanceDate = useCallback((date: string) => {
@@ -233,15 +259,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       performanceTimersRef.current.delete(date);
     }
     if (!entry || Object.keys(entry.partial).length === 0) return;
-    firestoreSetPerformanceEntry(entry.uid, date, entry.partial).catch(
-      (err) => {
-        logError(err, {
-          stage: "dataContext.performance.flush",
-          uid: entry.uid,
-          date,
-        });
-      },
-    );
+    const knownServerVersion =
+      performanceServerVersionsRef.current.get(date);
+    firestoreSetPerformanceEntry(
+      entry.uid,
+      date,
+      entry.partial,
+      knownServerVersion,
+    ).catch((err) => {
+      logError(err, {
+        stage: "dataContext.performance.flush",
+        uid: entry.uid,
+        date,
+      });
+    });
   }, []);
 
   // Provider unmount: flush all pending dates synchronously. uid is
@@ -264,6 +295,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       performancePendingRef.current = {};
     };
   }, [flushWellnessDate, flushPerformanceDate]);
+
+  // Clear the pre-migration version cache when the signed-in user
+  // changes (the next user's docs are unrelated). Declared AFTER the
+  // unmount-flush effect so its cleanup runs after unmount-flush -
+  // unmount-flush still needs the cache to compute the version-stamp
+  // decision for each in-flight write. Floor rotation does NOT clear
+  // because the new listener may not redeliver every doc; clearing
+  // would briefly defeat the downgrade guard.
+  useEffect(() => {
+    return () => {
+      wellnessServerVersionsRef.current.clear();
+      performanceServerVersionsRef.current.clear();
+    };
+  }, [user]);
 
   // Advance floorISO at local midnight so the listener window stays at
   // "today - LISTENER_WINDOW_DAYS" across multi-day sessions. Each tick
@@ -314,19 +359,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       (snap) => {
         const entries: WellnessEntry[] = [];
         snap.forEach((docSnap) => {
+          const raw = docSnap.data() as Record<string, unknown>;
+          // Cache pre-migration version BEFORE attempting migration so
+          // a stale client receiving a future-version doc still
+          // records the server's version (and won't downgrade it on
+          // its next write, even though it can't render the doc).
+          const rawDate =
+            typeof raw.date === "string" ? raw.date : null;
+          const rawVersion =
+            typeof raw.version === "number"
+              ? (raw.version as number)
+              : null;
+          if (rawDate !== null && rawVersion !== null) {
+            wellnessServerVersionsRef.current.set(rawDate, rawVersion);
+          }
           try {
             const migrated = migrateDocument(
               "wellnessEntry",
-              docSnap.data() as Record<string, unknown>,
+              raw,
             ) as unknown as WellnessEntry;
             entries.push(migrated);
           } catch (err) {
             logError(err, {
               docPath: docSnap.ref.path,
-              fromVersion:
-                typeof docSnap.data()?.version === "number"
-                  ? (docSnap.data()?.version as number)
-                  : 1,
+              fromVersion: rawVersion ?? 1,
             });
           }
         });
@@ -396,19 +452,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       (snap) => {
         const entries: PerformanceEntry[] = [];
         snap.forEach((docSnap) => {
+          const raw = docSnap.data() as Record<string, unknown>;
+          const rawDate =
+            typeof raw.date === "string" ? raw.date : null;
+          const rawVersion =
+            typeof raw.version === "number"
+              ? (raw.version as number)
+              : null;
+          if (rawDate !== null && rawVersion !== null) {
+            performanceServerVersionsRef.current.set(
+              rawDate,
+              rawVersion,
+            );
+          }
           try {
             const migrated = migrateDocument(
               "performanceEntry",
-              docSnap.data() as Record<string, unknown>,
+              raw,
             ) as unknown as PerformanceEntry;
             entries.push(migrated);
           } catch (err) {
             logError(err, {
               docPath: docSnap.ref.path,
-              fromVersion:
-                typeof docSnap.data()?.version === "number"
-                  ? (docSnap.data()?.version as number)
-                  : 1,
+              fromVersion: rawVersion ?? 1,
             });
           }
         });

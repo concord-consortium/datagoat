@@ -383,6 +383,71 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     );
   });
 
+  it("omits version stamp when server snapshot is already at CURRENT", () => {
+    // No-op stamp avoidance: when the server doc is already at our
+    // CURRENT_*_VERSION, partial writes should not include `version`
+    // in the setDoc payload (no behavior change, just less write-amp).
+    const { result } = renderHook(() => useData(), { wrapper });
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1, // === CURRENT_WELLNESS_ENTRY_VERSION
+          date: WELLNESS_DATE,
+          hydration: 4,
+          sleepTime: 8,
+          sleepEfficiency: 85,
+          protein: 1.5,
+          leanMass: 60,
+          availability: FULL_AVAILABILITY,
+        },
+      },
+    ]);
+    emit(latestSub(state.performanceSubs), []);
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, { hydration: 6 });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.hydration).toBe(6);
+    expect(payload.date).toBe(WELLNESS_DATE);
+    expect("version" in payload).toBe(false);
+  });
+
+  it("stale client does not downgrade version when server is ahead of CURRENT", () => {
+    // Regression for the cross-version coexistence hazard: a stale tab
+    // running an older schema must not roll `version` backward on a
+    // doc the newer tab just stamped at a higher version. The raw
+    // server version is cached pre-migration so the downgrade guard
+    // works even when the stale client cannot migrate (and therefore
+    // cannot render) the doc.
+    const { result } = renderHook(() => useData(), { wrapper });
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 5, // far ahead of this client's CURRENT
+          date: WELLNESS_DATE,
+          hydration: 4,
+        },
+      },
+    ]);
+    emit(latestSub(state.performanceSubs), []);
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, { hydration: 6 });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.hydration).toBe(6);
+    expect("version" in payload).toBe(false);
+  });
+
   it("Strict-Mode mount->unmount->remount cycle does not emit empty setDoc", () => {
     const { unmount } = renderHook(() => useData(), { wrapper });
     unmount();

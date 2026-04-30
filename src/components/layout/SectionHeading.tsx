@@ -48,7 +48,7 @@ export function SectionHeading({
           <Link
             to={backTo}
             className={css.backNavBtn}
-            aria-label={`Back`}
+            aria-label="Back"
             onClick={closeMenu}
             data-skip-link-exclude
           >

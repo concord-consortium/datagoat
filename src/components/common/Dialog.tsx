@@ -105,8 +105,14 @@ export function Dialog({
           el.setAttribute("aria-hidden", prior);
         }
       }
-      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+      // isConnected guards against a detached opener: if the surrounding
+      // tree unmounted the trigger while the dialog was open, .focus() on
+      // a detached node silently dumps focus to <body>. Fall back to the
+      // <main> landmark so SR/keyboard users land somewhere meaningful.
+      if (previouslyFocused?.isConnected) {
         previouslyFocused.focus();
+      } else {
+        document.getElementById("main-content")?.focus();
       }
     };
   }, [open, onClose]);

@@ -172,7 +172,7 @@ function ColorScale({ metric, value, onChange }: ColorScaleProps) {
             type="button"
             className={`${css.colorSwatch} ${css.swatchDark} ${selected ? css.selected : ""}`}
             style={{ background: bg }}
-            aria-label={`${metric.name}: ${level} of ${max}`}
+            aria-label={`${level} of ${max}`}
             aria-pressed={selected}
             tabIndex={selected || (value === 0 && idx === 0) ? 0 : -1}
             onClick={() => select(level)}

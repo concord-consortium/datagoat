@@ -72,7 +72,7 @@ function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
               <Link
                 to={detailHref}
                 className={css.metricInfoBtn}
-                aria-label={`${m.name} info`}
+                aria-label="More information"
               >
                 <CustomMetricIcon />
               </Link>

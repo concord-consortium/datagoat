@@ -104,7 +104,7 @@ export function DateNav({ offset, withChip, chipState }: DateNavProps) {
         </button>
       </div>
       {withChip && (
-        <div className={css.dateNavLegend} aria-label="Calendar legend">
+        <div className={css.dateNavLegend}>
           <span className={css.dateNavLegendLabel}>Data entered:</span>
           <span className={css.heatmapLegendItem}>
             <span className={`${css.heatmapLegendSwatch} ${css.swatchAll}`} />{" "}

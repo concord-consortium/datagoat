@@ -29,10 +29,14 @@ export function ForgotPassword() {
     mode: "onChange",
   });
 
-  // Bucket auth/user-not-found and unknown errors into the generic confirm
-  // copy so we never leak whether an account exists. Surface only errors
-  // that are account-state-independent and that the user must see to retry:
-  // network failure (offline) and rate limiting (IP-bound).
+  // Bucket auth/user-not-found, auth/too-many-requests, and unknown errors
+  // into the generic confirm so we never leak whether an account exists.
+  // Firebase applies per-account rate-limiting on resets, so surfacing
+  // auth/too-many-requests would create an account-existence oracle (it
+  // fires only when the email maps to a real account). The confirm copy
+  // includes a passive rate-limit hint so a legitimately throttled user
+  // has a non-leaking explanation. Only auth/network-request-failed is
+  // surfaced inline, since it is account-state-independent.
   async function attemptSend(email: string): Promise<{ shouldConfirm: boolean }> {
     setActionableError(null);
     try {
@@ -44,12 +48,6 @@ export function ForgotPassword() {
       if (code === "auth/network-request-failed") {
         setActionableError(
           "Couldn't reach the server. Check your connection and try again."
-        );
-        return { shouldConfirm: false };
-      }
-      if (code === "auth/too-many-requests") {
-        setActionableError(
-          "Too many requests. Please wait a few minutes before trying again."
         );
         return { shouldConfirm: false };
       }
@@ -93,7 +91,8 @@ export function ForgotPassword() {
           <p className={authCss.authSubtext}>
             If an account exists for that email, we sent a reset link. Check
             your inbox. If it doesn&rsquo;t appear within a few minutes, check
-            your spam folder.
+            your spam folder. If you&rsquo;ve requested several resets
+            recently, please wait a bit before trying again.
           </p>
 
           <button

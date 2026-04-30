@@ -206,7 +206,7 @@ describe("LinkAccountPanel", () => {
     expect(onLinked).not.toHaveBeenCalled();
   });
 
-  it("password success but linkWithCredential rejects -> maps through authErrorMessageFor", async () => {
+  it("password success but linkWithCredential rejects -> signOut + error, no onLinked", async () => {
     const user = userEvent.setup();
     signInWithEmailAndPasswordMock.mockResolvedValue({
       user: { uid: "u1", email: EMAIL } as User,
@@ -214,6 +214,51 @@ describe("LinkAccountPanel", () => {
     linkWithCredentialMock.mockRejectedValue({
       code: "auth/invalid-credential",
     });
+    signOutMock.mockResolvedValue(undefined);
+    const { onLinked } = renderPanel();
+
+    await user.type(screen.getByLabelText(/^password/i), "secret123");
+    await user.click(
+      screen.getByRole("button", { name: /sign in to link/i }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/invalid email or password/i),
+      ).toBeInTheDocument(),
+    );
+    expect(signOutMock).toHaveBeenCalled();
+    expect(onLinked).not.toHaveBeenCalled();
+  });
+
+  it("Google success but linkWithCredential rejects -> signOut + error, no onLinked", async () => {
+    const user = userEvent.setup();
+    signInWithPopupMock.mockResolvedValue({
+      user: { uid: "u1", email: EMAIL } as User,
+    });
+    linkWithCredentialMock.mockRejectedValue({
+      code: "auth/credential-already-in-use",
+    });
+    signOutMock.mockResolvedValue(undefined);
+    const { onLinked } = renderPanel();
+
+    await user.click(
+      screen.getByRole("button", { name: /continue with google/i }),
+    );
+
+    await waitFor(() => expect(signOutMock).toHaveBeenCalled());
+    expect(onLinked).not.toHaveBeenCalled();
+  });
+
+  it("link rejection + signOut rejects -> error still rendered", async () => {
+    const user = userEvent.setup();
+    signInWithEmailAndPasswordMock.mockResolvedValue({
+      user: { uid: "u1", email: EMAIL } as User,
+    });
+    linkWithCredentialMock.mockRejectedValue({
+      code: "auth/invalid-credential",
+    });
+    signOutMock.mockRejectedValue(new Error("signOut failed"));
     const { onLinked } = renderPanel();
 
     await user.type(screen.getByLabelText(/^password/i), "secret123");

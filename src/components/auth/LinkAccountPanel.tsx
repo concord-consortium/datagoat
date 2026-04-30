@@ -74,6 +74,15 @@ export function LinkAccountPanel({
           ? String((err as { code?: unknown }).code)
           : "auth/internal-error";
       logError(err, { stage: "linkWithCredential", code });
+      // Sign-in succeeded but linking did not, so the user is authed as
+      // the existing account. Drop that session before surfacing the
+      // error so RedirectIfAuthed doesn't whisk them off /login on the
+      // next nav while the panel still claims linking failed.
+      try {
+        await signOut(auth);
+      } catch (signOutErr) {
+        logError(signOutErr, { stage: "linkWithCredential.signOutAfterLinkFailure" });
+      }
       setError(authErrorMessageFor(code));
     }
   }

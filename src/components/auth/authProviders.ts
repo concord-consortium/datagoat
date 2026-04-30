@@ -101,13 +101,26 @@ export async function signInWithProvider(
       // panel offers both Google and email/password and lets the user
       // pick the method they used originally. Google has also deprecated
       // this lookup for the same reason.
-      if (pendingCredential) {
+      if (pendingCredential && email) {
         return {
           ok: false,
           kind: "account-collision",
           email,
           pendingCredential,
         };
+      }
+      // The link panel needs email both for user-facing copy and for
+      // the post-reauth mismatch-defense comparison; an empty string
+      // would produce broken UX and short-circuit that defense. Log
+      // with a dedicated stage so this rare provider payload is
+      // distinguishable from the generic catch-all below, then return
+      // the generic "other" result.
+      if (!email) {
+        logError(err, {
+          stage: "signInWithProvider.collisionMissingEmail",
+          code,
+        });
+        return { ok: false, kind: "other", code };
       }
       // No pending credential — fall through to the generic error path.
     }

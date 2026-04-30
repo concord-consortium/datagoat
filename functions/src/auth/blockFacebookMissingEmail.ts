@@ -15,24 +15,22 @@ const BLOCKER_ENABLED = defineString("FACEBOOK_BLOCKER_ENABLED", {
 export const BLOCKED_NO_EMAIL_MESSAGE =
   "[BLOCKED_NO_EMAIL] Your Facebook account does not share an email address with us. Either share your email with Facebook, or sign up with a different method.";
 
-interface ProviderEntry {
-  providerId: string;
-}
-
-interface BeforeCreateEventData {
-  email?: string | null;
-  providerData?: ProviderEntry[];
-}
-
-interface BeforeCreateEvent {
-  data?: BeforeCreateEventData;
+// Structural superset of the AuthBlockingEvent fields this rule reads. Wider
+// than the SDK type (email allows null) so unit tests can construct plain
+// mocks without casting; the real AuthBlockingEvent passed by the trigger
+// below is assignable into this shape.
+interface BlockEvent {
+  data?: {
+    email?: string | null;
+    providerData?: { providerId: string }[];
+  };
 }
 
 // Pure rule extracted so the unit tests can drive it directly without
 // depending on the Firebase Functions runtime. The exported trigger below
 // just plumbs `event` through this function.
 export function evaluateBlockFacebookMissingEmail(
-  event: BeforeCreateEvent,
+  event: BlockEvent,
   blockerEnabled: string,
 ): void {
   if (blockerEnabled !== "true") return;
@@ -45,8 +43,5 @@ export function evaluateBlockFacebookMissingEmail(
 }
 
 export const blockFacebookMissingEmail = beforeUserCreated((event) => {
-  evaluateBlockFacebookMissingEmail(
-    event as unknown as BeforeCreateEvent,
-    BLOCKER_ENABLED.value(),
-  );
+  evaluateBlockFacebookMissingEmail(event, BLOCKER_ENABLED.value());
 });

@@ -96,6 +96,7 @@ export function MetricInputRow(props: MetricInputRowProps) {
             competitionTerm={props.competitionTerm}
             value={props.value}
             onChange={props.onChange}
+            labelledBy={nameId}
           />
         )}
       </td>

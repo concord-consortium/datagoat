@@ -31,6 +31,16 @@ const AUTH_PATHS = new Set<string>([
   "/verify-email",
 ]);
 
+// Auth routes have no routeMeta (SectionHeading is suppressed), but they
+// still need distinct document.title values so SR users and tab-switching
+// users get orientation cues across the auth flow.
+const AUTH_TITLES: Record<string, string> = {
+  "/login": "Sign In",
+  "/signup": "Sign Up",
+  "/forgot-password": "Reset Password",
+  "/verify-email": "Verify Email",
+};
+
 // Skip-link target excludes section-heading chrome buttons (per spec,
 // prototype HTML around line 5453). Skip-link target is <main>, but if
 // SectionHeading buttons sit at the top of <main>, focus may walk into
@@ -63,6 +73,15 @@ function AppShellInner() {
   const isDashboard = DASHBOARD_PATHS.has(pathname);
   const routeMeta = resolveRouteMeta(pathname);
   const mainRef = useRef<HTMLElement | null>(null);
+
+  // WCAG 2.4.2 (Page Titled): keep document.title in sync with the active
+  // route so SR users and tab-switching users get orientation cues across
+  // SPA navigations. Auth routes have no routeMeta, so fall back to
+  // AUTH_TITLES; routes with neither (404-ish) get the bare brand.
+  const docTitle = routeMeta?.title ?? AUTH_TITLES[pathname];
+  useEffect(() => {
+    document.title = docTitle ? `${docTitle} | DataGOAT` : "DataGOAT";
+  }, [docTitle]);
 
   // Document focusin auto-scroll behavior (port of prototype HTML around
   // line 5460). Compute the element's position relative to <main> and the

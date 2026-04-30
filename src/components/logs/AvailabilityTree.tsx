@@ -9,6 +9,7 @@ export interface AvailabilityTreeProps {
   competitionTerm: string;
   value: AvailabilityValue;
   onChange: (next: AvailabilityValue) => void;
+  labelledBy: string;
 }
 
 // Nested yes/no tree per requirements:
@@ -22,6 +23,7 @@ export function AvailabilityTree({
   competitionTerm,
   value,
   onChange,
+  labelledBy,
 }: AvailabilityTreeProps) {
   const gameLabel = getCompTermLabel(competitionTerm);
   const gameLower = getCompTermLowerLabel(competitionTerm);
@@ -61,7 +63,7 @@ export function AvailabilityTree({
   }
 
   return (
-    <div className={css.availGroup}>
+    <div className={css.availGroup} role="group" aria-labelledby={labelledBy}>
       <span className={css.availHelper}>
         Did you have practice and/or a{" "}
         <span>{gameLower}</span> today?

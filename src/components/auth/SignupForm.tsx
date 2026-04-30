@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
@@ -13,13 +12,9 @@ import { AuthLayout } from "./AuthLayout";
 import { SocialButtons } from "./SocialButtons";
 import { PasswordField } from "./PasswordField";
 import { LinkAccountPanel } from "./LinkAccountPanel";
-import {
-  signInWithProvider,
-  googleProvider,
-  facebookProvider,
-  type LinkingState,
-} from "./authProviders";
+import { googleProvider, facebookProvider } from "./authProviders";
 import { authErrorMessageFor } from "./authErrorMessages";
+import { useOAuthSignIn } from "./useOAuthSignIn";
 import { signupSchema, type SignupValues } from "./authSchemas";
 import authCss from "./AuthLayout.module.css";
 import fields from "../form/fields.module.css";
@@ -28,9 +23,19 @@ import css from "./SignupForm.module.css";
 
 export function SignupForm() {
   const navigate = useNavigate();
-  const [error, setError] = useState("");
-  const [linking, setLinking] = useState<LinkingState | null>(null);
-  const [oauthBusy, setOauthBusy] = useState(false);
+  const { oauthBusy, error, setError, linking, setLinking, handleOAuth } =
+    useOAuthSignIn({
+      onUnverifiedOAuth: async (user) => {
+        let sendFailed = false;
+        try {
+          await sendEmailVerification(user);
+        } catch (sendErr) {
+          sendFailed = true;
+          logError(sendErr, { stage: "signupForm.oauth.sendEmailVerification" });
+        }
+        return { sendFailed };
+      },
+    });
   const {
     register,
     handleSubmit,
@@ -42,47 +47,6 @@ export function SignupForm() {
 
   function handleLinked(_user: User) {
     navigate("/dashboard");
-  }
-
-  async function handleOAuth(
-    provider: typeof googleProvider | typeof facebookProvider,
-  ) {
-    setError("");
-    setOauthBusy(true);
-    try {
-      const result = await signInWithProvider(provider);
-      if (result.ok) {
-        if (!result.user.emailVerified) {
-          // Same flow as email/password signup: send verification, route to
-          // /verify-email. send failure is logged but doesn't abort.
-          let sendFailed = false;
-          try {
-            await sendEmailVerification(result.user);
-          } catch (sendErr) {
-            sendFailed = true;
-            logError(sendErr, { stage: "signupForm.oauth.sendEmailVerification" });
-          }
-          navigate("/verify-email", { state: { sendFailed } });
-          return;
-        }
-        navigate("/dashboard");
-        return;
-      }
-      if (result.kind === "account-collision") {
-        setLinking({
-          email: result.email,
-          pendingCredential: result.pendingCredential,
-        });
-        return;
-      }
-      if (result.kind === "blocked-no-email") {
-        setError(result.message);
-        return;
-      }
-      setError(authErrorMessageFor(result.code));
-    } finally {
-      setOauthBusy(false);
-    }
   }
 
   async function onSubmit(values: SignupValues) {

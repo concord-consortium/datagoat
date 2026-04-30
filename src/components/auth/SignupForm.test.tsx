@@ -115,7 +115,7 @@ describe("SignupForm", () => {
     );
   });
 
-  it("OAuth blocked-no-email + other path render the right copy (parity with LoginForm)", async () => {
+  it("OAuth blocked-no-email path renders the Cloud Function message inline (parity with LoginForm)", async () => {
     const user = userEvent.setup();
     signInWithProviderMock.mockResolvedValueOnce({
       ok: false,
@@ -130,6 +130,22 @@ describe("SignupForm", () => {
       expect(
         screen.getByText(/your facebook account does not share an email/i),
       ).toBeInTheDocument(),
+    );
+  });
+
+  it("OAuth popup-blocked path renders the pinned authErrorMessages copy (parity with LoginForm)", async () => {
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: false,
+      kind: "other",
+      code: "auth/popup-blocked",
+    });
+    renderWithRouter(<SignupForm />, { initialEntries: ["/signup"] });
+    await user.click(
+      screen.getByRole("button", { name: /continue with google/i }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/sign-in popup was blocked/i)).toBeInTheDocument(),
     );
   });
 });

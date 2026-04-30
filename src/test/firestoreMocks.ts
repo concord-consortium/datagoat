@@ -66,6 +66,13 @@ export function firestoreMockFactory(state: FirestoreMockState) {
       const parts = _args.slice(1).filter((a) => typeof a === "string");
       return { path: parts.join("/") };
     },
+    // query() preserves the underlying ref's path so onSnapshot's
+    // path-based routing keeps working. where() is opaque - the mock
+    // does not enforce filtering; the production code is what we test.
+    query: (ref: { path: string }, ..._constraints: unknown[]) => ({
+      path: ref.path,
+    }),
+    where: (..._args: unknown[]) => ({ __mockWhere: true }),
     onSnapshot: (
       ref: { path: string },
       cb: (snap: MockSnapshot) => void,

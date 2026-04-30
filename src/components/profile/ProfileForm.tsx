@@ -116,14 +116,17 @@ export function ProfileForm() {
     };
 
     if (mode === "onboarding") {
+      // Only the form fields + profileComplete are written. tracked*Metrics
+      // and trackingSetupComplete are intentionally omitted: setDoc(merge:true)
+      // leaves untouched fields alone, so a true new user gets a doc without
+      // them (TrackedDataSetup defaults to the full registry when these are
+      // undefined), and a returning user who reached the form via a stale
+      // load state keeps any existing tracking selections rather than having
+      // them clobbered. The next screen (TrackedDataSetup) is what writes
+      // these fields for real.
       await updateProfile({
         ...profilePartial,
         profileComplete: true,
-        // Preserve any existing tracking arrays; first-time onboarding
-        // users will run TrackedDataSetup next which sets these.
-        trackedWellnessMetrics: profile?.trackedWellnessMetrics ?? [],
-        trackedPerformanceMetrics: profile?.trackedPerformanceMetrics ?? [],
-        trackingSetupComplete: profile?.trackingSetupComplete ?? false,
       });
       navigate("/setup/tracking");
       return;

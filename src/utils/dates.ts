@@ -40,6 +40,18 @@ export function toISO(d: Date): string {
 // Inverse of toISO(dateAtOffset(n)). Returns NaN for unparseable input or
 // for parsed dates outside [0, HISTORY] so callers can fall back to today.
 export function dateOffsetFromISO(iso: string): number {
+  const days = daysAgoFromISO(iso);
+  if (Number.isNaN(days)) return NaN;
+  const offset = HISTORY - days;
+  if (offset < 0 || offset > HISTORY) return NaN;
+  return offset;
+}
+
+// Days from the given ISO date to today (today === 0, yesterday === 1, ...).
+// Returns NaN for unparseable input or future dates. Unlike
+// dateOffsetFromISO, this does NOT clamp to HISTORY - chart code that
+// renders 3mo / 6mo / All-time windows needs to see older entries.
+export function daysAgoFromISO(iso: string): number {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return NaN;
   const [yStr, mStr, dStr] = iso.split("-");
   const y = Number(yStr);
@@ -58,7 +70,13 @@ export function dateOffsetFromISO(iso: string): number {
   const today = todayMidnight();
   const msPerDay = 24 * 60 * 60 * 1000;
   const diffDays = Math.round((today.getTime() - parsed.getTime()) / msPerDay);
-  const offset = HISTORY - diffDays;
-  if (offset < 0 || offset > HISTORY) return NaN;
-  return offset;
+  if (diffDays < 0) return NaN;
+  return diffDays;
+}
+
+// ISO string for the date `n` days before today. n=0 → today.
+export function isoAtDaysAgo(n: number): string {
+  const d = todayMidnight();
+  d.setDate(d.getDate() - n);
+  return toISO(d);
 }

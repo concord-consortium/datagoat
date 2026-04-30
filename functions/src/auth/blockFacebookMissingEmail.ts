@@ -38,7 +38,8 @@ export function evaluateBlockFacebookMissingEmail(
   if (blockerEnabled !== "true") return;
   const providers = event.data?.providerData ?? [];
   const isFacebook = providers.some((p) => p.providerId === "facebook.com");
-  if (isFacebook && !event.data?.email) {
+  const email = event.data?.email;
+  if (isFacebook && (typeof email !== "string" || email.trim() === "")) {
     throw new HttpsError("invalid-argument", BLOCKED_NO_EMAIL_MESSAGE);
   }
 }

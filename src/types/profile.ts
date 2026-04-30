@@ -22,4 +22,10 @@ export interface UserProfile {
 export type ProfileLoadState =
   | { status: "loading" }
   | { status: "missing" }
-  | { status: "loaded"; profile: UserProfile };
+  | { status: "loaded"; profile: UserProfile }
+  // Snapshot subscription errored (transient network, permission denied,
+  // etc.). Distinct from 'missing' so route guards render a retry UI
+  // instead of dropping the user into onboarding - submitting the
+  // onboarding form against a stale 'missing' would setDoc(merge:true)
+  // over the user's real profile.
+  | { status: "error"; error: unknown };

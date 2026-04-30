@@ -21,6 +21,25 @@ The `beforeUserCreated` blocking trigger that rejects Facebook sign-ins missing 
 
 Kill switch: the trigger reads a `FACEBOOK_BLOCKER_ENABLED` runtime parameter (default `'true'`); set it to `'false'` in the Firebase console (Functions → Configuration) and run `npm run deploy:functions` to disable the rule without a code change. Existing instances pick up the new value on next cold-start.
 
+#### Verifying the trigger is wired
+
+The unit tests cover the rule's logic but can't see the trigger registration or SDK round-trip. Three layers cover the gap, each catching a different failure mode:
+
+**1. Wire-level smoke (pre-deploy, manual)** - catches sentinel/trigger/kill-switch regressions on the raw HTTP response:
+1. Start the emulator: `npm run emulators`
+2. Run `npm --prefix functions run smoke:blocked-no-email` from repo root
+3. Expect `OK: blocking trigger fired and [BLOCKED_NO_EMAIL] survived to the client.`
+
+The smoke script POSTs a Facebook-shaped sign-in with no email to the auth emulator's `signInWithIdp` endpoint and asserts the rejection contains the sentinel.
+
+**2. SDK round-trip test (auto-runs with `npm test`)** - catches Firebase JS SDK message-wrapping or truncation changes that would silently strip the sentinel from `err.message` at the client extractor:
+- `src/components/auth/authProviders.emulator.test.ts` drives `signInWithCredential` against the auth emulator and runs the resulting error through the real `extractBlockedNoEmailMessage`. Skips automatically when the emulator is unreachable (the suite probes `127.0.0.1:9099` at module load).
+
+**3. Post-deploy infrastructure checks (manual)** - catches deploy-time regressions the emulator can't see:
+1. `firebase functions:list | grep blockFacebookMissingEmail` - confirm the function is deployed and the trigger type is `providers/cloud.auth/eventTypes/user.beforeCreate`
+2. Firebase console → Auth → Settings - confirm the project still says "Identity Platform" (a downgrade silently disables blocking triggers)
+3. Firebase console → Functions → `blockFacebookMissingEmail` → Configuration - confirm `FACEBOOK_BLOCKER_ENABLED` is `true` (unless you intentionally killed the rule)
+
 ## Architecture
 
 React 19 + TypeScript + Vite PWA, deployed to Firebase Hosting. Firebase Auth (email/password + Google OAuth) with Firestore for data storage.

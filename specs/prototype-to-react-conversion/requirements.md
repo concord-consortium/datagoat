@@ -149,7 +149,7 @@ interface AuthState {
 - `sendEmailVerification(user)` is called right after `createUserWithEmailAndPassword()`
 - After signup, the user sees the `EmailVerification` screen ("We sent a verification link to {email}") with a "Continue" button and a "Resend Link" button
 - Once in the app, `VerificationBanner` shows a dismissible reminder if `!isEmailVerified && daysUnverified >= 7`
-- `daysUnverified` is calculated from `user.metadata.creationTime` vs current date
+- `daysUnverified` is calculated from `user.metadata.creationTime` vs current date. Both inputs are client-trusted (the creation time travels with the JWT and `Date.now()` is the local clock), so the banner is **advisory only** - a soft nudge, not a compliance gate. Real verification enforcement keys off `user.emailVerified` directly (see the CODAP plugin sign-out path below).
 - **OAuth users (Google + Facebook) skip this entirely** when `user.emailVerified` is already `true` from the provider - `sendEmailVerification` is not called and the banner never shows. The check is provider-agnostic: any sign-in path that yields `user.emailVerified === true` opts out. Facebook does not always return a verified email; if `user.emailVerified` is `false` after Facebook sign-in, the same email/password verification flow applies (send + EmailVerification screen + banner)
 
 ### UserContext
@@ -182,15 +182,17 @@ The profile is fetched async from Firestore after sign-in. Consumers and route g
 type ProfileLoadState =
   | { status: 'loading' }
   | { status: 'missing' }                         // fetch resolved, no Firestore doc -> new user
-  | { status: 'loaded'; profile: UserProfile };
+  | { status: 'loaded'; profile: UserProfile }
+  | { status: 'error'; error: unknown };          // onSnapshot subscription errored (transient network, permission denied, etc.)
 ```
 
 `ProtectedRoute` behavior:
 - `status === 'loading'` -> render `<Loading />`. **Never redirect while loading**, or returning users will be kicked back to `/profile` on every cold start.
 - `status === 'missing'` -> redirect to `/profile` (onboarding entry point).
 - `status === 'loaded'` -> render the child route.
+- `status === 'error'` -> render a retry UI (`ProfileLoadError`) that exposes a "Try again" button bound to `useUser().retry()`. **Do NOT redirect to `/profile`**: a transient Firestore error on a returning user would otherwise drop them into the onboarding form and submit would `setDoc(merge:true)` over their real profile. Migration failures on an existing doc still map to `'missing'` per the migration contract (loud in logs, soft in UI - a single bad doc must not lock the user out); the `'error'` branch is only for snapshot *subscription* failures.
 
-A route that is itself part of onboarding (`/profile`, `/setup/tracking`) only gates on `status !== 'loading'` - it renders regardless of whether the doc exists, because that's where new users land and where existing users edit.
+A route that is itself part of onboarding (`/profile`, `/setup/tracking`) only gates on `status !== 'loading'` - it renders regardless of whether the doc exists, because that's where new users land and where existing users edit. `'error'` still renders the retry UI on onboarding routes (same data-loss reasoning - the form can't be allowed to submit against a stale snapshot error).
 
 ### DataContext
 ```ts

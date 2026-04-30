@@ -74,6 +74,80 @@ describe("UserContext loadState transitions", () => {
     );
   });
 
+  it("transitions loading -> error when the snapshot subscription errors", async () => {
+    mockUser = { uid: "u1", email: "u@example.com" };
+    let errorCb: ((e: unknown) => void) | null = null;
+    onSnapshotMock.mockImplementation(
+      (
+        _ref: unknown,
+        _next: (s: unknown) => void,
+        onError: (e: unknown) => void,
+      ) => {
+        errorCb = onError;
+        return () => undefined;
+      },
+    );
+
+    const { result } = renderHook(() => useUser(), { wrapper });
+    expect(result.current.loadState.status).toBe("loading");
+
+    act(() => {
+      errorCb!(new Error("permission-denied"));
+    });
+
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("error"),
+    );
+    // Load-bearing assertion: a snapshot error must NOT collapse to
+    // 'missing'. ProtectedRoute would otherwise redirect a real user to
+    // /profile and submit-merge over their data.
+    expect(result.current.loadState.status).not.toBe("missing");
+  });
+
+  it("retry() re-subscribes after an error", async () => {
+    mockUser = { uid: "u1", email: "u@example.com" };
+    let nextCb: ((s: unknown) => void) | null = null;
+    let errorCb: ((e: unknown) => void) | null = null;
+    let subscribeCount = 0;
+    onSnapshotMock.mockImplementation(
+      (
+        _ref: unknown,
+        next: (s: unknown) => void,
+        onError: (e: unknown) => void,
+      ) => {
+        subscribeCount += 1;
+        nextCb = next;
+        errorCb = onError;
+        return () => undefined;
+      },
+    );
+
+    const { result } = renderHook(() => useUser(), { wrapper });
+    expect(subscribeCount).toBe(1);
+
+    act(() => {
+      errorCb!(new Error("net"));
+    });
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("error"),
+    );
+
+    act(() => {
+      result.current.retry();
+    });
+    expect(subscribeCount).toBe(2);
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("loading"),
+    );
+
+    act(() => {
+      nextCb!({ exists: () => false, data: () => undefined });
+    });
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("missing"),
+    );
+  });
+
   it("transitions loading -> loaded when the snapshot resolves with a doc", async () => {
     mockUser = { uid: "u1", email: "u@example.com" };
     let snapshotCb: ((s: unknown) => void) | null = null;

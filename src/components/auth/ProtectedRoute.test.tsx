@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
 
@@ -17,8 +17,10 @@ vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => ({ user: ctx.user, loading: ctx.loading }),
 }));
 
+const retryMock = vi.fn();
+
 vi.mock("../../contexts/UserContext", () => ({
-  useUser: () => ({ loadState: ctx.loadState }),
+  useUser: () => ({ loadState: ctx.loadState, retry: retryMock }),
 }));
 
 import { ProtectedRoute, OnboardingRoute } from "./ProtectedRoute";
@@ -42,6 +44,10 @@ function renderRoute(
 }
 
 describe("ProtectedRoute", () => {
+  beforeEach(() => {
+    retryMock.mockClear();
+  });
+
   it("renders <Loading /> when loadState.status is 'loading' (does not redirect)", () => {
     ctx.user = { uid: "u1" };
     ctx.loading = false;
@@ -78,6 +84,20 @@ describe("ProtectedRoute", () => {
     renderRoute(<ProtectedRoute />);
     expect(screen.getByText("LOGIN")).toBeInTheDocument();
   });
+
+  it("renders the retry UI on 'error' (does NOT redirect to /profile)", () => {
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = { status: "error", error: new Error("net") };
+    renderRoute(<ProtectedRoute />);
+    // Load-bearing assertion: a transient snapshot error must not drop the
+    // user into onboarding, where submit would clobber their real profile.
+    expect(screen.queryByText("PROFILE")).toBeNull();
+    expect(screen.queryByText("CHILD")).toBeNull();
+    const retryBtn = screen.getByRole("button", { name: /try again/i });
+    fireEvent.click(retryBtn);
+    expect(retryMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("OnboardingRoute", () => {
@@ -106,6 +126,17 @@ describe("OnboardingRoute", () => {
     };
     renderRoute(<OnboardingRoute />, "/profile", "/profile");
     expect(screen.getByText("CHILD")).toBeInTheDocument();
+  });
+
+  it("renders the retry UI on 'error' (blocks the form so submit can't clobber a real profile)", () => {
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = { status: "error", error: new Error("net") };
+    renderRoute(<OnboardingRoute />, "/profile", "/profile");
+    expect(screen.queryByText("CHILD")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /try again/i }),
+    ).toBeInTheDocument();
   });
 });
 

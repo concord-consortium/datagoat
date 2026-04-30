@@ -3,6 +3,8 @@ import {
   HISTORY,
   dateAtOffset,
   dateOffsetFromISO,
+  daysAgoFromISO,
+  isoAtDaysAgo,
   toISO,
   shortFmt,
   fmtDate,
@@ -57,5 +59,35 @@ describe("date helpers", () => {
     const d = new Date(2026, 3, 15); // Wed, April 15, 2026
     expect(fmtDate(d)).toMatch(/April 15, 2026$/);
     expect(shortFmt(d)).toBe("4/15/2026");
+  });
+
+  it("daysAgoFromISO returns 0 for today, increasing as dates get older", () => {
+    expect(daysAgoFromISO(isoAtDaysAgo(0))).toBe(0);
+    expect(daysAgoFromISO(isoAtDaysAgo(1))).toBe(1);
+    expect(daysAgoFromISO(isoAtDaysAgo(HISTORY))).toBe(HISTORY);
+    // Crucially, dates older than HISTORY are NOT clamped - the chart's
+    // 6mo / All ranges depend on this.
+    expect(daysAgoFromISO(isoAtDaysAgo(180))).toBe(180);
+    expect(daysAgoFromISO(isoAtDaysAgo(365))).toBe(365);
+  });
+
+  it("daysAgoFromISO returns NaN for malformed input", () => {
+    expect(Number.isNaN(daysAgoFromISO("garbage"))).toBe(true);
+    expect(Number.isNaN(daysAgoFromISO("2026-13-01"))).toBe(true);
+    expect(Number.isNaN(daysAgoFromISO("2026-02-30"))).toBe(true);
+    expect(Number.isNaN(daysAgoFromISO(""))).toBe(true);
+  });
+
+  it("daysAgoFromISO returns NaN for future dates", () => {
+    const future = new Date();
+    future.setHours(0, 0, 0, 0);
+    future.setDate(future.getDate() + 5);
+    expect(Number.isNaN(daysAgoFromISO(toISO(future)))).toBe(true);
+  });
+
+  it("isoAtDaysAgo round-trips with daysAgoFromISO", () => {
+    for (const n of [0, 1, 7, 29, 90, 180, 365]) {
+      expect(daysAgoFromISO(isoAtDaysAgo(n))).toBe(n);
+    }
   });
 });

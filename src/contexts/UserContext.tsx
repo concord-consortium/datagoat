@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -27,6 +28,9 @@ export interface UserContextValue {
     type: "wellness" | "performance",
     ids: string[],
   ) => Promise<void>;
+  // Re-subscribe to the profile snapshot. Used by the retry UI rendered
+  // when loadState.status === 'error'.
+  retry: () => void;
 }
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -36,6 +40,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loadState, setLoadState] = useState<ProfileLoadState>({
     status: "loading",
   });
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -66,22 +71,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 ? (snap.data()?.version as number)
                 : 1,
           });
-          // Treat as missing so the UI's onboarding/empty state takes over -
-          // a single bad doc must not lock the user out.
+          // Migration failure on an existing doc -> 'missing' per the
+          // pinned migration contract ("loud in logs, soft in UI -
+          // a single bad doc must not lock the user out"). Snapshot
+          // *subscription* failures take the error branch below instead.
           setLoadState({ status: "missing" });
         }
       },
       (err) => {
         logError(err, { stage: "userContext.onSnapshot", uid: user.uid });
-        setLoadState({ status: "missing" });
+        // Don't collapse to 'missing' - a transient Firestore error on a
+        // user with a real profile would otherwise drop them into the
+        // onboarding form, which setDoc(merge:true)s over their data.
+        setLoadState({ status: "error", error: err });
       },
     );
     return unsubscribe;
-  }, [user]);
+  }, [user, retryNonce]);
+
+  const retry = useCallback(() => {
+    setRetryNonce((n) => n + 1);
+  }, []);
 
   const value = useMemo<UserContextValue>(() => {
     return {
       loadState,
+      retry,
       async updateProfile(partial: Partial<UserProfile>) {
         if (!user) throw new Error("updateProfile called without auth user");
         const ref = doc(db, "users", user.uid, "profile", "main");
@@ -107,7 +122,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         await updateDoc(ref, { [field]: ids });
       },
     };
-  }, [loadState, user]);
+  }, [loadState, retry, user]);
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }

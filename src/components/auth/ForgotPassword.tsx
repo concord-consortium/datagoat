@@ -17,6 +17,7 @@ import buttons from "../form/buttons.module.css";
 export function ForgotPassword() {
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
+  const [actionableError, setActionableError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -28,20 +29,37 @@ export function ForgotPassword() {
     mode: "onChange",
   });
 
-  // Single confirm copy for both happy + error paths so we never leak
-  // whether an account exists for the entered email. Errors are logged but
-  // never surfaced to the user.
-  async function attemptSend(email: string) {
+  // Bucket auth/user-not-found and unknown errors into the generic confirm
+  // copy so we never leak whether an account exists. Surface only errors
+  // that are account-state-independent and that the user must see to retry:
+  // network failure (offline) and rate limiting (IP-bound).
+  async function attemptSend(email: string): Promise<{ shouldConfirm: boolean }> {
+    setActionableError(null);
     try {
       await sendPasswordResetEmail(auth, email);
+      return { shouldConfirm: true };
     } catch (err: unknown) {
       logError(err, { stage: "forgotPassword.send" });
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/network-request-failed") {
+        setActionableError(
+          "Couldn't reach the server. Check your connection and try again."
+        );
+        return { shouldConfirm: false };
+      }
+      if (code === "auth/too-many-requests") {
+        setActionableError(
+          "Too many requests. Please wait a few minutes before trying again."
+        );
+        return { shouldConfirm: false };
+      }
+      return { shouldConfirm: true };
     }
   }
 
   async function onSubmit(values: ForgotPasswordValues) {
-    await attemptSend(values.email);
-    setSubmitted(true);
+    const { shouldConfirm } = await attemptSend(values.email);
+    if (shouldConfirm) setSubmitted(true);
   }
 
   async function handleResend(e: FormEvent<HTMLButtonElement>) {
@@ -86,6 +104,11 @@ export function ForgotPassword() {
           >
             Resend Link
           </button>
+          {actionableError && (
+            <p className={fields.fieldErrorMsg} role="alert">
+              {actionableError}
+            </p>
+          )}
 
           <p className={authCss.authAltLink}>
             <button
@@ -145,6 +168,11 @@ export function ForgotPassword() {
           >
             Send Reset Link
           </button>
+          {actionableError && (
+            <p className={fields.fieldErrorMsg} role="alert">
+              {actionableError}
+            </p>
+          )}
         </form>
 
         <p className={authCss.authAltLink}>

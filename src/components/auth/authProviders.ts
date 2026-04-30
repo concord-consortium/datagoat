@@ -47,7 +47,7 @@ function isAuthError(err: unknown): err is AuthError {
   );
 }
 
-function extractBlockedNoEmailMessage(err: AuthError): string | null {
+export function extractBlockedNoEmailMessage(err: AuthError): string | null {
   // Blocking-function rejections surface as auth/internal-error with the
   // thrown message embedded in error.message. We match the sentinel,
   // strip it, and return the remainder as the user-facing copy.

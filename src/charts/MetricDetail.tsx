@@ -24,7 +24,7 @@ import {
   usePerformanceData,
 } from "../contexts/DataContext";
 import type { PerformanceEntry, WellnessEntry } from "../types/data";
-import { HISTORY, dateOffsetFromISO } from "../utils/dates";
+import { daysAgoFromISO } from "../utils/dates";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -416,23 +416,19 @@ function buildSeries({
   rangeDays,
 }: BuildSeriesArgs): Array<{ date: string; value: number }> {
   const out: Array<{ date: string; value: number }> = [];
-  const todayOffset = HISTORY;
-  const minOffset = Math.max(0, todayOffset - rangeDays + 1);
 
   if (type === "wellness") {
     for (const e of wellnessEntries) {
-      const offset = dateOffsetFromISO(e.date);
-      if (Number.isNaN(offset) || offset < minOffset || offset > todayOffset)
-        continue;
+      const days = daysAgoFromISO(e.date);
+      if (Number.isNaN(days) || days >= rangeDays) continue;
       const value = readWellnessMetric(e, metricId);
       if (value === undefined) continue;
       out.push({ date: e.date, value });
     }
   } else {
     for (const e of performanceEntries) {
-      const offset = dateOffsetFromISO(e.date);
-      if (Number.isNaN(offset) || offset < minOffset || offset > todayOffset)
-        continue;
+      const days = daysAgoFromISO(e.date);
+      if (Number.isNaN(days) || days >= rangeDays) continue;
       const raw = e.metrics?.[metricId];
       if (typeof raw !== "number" || !Number.isFinite(raw)) continue;
       out.push({ date: e.date, value: raw });

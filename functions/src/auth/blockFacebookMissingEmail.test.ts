@@ -21,6 +21,30 @@ describe("evaluateBlockFacebookMissingEmail", () => {
     }
   });
 
+  it("throws when Facebook provider has an empty-string email", () => {
+    const event = {
+      data: {
+        email: "",
+        providerData: [{ providerId: "facebook.com" }],
+      },
+    };
+    expect(() => evaluateBlockFacebookMissingEmail(event, "true")).toThrow(
+      BLOCKED_NO_EMAIL_MESSAGE,
+    );
+  });
+
+  it("throws when Facebook provider has a whitespace-only email", () => {
+    const event = {
+      data: {
+        email: "   ",
+        providerData: [{ providerId: "facebook.com" }],
+      },
+    };
+    expect(() => evaluateBlockFacebookMissingEmail(event, "true")).toThrow(
+      BLOCKED_NO_EMAIL_MESSAGE,
+    );
+  });
+
   it("passes when Facebook provider has a valid email", () => {
     const event = {
       data: {

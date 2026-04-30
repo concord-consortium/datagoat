@@ -12,13 +12,16 @@ import {
   collection,
   doc,
   onSnapshot,
+  query,
   setDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 import { docTypeFromPath, migrateDocument } from "../migrations";
 import { CURRENT_WELLNESS_ENTRY_VERSION } from "../migrations/wellnessEntry";
 import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
+import { isoAtDaysAgo } from "../utils/dates";
 import { logError } from "../utils/logError";
 import {
   emptyWellnessEntry,
@@ -50,6 +53,12 @@ export interface DataContextValue {
 const DataContext = createContext<DataContextValue | null>(null);
 
 const DEBOUNCE_MS = 500;
+
+// Largest window the chart UI can display ("All time" in TimeRangePicker
+// is 365 days). Listeners filter at this floor so we don't pay reads on
+// docs the UI cannot render. The floor advances at local midnight so the
+// window stays current across multi-day sessions.
+const LISTENER_WINDOW_DAYS = 365;
 
 type PendingEntry<T> = { uid: string; partial: Partial<T> };
 type PendingMap<T> = Record<string, PendingEntry<T>>;
@@ -170,6 +179,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     PendingMap<PerformanceEntry>
   >({});
 
+  // The lower bound (inclusive) for date-string filtering on both
+  // collection listeners. Re-computed at local midnight so a long-lived
+  // session keeps the window aligned with "today - 365d". Both
+  // subscription effects depend on this and re-issue when it changes.
+  // The midnight-rotation effect is declared further below to preserve
+  // the unmount-flush effect's "declared first" invariant.
+  const [floorISO, setFloorISO] = useState(() =>
+    isoAtDaysAgo(LISTENER_WINDOW_DAYS),
+  );
+
   // Synchronous mirrors of the pending state so flush callbacks can
   // read current pending without a stale setState closure. Written
   // INLINE inside every setState updater that touches pending. The
@@ -246,6 +265,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
   }, [flushWellnessDate, flushPerformanceDate]);
 
+  // Advance floorISO at local midnight so the listener window stays at
+  // "today - LISTENER_WINDOW_DAYS" across multi-day sessions. Each tick
+  // changes floorISO, which (a) re-arms this timer for the next
+  // midnight and (b) re-issues both subscription effects below.
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setDate(now.getDate() + 1);
+    nextMidnight.setHours(0, 0, 0, 0);
+    const ms = nextMidnight.getTime() - now.getTime();
+    const t = window.setTimeout(() => {
+      setFloorISO(isoAtDaysAgo(LISTENER_WINDOW_DAYS));
+    }, ms);
+    return () => window.clearTimeout(t);
+  }, [floorISO]);
+
   // Wellness collection subscription. Cleanup discards pending state
   // - sign-out / user-switch must NOT flush (prior session is gone,
   // writes would be rejected by rules; optimistic state is
@@ -261,8 +296,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     setWellnessServer({ status: "loading" });
     const ref = collection(db, "users", user.uid, "wellnessEntries");
+    const q = query(ref, where("date", ">=", floorISO));
     const unsubscribe = onSnapshot(
-      ref,
+      q,
       (snap) => {
         const entries: WellnessEntry[] = [];
         snap.forEach((docSnap) => {
@@ -332,7 +368,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       wellnessPendingRef.current = {};
       setWellnessPending({});
     };
-  }, [user]);
+  }, [user, floorISO]);
 
   // Performance collection subscription. Same shape as wellness.
   useEffect(() => {
@@ -342,8 +378,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     setPerformanceServer({ status: "loading" });
     const ref = collection(db, "users", user.uid, "performanceEntries");
+    const q = query(ref, where("date", ">=", floorISO));
     const unsubscribe = onSnapshot(
-      ref,
+      q,
       (snap) => {
         const entries: PerformanceEntry[] = [];
         snap.forEach((docSnap) => {
@@ -411,7 +448,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       performancePendingRef.current = {};
       setPerformancePending({});
     };
-  }, [user]);
+  }, [user, floorISO]);
 
   const setWellnessEntry = useCallback(
     (date: string, partial: Partial<WellnessEntry>) => {

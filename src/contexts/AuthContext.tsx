@@ -21,6 +21,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// Client-clock-based: drives the advisory VerificationBanner only, not a compliance gate.
 function calcDaysUnverified(user: User | null): number {
   if (!user) return 0;
   const created = user.metadata?.creationTime

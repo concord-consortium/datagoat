@@ -213,14 +213,33 @@ export function useCodapApi(): UseCodapApiResult {
     if (keyAttribute) {
       const existingItems = await getAllItems(name);
       const keyToId = new Map<string, number | string>();
+      const duplicateKeys = new Set<string>();
       if (existingItems?.success) {
         const items = (existingItems.values as
           | Array<{ id: number | string; values: DatasetRow }>
           | undefined) ?? [];
         for (const item of items) {
           const k = item.values?.[keyAttribute];
-          if (k != null) keyToId.set(String(k), item.id);
+          if (k == null) continue;
+          const key = String(k);
+          // Preserve the first id we see for each key. If the user has
+          // manually duplicated rows in CODAP, fanning the update out
+          // to every duplicate could overwrite intentional edits, so
+          // only the first match is updated and the rest are left
+          // alone. The console warning surfaces the divergence so it
+          // can be cleaned up manually.
+          if (keyToId.has(key)) {
+            duplicateKeys.add(key);
+          } else {
+            keyToId.set(key, item.id);
+          }
         }
+      }
+      if (duplicateKeys.size > 0) {
+        console.warn(
+          `CODAP dataset "${name}" has duplicate ${keyAttribute} values; only the first row for each was updated:`,
+          Array.from(duplicateKeys),
+        );
       }
       const toCreate: DatasetRow[] = [];
       for (const row of rows) {

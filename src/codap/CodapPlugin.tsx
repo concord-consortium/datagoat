@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUser } from "../contexts/UserContext";
 import {
@@ -67,6 +67,13 @@ function PluginSignOutBar() {
   );
 }
 
+// The verified-email gate here is UI-only: a revived IDB session with
+// emailVerified=false renders this branch without auto-revoking, and the
+// user signs out via PluginSignOutBar. The actual security boundary is
+// the per-user Firestore rule (request.auth.uid == userId), which does
+// not gate on email_verified per spec. Don't add hooks that consume
+// useUser() in this branch - that would leak unverified-user data into
+// components that aren't supposed to see it.
 function CodapPluginUnverified() {
   return (
     <div className={css.pluginShell}>
@@ -103,6 +110,12 @@ function CodapPluginAuthed() {
   });
   const [sending, setSending] = useState(false);
   const [lastSent, setLastSent] = useState<string | undefined>(undefined);
+  // Synchronous re-entry gate. The disabled-button check uses `sending`
+  // state, which only flips after React commits - a rapid double-click
+  // between the click and that commit can otherwise launch two
+  // interleaved sendDataset cycles against the same CODAP context,
+  // defeating the upsert-by-date dedupe.
+  const sendingRef = useRef(false);
 
   const wellnessEntries =
     wellness.status === "loaded" ? wellness.entries : [];
@@ -116,6 +129,8 @@ function CodapPluginAuthed() {
     PERFORMANCE_METRICS.map((m) => m.id);
 
   async function handleSend() {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
     setLastSent(undefined);
     try {
@@ -154,6 +169,7 @@ function CodapPluginAuthed() {
     } catch (err) {
       logError(err, { source: "CodapPlugin.handleSend" });
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   }

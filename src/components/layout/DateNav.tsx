@@ -8,6 +8,7 @@ import {
   toISO,
 } from "../../utils/dates";
 import type { ChipState } from "../../utils/wellnessCompleteness";
+import common from "../common.module.css";
 import css from "./DateNav.module.css";
 
 export interface DateNavProps {
@@ -65,11 +66,20 @@ export function DateNav({ offset, withChip, chipState }: DateNavProps) {
         </button>
         <span className={css.dateNavCenter}>
           {withChip && (
-            <span
-              className={`${css.dateNavChip} ${chipClass(chipState ?? "none")}`}
-              aria-hidden="true"
-              data-chip-state={chipState ?? "none"}
-            />
+            <>
+              <span
+                className={`${css.dateNavChip} ${chipClass(chipState ?? "none")}`}
+                aria-hidden="true"
+                data-chip-state={chipState ?? "none"}
+              />
+              <span
+                role="status"
+                aria-live="polite"
+                className={common.visuallyHidden}
+              >
+                {chipStatusText(chipState ?? "none")}
+              </span>
+            </>
           )}
           <span className={css.dateNavLabel}>{labelText}</span>
         </span>
@@ -118,6 +128,12 @@ function chipClass(state: ChipState): string {
   if (state === "all") return css.chipAll;
   if (state === "some") return css.chipSome;
   return css.chipNone;
+}
+
+function chipStatusText(state: ChipState): string {
+  if (state === "all") return "All wellness metrics entered for this day.";
+  if (state === "some") return "Some wellness metrics entered for this day.";
+  return "No wellness metrics entered for this day.";
 }
 
 // Re-export so callers in WellnessLog / PerformanceLog can convert their

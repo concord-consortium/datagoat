@@ -32,14 +32,24 @@ export function buildCodapWrappedUrl(): string {
 // up CODAP.
 //
 // Detection uses window.parent identity rather than window.top to avoid
-// rare cross-origin SecurityErrors on `top` access. False-mode analysis:
+// rare cross-origin SecurityErrors on `top` access. The parent identity
+// comparison is itself spec-safe, but sandboxed / privacy-partitioned
+// iframes can still throw on parent access in practice; a throw here
+// would blank the page since main.tsx never reaches createRoot, so we
+// catch and treat access denial as "framed" (no redirect). False-mode
+// analysis:
 //   - false positive (top-level looks framed): no redirect, plugin
-//     renders top-level (= existing behavior pre-redirect).
+//     renders top-level (= existing behavior pre-redirect). The
+//     SecurityError catch lands in this branch.
 //   - false negative (framed looks top-level): one redirect cycle, then
 //     we're framed and detection is correct - no loop.
 export function shouldRedirectToCodap(): boolean {
   if (typeof window === "undefined") return false;
-  if (window.self !== window.parent) return false;
+  try {
+    if (window.self !== window.parent) return false;
+  } catch {
+    return false;
+  }
   const params = new URLSearchParams(window.location.search);
   if (params.get("noredirect") === "1") return false;
   return true;

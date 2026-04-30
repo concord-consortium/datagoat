@@ -1,6 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  connectFirestoreEmulator,
+} from "firebase/firestore";
 import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 const app = initializeApp({
@@ -14,7 +19,18 @@ const app = initializeApp({
 });
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Persistent IndexedDB cache so offline writes survive tab close / reload -
+// required for a PWA where the user may log data on the sideline with no
+// connection. The multi-tab manager lets the cache be shared between the
+// installed PWA and any open browser tabs without one of them silently
+// degrading to memory-only. If IndexedDB is unavailable (Safari private
+// browsing, etc.) the SDK falls back to memory automatically.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 
 let emulatorConnected = false;
 if (

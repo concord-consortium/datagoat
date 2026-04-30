@@ -1,15 +1,19 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { migrateDocument, _resetRegistryForTests } from "./index";
-import { CURRENT_USER_PROFILE_VERSION } from "./userProfile";
 import { userProfileFixtures } from "./userProfile.fixtures";
 
+// Deep-equality assertion: today there are no registered migrations, so
+// the migrated doc must equal the input fixture exactly. See
+// wellnessEntry.test.ts for the full rationale and the refactor playbook
+// when a v1 -> v2 migration lands (refactor fixtures to inputs+expected,
+// add an entry to the idempotency-fixture list in index.test.ts).
 describe("userProfile migrations", () => {
   beforeEach(() => {
     _resetRegistryForTests();
   });
 
   it.each(Object.keys(userProfileFixtures))(
-    "fixture '%s' migrates to current version",
+    "fixture '%s' migrates without data loss",
     (key) => {
       const fixture =
         userProfileFixtures[key as keyof typeof userProfileFixtures];
@@ -17,9 +21,7 @@ describe("userProfile migrations", () => {
         "userProfile",
         fixture as unknown as Record<string, unknown>,
       );
-      expect(migrated.version ?? CURRENT_USER_PROFILE_VERSION).toBe(
-        CURRENT_USER_PROFILE_VERSION,
-      );
+      expect(migrated).toEqual(fixture);
     },
   );
 });

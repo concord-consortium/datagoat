@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   DndContext,
@@ -94,6 +94,11 @@ export function TrackedMetricsTable({
     () => orderedRows.length,
   );
 
+  // Each drag handle aria-describedby's this hint so the same instructions
+  // are spoken on focus. Sighted keyboard users see the visible paragraph;
+  // SR users hear it on group entry and again on each handle focus.
+  const reorderHintId = useId();
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -110,7 +115,11 @@ export function TrackedMetricsTable({
 
   return (
     <>
-      <h3 className={css.infoSectionHeading}>{heading}</h3>
+      <h2 className={css.infoSectionHeading}>{heading}</h2>
+      <p id={reorderHintId} className={css.reorderHint}>
+        Drag the handle to reorder, or focus a handle and press Space, then
+        use the arrow keys to move (Escape to cancel).
+      </p>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -144,6 +153,7 @@ export function TrackedMetricsTable({
                   onToggleCheck={() =>
                     onToggleCheck(m.id, !trackedIds.includes(m.id))
                   }
+                  reorderHintId={reorderHintId}
                 />
               ))}
             </tbody>

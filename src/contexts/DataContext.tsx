@@ -54,6 +54,13 @@ const DEBOUNCE_MS = 500;
 type PendingEntry<T> = { uid: string; partial: Partial<T> };
 type PendingMap<T> = Record<string, PendingEntry<T>>;
 
+// Every partial-merge write stamps the current version. A stale client
+// running an older schema will therefore downgrade the version field on
+// any doc it touches; the data fields written by the newer client are
+// preserved by `merge: true`, but `version` rolls backward. The reader
+// then re-runs the migration chain. **Migrations MUST be idempotent**
+// for this to be safe - see migrations/types.ts for the contract and
+// migrations/index.test.ts for the enforcing test.
 function firestoreSetWellnessEntry(
   uid: string,
   date: string,

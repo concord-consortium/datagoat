@@ -100,7 +100,6 @@ describe("CodapPluginSignIn", () => {
       kind: "account-collision",
       email: "user@example.com",
       pendingCredential: {} as AuthCredential,
-      existingMethods: ["password"],
     });
     render(<CodapPluginSignIn />);
     await user.click(

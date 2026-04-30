@@ -6,10 +6,6 @@
      inside <header> (outside the scroll container), so the entire
      header stack is naturally pinned at the top of the column. */
   position: relative;
-  /* Reset the default <h2> top/bottom margin (the user-agent stylesheet
-     gives <h2> ~0.83em margin which created a visible gap between the
-     accent-line and the section-heading background). */
-  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,6 +28,21 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   border-bottom: 1px solid var(--border);
+}
+
+/* The visible heading sits inside the .sectionHeading div alongside
+   the chrome buttons. font: inherit picks up the parent's prototype
+   typography; margin: 0 zeroes the user-agent default <h2> margin
+   that would otherwise create a gap above/below the heading. */
+.titleH2 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 
 /* Page-level icon rendered inline with the title (flex flow, centered

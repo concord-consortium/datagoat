@@ -46,7 +46,7 @@ Key behaviors in `main.tsx`:
 
 ### Firebase
 
-`firebase.ts` initializes the app from `VITE_*` env vars and connects to emulators when `VITE_USE_EMULATORS=true`. Firestore rules enforce user-level access (`/users/{userId}/**`) and admin-only writes to `/config/**`.
+`firebase.ts` initializes the app from `VITE_*` env vars and connects to emulators when `VITE_USE_EMULATORS=true`. Firestore rules enforce user-level access (`/users/{userId}/**`); anything outside that path is default-denied. Writes are intentionally allowed for unverified accounts - verification is non-blocking per spec.
 
 ## Styling guide
 

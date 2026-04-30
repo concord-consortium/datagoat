@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { getCompTermLabel, getCompTermLowerLabel } from "../../data/competitionTerms";
 import css from "./AvailabilityTree.module.css";
 import type { WellnessEntry } from "../../types/data";
@@ -24,6 +25,17 @@ export function AvailabilityTree({
 }: AvailabilityTreeProps) {
   const gameLabel = getCompTermLabel(competitionTerm);
   const gameLower = getCompTermLowerLabel(competitionTerm);
+
+  // role=radiogroup + aria-labelledby gives each Y/N pair a programmatic
+  // group name. Without this, screen readers announce "Y radio" / "N
+  // radio" with no question context. Using radiogroup (rather than a
+  // bare fieldset) preserves the prototype's flex-row CSS - fieldsets
+  // default to display:block and would require reworking the layout.
+  const reactId = useId();
+  const practiceHeldLabelId = `${reactId}-practice-held`;
+  const practiceParticipationLabelId = `${reactId}-practice-part`;
+  const gameHeldLabelId = `${reactId}-game-held`;
+  const gameParticipationLabelId = `${reactId}-game-part`;
 
   function setPracticeHeld(held: boolean) {
     onChange({
@@ -57,8 +69,14 @@ export function AvailabilityTree({
       <div
         className={`${css.availOption} ${value.practiceHeld === true ? css.availOpen : ""}`}
       >
-        <div className={css.availRow}>
-          <span className={css.availRowLabel}>Practice</span>
+        <div
+          className={css.availRow}
+          role="radiogroup"
+          aria-labelledby={practiceHeldLabelId}
+        >
+          <span id={practiceHeldLabelId} className={css.availRowLabel}>
+            Practice
+          </span>
           <label className={css.availYnLabel}>
             <input
               type="radio"
@@ -82,8 +100,17 @@ export function AvailabilityTree({
             N
           </label>
         </div>
-        <div className={css.availSubs}>
-          <span className={css.availSubPrompt}>Did you participate?</span>
+        <div
+          className={css.availSubs}
+          role="radiogroup"
+          aria-labelledby={practiceParticipationLabelId}
+        >
+          <span
+            id={practiceParticipationLabelId}
+            className={css.availSubPrompt}
+          >
+            Did you participate?
+          </span>
           <label className={css.availSubLabel}>
             <input
               type="radio"
@@ -112,8 +139,14 @@ export function AvailabilityTree({
       <div
         className={`${css.availOption} ${value.gameHeld === true ? css.availOpen : ""}`}
       >
-        <div className={css.availRow}>
-          <span className={css.availRowLabel}>{gameLabel}</span>
+        <div
+          className={css.availRow}
+          role="radiogroup"
+          aria-labelledby={gameHeldLabelId}
+        >
+          <span id={gameHeldLabelId} className={css.availRowLabel}>
+            {gameLabel}
+          </span>
           <label className={css.availYnLabel}>
             <input
               type="radio"
@@ -137,8 +170,17 @@ export function AvailabilityTree({
             N
           </label>
         </div>
-        <div className={css.availSubs}>
-          <span className={css.availSubPrompt}>Did you participate?</span>
+        <div
+          className={css.availSubs}
+          role="radiogroup"
+          aria-labelledby={gameParticipationLabelId}
+        >
+          <span
+            id={gameParticipationLabelId}
+            className={css.availSubPrompt}
+          >
+            Did you participate?
+          </span>
           <label className={css.availSubLabel}>
             <input
               type="radio"

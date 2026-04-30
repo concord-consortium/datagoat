@@ -24,9 +24,14 @@ export function migrateDocument(
   let version =
     typeof current.version === "number" ? (current.version as number) : 1;
   while (registry.has(`${docType}:${version}`)) {
-    current = registry.get(`${docType}:${version}`)!(current);
+    // Spread into a fresh object before stamping `version` so we never
+    // mutate either the migrator's return value (in case it returned the
+    // input by reference) or the caller's snapshot data.
+    current = {
+      ...registry.get(`${docType}:${version}`)!(current),
+      version: version + 1,
+    };
     version++;
-    current.version = version;
   }
   return current;
 }

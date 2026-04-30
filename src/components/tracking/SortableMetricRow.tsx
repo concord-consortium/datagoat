@@ -13,6 +13,10 @@ interface SortableMetricRowProps {
   checked: boolean;
   Icon?: ComponentType<SVGProps<SVGSVGElement>>;
   onToggleCheck: () => void;
+  // Id of the visible reorder-instructions paragraph rendered once per
+  // table; the drag handle aria-describedby's it so SR users hear the
+  // keyboard shortcut summary on focus.
+  reorderHintId: string;
 }
 
 export function SortableMetricRow({
@@ -22,6 +26,7 @@ export function SortableMetricRow({
   checked,
   Icon,
   onToggleCheck,
+  reorderHintId,
 }: SortableMetricRowProps) {
   const {
     attributes,
@@ -52,6 +57,9 @@ export function SortableMetricRow({
           aria-label={`Reorder ${name}`}
           {...attributes}
           {...listeners}
+          aria-describedby={[attributes["aria-describedby"], reorderHintId]
+            .filter(Boolean)
+            .join(" ")}
         >
           <DragDots />
         </button>

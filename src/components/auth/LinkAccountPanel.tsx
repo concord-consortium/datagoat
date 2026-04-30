@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
+  signOut,
   linkWithCredential,
   type AuthCredential,
   type User,
@@ -21,33 +22,46 @@ const googleLogo = "/icons/google-logo.svg";
 interface LinkAccountPanelProps {
   email: string;
   pendingCredential: AuthCredential;
-  existingMethods: string[];
   onLinked: (user: User) => void;
   onCancel: () => void;
-}
-
-function describeMethod(methods: string[]): string {
-  if (methods.includes("google.com")) return "Google";
-  if (methods.includes("password")) return "email";
-  if (methods.length > 0) return methods[0];
-  return "another sign-in method";
 }
 
 export function LinkAccountPanel({
   email,
   pendingCredential,
-  existingMethods,
   onLinked,
   onCancel,
 }: LinkAccountPanelProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const providerName = describeMethod(existingMethods);
-  const showGoogle = existingMethods.includes("google.com");
-  const showPassword = existingMethods.includes("password");
 
   async function attemptLink(signedInUser: User) {
+    // Defense in depth: only link if the just-signed-in account actually
+    // owns the email Facebook returned. Without this, a user who satisfies
+    // the prompt with an unrelated existing account could attach the
+    // pending Facebook credential to that account, turning Facebook into
+    // a valid sign-in path for an account that never opted into it.
+    const signedInEmail = signedInUser.email?.toLowerCase() ?? "";
+    if (signedInEmail !== email.toLowerCase()) {
+      logError(new Error("link email mismatch"), {
+        stage: "linkWithCredential.emailMismatch",
+        signedInEmail,
+        expectedEmail: email,
+      });
+      // The user is now signed in as the wrong account; sign them back out
+      // before showing the error so we don't leave a dangling session for
+      // an account they didn't actually intend to enter.
+      try {
+        await signOut(auth);
+      } catch (signOutErr) {
+        logError(signOutErr, { stage: "linkWithCredential.signOutAfterMismatch" });
+      }
+      setError(
+        `That account doesn't match ${email}. Sign in with the account that owns ${email} to link Facebook.`,
+      );
+      return;
+    }
     try {
       // Use the user from the just-resolved sign-in promise (NOT
       // auth.currentUser) so the linkage is scoped to the user that
@@ -103,29 +117,25 @@ export function LinkAccountPanel({
 
   return (
     <div>
-      <h3 className={css.panelHeading}>This email is already registered</h3>
+      <h2 className={css.panelHeading}>This email is already registered</h2>
       <p className={css.panelBody}>
-        <strong>{email}</strong> is registered with{" "}
-        <span className={css.providerLabel}>{providerName}</span>. Sign in to
-        link Facebook to your account.
+        <strong>{email}</strong> is already registered with DataGOAT. Sign in
+        with the method you used originally to link Facebook to your account.
       </p>
 
-      {showGoogle && (
-        <div className={socials.socialButtons}>
-          <button
-            type="button"
-            className={socials.socialBtn}
-            onClick={handleGoogle}
-            disabled={submitting}
-          >
-            <img src={googleLogo} alt="" />
-            Continue with Google
-          </button>
-        </div>
-      )}
+      <div className={socials.socialButtons}>
+        <button
+          type="button"
+          className={socials.socialBtn}
+          onClick={handleGoogle}
+          disabled={submitting}
+        >
+          <img src={googleLogo} alt="" />
+          Continue with Google
+        </button>
+      </div>
 
-      {showPassword && (
-        <form onSubmit={handlePasswordSubmit} noValidate>
+      <form onSubmit={handlePasswordSubmit} noValidate>
           <div className={fields.fieldWrap}>
             <label className={fields.fieldLabel} htmlFor="link-email">
               Email
@@ -161,7 +171,6 @@ export function LinkAccountPanel({
             Sign in to link
           </button>
         </form>
-      )}
 
       {error && (
         <p

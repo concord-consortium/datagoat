@@ -28,7 +28,7 @@ const CONTENT: Record<Topic, TopicContent> = {
           will not.
         </p>
 
-        <h3 className={css.infoSectionHeading}>Athlete Types</h3>
+        <h2 className={css.infoSectionHeading}>Athlete Types</h2>
 
         <p>
           <strong>Endurance:</strong> Endurance athletes take part in
@@ -85,36 +85,36 @@ const CONTENT: Record<Topic, TopicContent> = {
           can label your availability tracking correctly.
         </p>
 
-        <h3 className={css.infoSectionHeading}>Bout</h3>
+        <h2 className={css.infoSectionHeading}>Bout</h2>
         <p className={css.metricDescription}>Fencing, Boxing</p>
 
-        <h3 className={css.infoSectionHeading}>Game</h3>
+        <h2 className={css.infoSectionHeading}>Game</h2>
         <p className={css.metricDescription}>
           Football, Basketball, Baseball, Softball, Ice Hockey, Field
           Hockey, Lacrosse, Water Polo
         </p>
 
-        <h3 className={css.infoSectionHeading}>Match</h3>
+        <h2 className={css.infoSectionHeading}>Match</h2>
         <p className={css.metricDescription}>
           Soccer, Tennis, Volleyball, Beach Volleyball, Wrestling, Rifle,
           Bowling
         </p>
 
-        <h3 className={css.infoSectionHeading}>Meet</h3>
+        <h2 className={css.infoSectionHeading}>Meet</h2>
         <p className={css.metricDescription}>
           Track &amp; Field, Cross Country, Swimming &amp; Diving,
           Gymnastics, Equestrian, Acrobatics &amp; Tumbling
         </p>
 
-        <h3 className={css.infoSectionHeading}>Race</h3>
+        <h2 className={css.infoSectionHeading}>Race</h2>
         <p className={css.metricDescription}>
           Cross Country, Skiing, Triathlon, Rowing
         </p>
 
-        <h3 className={css.infoSectionHeading}>Regatta</h3>
+        <h2 className={css.infoSectionHeading}>Regatta</h2>
         <p className={css.metricDescription}>Rowing, Sailing</p>
 
-        <h3 className={css.infoSectionHeading}>Tournament</h3>
+        <h2 className={css.infoSectionHeading}>Tournament</h2>
         <p className={css.metricDescription}>Golf</p>
       </>
     ),

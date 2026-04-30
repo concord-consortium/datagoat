@@ -78,7 +78,6 @@ export function CodapPluginSignIn() {
         setLinking({
           email: result.email,
           pendingCredential: result.pendingCredential,
-          existingMethods: result.existingMethods,
         });
         return;
       }
@@ -119,7 +118,6 @@ export function CodapPluginSignIn() {
         <LinkAccountPanel
           email={linking.email}
           pendingCredential={linking.pendingCredential}
-          existingMethods={linking.existingMethods}
           onLinked={() => setLinking(null)}
           onCancel={() => setLinking(null)}
         />

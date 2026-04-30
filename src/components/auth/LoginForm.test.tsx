@@ -90,7 +90,6 @@ describe("LoginForm", () => {
       kind: "account-collision",
       email: "user@example.com",
       pendingCredential: {} as AuthCredential,
-      existingMethods: ["password"],
     });
     renderWithRouter(<LoginForm />, { initialEntries: ["/login"] });
     await user.click(screen.getByRole("button", { name: /continue with facebook/i }));

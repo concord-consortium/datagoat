@@ -153,7 +153,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
       </div>
       <div className={css.chartDivider} aria-hidden="true" />
 
-      <h3 className={css.infoSectionHeading}>Definition</h3>
+      <h2 className={css.infoSectionHeading}>Definition</h2>
       <div className={css.metricDescription}>
         {renderMultiline(metric.description)}
         {metric.learnMoreUrl && (
@@ -175,17 +175,17 @@ export function MetricDetail({ type }: MetricDetailProps) {
         )}
       </div>
 
-      <h3 className={css.infoSectionHeading}>Who Collects It</h3>
+      <h2 className={css.infoSectionHeading}>Who Collects It</h2>
       <div className={css.metricDescription}>
         {renderMultiline(metric.whoCollects)}
       </div>
 
-      <h3 className={css.infoSectionHeading}>How Collected</h3>
+      <h2 className={css.infoSectionHeading}>How Collected</h2>
       <div className={css.metricDescription}>
         {renderMultiline(metric.howCollected)}
       </div>
 
-      <h3 className={css.infoSectionHeading}>Estimated Range</h3>
+      <h2 className={css.infoSectionHeading}>Estimated Range</h2>
       <div className={css.metricDescription}>
         {metric.estimatedRange ??
           (metric.min !== undefined && metric.max !== undefined
@@ -202,18 +202,18 @@ export function MetricDetail({ type }: MetricDetailProps) {
 
       {metric.whenCollected && (
         <>
-          <h3 className={css.infoSectionHeading}>
+          <h2 className={css.infoSectionHeading}>
             When / How Many Times Collected
-          </h3>
+          </h2>
           <div className={css.metricDescription}>{metric.whenCollected}</div>
         </>
       )}
 
       {metric.references && metric.references.length > 0 && (
         <>
-          <h3 className={css.infoSectionHeading}>
+          <h2 className={css.infoSectionHeading}>
             {metric.references.length > 1 ? "References" : "Reference"}
-          </h3>
+          </h2>
           <div className={css.metricDescription}>
             {metric.references.map((ref) => (
               <p key={ref.url} className={css.referenceLinkWrap}>

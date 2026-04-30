@@ -1,15 +1,19 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { migrateDocument, _resetRegistryForTests } from "./index";
-import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "./performanceEntry";
 import { performanceEntryFixtures } from "./performanceEntry.fixtures";
 
+// Deep-equality assertion: today there are no registered migrations, so
+// the migrated doc must equal the input fixture exactly. See
+// wellnessEntry.test.ts for the full rationale and the refactor playbook
+// when a v1 -> v2 migration lands (refactor fixtures to inputs+expected,
+// add an entry to the idempotency-fixture list in index.test.ts).
 describe("performanceEntry migrations", () => {
   beforeEach(() => {
     _resetRegistryForTests();
   });
 
   it.each(Object.keys(performanceEntryFixtures))(
-    "fixture '%s' migrates to current version",
+    "fixture '%s' migrates without data loss",
     (key) => {
       const fixture =
         performanceEntryFixtures[key as keyof typeof performanceEntryFixtures];
@@ -17,9 +21,7 @@ describe("performanceEntry migrations", () => {
         "performanceEntry",
         fixture as unknown as Record<string, unknown>,
       );
-      expect(migrated.version ?? CURRENT_PERFORMANCE_ENTRY_VERSION).toBe(
-        CURRENT_PERFORMANCE_ENTRY_VERSION,
-      );
+      expect(migrated).toEqual(fixture);
     },
   );
 });

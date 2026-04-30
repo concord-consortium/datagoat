@@ -2,12 +2,24 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Loading } from "../Loading";
 
-// Wraps the auth routes (/login, /signup, /forgot-password, /verify-email).
-// Authenticated users land on /dashboard instead of seeing the login form
-// again. Without this, signInWithPopup succeeds but the URL stays at /login.
+// Wraps /login, /signup, and /forgot-password (NOT /verify-email — see
+// AppRoutes.tsx for that exception). Authenticated users are sent on so
+// signInWithPopup success actually leaves the auth screen.
+//
+// Verified users go to /dashboard. Unverified users go to /verify-email
+// to mirror LoginForm.handleOAuth's branch — without this, a user who
+// signs up, lands on /verify-email, then refreshes back to /login gets
+// bounced to /dashboard, defeating the verification holding pattern.
 export function RedirectIfAuthed() {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) {
+    return (
+      <Navigate
+        to={user.emailVerified ? "/dashboard" : "/verify-email"}
+        replace
+      />
+    );
+  }
   return <Outlet />;
 }

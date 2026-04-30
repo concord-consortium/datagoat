@@ -68,7 +68,7 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
         id="main-content"
         tabIndex={-1}
       >
-        <h2 className={css.authHeading}>{heading}</h2>
+        <h1 className={css.authHeading}>{heading}</h1>
         <div className={css.formArea}>{children}</div>
       </div>
     </div>

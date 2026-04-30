@@ -1,8 +1,10 @@
 import {
+  Fragment,
   useEffect,
   useRef,
   useState,
   type ComponentType,
+  type ReactNode,
   type SVGProps,
 } from "react";
 import { MOTIVATION_MESSAGES } from "../../data/motivationMessages";
@@ -77,19 +79,29 @@ export function MotivationMessage({ active }: MotivationMessageProps) {
   const safeIndex = index < 0 ? 0 : index;
   const msg = MOTIVATION_MESSAGES[safeIndex];
   const Icon = msg.iconKey ? ICONS[msg.iconKey] : null;
-  // Prototype substitutes {name} via plain string replacement; we render
-  // dangerouslySetInnerHTML because the templates contain <br> tags. The
-  // <br> tags + name substitution are designer-controlled; templates ship
-  // verbatim from src/data/motivationMessages.ts so XSS is not a concern.
-  const html = msg.template.replace(/\{name\}/g, name);
 
   return (
     <span className={css.streakInner}>
-      <span
-        className={css.streakMsg}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <span className={css.streakMsg}>{renderTemplate(msg.template, name)}</span>
       <span className={css.streakIcon}>{Icon && <Icon />}</span>
     </span>
   );
+}
+
+// Templates contain only two markup tokens: <br> for line breaks and {name}
+// for the user's name. We split on both and emit a React tree so the user's
+// name (which can be any Firestore string) is rendered as a text node, never
+// as HTML.
+function renderTemplate(template: string, name: string): ReactNode {
+  return template.split("<br>").map((line, lineIdx, lines) => (
+    <Fragment key={lineIdx}>
+      {line.split("{name}").map((piece, pieceIdx, pieces) => (
+        <Fragment key={pieceIdx}>
+          {piece}
+          {pieceIdx < pieces.length - 1 ? name : null}
+        </Fragment>
+      ))}
+      {lineIdx < lines.length - 1 ? <br /> : null}
+    </Fragment>
+  ));
 }

@@ -2,7 +2,6 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   FacebookAuthProvider,
-  fetchSignInMethodsForEmail,
   type AuthProvider,
   type AuthError,
   type AuthCredential,
@@ -26,7 +25,6 @@ export type SignInResult =
       kind: "account-collision";
       email: string;
       pendingCredential: AuthCredential;
-      existingMethods: string[];
     }
   | { ok: false; kind: "blocked-no-email"; message: string }
   | { ok: false; kind: "other"; code: string };
@@ -38,7 +36,6 @@ export type SignInResult =
 export interface LinkingState {
   email: string;
   pendingCredential: AuthCredential;
-  existingMethods: string[];
 }
 
 function isAuthError(err: unknown): err is AuthError {
@@ -97,24 +94,19 @@ export async function signInWithProvider(
           ? customData.email
           : "";
       const pendingCredential = FacebookAuthProvider.credentialFromError(err);
-      let existingMethods: string[] = [];
-      if (email) {
-        try {
-          existingMethods = await fetchSignInMethodsForEmail(auth, email);
-        } catch (lookupErr) {
-          logError(lookupErr, {
-            stage: "fetchSignInMethodsForEmail",
-            email,
-          });
-        }
-      }
+      // We deliberately do NOT call fetchSignInMethodsForEmail here:
+      // exposing the existing-method list to an unauthenticated client
+      // leaks account existence + provider, defeating ForgotPassword's
+      // enumeration-resistant "If an account exists ..." copy. The link
+      // panel offers both Google and email/password and lets the user
+      // pick the method they used originally. Google has also deprecated
+      // this lookup for the same reason.
       if (pendingCredential) {
         return {
           ok: false,
           kind: "account-collision",
           email,
           pendingCredential,
-          existingMethods,
         };
       }
       // No pending credential — fall through to the generic error path.

@@ -30,7 +30,12 @@ export function SectionHeading({
     if (menuOpen) setMenuOpen(false);
   };
   return (
-    <h2 className={css.sectionHeading}>
+    // Outer wrapper is a <div>, not <h2>, so the back/home/hamburger
+    // buttons are siblings of the heading rather than children of it.
+    // Nesting interactive controls inside <h2> made the heading's
+    // accessible name concatenate "Back ... Dashboard ... Menu" with
+    // the title, polluting the document outline.
+    <div className={css.sectionHeading}>
       {/* data-skip-link-exclude: AppShell's skip-link focus advance
           skips these chrome buttons, landing focus on the first content
           focusable instead. */}
@@ -63,8 +68,10 @@ export function SectionHeading({
             <BackChevron />
           </button>
         ))}
-      {icon && <span className={css.iconSlot}>{icon}</span>}
-      <span className={css.titleText}>{title}</span>
+      <h1 className={css.titleH2}>
+        {icon && <span className={css.iconSlot}>{icon}</span>}
+        <span className={css.titleText}>{title}</span>
+      </h1>
       {showHome && !(backTo || onBack) && (
         <Link
           to="/dashboard"
@@ -87,6 +94,6 @@ export function SectionHeading({
       >
         <HamburgerIcon />
       </button>
-    </h2>
+    </div>
   );
 }

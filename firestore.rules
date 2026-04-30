@@ -5,6 +5,14 @@ service cloud.firestore {
     // covers profile, wellnessEntries/{date}, and performanceEntries/{date} -
     // every future user-scoped subcollection inherits owner-only access
     // automatically.
+    //
+    // Note: writes are intentionally allowed for unverified accounts.
+    // Per the spec ("Email verification flow"), verification is
+    // non-blocking - users enter the app immediately after registration
+    // so demo / pilot flows aren't gated on email delivery. The
+    // VerificationBanner is the only nudge; if a future policy decides
+    // verification should have server-side teeth, gate writes here on
+    // `request.auth.token.email_verified == true`.
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

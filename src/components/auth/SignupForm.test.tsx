@@ -103,7 +103,6 @@ describe("SignupForm", () => {
       kind: "account-collision",
       email: "x@example.com",
       pendingCredential: {} as AuthCredential,
-      existingMethods: ["google.com"],
     });
     renderWithRouter(<SignupForm />, { initialEntries: ["/signup"] });
     await user.click(

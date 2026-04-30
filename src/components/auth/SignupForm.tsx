@@ -72,7 +72,6 @@ export function SignupForm() {
         setLinking({
           email: result.email,
           pendingCredential: result.pendingCredential,
-          existingMethods: result.existingMethods,
         });
         return;
       }
@@ -118,7 +117,6 @@ export function SignupForm() {
         <LinkAccountPanel
           email={linking.email}
           pendingCredential={linking.pendingCredential}
-          existingMethods={linking.existingMethods}
           onLinked={handleLinked}
           onCancel={() => setLinking(null)}
         />

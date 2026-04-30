@@ -70,11 +70,21 @@ describe("ActivityCalendar", () => {
       trackedMetricIds: TRACKED_WELLNESS,
       wellnessEntries: [],
     });
-    // All cells - any inactive ones should be <div>, not <a>.
-    const inactiveCells = container.querySelectorAll(
-      `[class*='inactive']`,
+    // Partition real day cells by tag rather than by state class: anchors
+    // are tappable, <div>s are non-tappable. Length guards ensure a class
+    // rename can't silently empty the assertion.
+    const allCells = Array.from(
+      container.querySelectorAll(`[class*='heatmapCell']`),
     );
-    inactiveCells.forEach((cell) => {
+    const realCells = allCells.filter(
+      (c) => c.querySelector(`[class*='visuallyHidden']`) !== null,
+    );
+    const nonAnchorCells = realCells.filter(
+      (c) => c.tagName.toLowerCase() !== "a",
+    );
+    expect(realCells.length).toBeGreaterThan(0);
+    expect(nonAnchorCells.length).toBeGreaterThan(0);
+    nonAnchorCells.forEach((cell) => {
       expect(cell.tagName.toLowerCase()).toBe("div");
       expect(cell.getAttribute("role")).toBeNull();
       expect(cell.getAttribute("tabindex")).toBeNull();

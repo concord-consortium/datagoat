@@ -42,6 +42,9 @@ export default defineConfig({
       injectRegister: false,
       workbox: {
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+        // Defensive: if build.sourcemap is ever flipped on, keep .map
+        // files out of the precache so PWA installs don't balloon.
+        globIgnores: ["**/*.map"],
         navigateFallback: null,
         skipWaiting: true,
         clientsClaim: true,

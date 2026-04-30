@@ -30,9 +30,10 @@ export function AppHeader() {
         <img
           className={css.brandLogoImg}
           src={datagoatLogo}
-          alt="DataGOAT logo"
+          alt=""
+          aria-hidden="true"
         />
-        <div className={css.wordmark} aria-label="DataGOAT">
+        <div className={css.wordmark}>
           <span className={css.data}>Data</span>
           <span className={css.goat}>
             <span className={css.goatG}>G</span>OA<span className={css.goatT}>T</span>

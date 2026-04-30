@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useMemo,
   useState,
   type ChangeEventHandler,
@@ -23,6 +24,7 @@ export function PerformanceLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
   const { performance, setPerformanceEntry } = useData();
+  const nameIdBase = useId();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
@@ -115,12 +117,13 @@ export function PerformanceLog() {
                     : "";
               const filled = stringValue !== "";
               const total = performanceTotal(entries, metric.id);
+              const nameCellId = `${nameIdBase}-${metric.id}`;
               return (
                 <tr key={metric.id}>
                   <td className={css.colTotal}>
                     {total > 0 ? String(total) : ""}
                   </td>
-                  <td className={css.colMetric}>
+                  <td id={nameCellId} className={css.colMetric}>
                     <Link
                       to={`/performance/${metric.id}`}
                       className={css.metricLink}
@@ -131,7 +134,7 @@ export function PerformanceLog() {
                   <td className={css.colRecord}>
                     <PerformanceMetricInput
                       metricId={metric.id}
-                      metricName={metric.name}
+                      labelledBy={nameCellId}
                       value={stringValue}
                       filled={filled}
                       onChange={(raw) => setMetricValue(metric.id, raw)}
@@ -156,7 +159,7 @@ export function PerformanceLog() {
 
 interface PerformanceMetricInputProps {
   metricId: string;
-  metricName: string;
+  labelledBy: string;
   value: string;
   filled: boolean;
   onChange: (raw: string) => void;
@@ -171,7 +174,7 @@ interface PerformanceMetricInputProps {
 // form reset).
 function PerformanceMetricInput({
   metricId,
-  metricName,
+  labelledBy,
   value,
   filled,
   onChange,
@@ -198,7 +201,7 @@ function PerformanceMetricInput({
       className={`${css.valueInput} ${filled ? css.hasValue : ""}`}
       value={local}
       onChange={handleChange}
-      aria-label={metricName}
+      aria-labelledby={labelledBy}
       data-metric-id={metricId}
     />
   );

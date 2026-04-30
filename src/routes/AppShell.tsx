@@ -62,13 +62,13 @@ function AppShellInner() {
   const routeMeta = resolveRouteMeta(pathname);
   const mainRef = useRef<HTMLElement | null>(null);
 
-  // Document focusin auto-scroll-into-view (port of prototype HTML around
-  // line 5460). When a focused element ends up under sticky chrome
-  // (.section-heading + .date-nav stack to ~140px on dense screens),
-  // scrollIntoView with block:nearest puts the element at the *boundary*,
-  // which still leaves it under the sticky overlay. The corrective
-  // scrollBy below offsets by the cumulative sticky-chrome height so the
-  // focused element sits visibly below.
+  // Document focusin auto-scroll behavior (port of prototype HTML around
+  // line 5460). Compute the element's position relative to <main> and the
+  // current sticky-chrome offset (.section-heading + .date-nav stack to
+  // ~140px on dense screens) up front, then scroll only when the focused
+  // element is below the viewport or overlaps sticky chrome. Elements
+  // already fully visible trigger no scroll, avoiding unsolicited jumps
+  // for screen-magnifier and keyboard users (WCAG 2.4.7/2.4.11).
   useEffect(() => {
     const main = mainRef.current;
     if (!main) return;
@@ -102,12 +102,11 @@ function AppShellInner() {
       return total;
     }
 
-    // Honor prefers-reduced-motion: skip the corrective scrollBy when
-    // the user requested reduced motion. The base scrollIntoView call
-    // remains because keeping a focused element visible is essential
-    // motion (per requirements "Reduced motion": focus indicators are
-    // essential and not zeroed under the media query); the corrective
-    // sticky-offset compensation is decorative.
+    // Honor prefers-reduced-motion: bringing an off-screen focused element
+    // into view is essential motion (per requirements "Reduced motion":
+    // focus indicators are essential), so the offscreen-below and
+    // offscreen-above cases run regardless. Sticky-chrome overlap
+    // compensation is decorative and is skipped under reduced motion.
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
@@ -118,16 +117,38 @@ function AppShellInner() {
       if (!main!.contains(target)) return;
       // Ignore the main element itself.
       if (target === main) return;
-      target.scrollIntoView({ block: "nearest" });
-      if (reducedMotion.matches) return;
-      const offset = findStickyOffset(target);
-      if (offset <= 0) return;
+
       const rect = target.getBoundingClientRect();
       const mainRect = main!.getBoundingClientRect();
-      const overlap = offset - (rect.top - mainRect.top);
-      if (overlap > 0) {
-        main!.scrollBy({ top: -overlap, behavior: "instant" });
+      const offset = findStickyOffset(target);
+      const topRelMain = rect.top - mainRect.top;
+
+      // Below the viewport: scroll down so the element's bottom is just
+      // inside the main's bottom edge.
+      if (rect.bottom > mainRect.bottom) {
+        main!.scrollBy({
+          top: rect.bottom - mainRect.bottom,
+          behavior: "instant",
+        });
+        return;
       }
+
+      // Above the effective top of main (either offscreen-above, or
+      // visible but tucked under sticky chrome). Scroll up so the element
+      // top sits just below the sticky offset. The pure sticky-overlap
+      // case (element technically in main's box, only obscured by sticky
+      // chrome) is decorative and is skipped under reduced motion.
+      if (topRelMain < offset) {
+        const aboveViewport = topRelMain < 0;
+        if (!aboveViewport && reducedMotion.matches) return;
+        main!.scrollBy({
+          top: topRelMain - offset,
+          behavior: "instant",
+        });
+        return;
+      }
+
+      // Otherwise: element is fully visible below sticky chrome - no scroll.
     }
 
     document.addEventListener("focusin", onFocusIn);

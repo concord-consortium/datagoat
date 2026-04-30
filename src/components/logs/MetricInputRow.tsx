@@ -61,12 +61,13 @@ export type MetricInputRowProps =
 // Single row for a tracked wellness metric. Switches on metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
   const { metric, avgLabel, detailHref } = props;
+  const nameId = useId();
   return (
     <tr className={css.metricInputRow}>
       <td>
         <div className={css.trackCell}>{avgLabel ?? "—"}</div>
       </td>
-      <td className={css.metricName}>
+      <td id={nameId} className={css.metricName}>
         {detailHref ? (
           <Link to={detailHref} className={css.metricLink}>
             {metric.name}
@@ -81,6 +82,7 @@ export function MetricInputRow(props: MetricInputRowProps) {
             metric={metric}
             value={props.value}
             onChange={props.onChange}
+            labelledBy={nameId}
           />
         )}
         {props.inputType === "colorScale" && (
@@ -106,9 +108,9 @@ interface NumericInputProps {
   metric: MetricDefinition;
   value: string;
   onChange: (next: string) => void;
+  labelledBy: string;
 }
-function NumericInput({ metric, value, onChange }: NumericInputProps) {
-  const reactId = useId();
+function NumericInput({ metric, value, onChange, labelledBy }: NumericInputProps) {
   // Local string state holds the user's exact keystrokes so the
   // round-trip through Number(raw) -> String(numeric) at the parent
   // doesn't revert in-progress typing for "1.", leading zeros, or
@@ -147,13 +149,12 @@ function NumericInput({ metric, value, onChange }: NumericInputProps) {
     <>
       <div className={css.recordCell}>
         <input
-          id={reactId}
           type="text"
           inputMode="decimal"
           className={`${css.recordInput} ${filled ? css.hasValue : ""}`}
           value={local}
           onChange={handleChange}
-          aria-label={metric.name}
+          aria-labelledby={labelledBy}
           placeholder={shortUnit}
         />
         {shortUnit && shortUnit !== "level" && (

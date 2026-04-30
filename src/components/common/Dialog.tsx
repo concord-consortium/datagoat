@@ -31,6 +31,23 @@ function getFocusable(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
 }
 
+function hideSiblingsFromAT(
+  node: HTMLElement,
+): Array<[HTMLElement, string | null]> {
+  const restored: Array<[HTMLElement, string | null]> = [];
+  let cur: HTMLElement = node;
+  while (cur.parentElement && cur !== document.body) {
+    const parent = cur.parentElement;
+    for (const sibling of Array.from(parent.children)) {
+      if (sibling === cur || !(sibling instanceof HTMLElement)) continue;
+      restored.push([sibling, sibling.getAttribute("aria-hidden")]);
+      sibling.setAttribute("aria-hidden", "true");
+    }
+    cur = parent;
+  }
+  return restored;
+}
+
 export function Dialog({
   open,
   onClose,
@@ -49,6 +66,8 @@ export function Dialog({
     const surface = surfaceRef.current;
     if (!surface) return;
 
+    const priorAriaHidden = hideSiblingsFromAT(surface);
+
     const focusables = getFocusable(surface);
     if (focusables.length > 0) {
       focusables[0].focus();
@@ -62,10 +81,30 @@ export function Dialog({
         onClose();
       }
     }
+
+    function onFocusIn(e: FocusEvent) {
+      if (!surface || surface.contains(e.target as Node | null)) return;
+      const items = getFocusable(surface);
+      if (items.length > 0) {
+        items[0].focus();
+      } else {
+        surface.focus();
+      }
+    }
+
     document.addEventListener("keydown", onKey);
+    document.addEventListener("focusin", onFocusIn, true);
 
     return () => {
+      document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("keydown", onKey);
+      for (const [el, prior] of priorAriaHidden) {
+        if (prior === null) {
+          el.removeAttribute("aria-hidden");
+        } else {
+          el.setAttribute("aria-hidden", prior);
+        }
+      }
       if (previouslyFocused && typeof previouslyFocused.focus === "function") {
         previouslyFocused.focus();
       }

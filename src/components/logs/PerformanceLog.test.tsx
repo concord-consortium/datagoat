@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, act } from "@testing-library/react";
+import { render, fireEvent, act, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
@@ -95,11 +95,7 @@ import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 const TODAY_ISO = toISO(dateAtOffset(HISTORY));
 
 function inputForMetric(label: string): HTMLInputElement {
-  const el = document.querySelector(
-    `input[aria-label='${label}']`,
-  ) as HTMLInputElement | null;
-  if (!el) throw new Error(`Could not find input for ${label}`);
-  return el;
+  return screen.getByRole("textbox", { name: label }) as HTMLInputElement;
 }
 
 function setGoals(value: string) {

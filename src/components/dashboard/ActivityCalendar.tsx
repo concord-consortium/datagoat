@@ -1,9 +1,4 @@
-import {
-  memo,
-  useMemo,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import { memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import common from "../common.module.css";
 import css from "./ActivityCalendar.module.css";
@@ -439,27 +434,8 @@ function CellNode({
 
   if (tappable && cell.date) {
     const iso = toISO(cell.date);
-    // role='button' + tabIndex=0 + Space-key activation per spec
-    // acceptance criteria. Native <a> only activates on Enter; the
-    // prototype's calendar handler explicitly accepts both Enter and
-    // Space (HTML around line 7388-7394). Convert Space to a click on
-    // the Link.
-    const handleKeyDown = (
-      e: ReactKeyboardEvent<HTMLAnchorElement>,
-    ) => {
-      if (e.key === " ") {
-        e.preventDefault();
-        e.currentTarget.click();
-      }
-    };
     return (
-      <Link
-        to={`/wellness?date=${iso}`}
-        className={className}
-        role="button"
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-      >
+      <Link to={`/wellness?date=${iso}`} className={className}>
         <span aria-hidden="true">{dayNum}</span>
         <span className={common.visuallyHidden}>{visuallyHiddenLabel}</span>
       </Link>

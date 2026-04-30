@@ -57,6 +57,11 @@ describe("ActivityCalendar", () => {
       (a as HTMLAnchorElement).getAttribute("href")?.includes(todayIso),
     ) as HTMLAnchorElement | undefined;
     expect(todayLink).toBeDefined();
+    // Tappable cells are plain anchors: no role="button", no explicit
+    // tabindex (anchors are focusable by default), no synthetic Space
+    // handler. Enter activates the link natively.
+    expect(todayLink?.getAttribute("role")).toBeNull();
+    expect(todayLink?.getAttribute("tabindex")).toBeNull();
   });
 
   it("renders future-dated cells as <div> (no Link, no role, no tabindex)", () => {

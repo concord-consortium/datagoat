@@ -43,7 +43,6 @@ export function CodapButton() {
         type="button"
         className={css.codapBtn}
         onClick={handleClick}
-        aria-label="Analyze your data in CODAP"
       >
         <span className={css.codapLogo}>
           <svg

@@ -57,7 +57,7 @@ export function VerificationBanner() {
       <button
         type="button"
         className={css.dismiss}
-        aria-label="Dismiss reminder"
+        aria-label="Dismiss verification reminder"
         onClick={handleDismiss}
       >
         <svg

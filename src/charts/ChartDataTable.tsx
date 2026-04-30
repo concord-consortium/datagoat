@@ -9,6 +9,9 @@ export interface ChartDataTableProps {
   // SR users can read it but sighted users don't see it. The "Show data"
   // toggle in MetricChart flips this.
   visuallyHidden?: boolean;
+  // When true and data is empty, the empty-state message reflects that
+  // the chart is still loading rather than claiming there is no data.
+  loading?: boolean;
 }
 
 // Visually-hidden adjacent <table> of date/value pairs. The table is the
@@ -24,6 +27,7 @@ export function ChartDataTable({
   title,
   data,
   visuallyHidden = true,
+  loading = false,
 }: ChartDataTableProps) {
   if (data.length === 0) {
     return (
@@ -31,7 +35,11 @@ export function ChartDataTable({
         id={id}
         className={visuallyHidden ? common.visuallyHidden : undefined}
       >
-        <p className={css.empty}>No data yet for {title}.</p>
+        <p className={css.empty}>
+          {loading
+            ? `${title} data is loading...`
+            : `No data yet for ${title}.`}
+        </p>
       </div>
     );
   }

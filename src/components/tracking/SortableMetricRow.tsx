@@ -57,9 +57,14 @@ export function SortableMetricRow({
           aria-label={`Reorder ${name}`}
           {...attributes}
           {...listeners}
-          aria-describedby={[attributes["aria-describedby"], reorderHintId]
-            .filter(Boolean)
-            .join(" ")}
+          aria-describedby={Array.from(
+            new Set(
+              [
+                ...(attributes["aria-describedby"]?.split(/\s+/) ?? []),
+                reorderHintId,
+              ].filter(Boolean)
+            )
+          ).join(" ")}
         >
           <DragDots />
         </button>

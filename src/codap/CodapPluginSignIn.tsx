@@ -102,10 +102,12 @@ export function CodapPluginSignIn() {
       );
       await gateOnVerified(cred.user);
     } catch (err: unknown) {
-      const code =
+      const rawCode =
         typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : "auth/internal-error";
+          ? (err as { code?: unknown }).code
+          : undefined;
+      const code =
+        typeof rawCode === "string" && rawCode ? rawCode : "auth/internal-error";
       logError(err, { stage: "codapSignIn.emailPassword", code });
       setError(authErrorMessageFor(code));
     }

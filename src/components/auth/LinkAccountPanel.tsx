@@ -161,6 +161,7 @@ export function LinkAccountPanel({
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
+              aria-required="true"
             />
           </div>
           <button

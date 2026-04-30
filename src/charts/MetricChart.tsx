@@ -95,6 +95,7 @@ export function MetricChart({
         title={dataTableTitle ?? title}
         data={data}
         visuallyHidden={!showData}
+        loading={loading}
       />
     </div>
   );

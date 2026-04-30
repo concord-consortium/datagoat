@@ -16,7 +16,7 @@ export function PerformanceMetricInput({
   filled,
   onChange,
 }: PerformanceMetricInputProps) {
-  const { local, handleChange } = useNumericLocalString(value, onChange);
+  const { local, handleChange, handleCompositionEnd } = useNumericLocalString(value, onChange);
   return (
     <input
       type="text"
@@ -24,6 +24,7 @@ export function PerformanceMetricInput({
       className={`${css.valueInput} ${filled ? css.hasValue : ""}`}
       value={local}
       onChange={handleChange}
+      onCompositionEnd={handleCompositionEnd}
       aria-labelledby={labelledBy}
       data-metric-id={metricId}
     />

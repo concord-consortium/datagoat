@@ -10,7 +10,7 @@ export interface NumericInputProps {
 }
 
 export function NumericInput({ metric, value, onChange, labelledBy }: NumericInputProps) {
-  const { local, handleChange } = useNumericLocalString(value, onChange);
+  const { local, handleChange, handleCompositionEnd } = useNumericLocalString(value, onChange);
   const filled = local !== "" && local != null;
   // Prefer the short-form displayUnit ("hr", "g") in the log column;
   // metric.unit's long form ("hr/night", "g/kg/day") is reserved for
@@ -27,6 +27,7 @@ export function NumericInput({ metric, value, onChange, labelledBy }: NumericInp
           className={`${css.recordInput} ${filled ? css.hasValue : ""}`}
           value={local}
           onChange={handleChange}
+          onCompositionEnd={handleCompositionEnd}
           aria-labelledby={labelledBy}
           placeholder={shortUnit}
         />

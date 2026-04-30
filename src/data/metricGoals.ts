@@ -20,9 +20,11 @@ const STATIC_GOALS: Record<string, string> = {
     "to be available for more than 80% of your practices and {compTermPlural}",
 };
 
-// metric.id -> profile-keyed goal text. The four built-in profile keys
-// match the prototype's goalByProfile lookups; non-binary / unspecified
-// fall back to Male/* per the same alias pattern PROFILE_CHART_GOALS uses.
+// metric.id -> profile-keyed goal text. Only the four built-in
+// "${Gender}/${AthleteType}" keys are populated; profiles outside
+// that set (Non-binary/*, Unspecified/*) render the prototype's
+// literal "[n]" placeholder verbatim - the prototype's goalByProfile
+// did not alias these, unlike PROFILE_CHART_GOALS.
 const PROFILE_GOALS: Record<string, Record<string, string>> = {
   sleepEfficiency: {
     "Male/Strength and Power": "to aim for 75-95% sleep efficiency",

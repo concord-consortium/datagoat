@@ -193,6 +193,64 @@ describe("WellnessLog route + redirect", () => {
   });
 });
 
+describe("WellnessLog chip reactivity to tracked-metric changes", () => {
+  it("chip recomputes when trackedWellnessMetrics changes via UserContext", () => {
+    // Tracking only hydration, with hydration filled in the entry -> "all".
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedWellnessMetrics: ["hydration"] },
+    };
+    ctx.wellness = {
+      status: "loaded",
+      entries: [
+        {
+          version: 1,
+          date: TODAY_ISO,
+          hydration: 3,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: {
+            practiceHeld: null,
+            practiceParticipation: null,
+            gameHeld: null,
+            gameParticipation: null,
+          },
+        },
+      ],
+    };
+    const { rerender } = renderAt("/wellness");
+    expect(
+      document
+        .querySelector("[data-chip-state]")
+        ?.getAttribute("data-chip-state"),
+    ).toBe("all");
+
+    // User adds sleepTime via TrackedDataSetup; the profile snapshot reloads
+    // through UserContext. The chip must flip to "some" without a remount.
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedWellnessMetrics: ["hydration", "sleepTime"],
+      },
+    };
+    rerender(
+      <MemoryRouter initialEntries={["/wellness"]}>
+        <Routes>
+          <Route path="/wellness" element={<WellnessLog />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(
+      document
+        .querySelector("[data-chip-state]")
+        ?.getAttribute("data-chip-state"),
+    ).toBe("some");
+  });
+});
+
 describe("WellnessLog optimistic state via real DataContext", () => {
   beforeEach(() => {
     ctx.useLightweightMocks = false;

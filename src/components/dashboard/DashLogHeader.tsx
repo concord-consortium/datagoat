@@ -7,7 +7,7 @@ import StopwatchIcon from "@/icons/stopwatch.svg?react";
 // Non-breaking space (U+00A0) - keeps the highlight pill from wrapping
 // onto its own line at narrow widths, matching the prototype's HTML at
 // line 4196 where &nbsp; brackets the .status-highlight span.
-const NBSP = " ";
+const NBSP = "\u00A0";
 
 interface DashLogHeaderProps {
   type: "wellness" | "performance";

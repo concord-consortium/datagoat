@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
   type ChangeEventHandler,
+  type CompositionEventHandler,
 } from "react";
 
 // Local string state for a numeric text input whose parent stores the
@@ -18,6 +19,7 @@ export function useNumericLocalString(
 ): {
   local: string;
   handleChange: ChangeEventHandler<HTMLInputElement>;
+  handleCompositionEnd: CompositionEventHandler<HTMLInputElement>;
 } {
   const [local, setLocal] = useState(value);
   useEffect(() => {
@@ -33,9 +35,25 @@ export function useNumericLocalString(
   }, [value]);
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const raw = e.target.value;
+    // Let in-flight IME composition through unfiltered; reconciling the
+    // controlled value mid-composition stalls Android/AT keyboards.
+    // handleCompositionEnd validates the committed string.
+    if (e.nativeEvent.isComposing) {
+      setLocal(raw);
+      return;
+    }
     if (!/^[0-9]*\.?[0-9]*$/.test(raw)) return;
     setLocal(raw);
     onChange(raw);
   };
-  return { local, handleChange };
+  const handleCompositionEnd: CompositionEventHandler<HTMLInputElement> = (e) => {
+    const raw = e.currentTarget.value;
+    if (/^[0-9]*\.?[0-9]*$/.test(raw)) {
+      setLocal(raw);
+      onChange(raw);
+    } else {
+      setLocal(value);
+    }
+  };
+  return { local, handleChange, handleCompositionEnd };
 }

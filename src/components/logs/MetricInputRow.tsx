@@ -88,6 +88,7 @@ export function MetricInputRow(props: MetricInputRowProps) {
             metric={metric}
             value={props.value}
             onChange={props.onChange}
+            labelledBy={nameId}
           />
         )}
         {props.inputType === "tree" && (
@@ -106,6 +107,7 @@ interface ColorScaleProps {
   metric: MetricDefinition;
   value: number;
   onChange: (next: number) => void;
+  labelledBy: string;
 }
 
 // Color-swatch picker for hydration. Per spec contract:
@@ -113,7 +115,7 @@ interface ColorScaleProps {
 //   - arrow Left/Right (and Up/Down) MOVE focus AND fire the change in one
 //     step (not just-focus); number keys 1-N jump directly
 //   - selected swatch gets aria-pressed='true' + the .selected class
-function ColorScale({ metric, value, onChange }: ColorScaleProps) {
+function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const max = metric.max ?? 8;
   const swatchValues = HYDRATION_HEXES.slice(0, max);
@@ -158,7 +160,7 @@ function ColorScale({ metric, value, onChange }: ColorScaleProps) {
     <div
       className={css.colorScale}
       role="radiogroup"
-      aria-label={`${metric.name} level`}
+      aria-labelledby={labelledBy}
     >
       {swatchValues.map((bg, idx) => {
         const level = idx + 1;

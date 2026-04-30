@@ -100,7 +100,6 @@ export function ForgotPassword() {
             type="button"
             className={`${buttons.ctaBtn} ${buttons.ctaBtnSecondary}`}
             onClick={handleResend}
-            aria-label="Resend password reset email"
           >
             Resend Link
           </button>

@@ -1,7 +1,8 @@
 import { logEvent } from "firebase/analytics";
 import { getAnalyticsLazy } from "../firebase";
 
-// TODO: wire to telemetry (Sentry/Rollbar) when a client is added
+// Errors land in Firebase Analytics as `app_error` events; revisit Sentry/Rollbar
+// for stack traces and breadcrumbs once the app has real users.
 export function logError(err: unknown, context?: Record<string, unknown>): void {
   console.error(err, context);
 

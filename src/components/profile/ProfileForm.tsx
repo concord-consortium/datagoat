@@ -147,11 +147,6 @@ export function ProfileForm() {
         </p>
       )}
 
-      {/* Account context. Email is set when the user signed up (or chose
-          an OAuth provider) and is canonically held by Firebase Auth -
-          read-only display here, no edit affordance. A future
-          "change email" flow would re-auth + call updateEmail() in its
-          own surface. */}
       {user?.email && (
         <p className={css.signedInAs}>
           Signed in as <strong>{user.email}</strong>

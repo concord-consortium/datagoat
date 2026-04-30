@@ -21,10 +21,7 @@ import { InfoScreen } from "../components/info/InfoScreen";
 import { About } from "../components/about/About";
 import { Loading } from "../components/Loading";
 
-// /codap is the ONLY lazy-loaded route in the conversion (per resolved
-// Lazy-loading interview question). React.lazy keeps both codapApi.ts
-// and the @concord-consortium/codap-plugin-api library out of the
-// initial bundle for non-CODAP visitors (the 99% case).
+// Lazy-loaded to keep the codap-plugin-api dependency out of the initial bundle for non-CODAP visitors.
 const CodapPlugin = lazy(() => import("@/codap/CodapPlugin"));
 
 export function AppRoutes() {

@@ -16,6 +16,18 @@ export type TimeRangeKey = keyof typeof TIME_RANGE_DAYS;
 
 const RANGES: TimeRangeKey[] = ["7d", "2w", "30d", "3mo", "6mo", "All"];
 
+// Self-describing names for screen readers. Visible buttons keep the
+// short pill label ("7d") for space; the aria-label expands it so SR
+// users hear "7 days" instead of "seven d".
+const RANGE_LABELS: Record<TimeRangeKey, string> = {
+  "7d": "7 days",
+  "2w": "2 weeks",
+  "30d": "30 days",
+  "3mo": "3 months",
+  "6mo": "6 months",
+  All: "All time",
+};
+
 export interface TimeRangePickerProps {
   value: TimeRangeKey;
   onChange: (next: TimeRangeKey) => void;
@@ -45,6 +57,7 @@ export function TimeRangePicker({
             className={`${css.timeRangeBtn} ${isActive ? css.active : ""}`}
             role="radio"
             aria-checked={isActive}
+            aria-label={RANGE_LABELS[range]}
             onClick={() => onChange(range)}
           >
             {range}

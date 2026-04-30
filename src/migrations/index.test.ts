@@ -3,13 +3,13 @@ import {
   migrateDocument,
   registerMigration,
   docTypeFromPath,
-  _resetRegistryForTests,
 } from "./index";
+import { resetRegistryForTests } from "./testing";
 import type { DocType } from "./types";
 
 describe("migrateDocument", () => {
   beforeEach(() => {
-    _resetRegistryForTests();
+    resetRegistryForTests();
   });
 
   it("returns input unchanged when no migration is registered", () => {

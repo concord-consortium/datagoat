@@ -1,9 +1,20 @@
-.menuList {
+.menuList,
+.actionList {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
+}
+
+.gateHint {
+  margin: 0;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--subtext);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.04em;
 }
 
 .menuItem {
@@ -36,7 +47,7 @@
   transition: background var(--dur-quick) var(--ease-default);
 }
 
-.menuItem:last-child .navItem {
+.actionList .menuItem:last-child .navItem {
   border-bottom: none;
 }
 

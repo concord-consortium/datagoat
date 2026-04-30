@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { migrateDocument, _resetRegistryForTests } from "./index";
+import { migrateDocument } from "./index";
+import { resetRegistryForTests } from "./testing";
 import { performanceEntryFixtures } from "./performanceEntry.fixtures";
 
 // Deep-equality assertion: today there are no registered migrations, so
@@ -9,7 +10,7 @@ import { performanceEntryFixtures } from "./performanceEntry.fixtures";
 // add an entry to the idempotency-fixture list in index.test.ts).
 describe("performanceEntry migrations", () => {
   beforeEach(() => {
-    _resetRegistryForTests();
+    resetRegistryForTests();
   });
 
   it.each(Object.keys(performanceEntryFixtures))(

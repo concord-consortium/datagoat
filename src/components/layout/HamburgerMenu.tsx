@@ -70,38 +70,48 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
       titleVisuallyHidden
       variant="topSheet"
     >
-      <ul className={css.menuList}>
-        {ITEMS.map(({ label, to, Icon }) => {
-          const isActive = pathname === to;
-          // Profile is always reachable so a partway-onboarded user can
-          // finish their profile. Every other route is gated.
-          const isGated = isOnboarding && to !== "/profile";
-          return (
-            <li
-              key={to}
-              className={`${css.menuItem} ${isGated ? css.menuItemDisabled : ""}`}
-            >
-              <Link
-                to={to}
-                className={`${css.navItem} ${isActive ? css.active : ""}`}
-                aria-current={isActive ? "page" : undefined}
-                aria-disabled={isGated || undefined}
-                onClick={(e) => {
-                  if (isGated) {
-                    e.preventDefault();
-                    return;
-                  }
-                  handleNavigate();
-                }}
+      {isOnboarding && (
+        <p id="hamburgerGateHint" className={css.gateHint}>
+          Complete your profile to unlock other sections.
+        </p>
+      )}
+      <nav aria-label="Main">
+        <ul className={css.menuList}>
+          {ITEMS.map(({ label, to, Icon }) => {
+            const isActive = pathname === to;
+            // Profile is always reachable so a partway-onboarded user can
+            // finish their profile. Every other route is gated.
+            const isGated = isOnboarding && to !== "/profile";
+            return (
+              <li
+                key={to}
+                className={`${css.menuItem} ${isGated ? css.menuItemDisabled : ""}`}
               >
-                <span className={css.navItemIcon}>
-                  <Icon />
-                </span>
-                {label}
-              </Link>
-            </li>
-          );
-        })}
+                <Link
+                  to={to}
+                  className={`${css.navItem} ${isActive ? css.active : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-disabled={isGated || undefined}
+                  aria-describedby={isGated ? "hamburgerGateHint" : undefined}
+                  onClick={(e) => {
+                    if (isGated) {
+                      e.preventDefault();
+                      return;
+                    }
+                    handleNavigate();
+                  }}
+                >
+                  <span className={css.navItemIcon}>
+                    <Icon />
+                  </span>
+                  {label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      <ul className={css.actionList}>
         <li className={css.menuItem}>
           <button
             type="button"

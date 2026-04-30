@@ -1,6 +1,5 @@
 import type { DocType, MigrationFn } from "./types";
-
-const registry = new Map<string, MigrationFn>();
+import { registry } from "./registry";
 
 export function registerMigration(
   docType: DocType,
@@ -8,12 +7,6 @@ export function registerMigration(
   fn: MigrationFn,
 ): void {
   registry.set(`${docType}:${fromVersion}`, fn);
-}
-
-// Test-only escape hatch (no production caller). Lets per-test setup register
-// throwing migrations and the next test reset cleanly.
-export function _resetRegistryForTests(): void {
-  registry.clear();
 }
 
 export function migrateDocument(

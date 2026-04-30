@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { migrateDocument, _resetRegistryForTests } from "./index";
+import { migrateDocument } from "./index";
+import { resetRegistryForTests } from "./testing";
 import { wellnessEntryFixtures } from "./wellnessEntry.fixtures";
 
 // Deep-equality assertion: today there are no registered migrations, so
@@ -21,7 +22,7 @@ import { wellnessEntryFixtures } from "./wellnessEntry.fixtures";
 // "migration idempotency contract" describe block).
 describe("wellnessEntry migrations", () => {
   beforeEach(() => {
-    _resetRegistryForTests();
+    resetRegistryForTests();
   });
 
   it.each(Object.keys(wellnessEntryFixtures))(

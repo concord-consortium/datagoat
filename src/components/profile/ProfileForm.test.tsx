@@ -226,6 +226,25 @@ describe("ProfileForm a11y", () => {
       expect(alerts.length).toBeGreaterThan(0);
     });
   });
+
+  it("moves focus to the first invalid field on submit failure", async () => {
+    ctx.loadState = { status: "missing" };
+    renderForm();
+
+    // fullName is pre-seeded from user.displayName ("Existing Name") so
+    // it validates; the first actually-invalid field on empty submit is
+    // profile-age. RHF's shouldFocusError default does the focusing.
+    fireEvent.click(
+      screen.getByRole("button", { name: /set up your tracked data/i }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
+    });
+    expect(document.activeElement).toBe(
+      document.getElementById("profile-age"),
+    );
+  });
 });
 
 function setInputById(id: string, value: string) {

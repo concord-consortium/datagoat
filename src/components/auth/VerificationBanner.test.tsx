@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import { renderWithRouter } from "../../test/router";
 
@@ -96,6 +97,42 @@ describe("VerificationBanner", () => {
       daysUnverified: 8,
     });
     renderWithRouter(<VerificationBanner />);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  // Regression: useState(() => localStorage...) initializer only runs at
+  // mount, so without a uid-keyed remount, account switches within the
+  // same SPA session inherit the previous uid's dismissal. AppShell
+  // passes key={user?.uid} to force-remount; this test asserts that
+  // contract by simulating the parent's behavior.
+  it("re-keying on uid resets dismissal state across account switches", async () => {
+    const user = userEvent.setup();
+    const wrap = (uid: string) => (
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="*" element={<VerificationBanner key={uid} />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    setAuth({
+      user: { uid: "u1" },
+      isEmailVerified: false,
+      daysUnverified: 8,
+    });
+    const { rerender } = render(wrap("u1"));
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: /dismiss verification reminder/i }),
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    setAuth({
+      user: { uid: "u2" },
+      isEmailVerified: false,
+      daysUnverified: 8,
+    });
+    rerender(wrap("u2"));
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 

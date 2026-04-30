@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
-import { docTypeFromPath, migrateDocument } from "../migrations";
+import { migrateDocument } from "../migrations";
 import { CURRENT_WELLNESS_ENTRY_VERSION } from "../migrations/wellnessEntry";
 import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
 import { isoAtDaysAgo } from "../utils/dates";
@@ -304,7 +304,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         snap.forEach((docSnap) => {
           try {
             const migrated = migrateDocument(
-              docTypeFromPath(docSnap.ref.path),
+              "wellnessEntry",
               docSnap.data() as Record<string, unknown>,
             ) as unknown as WellnessEntry;
             entries.push(migrated);
@@ -386,7 +386,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         snap.forEach((docSnap) => {
           try {
             const migrated = migrateDocument(
-              docTypeFromPath(docSnap.ref.path),
+              "performanceEntry",
               docSnap.data() as Record<string, unknown>,
             ) as unknown as PerformanceEntry;
             entries.push(migrated);

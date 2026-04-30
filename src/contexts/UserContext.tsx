@@ -10,7 +10,7 @@ import {
 import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "./AuthContext";
-import { docTypeFromPath, migrateDocument } from "../migrations";
+import { migrateDocument } from "../migrations";
 import { CURRENT_USER_PROFILE_VERSION } from "../migrations/userProfile";
 import { logError } from "../utils/logError";
 import type { ProfileLoadState, UserProfile } from "../types/profile";
@@ -59,7 +59,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
         try {
           const migrated = migrateDocument(
-            docTypeFromPath(ref.path),
+            "userProfile",
             snap.data() as Record<string, unknown>,
           ) as unknown as UserProfile;
           setLoadState({ status: "loaded", profile: migrated });

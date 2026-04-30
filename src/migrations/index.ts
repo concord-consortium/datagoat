@@ -28,16 +28,3 @@ export function migrateDocument(
   }
   return current;
 }
-
-export function docTypeFromPath(path: string): DocType {
-  // Profile lives at users/{uid}/profile/main (single doc inside a "profile"
-  // subcollection - Firestore requires alternating collection/doc segments,
-  // so a bare users/{uid}/profile path can't address a doc). Detect either
-  // the subcollection-substring form ("/profile/") or the legacy
-  // ends-with form so existing fixtures keep working.
-  if (path.includes("/profile/") || path.endsWith("/profile"))
-    return "userProfile";
-  if (path.includes("/wellnessEntries/")) return "wellnessEntry";
-  if (path.includes("/performanceEntries/")) return "performanceEntry";
-  throw new Error(`Unknown document path: ${path}`);
-}

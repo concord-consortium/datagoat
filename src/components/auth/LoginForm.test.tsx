@@ -68,6 +68,8 @@ describe("LoginForm", () => {
     await waitFor(() =>
       expect(navigateMock).toHaveBeenCalledWith("/dashboard"),
     );
+    expect(navigateMock).toHaveBeenCalledTimes(1);
+    expect(navigateMock).not.toHaveBeenCalledWith("/verify-email");
   });
 
   it("OAuth success with unverified email -> navigates to /verify-email", async () => {
@@ -81,6 +83,8 @@ describe("LoginForm", () => {
     await waitFor(() =>
       expect(navigateMock).toHaveBeenCalledWith("/verify-email"),
     );
+    expect(navigateMock).toHaveBeenCalledTimes(1);
+    expect(navigateMock).not.toHaveBeenCalledWith("/dashboard");
   });
 
   it("account-collision -> flips to linking mode with LinkAccountPanel", async () => {

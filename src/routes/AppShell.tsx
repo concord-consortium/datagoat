@@ -5,6 +5,7 @@ import { DashboardHeaderSlide } from "../components/dashboard/DashboardHeaderSli
 import { SectionHeading } from "../components/layout/SectionHeading";
 import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import { VerificationBanner } from "../components/auth/VerificationBanner";
+import { useAuth } from "../contexts/AuthContext";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
 import { resolveRouteMeta } from "./routeMeta";
 import common from "../components/common.module.css";
@@ -55,6 +56,7 @@ export function AppShell() {
 
 function AppShellInner() {
   const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
+  const { user } = useAuth();
   const { pathname } = useLocation();
   const isAuthRoute = AUTH_PATHS.has(pathname);
   const showHeader = !isAuthRoute;
@@ -214,8 +216,13 @@ function AppShellInner() {
             It self-gates on useAuth() (renders nothing on auth routes
             where user is null, on verified accounts, on accounts younger
             than 7 days, or after the per-uid dismiss flag is set in
-            localStorage), so no per-route opt-out is needed. */}
-        <VerificationBanner />
+            localStorage), so no per-route opt-out is needed.
+
+            key={user?.uid ?? "anon"} forces a remount on uid change so
+            the banner's useState initializer re-reads localStorage for
+            the new uid - otherwise an account switch within the same
+            SPA session would inherit the previous uid's dismissal. */}
+        <VerificationBanner key={user?.uid ?? "anon"} />
         <Outlet
           context={{
             menuOpen,

@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  migrateDocument,
-  registerMigration,
-  docTypeFromPath,
-} from "./index";
+import { migrateDocument, registerMigration } from "./index";
 import { resetRegistryForTests } from "./testing";
 import type { DocType } from "./types";
 
@@ -94,24 +90,3 @@ describe("migration idempotency contract", () => {
   );
 });
 
-describe("docTypeFromPath", () => {
-  it("maps profile path", () => {
-    expect(docTypeFromPath("users/abc/profile")).toBe("userProfile");
-  });
-
-  it("maps wellnessEntries path", () => {
-    expect(docTypeFromPath("users/abc/wellnessEntries/2026-04-01")).toBe(
-      "wellnessEntry",
-    );
-  });
-
-  it("maps performanceEntries path", () => {
-    expect(docTypeFromPath("users/abc/performanceEntries/2026-04-01")).toBe(
-      "performanceEntry",
-    );
-  });
-
-  it("throws on unknown path", () => {
-    expect(() => docTypeFromPath("users/abc/foo")).toThrow();
-  });
-});

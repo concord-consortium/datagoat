@@ -75,6 +75,9 @@ describe("CodapPluginSignIn", () => {
     await waitFor(() => expect(signInWithProviderMock).toHaveBeenCalledTimes(1));
     expect(signOutMock).not.toHaveBeenCalled();
     expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
+    const loginBtn = screen.getByRole("button", { name: /^log in$/i });
+    expect(loginBtn).toBeInTheDocument();
+    await waitFor(() => expect(loginBtn).not.toBeDisabled());
   });
 
   it("OAuth success with unverified email signs back out and shows the verify notice", async () => {
@@ -159,5 +162,8 @@ describe("CodapPluginSignIn", () => {
     );
     expect(signOutMock).not.toHaveBeenCalled();
     expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
+    const stillThere = screen.getByRole("button", { name: /^log in$/i });
+    expect(stillThere).toBeInTheDocument();
+    await waitFor(() => expect(stillThere).not.toBeDisabled());
   });
 });

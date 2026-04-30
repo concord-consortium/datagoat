@@ -213,12 +213,9 @@ function ActivityCalendarImpl(props: ActivityCalendarProps) {
       <div className={css.heatmapDayLabels}>
         <span className={css.heatmapYearLabel}>{yearLabel}</span>
         {DAY_LABELS.map((d, i) => (
-          <span
-            key={i}
-            className={css.heatmapDayLabel}
-            aria-label={DAY_FULL[i]}
-          >
-            {d}
+          <span key={i} className={css.heatmapDayLabel}>
+            <span aria-hidden="true">{d}</span>
+            <span className={common.visuallyHidden}>{DAY_FULL[i]}</span>
           </span>
         ))}
       </div>

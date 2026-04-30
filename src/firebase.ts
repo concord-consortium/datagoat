@@ -32,13 +32,16 @@ export const db = initializeFirestore(app, {
   }),
 });
 
-let emulatorConnected = false;
+// Flag lives on globalThis so it survives Vite HMR module re-evaluation -
+// a module-local `let` would reset on each re-run and let connectAuthEmulator
+// fire twice against the same auth instance, which throws.
+const emuFlag = globalThis as { __datagoatEmu?: boolean };
 if (
   import.meta.env.DEV &&
   import.meta.env.VITE_USE_EMULATORS === "true" &&
-  !emulatorConnected
+  !emuFlag.__datagoatEmu
 ) {
-  emulatorConnected = true;
+  emuFlag.__datagoatEmu = true;
   connectAuthEmulator(auth, "http://localhost:9099");
   connectFirestoreEmulator(db, "localhost", 8080);
 }

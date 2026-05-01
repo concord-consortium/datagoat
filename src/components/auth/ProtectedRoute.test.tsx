@@ -85,18 +85,41 @@ describe("ProtectedRoute", () => {
     expect(screen.getByText("LOGIN")).toBeInTheDocument();
   });
 
-  it("renders the retry UI on 'error' (does NOT redirect to /profile)", () => {
+  it("renders the retry UI on 'error' kind 'subscription' (does NOT redirect to /profile)", () => {
     ctx.user = { uid: "u1" };
     ctx.loading = false;
-    ctx.loadState = { status: "error", error: new Error("net") };
+    ctx.loadState = {
+      status: "error",
+      error: new Error("net"),
+      kind: "subscription",
+    };
     renderRoute(<ProtectedRoute />);
     // Load-bearing assertion: a transient snapshot error must not drop the
     // user into onboarding, where submit would clobber their real profile.
     expect(screen.queryByText("PROFILE")).toBeNull();
     expect(screen.queryByText("CHILD")).toBeNull();
+    expect(screen.getByText(/check your connection/i)).toBeInTheDocument();
     const retryBtn = screen.getByRole("button", { name: /try again/i });
     fireEvent.click(retryBtn);
     expect(retryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the support-escalation copy on 'error' kind 'migration'", () => {
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = {
+      status: "error",
+      error: new Error("bad shape"),
+      kind: "migration",
+    };
+    renderRoute(<ProtectedRoute />);
+    // Load-bearing assertion: a migration failure on the singleton profile
+    // must not redirect to /profile - the onboarding submit would clobber
+    // the unmigrated doc via setDoc(merge:true).
+    expect(screen.queryByText("PROFILE")).toBeNull();
+    expect(screen.queryByText("CHILD")).toBeNull();
+    expect(screen.getByText(/contact support/i)).toBeInTheDocument();
+    expect(screen.queryByText(/check your connection/i)).toBeNull();
   });
 });
 
@@ -128,15 +151,33 @@ describe("OnboardingRoute", () => {
     expect(screen.getByText("CHILD")).toBeInTheDocument();
   });
 
-  it("renders the retry UI on 'error' (blocks the form so submit can't clobber a real profile)", () => {
+  it("renders the retry UI on 'error' kind 'subscription' (blocks the form so submit can't clobber a real profile)", () => {
     ctx.user = { uid: "u1" };
     ctx.loading = false;
-    ctx.loadState = { status: "error", error: new Error("net") };
+    ctx.loadState = {
+      status: "error",
+      error: new Error("net"),
+      kind: "subscription",
+    };
     renderRoute(<OnboardingRoute />, "/profile", "/profile");
     expect(screen.queryByText("CHILD")).toBeNull();
     expect(
       screen.getByRole("button", { name: /try again/i }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/check your connection/i)).toBeInTheDocument();
+  });
+
+  it("renders the support-escalation copy on 'error' kind 'migration' (blocks the form)", () => {
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = {
+      status: "error",
+      error: new Error("bad shape"),
+      kind: "migration",
+    };
+    renderRoute(<OnboardingRoute />, "/profile", "/profile");
+    expect(screen.queryByText("CHILD")).toBeNull();
+    expect(screen.getByText(/contact support/i)).toBeInTheDocument();
   });
 });
 

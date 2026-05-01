@@ -19,13 +19,16 @@ export interface UserProfile {
   trackingSetupComplete: boolean;
 }
 
+// 'subscription' = onSnapshot errored (transient network, permission denied).
+// 'migration' = the profile doc loaded but migrateDocument threw. Distinct so
+// the retry UI can render honest copy: subscription errors are typically
+// transient and benefit from retry; migration errors point at corrupt data
+// and need support escalation. Both block the onboarding-form route guards
+// to prevent setDoc(merge:true) from clobbering the unmigrated doc.
+export type ProfileLoadErrorKind = "subscription" | "migration";
+
 export type ProfileLoadState =
   | { status: "loading" }
   | { status: "missing" }
   | { status: "loaded"; profile: UserProfile }
-  // Snapshot subscription errored (transient network, permission denied,
-  // etc.). Distinct from 'missing' so route guards render a retry UI
-  // instead of dropping the user into onboarding - submitting the
-  // onboarding form against a stale 'missing' would setDoc(merge:true)
-  // over the user's real profile.
-  | { status: "error"; error: unknown };
+  | { status: "error"; error: unknown; kind: ProfileLoadErrorKind };

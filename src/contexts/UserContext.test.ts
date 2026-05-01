@@ -6,14 +6,24 @@ import { createElement } from "react";
 
 // Mock firebase before any imports that touch it.
 const onSnapshotMock = vi.fn();
+const setDocMock = vi.hoisted(() => vi.fn(async () => undefined));
+const updateDocMock = vi.hoisted(() => vi.fn(async () => undefined));
 
 vi.mock("firebase/firestore", () => ({
   doc: () => ({ path: "users/u1/profile/main" }),
   onSnapshot: (...args: unknown[]) => {
     return onSnapshotMock(...args);
   },
-  setDoc: async () => undefined,
-  updateDoc: async () => undefined,
+  setDoc: (...args: unknown[]) => setDocMock(...args),
+  updateDoc: (...args: unknown[]) => updateDocMock(...args),
+}));
+
+// Hoisted handle so individual tests can swap in a throwing migration to
+// exercise the migration-error branch without registering a real migration
+// (which would leak across test files via the shared registry).
+const migrateDocumentMock = vi.hoisted(() => vi.fn());
+vi.mock("../migrations", () => ({
+  migrateDocument: (...args: unknown[]) => migrateDocumentMock(...args),
 }));
 
 vi.mock("../firebase", () => ({
@@ -41,6 +51,11 @@ describe("UserContext loadState transitions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUser = null;
+    // Default migration: pass through the input. Individual tests can override
+    // with mockImplementationOnce to throw.
+    migrateDocumentMock.mockImplementation((_type: string, data: unknown) => data);
+    setDocMock.mockImplementation(async () => undefined);
+    updateDocMock.mockImplementation(async () => undefined);
   });
 
   it("starts in 'loading' when no user is signed in", () => {
@@ -74,7 +89,7 @@ describe("UserContext loadState transitions", () => {
     );
   });
 
-  it("transitions loading -> error when the snapshot subscription errors", async () => {
+  it("transitions loading -> error{kind:'subscription'} when the snapshot subscription errors", async () => {
     mockUser = { uid: "u1", email: "u@example.com" };
     let errorCb: ((e: unknown) => void) | null = null;
     onSnapshotMock.mockImplementation(
@@ -102,6 +117,45 @@ describe("UserContext loadState transitions", () => {
     // 'missing'. ProtectedRoute would otherwise redirect a real user to
     // /profile and submit-merge over their data.
     expect(result.current.loadState.status).not.toBe("missing");
+    if (result.current.loadState.status === "error") {
+      expect(result.current.loadState.kind).toBe("subscription");
+    }
+  });
+
+  it("transitions loading -> error{kind:'migration'} when migrateDocument throws on an existing doc", async () => {
+    mockUser = { uid: "u1", email: "u@example.com" };
+    let snapshotCb: ((s: unknown) => void) | null = null;
+    onSnapshotMock.mockImplementation(
+      (_ref: unknown, cb: (s: unknown) => void) => {
+        snapshotCb = cb;
+        return () => undefined;
+      },
+    );
+    migrateDocumentMock.mockImplementationOnce(() => {
+      throw new Error("migration boom");
+    });
+
+    const { result } = renderHook(() => useUser(), { wrapper });
+    expect(result.current.loadState.status).toBe("loading");
+
+    act(() => {
+      snapshotCb!({
+        exists: () => true,
+        data: () => ({ version: 1, fullName: "T" }),
+      });
+    });
+
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("error"),
+    );
+    // Load-bearing assertion: a migration throw on the singleton profile
+    // doc must NOT collapse to 'missing'. ProtectedRoute would otherwise
+    // redirect to /profile and the onboarding submit (setDoc merge:true)
+    // would clobber the unmigrated doc.
+    expect(result.current.loadState.status).not.toBe("missing");
+    if (result.current.loadState.status === "error") {
+      expect(result.current.loadState.kind).toBe("migration");
+    }
   });
 
   it("retry() re-subscribes after an error", async () => {
@@ -190,5 +244,85 @@ describe("UserContext loadState transitions", () => {
         expect(result.current.loadState.profile.fullName).toBe("Test User");
       }
     });
+  });
+
+  it("setTrackedMetrics falls back to setDoc(merge) when the doc is missing (cross-tab race)", async () => {
+    mockUser = { uid: "u1", email: "u@example.com" };
+    onSnapshotMock.mockImplementation(
+      (_ref: unknown, cb: (s: unknown) => void) => {
+        // Pretend the doc was loaded so the consumer's gate passed; the
+        // race is that it's then deleted before the write reaches Firestore.
+        cb({
+          exists: () => true,
+          data: () => ({
+            version: 1,
+            trackedWellnessMetrics: ["a", "b"],
+            trackedPerformanceMetrics: [],
+          }),
+        });
+        return () => undefined;
+      },
+    );
+    updateDocMock.mockImplementationOnce(async () => {
+      const err = new Error("No document to update") as Error & {
+        code: string;
+      };
+      err.code = "not-found";
+      throw err;
+    });
+
+    const { result } = renderHook(() => useUser(), { wrapper });
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("loaded"),
+    );
+
+    await act(async () => {
+      await result.current.setTrackedMetrics("wellness", ["b", "a"]);
+    });
+
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+    expect(setDocMock).toHaveBeenCalledTimes(1);
+    const [, payload, options] = setDocMock.mock.calls[0] as [
+      unknown,
+      Record<string, unknown>,
+      { merge: boolean },
+    ];
+    expect(payload).toEqual({
+      trackedWellnessMetrics: ["b", "a"],
+      version: 1,
+    });
+    expect(options).toEqual({ merge: true });
+  });
+
+  it("setTrackedMetrics rethrows non-'not-found' errors", async () => {
+    mockUser = { uid: "u1", email: "u@example.com" };
+    onSnapshotMock.mockImplementation(
+      (_ref: unknown, cb: (s: unknown) => void) => {
+        cb({
+          exists: () => true,
+          data: () => ({
+            version: 1,
+            trackedWellnessMetrics: [],
+            trackedPerformanceMetrics: [],
+          }),
+        });
+        return () => undefined;
+      },
+    );
+    updateDocMock.mockImplementationOnce(async () => {
+      const err = new Error("permission denied") as Error & { code: string };
+      err.code = "permission-denied";
+      throw err;
+    });
+
+    const { result } = renderHook(() => useUser(), { wrapper });
+    await waitFor(() =>
+      expect(result.current.loadState.status).toBe("loaded"),
+    );
+
+    await expect(
+      result.current.setTrackedMetrics("wellness", ["x"]),
+    ).rejects.toMatchObject({ code: "permission-denied" });
+    expect(setDocMock).not.toHaveBeenCalled();
   });
 });

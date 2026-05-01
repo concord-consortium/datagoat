@@ -448,6 +448,72 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     expect("version" in payload).toBe(false);
   });
 
+  it("creation: partial availability write expands to full null-defaulted sub-keys", () => {
+    // Without this, setDoc(merge:true) of `{availability: {practiceHeld:true}}`
+    // on a brand-new doc would leave the other sub-fields absent on
+    // disk - read back as undefined, which silently passes the
+    // availabilityFilled `!== null` guard and flips the wellness chip
+    // to "all" prematurely.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+    act(() => {
+      // Cast: Partial<WellnessEntry> is shallow, so this exercises the
+      // runtime-deeply-partial path that reduceWellnessPartial can also
+      // produce.
+      result.current.setWellnessEntry(WELLNESS_DATE, {
+        availability: { practiceHeld: true },
+      } as Parameters<typeof result.current.setWellnessEntry>[1]);
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.availability).toEqual({
+      practiceHeld: true,
+      practiceParticipation: null,
+      gameHeld: null,
+      gameParticipation: null,
+    });
+    expect(payload.version).toBe(1);
+  });
+
+  it("upgrade path: partial availability write is NOT expanded (existing sub-keys preserved)", () => {
+    // The existing doc may already have non-null sub-key values that
+    // merge:true would overwrite with null. Stamping defaults is safe
+    // only on creation.
+    const { result } = renderHook(() => useData(), { wrapper });
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          // version below CURRENT triggers the upgrade-stamp path while
+          // proving the doc exists on the server.
+          version: 0,
+          date: WELLNESS_DATE,
+          availability: {
+            practiceHeld: true,
+            practiceParticipation: "played",
+            gameHeld: false,
+            gameParticipation: null,
+          },
+        },
+      },
+    ]);
+    emit(latestSub(state.performanceSubs), []);
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, {
+        availability: { practiceHeld: false },
+      } as Parameters<typeof result.current.setWellnessEntry>[1]);
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.availability).toEqual({ practiceHeld: false });
+  });
+
   it("Strict-Mode mount->unmount->remount cycle does not emit empty setDoc", () => {
     const { unmount } = renderHook(() => useData(), { wrapper });
     unmount();
@@ -632,6 +698,122 @@ describe("DataContext reconciliation against onSnapshot", () => {
       (e) => e.date === WELLNESS_DATE,
     );
     expect(entry?.availability).toEqual(newAvail);
+  });
+
+  it("7b' availability sub-keys: per-sub-key reconciliation drops only confirmed fields", () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+    // Pending payload sets only two of the four availability sub-keys.
+    // A future caller (or a refactor that drives one Y/N input at a
+    // time) could legitimately produce this shape; the reducer must
+    // not stick the partial across snapshots.
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, {
+        availability: { practiceHeld: true, practiceParticipation: "played" },
+      });
+    });
+    // Server confirms practiceHeld but NOT practiceParticipation.
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1,
+          date: WELLNESS_DATE,
+          hydration: 0,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: {
+            practiceHeld: true,
+            practiceParticipation: null,
+            gameHeld: null,
+            gameParticipation: null,
+          },
+        },
+      },
+    ]);
+    // Pending should retain only practiceParticipation. A second
+    // snapshot replacing practiceParticipation with "dnp" stays masked
+    // by the optimistic overlay (pending="played" wins).
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1,
+          date: WELLNESS_DATE,
+          hydration: 0,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: {
+            practiceHeld: true,
+            practiceParticipation: "dnp",
+            gameHeld: null,
+            gameParticipation: null,
+          },
+        },
+      },
+    ]);
+    if (result.current.wellness.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    const entry = result.current.wellness.entries.find(
+      (e) => e.date === WELLNESS_DATE,
+    );
+    expect(entry?.availability.practiceParticipation).toBe("played");
+    expect(entry?.availability.practiceHeld).toBe(true);
+    // Now the server confirms practiceParticipation = "played" too.
+    // After reconciliation pending is fully consumed, so a later
+    // snapshot with a DIFFERENT practiceParticipation must surface.
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1,
+          date: WELLNESS_DATE,
+          hydration: 0,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: {
+            practiceHeld: true,
+            practiceParticipation: "played",
+            gameHeld: null,
+            gameParticipation: null,
+          },
+        },
+      },
+    ]);
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1,
+          date: WELLNESS_DATE,
+          hydration: 0,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: {
+            practiceHeld: true,
+            practiceParticipation: "dnp",
+            gameHeld: null,
+            gameParticipation: null,
+          },
+        },
+      },
+    ]);
+    if (result.current.wellness.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    const after = result.current.wellness.entries.find(
+      (e) => e.date === WELLNESS_DATE,
+    );
+    expect(after?.availability.practiceParticipation).toBe("dnp");
   });
 
   it("7c performance.metrics map: per-key reconciliation", () => {

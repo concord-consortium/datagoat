@@ -88,6 +88,32 @@ function firestoreSetWellnessEntry(
   ) {
     fields.version = CURRENT_WELLNESS_ENTRY_VERSION;
   }
+  // Creation path only: expand a partial availability payload so all
+  // four sub-keys are written with explicit null defaults. Without
+  // this, setDoc(merge:true) of `{ availability: { practiceHeld: true } }`
+  // on a brand-new doc leaves the other sub-fields absent on disk and
+  // read back as `undefined`, which silently violates the typed-null
+  // contract that availabilityFilled (`!== null` checks) depends on -
+  // and flips the wellness chip to "all" prematurely. Skipped on the
+  // upgrade path because the existing doc may already have non-null
+  // sub-key values that merge:true would overwrite with null.
+  if (
+    knownServerVersion === undefined &&
+    partial.availability !== undefined
+  ) {
+    // Spread is cast to a deeply-partial because reduceWellnessPartial
+    // can produce one at runtime (it returns a `Record<string, unknown>`
+    // cast back to the strict type). The TS Partial<WellnessEntry> is
+    // shallow, so partial.availability's static type still has all four
+    // keys - widening here is what lets the null defaults survive.
+    fields.availability = {
+      practiceHeld: null,
+      practiceParticipation: null,
+      gameHeld: null,
+      gameParticipation: null,
+      ...(partial.availability as Partial<WellnessEntry["availability"]>),
+    };
+  }
   return setDoc(ref, fields, { merge: true });
 }
 
@@ -109,11 +135,9 @@ function firestoreSetPerformanceEntry(
 }
 
 // One-level-deep equality. Reconciliation only needs to compare
-// primitives and flat objects (availability, performance.metrics).
-// `{ x: undefined }` vs `{}` is intentionally NOT equal here; in
-// practice the same-keys invariant always holds because availability
-// is written as a full object and metrics maps preserve their keys
-// across the wire.
+// primitives and flat objects whose keys we already enumerate
+// per-sub-key in the reducers (availability, performance.metrics).
+// `{ x: undefined }` vs `{}` is intentionally NOT equal here.
 function deepEqual(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (typeof a !== "object" || typeof b !== "object") return false;
@@ -139,7 +163,26 @@ function reduceWellnessPartial(
 ): Partial<WellnessEntry> | null {
   const remaining: Partial<WellnessEntry> = {};
   for (const key of Object.keys(partial) as (keyof WellnessEntry)[]) {
-    if (!deepEqual(partial[key], server[key])) {
+    if (key === "availability") {
+      // Reduce per sub-key so a partial availability payload (e.g. just
+      // { practiceHeld: true }) reconciles correctly against the full
+      // server object - one-level deepEqual would short-circuit on the
+      // mismatched key count and never drop the pending entry.
+      const pendingAvail = partial.availability ?? {};
+      const serverAvail = server.availability ?? {};
+      const remainingAvail: Record<string, unknown> = {};
+      for (const k of Object.keys(pendingAvail)) {
+        const pk = pendingAvail[k as keyof typeof pendingAvail];
+        const sk = serverAvail[k as keyof typeof serverAvail];
+        if (!Object.is(pk, sk)) {
+          remainingAvail[k] = pk;
+        }
+      }
+      if (Object.keys(remainingAvail).length > 0) {
+        remaining.availability =
+          remainingAvail as WellnessEntry["availability"];
+      }
+    } else if (!deepEqual(partial[key], server[key])) {
       (remaining as Record<string, unknown>)[key] = partial[
         key
       ] as unknown;
@@ -521,12 +564,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const uid = user.uid;
       setWellnessPending((prev) => {
         const existingPartial = prev[date]?.partial ?? {};
+        const merged: Partial<WellnessEntry> = {
+          ...existingPartial,
+          ...partial,
+        };
+        // Deep-merge availability sub-keys so accumulating partial
+        // availability writes within the debounce window preserve
+        // earlier sub-keys instead of clobbering them. Mirrors the
+        // metrics merge in setPerformanceEntry.
+        if (
+          existingPartial.availability !== undefined ||
+          partial.availability !== undefined
+        ) {
+          merged.availability = {
+            ...(existingPartial.availability ?? {}),
+            ...(partial.availability ?? {}),
+          } as WellnessEntry["availability"];
+        }
         const next: PendingMap<WellnessEntry> = {
           ...prev,
-          [date]: {
-            uid,
-            partial: { ...existingPartial, ...partial },
-          },
+          [date]: { uid, partial: merged },
         };
         wellnessPendingRef.current = next;
         return next;
@@ -599,7 +656,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     for (const [date, entry] of Object.entries(wellnessPending)) {
       const base = byDate.get(date) ?? emptyWellnessEntry(date);
-      byDate.set(date, { ...base, ...entry.partial });
+      // Deep-merge availability sub-keys: a naive {...base, ...partial}
+      // would clobber base.availability with a sparse partial (e.g. a
+      // pending { practiceHeld: true } would wipe gameHeld/gameParticipation
+      // off the rendered entry). Same shape as the performance.metrics
+      // merge below.
+      byDate.set(date, {
+        ...base,
+        ...entry.partial,
+        availability: {
+          ...base.availability,
+          ...(entry.partial.availability ?? {}),
+        },
+      });
     }
     if (wellnessServer.status !== "loaded" && byDate.size === 0) {
       return wellnessServer;

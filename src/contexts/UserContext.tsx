@@ -71,11 +71,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 ? (snap.data()?.version as number)
                 : 1,
           });
-          // Migration failure on an existing doc -> 'missing' per the
-          // pinned migration contract ("loud in logs, soft in UI -
-          // a single bad doc must not lock the user out"). Snapshot
-          // *subscription* failures take the error branch below instead.
-          setLoadState({ status: "missing" });
+          // The collection-doc migration contract ("soft in UI, single bad
+          // doc must not lock the user out") doesn't apply to the singleton
+          // profile: collapsing to 'missing' would redirect to onboarding
+          // and setDoc(merge:true) over the unmigrated doc. Surface as
+          // 'error' with kind 'migration' so the retry UI escalates to
+          // support instead of letting the form clobber real data.
+          setLoadState({ status: "error", error: err, kind: "migration" });
         }
       },
       (err) => {
@@ -83,7 +85,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Don't collapse to 'missing' - a transient Firestore error on a
         // user with a real profile would otherwise drop them into the
         // onboarding form, which setDoc(merge:true)s over their data.
-        setLoadState({ status: "error", error: err });
+        setLoadState({ status: "error", error: err, kind: "subscription" });
       },
     );
     return unsubscribe;
@@ -119,7 +121,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
           type === "wellness"
             ? "trackedWellnessMetrics"
             : "trackedPerformanceMetrics";
-        await updateDoc(ref, { [field]: ids });
+        try {
+          await updateDoc(ref, { [field]: ids });
+        } catch (err) {
+          // Defensive fallback for the cross-tab/admin-deletion race: caller
+          // gates on loadState='loaded', but the doc can be deleted between
+          // the gate and this write. updateDoc rejects with code 'not-found'
+          // in that case; recover by writing a fresh doc with the version
+          // stamp so the migration framework keeps working.
+          if (
+            typeof err === "object" &&
+            err !== null &&
+            (err as { code?: string }).code === "not-found"
+          ) {
+            await setDoc(
+              ref,
+              { [field]: ids, version: CURRENT_USER_PROFILE_VERSION },
+              { merge: true },
+            );
+            return;
+          }
+          throw err;
+        }
       },
     };
   }, [loadState, retry, user]);

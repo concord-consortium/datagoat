@@ -54,6 +54,22 @@ describe("migrateDocument", () => {
     expect(input).toEqual({ name: "test" });
     expect(result).not.toBe(input);
   });
+
+  it("does not mutate the caller's nested objects when a chain step mutates a shared ref", () => {
+    // Contract violation case: migrator v1 shallow-copies but keeps the
+    // nested `profile` aliased to the input. Migrator v2 then mutates
+    // that nested object. Without an entry-level clone, the caller's
+    // Firestore snapshot data would be corrupted.
+    registerMigration("userProfile", 1, (d) => ({ ...d, step1: true }));
+    registerMigration("userProfile", 2, (d) => {
+      (d.profile as Record<string, unknown>).name = "mutated";
+      return { ...d, step2: true };
+    });
+    const input = { version: 1, profile: { name: "original" } };
+    const result = migrateDocument("userProfile", input);
+    expect(input.profile.name).toBe("original");
+    expect((result.profile as Record<string, unknown>).name).toBe("mutated");
+  });
 });
 
 // Migrations must be idempotent under version-downgrade. See

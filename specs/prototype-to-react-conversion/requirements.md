@@ -179,18 +179,19 @@ Persisted in Firestore at `users/{uid}/profile`. The `gender + athleteType` comb
 The profile is fetched async from Firestore after sign-in. Consumers and route guards must distinguish "still fetching" from "fetched, no doc exists" (new user). `UserContext` exposes a tri-state load value:
 
 ```ts
+type ProfileLoadErrorKind = 'subscription' | 'migration';
 type ProfileLoadState =
   | { status: 'loading' }
   | { status: 'missing' }                         // fetch resolved, no Firestore doc -> new user
   | { status: 'loaded'; profile: UserProfile }
-  | { status: 'error'; error: unknown };          // onSnapshot subscription errored (transient network, permission denied, etc.)
+  | { status: 'error'; error: unknown; kind: ProfileLoadErrorKind }; // snapshot subscription failed OR migrateDocument threw on an existing doc
 ```
 
 `ProtectedRoute` behavior:
 - `status === 'loading'` -> render `<Loading />`. **Never redirect while loading**, or returning users will be kicked back to `/profile` on every cold start.
 - `status === 'missing'` -> redirect to `/profile` (onboarding entry point).
 - `status === 'loaded'` -> render the child route.
-- `status === 'error'` -> render a retry UI (`ProfileLoadError`) that exposes a "Try again" button bound to `useUser().retry()`. **Do NOT redirect to `/profile`**: a transient Firestore error on a returning user would otherwise drop them into the onboarding form and submit would `setDoc(merge:true)` over their real profile. Migration failures on an existing doc still map to `'missing'` per the migration contract (loud in logs, soft in UI - a single bad doc must not lock the user out); the `'error'` branch is only for snapshot *subscription* failures.
+- `status === 'error'` -> render a retry UI (`ProfileLoadError`) that exposes a "Try again" button bound to `useUser().retry()`. **Do NOT redirect to `/profile`**: a transient Firestore error or a migration failure on a returning user would otherwise drop them into the onboarding form and submit would `setDoc(merge:true)` over their real profile. Migration failures on the singleton profile doc therefore map to `{ status: 'error', kind: 'migration' }`, not `'missing'`. The collection-doc migration contract ("loud in logs, soft in UI - a single bad doc must not lock the user out") still applies to DataContext entries, where one bad wellness/performance doc is skipped and the rest of the collection loads; for the singleton profile there is no graceful skip path, so the retry UI shows kind-specific copy (subscription -> "check your connection", migration -> "contact support") instead.
 
 A route that is itself part of onboarding (`/profile`, `/setup/tracking`) only gates on `status !== 'loading'` - it renders regardless of whether the doc exists, because that's where new users land and where existing users edit. `'error'` still renders the retry UI on onboarding routes (same data-loss reasoning - the form can't be allowed to submit against a stale snapshot error).
 

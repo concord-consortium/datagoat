@@ -41,10 +41,11 @@ function wrapper({ children }: { children: ReactNode }) {
 function emit(
   sub: MockSubscriptionHandle | undefined,
   docs: MockSnapshotDoc[],
+  metadata?: { hasPendingWrites: boolean },
 ) {
   if (!sub) throw new Error("no active subscription");
   act(() => {
-    sub.emit(docs);
+    sub.emit(docs, metadata);
   });
 }
 
@@ -888,6 +889,71 @@ describe("DataContext reconciliation against onSnapshot", () => {
       (e) => e.date === WELLNESS_DATE,
     );
     expect(entry?.hydration).toBe(6);
+  });
+
+  it("7e cache snapshot with hasPendingWrites is skipped (pending preserved against self-mirror)", () => {
+    // Persistent-cache + offline: onSnapshot fires from the cache
+    // with metadata.hasPendingWrites === true, mirroring the local
+    // optimistic write back at us. If reconciliation ran on this
+    // snapshot, pending would drop because the cache "matches"
+    // pending; a later server-side rejection would then surface the
+    // pre-write server value with no optimistic state to fall back
+    // on. The fix is a snapshot-level early return.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, { hydration: 5 });
+    });
+    // Cache mirror of the optimistic write. With the filter, this
+    // snapshot is ignored - server state is not updated and pending
+    // is not reconciled.
+    emit(
+      latestSub(state.wellnessSubs),
+      [
+        {
+          path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+          data: {
+            version: 1,
+            date: WELLNESS_DATE,
+            hydration: 5,
+            sleepTime: 0,
+            sleepEfficiency: 0,
+            protein: 0,
+            leanMass: 0,
+            availability: FULL_AVAILABILITY,
+          },
+        },
+      ],
+      { hasPendingWrites: true },
+    );
+    // Server-acked snapshot lands later showing a DIFFERENT hydration
+    // (simulates the queued write being rejected and a different
+    // server value winning). Without the filter, pending would
+    // already have been dropped by the cache snapshot above and this
+    // value would surface; with the filter, pending survives the
+    // cache snapshot and the optimistic value still wins.
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1,
+          date: WELLNESS_DATE,
+          hydration: 999,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: FULL_AVAILABILITY,
+        },
+      },
+    ]);
+    if (result.current.wellness.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    const entry = result.current.wellness.entries.find(
+      (e) => e.date === WELLNESS_DATE,
+    );
+    expect(entry?.hydration).toBe(5);
   });
 });
 

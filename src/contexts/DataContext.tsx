@@ -345,13 +345,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // unmount-flush still needs the cache to compute the version-stamp
   // decision for each in-flight write. Floor rotation does NOT clear
   // because the new listener may not redeliver every doc; clearing
-  // would briefly defeat the downgrade guard.
+  // would briefly defeat the downgrade guard. Keyed on user?.uid (not
+  // the user object) so token-refresh / reload re-allocations of the
+  // same uid don't wipe the cache and force re-stamping.
   useEffect(() => {
     return () => {
       wellnessServerVersionsRef.current.clear();
       performanceServerVersionsRef.current.clear();
     };
-  }, [user]);
+  }, [user?.uid]);
 
   // Wellness collection subscription. Cleanup discards pending state
   // - sign-out / user-switch must NOT flush (prior session is gone,
@@ -373,6 +375,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
+        // Persistent-cache snapshots reflecting our own un-acked
+        // writes (`hasPendingWrites === true`) are skipped: letting
+        // them through would drop pending entries against the local
+        // cache mirror of the queued write, so a later server-side
+        // rejection would leave the optimistic state already cleared.
+        // The next snapshot without this flag (server-acked) is what
+        // drives reconciliation against authoritative state. We also
+        // skip the server-state update for the same reason - the
+        // optimistic memo's `byDate.size > 0` short-circuit covers
+        // the rare offline-first-snapshot case where no server
+        // snapshot has landed yet.
+        if (snap.metadata?.hasPendingWrites) return;
         const entries: WellnessEntry[] = [];
         snap.forEach((docSnap) => {
           const raw = docSnap.data() as Record<string, unknown>;
@@ -466,6 +480,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
+        // See wellness onSnapshot for the hasPendingWrites rationale.
+        if (snap.metadata?.hasPendingWrites) return;
         const entries: PerformanceEntry[] = [];
         snap.forEach((docSnap) => {
           const raw = docSnap.data() as Record<string, unknown>;

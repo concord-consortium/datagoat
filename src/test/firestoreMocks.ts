@@ -21,11 +21,15 @@ export interface MockSnapshot {
       data(): Record<string, unknown>;
     }) => void,
   ): void;
+  metadata?: { hasPendingWrites: boolean };
 }
 
 export interface MockSubscriptionHandle {
   path: string;
-  emit(docs: MockSnapshotDoc[]): void;
+  emit(
+    docs: MockSnapshotDoc[],
+    metadata?: { hasPendingWrites: boolean },
+  ): void;
   active: boolean;
 }
 
@@ -40,7 +44,10 @@ export interface FirestoreMockState {
   user: MockUserHandle;
 }
 
-export function makeSnapshot(docs: MockSnapshotDoc[]): MockSnapshot {
+export function makeSnapshot(
+  docs: MockSnapshotDoc[],
+  metadata?: { hasPendingWrites: boolean },
+): MockSnapshot {
   return {
     forEach(cb) {
       docs.forEach((d) =>
@@ -50,6 +57,7 @@ export function makeSnapshot(docs: MockSnapshotDoc[]): MockSnapshot {
         }),
       );
     },
+    metadata,
   };
 }
 
@@ -80,9 +88,9 @@ export function firestoreMockFactory(state: FirestoreMockState) {
       const handle: MockSubscriptionHandle = {
         path: ref.path,
         active: true,
-        emit(docs) {
+        emit(docs, metadata) {
           if (!handle.active) return;
-          cb(makeSnapshot(docs));
+          cb(makeSnapshot(docs, metadata));
         },
       };
       if (ref.path.includes("wellnessEntries")) {

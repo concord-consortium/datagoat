@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 import {
   HISTORY,
   dateAtOffset,
@@ -57,7 +57,7 @@ describe("date helpers", () => {
 
   it("fmtDate / shortFmt produce non-empty strings", () => {
     const d = new Date(2026, 3, 15); // Wed, April 15, 2026
-    expect(fmtDate(d)).toMatch(/April 15, 2026$/);
+    expect(fmtDate(d)).toBe("Wed, April 15, 2026");
     expect(shortFmt(d)).toBe("4/15/2026");
   });
 
@@ -89,5 +89,40 @@ describe("date helpers", () => {
     for (const n of [0, 1, 7, 29, 90, 180, 365]) {
       expect(daysAgoFromISO(isoAtDaysAgo(n))).toBe(n);
     }
+  });
+});
+
+// Local-midnight to local-midnight is 23h on spring-forward and 25h on
+// fall-back, so daysAgoFromISO leans on Math.round to land on whole days.
+// These tests pin the system clock and the TZ to a US DST-observing zone so
+// CI (typically UTC) actually exercises the rounding.
+describe("daysAgoFromISO across DST boundaries", () => {
+  const originalTZ = process.env.TZ;
+
+  beforeAll(() => {
+    process.env.TZ = "America/New_York";
+  });
+
+  afterAll(() => {
+    if (originalTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTZ;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("spring-forward: yesterday === 1 when the local-midnight gap is 23h", () => {
+    // US DST 2026 starts 02:00 Sun Mar 8, so Mar 8 -> Mar 9 spans 23h.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 9, 12, 0, 0));
+    expect(daysAgoFromISO("2026-03-08")).toBe(1);
+  });
+
+  it("fall-back: yesterday === 1 when the local-midnight gap is 25h", () => {
+    // US DST 2026 ends 02:00 Sun Nov 1, so Nov 1 -> Nov 2 spans 25h.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 2, 12, 0, 0));
+    expect(daysAgoFromISO("2026-11-01")).toBe(1);
   });
 });

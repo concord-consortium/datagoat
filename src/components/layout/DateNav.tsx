@@ -43,7 +43,7 @@ export function DateNav({ offset, withChip, chipState }: DateNavProps) {
     : css.dateNav;
 
   return (
-    <div className={containerCls}>
+    <div className={containerCls} data-sticky-chrome>
       <div className={css.dateNavRow}>
         <button
           type="button"

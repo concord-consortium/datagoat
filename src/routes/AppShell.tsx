@@ -85,11 +85,11 @@ function AppShellInner() {
 
   // Document focusin auto-scroll behavior (port of prototype HTML around
   // line 5460). Compute the element's position relative to <main> and the
-  // current sticky-chrome offset (.section-heading + .date-nav stack to
-  // ~140px on dense screens) up front, then scroll only when the focused
-  // element is below the viewport or overlaps sticky chrome. Elements
-  // already fully visible trigger no scroll, avoiding unsolicited jumps
-  // for screen-magnifier and keyboard users (WCAG 2.4.7/2.4.11).
+  // current sticky-chrome offset (DateNav, ~50px when pinned) up front,
+  // then scroll only when the focused element is below the viewport or
+  // overlaps sticky chrome. Elements already fully visible trigger no
+  // scroll, avoiding unsolicited jumps for screen-magnifier and keyboard
+  // users (WCAG 2.4.7/2.4.11).
   useEffect(() => {
     const main = mainRef.current;
     if (!main) return;
@@ -104,21 +104,21 @@ function AppShellInner() {
         }
         cursor = cursor.parentElement;
       }
-      // Add any sticky siblings preceding the focused element so
-      // .section-heading + .date-nav stacks are accounted for.
-      const stickyChromeSelectors = [".section-heading", ".date-nav"];
-      stickyChromeSelectors.forEach((sel) => {
-        main!.querySelectorAll(sel).forEach((node) => {
-          const cs = window.getComputedStyle(node);
-          if (cs.position === "sticky" && !node.contains(el)) {
-            const r = node.getBoundingClientRect();
-            const mainTop = main!.getBoundingClientRect().top;
-            // Counts only when the sticky node is currently pinned at top.
-            if (Math.abs(r.top - mainTop) < 2) {
-              total = Math.max(total, r.bottom - mainTop);
-            }
+      // Add any sticky siblings preceding the focused element. CSS
+      // Modules ship classes hashed (e.g. "_dateNav_a5cf63"), so we tag
+      // sticky-chrome wrappers with `data-sticky-chrome` and match on
+      // that stable attribute - mirrors the data-skip-link-exclude
+      // pattern documented above.
+      main!.querySelectorAll("[data-sticky-chrome]").forEach((node) => {
+        const cs = window.getComputedStyle(node);
+        if (cs.position === "sticky" && !node.contains(el)) {
+          const r = node.getBoundingClientRect();
+          const mainTop = main!.getBoundingClientRect().top;
+          // Counts only when the sticky node is currently pinned at top.
+          if (Math.abs(r.top - mainTop) < 2) {
+            total = Math.max(total, r.bottom - mainTop);
           }
-        });
+        }
       });
       return total;
     }

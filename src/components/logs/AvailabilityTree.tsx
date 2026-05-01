@@ -34,10 +34,17 @@ export function AvailabilityTree({
   // bare fieldset) preserves the prototype's flex-row CSS - fieldsets
   // default to display:block and would require reworking the layout.
   const reactId = useId();
+  const helperId = `${reactId}-avail-q`;
   const practiceHeldLabelId = `${reactId}-practice-held`;
   const practiceParticipationLabelId = `${reactId}-practice-part`;
   const gameHeldLabelId = `${reactId}-game-held`;
   const gameParticipationLabelId = `${reactId}-game-part`;
+  // Per-instance radio group names so two AvailabilityTree instances in
+  // the same DOM don't clobber each other's native selection scope.
+  const practiceHeldName = `${reactId}-practice-yn`;
+  const practiceParticipationName = `${reactId}-practice-status`;
+  const gameHeldName = `${reactId}-game-yn`;
+  const gameParticipationName = `${reactId}-game-status`;
 
   function setPracticeHeld(held: boolean) {
     onChange({
@@ -64,7 +71,7 @@ export function AvailabilityTree({
 
   return (
     <div className={css.availGroup} role="group" aria-labelledby={labelledBy}>
-      <span className={css.availHelper}>
+      <span id={helperId} className={css.availHelper}>
         Did you have practice and/or a{" "}
         <span>{gameLower}</span> today?
       </span>
@@ -74,7 +81,7 @@ export function AvailabilityTree({
         <div
           className={css.availRow}
           role="radiogroup"
-          aria-labelledby={practiceHeldLabelId}
+          aria-labelledby={`${helperId} ${practiceHeldLabelId}`}
         >
           <span id={practiceHeldLabelId} className={css.availRowLabel}>
             Practice
@@ -83,7 +90,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-practice-yn"
+              name={practiceHeldName}
               value="yes"
               checked={value.practiceHeld === true}
               onChange={() => setPracticeHeld(true)}
@@ -94,7 +101,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-practice-yn"
+              name={practiceHeldName}
               value="no"
               checked={value.practiceHeld === false}
               onChange={() => setPracticeHeld(false)}
@@ -105,7 +112,7 @@ export function AvailabilityTree({
         <div
           className={css.availSubs}
           role="radiogroup"
-          aria-labelledby={practiceParticipationLabelId}
+          aria-labelledby={`${practiceHeldLabelId} ${practiceParticipationLabelId}`}
         >
           <span
             id={practiceParticipationLabelId}
@@ -117,7 +124,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-practice-status"
+              name={practiceParticipationName}
               value="played"
               checked={value.practiceParticipation === "played"}
               onChange={() => setPracticeParticipation("played")}
@@ -128,7 +135,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-practice-status"
+              name={practiceParticipationName}
               value="dnp"
               checked={value.practiceParticipation === "dnp"}
               onChange={() => setPracticeParticipation("dnp")}
@@ -144,7 +151,7 @@ export function AvailabilityTree({
         <div
           className={css.availRow}
           role="radiogroup"
-          aria-labelledby={gameHeldLabelId}
+          aria-labelledby={`${helperId} ${gameHeldLabelId}`}
         >
           <span id={gameHeldLabelId} className={css.availRowLabel}>
             {gameLabel}
@@ -153,7 +160,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-game-yn"
+              name={gameHeldName}
               value="yes"
               checked={value.gameHeld === true}
               onChange={() => setGameHeld(true)}
@@ -164,7 +171,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-game-yn"
+              name={gameHeldName}
               value="no"
               checked={value.gameHeld === false}
               onChange={() => setGameHeld(false)}
@@ -175,7 +182,7 @@ export function AvailabilityTree({
         <div
           className={css.availSubs}
           role="radiogroup"
-          aria-labelledby={gameParticipationLabelId}
+          aria-labelledby={`${gameHeldLabelId} ${gameParticipationLabelId}`}
         >
           <span
             id={gameParticipationLabelId}
@@ -187,7 +194,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-game-status"
+              name={gameParticipationName}
               value="played"
               checked={value.gameParticipation === "played"}
               onChange={() => setGameParticipation("played")}
@@ -198,7 +205,7 @@ export function AvailabilityTree({
             <input
               type="radio"
               className={css.availRadio}
-              name="avail-game-status"
+              name={gameParticipationName}
               value="dnp"
               checked={value.gameParticipation === "dnp"}
               onChange={() => setGameParticipation("dnp")}

@@ -9,8 +9,9 @@ import {
 } from "firebase/auth";
 import { auth } from "../../firebase";
 import { logError } from "../../utils/logError";
-import { authErrorMessageFor } from "./authErrorMessages";
+import { authErrorMessageFor, getAuthErrorCode } from "./authErrorMessages";
 import { googleProvider } from "./authProviders";
+import { PasswordField } from "./PasswordField";
 import authCss from "./AuthLayout.module.css";
 import fields from "../form/fields.module.css";
 import buttons from "../form/buttons.module.css";
@@ -69,10 +70,7 @@ export function LinkAccountPanel({
       const linked = await linkWithCredential(signedInUser, pendingCredential);
       onLinked(linked.user);
     } catch (err: unknown) {
-      const code =
-        typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : "auth/internal-error";
+      const code = getAuthErrorCode(err);
       logError(err, { stage: "linkWithCredential", code });
       // Sign-in succeeded but linking did not, so the user is authed as
       // the existing account. Drop that session before surfacing the
@@ -94,10 +92,7 @@ export function LinkAccountPanel({
       const result = await signInWithPopup(auth, googleProvider);
       await attemptLink(result.user);
     } catch (err: unknown) {
-      const code =
-        typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : "auth/internal-error";
+      const code = getAuthErrorCode(err);
       logError(err, { stage: "linkAccount.googlePopup", code });
       setError(authErrorMessageFor(code));
     } finally {
@@ -113,10 +108,7 @@ export function LinkAccountPanel({
       const cred = await signInWithEmailAndPassword(auth, email, password);
       await attemptLink(cred.user);
     } catch (err: unknown) {
-      const code =
-        typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : "auth/internal-error";
+      const code = getAuthErrorCode(err);
       logError(err, { stage: "linkAccount.password", code });
       setError(authErrorMessageFor(code));
     } finally {
@@ -158,21 +150,14 @@ export function LinkAccountPanel({
               autoComplete="email"
             />
           </div>
-          <div className={fields.fieldWrap}>
-            <label className={fields.fieldLabel} htmlFor="link-password">
-              Password<span className={fields.requiredMark} aria-hidden="true">*</span>
-            </label>
-            <input
-              id="link-password"
-              type="password"
-              className={fields.fieldInput}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              aria-required="true"
-            />
-          </div>
+          <PasswordField
+            id="link-password"
+            label="Password"
+            required
+            autoComplete="current-password"
+            defaultValue={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
           <button
             type="submit"
             className={buttons.ctaBtn}

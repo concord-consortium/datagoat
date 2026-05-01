@@ -9,7 +9,7 @@ import { SocialButtons } from "./SocialButtons";
 import { PasswordField } from "./PasswordField";
 import { LinkAccountPanel } from "./LinkAccountPanel";
 import { googleProvider, facebookProvider } from "./authProviders";
-import { authErrorMessageFor } from "./authErrorMessages";
+import { authErrorMessageFor, getAuthErrorCode } from "./authErrorMessages";
 import { useOAuthSignIn } from "./useOAuthSignIn";
 import { loginSchema, type LoginValues } from "./authSchemas";
 import authCss from "./AuthLayout.module.css";
@@ -40,10 +40,7 @@ export function LoginForm() {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       navigate("/dashboard");
     } catch (err: unknown) {
-      const code =
-        typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : "auth/internal-error";
+      const code = getAuthErrorCode(err);
       logError(err, { stage: "loginForm.emailPassword", code });
       setError(authErrorMessageFor(code));
     }

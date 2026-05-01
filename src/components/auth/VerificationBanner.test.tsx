@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import { renderWithRouter } from "../../test/router";
@@ -21,10 +21,15 @@ vi.mock("../../firebase", () => ({
 
 import { VerificationBanner } from "./VerificationBanner";
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function daysAgo(n: number): string {
+  return new Date(Date.now() - n * MS_PER_DAY).toUTCString();
+}
+
 interface MockAuthShape {
-  user: { uid: string } | null;
+  user: { uid: string; metadata?: { creationTime?: string } } | null;
   isEmailVerified: boolean;
-  daysUnverified: number;
 }
 
 function setAuth(value: MockAuthShape) {
@@ -43,9 +48,8 @@ describe("VerificationBanner", () => {
 
   it("renders when !isEmailVerified && daysUnverified >= 7", () => {
     setAuth({
-      user: { uid: "u1" },
+      user: { uid: "u1", metadata: { creationTime: daysAgo(7) } },
       isEmailVerified: false,
-      daysUnverified: 7,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -54,9 +58,8 @@ describe("VerificationBanner", () => {
 
   it("does not render when daysUnverified < 7", () => {
     setAuth({
-      user: { uid: "u1" },
+      user: { uid: "u1", metadata: { creationTime: daysAgo(6) } },
       isEmailVerified: false,
-      daysUnverified: 6,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -64,9 +67,8 @@ describe("VerificationBanner", () => {
 
   it("does not render when isEmailVerified is true (regardless of daysUnverified)", () => {
     setAuth({
-      user: { uid: "u1" },
+      user: { uid: "u1", metadata: { creationTime: daysAgo(365) } },
       isEmailVerified: true,
-      daysUnverified: 365,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -75,9 +77,8 @@ describe("VerificationBanner", () => {
   it("clicking dismiss persists 'verifyBannerDismissed:<uid>' and unmounts the banner", async () => {
     const user = userEvent.setup();
     setAuth({
-      user: { uid: "u1" },
+      user: { uid: "u1", metadata: { creationTime: daysAgo(8) } },
       isEmailVerified: false,
-      daysUnverified: 8,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -92,9 +93,8 @@ describe("VerificationBanner", () => {
     localStorage.setItem("verifyBannerDismissed:u1", "1");
 
     setAuth({
-      user: { uid: "u2" },
+      user: { uid: "u2", metadata: { creationTime: daysAgo(8) } },
       isEmailVerified: false,
-      daysUnverified: 8,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -116,9 +116,8 @@ describe("VerificationBanner", () => {
     );
 
     setAuth({
-      user: { uid: "u1" },
+      user: { uid: "u1", metadata: { creationTime: daysAgo(8) } },
       isEmailVerified: false,
-      daysUnverified: 8,
     });
     const { rerender } = render(wrap("u1"));
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -128,9 +127,8 @@ describe("VerificationBanner", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
 
     setAuth({
-      user: { uid: "u2" },
+      user: { uid: "u2", metadata: { creationTime: daysAgo(8) } },
       isEmailVerified: false,
-      daysUnverified: 8,
     });
     rerender(wrap("u2"));
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -138,9 +136,8 @@ describe("VerificationBanner", () => {
 
   it("container has role='status'; dismiss button has aria-label='Dismiss verification reminder'", () => {
     setAuth({
-      user: { uid: "u1" },
+      user: { uid: "u1", metadata: { creationTime: daysAgo(8) } },
       isEmailVerified: false,
-      daysUnverified: 8,
     });
     renderWithRouter(<VerificationBanner />);
     const status = screen.getByRole("status");
@@ -148,5 +145,59 @@ describe("VerificationBanner", () => {
     expect(
       screen.getByRole("button", { name: "Dismiss verification reminder" }),
     ).toBeInTheDocument();
+  });
+
+  describe("threshold refresh in long-running sessions", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: false });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("appears after the hourly tick when the session crosses 7 days", () => {
+      // Account created just under 7 days ago - banner should not show yet.
+      const creationTime = new Date(
+        Date.now() - (7 * MS_PER_DAY - 30 * 60 * 1000),
+      ).toUTCString();
+      setAuth({
+        user: { uid: "u1", metadata: { creationTime } },
+        isEmailVerified: false,
+      });
+      renderWithRouter(<VerificationBanner />);
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+      // Advance past the threshold; the hourly interval should fire and re-render.
+      act(() => {
+        vi.advanceTimersByTime(60 * 60 * 1000);
+      });
+      expect(screen.getByRole("status")).toBeInTheDocument();
+    });
+
+    it("appears on visibilitychange after the threshold is crossed", () => {
+      const creationTime = new Date(
+        Date.now() - (7 * MS_PER_DAY - 5 * 60 * 1000),
+      ).toUTCString();
+      setAuth({
+        user: { uid: "u1", metadata: { creationTime } },
+        isEmailVerified: false,
+      });
+      renderWithRouter(<VerificationBanner />);
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+      // Cross the threshold while the document is hidden, then return to visible.
+      act(() => {
+        vi.advanceTimersByTime(10 * 60 * 1000);
+      });
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => "visible",
+      });
+      act(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+      expect(screen.getByRole("status")).toBeInTheDocument();
+    });
   });
 });

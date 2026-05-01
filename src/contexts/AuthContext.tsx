@@ -13,22 +13,10 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   isEmailVerified: boolean;
-  daysUnverified: number;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-// Client-clock-based: drives the advisory VerificationBanner only, not a compliance gate.
-function calcDaysUnverified(user: User | null): number {
-  if (!user) return 0;
-  const created = user.metadata?.creationTime
-    ? new Date(user.metadata.creationTime).getTime()
-    : Date.now();
-  return Math.floor((Date.now() - created) / MS_PER_DAY);
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -46,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       isEmailVerified: user?.emailVerified ?? false,
-      daysUnverified: calcDaysUnverified(user),
       signOut: () => firebaseSignOut(auth),
     }),
     [user, loading],

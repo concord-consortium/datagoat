@@ -17,7 +17,7 @@ import {
   facebookProvider,
   type LinkingState,
 } from "../components/auth/authProviders";
-import { authErrorMessageFor } from "../components/auth/authErrorMessages";
+import { authErrorMessageFor, getAuthErrorCode } from "../components/auth/authErrorMessages";
 import { loginSchema, type LoginValues } from "../components/auth/authSchemas";
 import fields from "../components/form/fields.module.css";
 import buttons from "../components/form/buttons.module.css";
@@ -102,12 +102,7 @@ export function CodapPluginSignIn() {
       );
       await gateOnVerified(cred.user);
     } catch (err: unknown) {
-      const rawCode =
-        typeof err === "object" && err !== null && "code" in err
-          ? (err as { code?: unknown }).code
-          : undefined;
-      const code =
-        typeof rawCode === "string" && rawCode ? rawCode : "auth/internal-error";
+      const code = getAuthErrorCode(err);
       logError(err, { stage: "codapSignIn.emailPassword", code });
       setError(authErrorMessageFor(code));
     }

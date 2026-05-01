@@ -27,6 +27,7 @@ function fakeUser(overrides: Partial<User>): User {
   return {
     uid: "u1",
     emailVerified: false,
+    // metadata.creationTime day-floor math is exercised in VerificationBanner.test.tsx; AuthContext does not read it.
     metadata: {},
     ...overrides,
   } as unknown as User;

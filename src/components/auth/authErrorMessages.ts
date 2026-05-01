@@ -28,3 +28,11 @@ export function authErrorMessageFor(code: string | undefined): string {
   if (code && code in authErrorMessages) return authErrorMessages[code];
   return DEFAULT_AUTH_ERROR_MESSAGE;
 }
+
+export function getAuthErrorCode(err: unknown): string {
+  const rawCode =
+    typeof err === "object" && err !== null && "code" in err
+      ? (err as { code?: unknown }).code
+      : undefined;
+  return typeof rawCode === "string" && rawCode ? rawCode : "auth/internal-error";
+}

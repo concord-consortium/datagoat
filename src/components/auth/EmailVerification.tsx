@@ -83,7 +83,7 @@ export function EmailVerification() {
             We sent a verification link
             {email ? <> to <strong className={css.recipientEmail}>{email}</strong></> : null}
             . Click the link in the email to activate your account, then come
-            back here and log in.
+            back here to continue.
           </p>
         )}
         <p className={`${authCss.authSubtext} ${css.subtextTight}`}>
@@ -96,7 +96,7 @@ export function EmailVerification() {
           className={buttons.ctaBtn}
           onClick={() => navigate("/dashboard")}
         >
-          Continue to log in
+          Continue
         </button>
 
         <button

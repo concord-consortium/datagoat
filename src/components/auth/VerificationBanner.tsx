@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import css from "./VerificationBanner.module.css";
 
 const DAYS_THRESHOLD = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 
 function dismissedKey(uid: string): string {
   return `verifyBannerDismissed:${uid}`;
 }
 
 export function VerificationBanner() {
-  const { user, isEmailVerified, daysUnverified } = useAuth();
+  const { user, isEmailVerified } = useAuth();
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState<boolean>(() => {
     if (!user) return false;
@@ -23,6 +25,30 @@ export function VerificationBanner() {
       return false;
     }
   });
+
+  // Force a re-render hourly and on visibilitychange so a long-running PWA
+  // crosses the 7-day threshold mid-session. Firebase reuses the User
+  // reference across token refreshes, so AuthContext alone never re-renders us.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (!user || isEmailVerified) return;
+    const bump = () => forceTick((t) => t + 1);
+    const intervalId = window.setInterval(bump, REFRESH_INTERVAL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") bump();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [user, isEmailVerified]);
+
+  let daysUnverified = 0;
+  if (user?.metadata?.creationTime) {
+    const created = new Date(user.metadata.creationTime).getTime();
+    daysUnverified = Math.floor((Date.now() - created) / MS_PER_DAY);
+  }
 
   if (!user) return null;
   if (isEmailVerified) return null;

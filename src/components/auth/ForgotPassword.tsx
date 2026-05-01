@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
@@ -60,8 +60,7 @@ export function ForgotPassword() {
     if (shouldConfirm) setSubmitted(true);
   }
 
-  async function handleResend(e: FormEvent<HTMLButtonElement>) {
-    e.preventDefault();
+  async function handleResend() {
     const email = getValues("email");
     if (email) await attemptSend(email);
   }

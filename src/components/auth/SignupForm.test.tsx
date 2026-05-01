@@ -21,10 +21,16 @@ const {
   signInWithProviderMock,
   createUserWithEmailAndPasswordMock,
   sendEmailVerificationMock,
+  signInWithEmailAndPasswordMock,
+  linkWithCredentialMock,
+  signOutMock,
 } = vi.hoisted(() => ({
   signInWithProviderMock: vi.fn(),
   createUserWithEmailAndPasswordMock: vi.fn(),
   sendEmailVerificationMock: vi.fn(),
+  signInWithEmailAndPasswordMock: vi.fn(),
+  linkWithCredentialMock: vi.fn(),
+  signOutMock: vi.fn(),
 }));
 
 vi.mock("./authProviders", () => ({
@@ -43,6 +49,10 @@ vi.mock("firebase/auth", async () => {
       createUserWithEmailAndPasswordMock(...args),
     sendEmailVerification: (...args: unknown[]) =>
       sendEmailVerificationMock(...args),
+    signInWithEmailAndPassword: (...args: unknown[]) =>
+      signInWithEmailAndPasswordMock(...args),
+    linkWithCredential: (...args: unknown[]) => linkWithCredentialMock(...args),
+    signOut: (...args: unknown[]) => signOutMock(...args),
   };
 });
 
@@ -60,6 +70,9 @@ describe("SignupForm", () => {
     signInWithProviderMock.mockReset();
     createUserWithEmailAndPasswordMock.mockReset();
     sendEmailVerificationMock.mockReset();
+    signInWithEmailAndPasswordMock.mockReset();
+    linkWithCredentialMock.mockReset();
+    signOutMock.mockReset();
   });
 
   it("successful create -> sendEmailVerification resolves -> navigates to /verify-email with no failure flag", async () => {
@@ -131,6 +144,68 @@ describe("SignupForm", () => {
         screen.getByText(/your facebook account does not share an email/i),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("link-account success with verified user -> navigates to /dashboard", async () => {
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: false,
+      kind: "account-collision",
+      email: "user@example.com",
+      pendingCredential: {} as AuthCredential,
+    });
+    signInWithEmailAndPasswordMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com" },
+    });
+    linkWithCredentialMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com", emailVerified: true },
+    });
+    renderWithRouter(<SignupForm />, { initialEntries: ["/signup"] });
+
+    await user.click(screen.getByRole("button", { name: /continue with facebook/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: /this email is already registered/i }),
+      ).toBeInTheDocument(),
+    );
+    await user.type(screen.getByLabelText(/^password/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in to link/i }));
+
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard"),
+    );
+    expect(navigateMock).not.toHaveBeenCalledWith("/verify-email");
+  });
+
+  it("link-account success with unverified user -> navigates to /verify-email", async () => {
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: false,
+      kind: "account-collision",
+      email: "user@example.com",
+      pendingCredential: {} as AuthCredential,
+    });
+    signInWithEmailAndPasswordMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com" },
+    });
+    linkWithCredentialMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com", emailVerified: false },
+    });
+    renderWithRouter(<SignupForm />, { initialEntries: ["/signup"] });
+
+    await user.click(screen.getByRole("button", { name: /continue with facebook/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: /this email is already registered/i }),
+      ).toBeInTheDocument(),
+    );
+    await user.type(screen.getByLabelText(/^password/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in to link/i }));
+
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/verify-email"),
+    );
+    expect(navigateMock).not.toHaveBeenCalledWith("/dashboard");
   });
 
   it("OAuth popup-blocked path renders the pinned authErrorMessages copy (parity with LoginForm)", async () => {

@@ -21,7 +21,7 @@ import { useAuth } from "./AuthContext";
 import { migrateDocument } from "../migrations";
 import { CURRENT_WELLNESS_ENTRY_VERSION } from "../migrations/wellnessEntry";
 import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
-import { isoAtDaysAgo } from "../utils/dates";
+import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { logError } from "../utils/logError";
 import {
   emptyWellnessEntry,
@@ -192,12 +192,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   >({});
 
   // The lower bound (inclusive) for date-string filtering on both
-  // collection listeners. Re-computed at local midnight so a long-lived
-  // session keeps the window aligned with "today - 365d". Both
-  // subscription effects depend on this and re-issue when it changes.
-  // The midnight-rotation effect is declared further below to preserve
-  // the unmount-flush effect's "declared first" invariant.
-  const [floorISO, setFloorISO] = useState(() =>
+  // collection listeners. Computed once at session start; never advanced.
+  // Over a long-running session the fetched window grows by N days past
+  // 365, but the chart's display window is computed from "now" so any
+  // older docs are filtered out by the UI. Trading a tiny extra-fetch
+  // cost for a hard simplification: no midnight timer, no listener
+  // re-issue, no race between flush and floor advance.
+  const [floorISO] = useState(() =>
     isoAtDaysAgo(LISTENER_WINDOW_DAYS),
   );
 
@@ -217,8 +218,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Pre-migration `version` per date, captured from each onSnapshot
   // tick. Read at flush time so we can skip the version stamp when the
   // server is already at or ahead of ours (see firestoreSet* above).
-  // Cleared on user change; preserved across floor rotations because
-  // the new listener may not redeliver every doc the cache knows about.
+  // Cleared on user change.
   const wellnessServerVersionsRef = useRef<Map<string, number>>(new Map());
   const performanceServerVersionsRef = useRef<Map<string, number>>(
     new Map(),
@@ -310,32 +310,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  // Advance floorISO at local midnight so the listener window stays at
-  // "today - LISTENER_WINDOW_DAYS" across multi-day sessions. Each tick
-  // changes floorISO, which (a) re-arms this timer for the next
-  // midnight and (b) re-issues both subscription effects below. Pending
-  // writes are flushed BEFORE rotating so the subscription cleanup
-  // (which discards pending on dep change) sees nothing to drop -
-  // otherwise a user mid-typing across midnight loses the keystrokes
-  // buffered in their not-yet-fired debounce.
-  useEffect(() => {
-    const now = new Date();
-    const nextMidnight = new Date(now);
-    nextMidnight.setDate(now.getDate() + 1);
-    nextMidnight.setHours(0, 0, 0, 0);
-    const ms = nextMidnight.getTime() - now.getTime();
-    const t = window.setTimeout(() => {
-      for (const date of Array.from(wellnessTimersRef.current.keys())) {
-        flushWellnessDate(date);
-      }
-      for (const date of Array.from(performanceTimersRef.current.keys())) {
-        flushPerformanceDate(date);
-      }
-      setFloorISO(isoAtDaysAgo(LISTENER_WINDOW_DAYS));
-    }, ms);
-    return () => window.clearTimeout(t);
-  }, [floorISO, flushWellnessDate, flushPerformanceDate]);
-
   // Wellness collection subscription. Cleanup discards pending state
   // - sign-out / user-switch must NOT flush (prior session is gone,
   // writes would be rejected by rules; optimistic state is
@@ -343,9 +317,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // effect declared above runs its cleanup FIRST under React's
   // declaration-order cleanup, so it flushes before this cleanup
   // clears - making unmount the only path that persists pending
-  // writes. Floor rotation also re-fires this effect, but the
-  // midnight effect flushes pending BEFORE setFloorISO, so cleanup
-  // sees empty pending and the discard is a no-op.
+  // writes. floorISO is captured once at mount and never changes, so
+  // this effect re-runs only on user change.
   useEffect(() => {
     if (!user) {
       setWellnessServer({ status: "loading" });
@@ -531,6 +504,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const setWellnessEntry = useCallback(
     (date: string, partial: Partial<WellnessEntry>) => {
       if (!user) return;
+      // Reject malformed, future, or out-of-window dates. The listener's
+      // floorISO filter (see useEffect above) means a write below the
+      // floor would round-trip into the optimistic overlay but never
+      // come back via onSnapshot - reconciliation would never drop it.
+      // daysAgoFromISO returns NaN for bad format and future dates.
+      if (Number.isNaN(daysAgoFromISO(date)) || date < floorISO) {
+        logError(new Error("setWellnessEntry: date out of window"), {
+          stage: "dataContext.wellness.setEntry",
+          uid: user.uid,
+          date,
+          floorISO,
+        });
+        return;
+      }
       const uid = user.uid;
       setWellnessPending((prev) => {
         const existingPartial = prev[date]?.partial ?? {};
@@ -552,12 +539,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
       );
       wellnessTimersRef.current.set(date, t);
     },
-    [user, flushWellnessDate],
+    [user, floorISO, flushWellnessDate],
   );
 
   const setPerformanceEntry = useCallback(
     (date: string, partial: Partial<PerformanceEntry>) => {
       if (!user) return;
+      // See setWellnessEntry for rationale.
+      if (Number.isNaN(daysAgoFromISO(date)) || date < floorISO) {
+        logError(new Error("setPerformanceEntry: date out of window"), {
+          stage: "dataContext.performance.setEntry",
+          uid: user.uid,
+          date,
+          floorISO,
+        });
+        return;
+      }
       const uid = user.uid;
       setPerformancePending((prev) => {
         const existingPartial = prev[date]?.partial ?? {};
@@ -592,7 +589,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       );
       performanceTimersRef.current.set(date, t);
     },
-    [user, flushPerformanceDate],
+    [user, floorISO, flushPerformanceDate],
   );
 
   const wellness = useMemo<DataLoadState<WellnessEntry>>(() => {

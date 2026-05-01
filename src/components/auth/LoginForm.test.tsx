@@ -27,9 +27,12 @@ vi.mock("./authProviders", () => ({
   signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
 }));
 
-const { signInWithEmailAndPasswordMock } = vi.hoisted(() => ({
-  signInWithEmailAndPasswordMock: vi.fn(),
-}));
+const { signInWithEmailAndPasswordMock, linkWithCredentialMock, signOutMock } =
+  vi.hoisted(() => ({
+    signInWithEmailAndPasswordMock: vi.fn(),
+    linkWithCredentialMock: vi.fn(),
+    signOutMock: vi.fn(),
+  }));
 
 vi.mock("firebase/auth", async () => {
   const actual = await vi.importActual<typeof import("firebase/auth")>(
@@ -39,6 +42,8 @@ vi.mock("firebase/auth", async () => {
     ...actual,
     signInWithEmailAndPassword: (...args: unknown[]) =>
       signInWithEmailAndPasswordMock(...args),
+    linkWithCredential: (...args: unknown[]) => linkWithCredentialMock(...args),
+    signOut: (...args: unknown[]) => signOutMock(...args),
   };
 });
 
@@ -55,6 +60,8 @@ describe("LoginForm", () => {
     navigateMock.mockReset();
     signInWithProviderMock.mockReset();
     signInWithEmailAndPasswordMock.mockReset();
+    linkWithCredentialMock.mockReset();
+    signOutMock.mockReset();
   });
 
   it("OAuth success with verified email -> navigates to /dashboard", async () => {
@@ -137,6 +144,68 @@ describe("LoginForm", () => {
     await waitFor(() =>
       expect(screen.getByText(/sign-in popup was blocked/i)).toBeInTheDocument(),
     );
+  });
+
+  it("link-account success with verified user -> navigates to /dashboard", async () => {
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: false,
+      kind: "account-collision",
+      email: "user@example.com",
+      pendingCredential: {} as AuthCredential,
+    });
+    signInWithEmailAndPasswordMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com" },
+    });
+    linkWithCredentialMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com", emailVerified: true },
+    });
+    renderWithRouter(<LoginForm />, { initialEntries: ["/login"] });
+
+    await user.click(screen.getByRole("button", { name: /continue with facebook/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: /this email is already registered/i }),
+      ).toBeInTheDocument(),
+    );
+    await user.type(screen.getByLabelText(/^password/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in to link/i }));
+
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard"),
+    );
+    expect(navigateMock).not.toHaveBeenCalledWith("/verify-email");
+  });
+
+  it("link-account success with unverified user -> navigates to /verify-email", async () => {
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: false,
+      kind: "account-collision",
+      email: "user@example.com",
+      pendingCredential: {} as AuthCredential,
+    });
+    signInWithEmailAndPasswordMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com" },
+    });
+    linkWithCredentialMock.mockResolvedValue({
+      user: { uid: "u1", email: "user@example.com", emailVerified: false },
+    });
+    renderWithRouter(<LoginForm />, { initialEntries: ["/login"] });
+
+    await user.click(screen.getByRole("button", { name: /continue with facebook/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: /this email is already registered/i }),
+      ).toBeInTheDocument(),
+    );
+    await user.type(screen.getByLabelText(/^password/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in to link/i }));
+
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/verify-email"),
+    );
+    expect(navigateMock).not.toHaveBeenCalledWith("/dashboard");
   });
 
   it("email/password sign-in success -> navigates to /dashboard", async () => {

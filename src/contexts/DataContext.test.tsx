@@ -32,6 +32,7 @@ vi.mock("./AuthContext", () => authMockFactory(state));
 vi.mock("../utils/logError", () => ({ logError: vi.fn() }));
 
 import { DataProvider, useData } from "./DataContext";
+import { logError } from "../utils/logError";
 
 function wrapper({ children }: { children: ReactNode }) {
   return createElement(DataProvider, null, children);
@@ -283,6 +284,50 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     expect(ref.path).not.toContain("userB");
   });
 
+  it("rejects out-of-window, future, and malformed dates: no setDoc, no overlay, logError fires", () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+    vi.mocked(logError).mockClear();
+    // 400 days ago is past the 365-day listener floor; the snapshot
+    // would never round-trip the write so the optimistic entry would
+    // be stuck forever.
+    const farPast = new Date();
+    farPast.setHours(0, 0, 0, 0);
+    farPast.setDate(farPast.getDate() - 400);
+    const farPastIso = `${farPast.getFullYear()}-${String(farPast.getMonth() + 1).padStart(2, "0")}-${String(farPast.getDate()).padStart(2, "0")}`;
+    const future = new Date();
+    future.setHours(0, 0, 0, 0);
+    future.setDate(future.getDate() + 5);
+    const futureIso = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, "0")}-${String(future.getDate()).padStart(2, "0")}`;
+    act(() => {
+      result.current.setWellnessEntry(farPastIso, { hydration: 5 });
+      result.current.setWellnessEntry(futureIso, { hydration: 5 });
+      result.current.setWellnessEntry("not-a-date", { hydration: 5 });
+      result.current.setPerformanceEntry(farPastIso, {
+        metrics: { goals: 1 },
+      });
+      result.current.setPerformanceEntry(futureIso, {
+        metrics: { goals: 1 },
+      });
+      result.current.setPerformanceEntry("2026-13-40", {
+        metrics: { goals: 1 },
+      });
+    });
+    if (result.current.wellness.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    if (result.current.performance.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    expect(result.current.wellness.entries).toEqual([]);
+    expect(result.current.performance.entries).toEqual([]);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).not.toHaveBeenCalled();
+    expect(vi.mocked(logError)).toHaveBeenCalledTimes(6);
+  });
+
   it("4d no-user no-op: setWellnessEntry / setPerformanceEntry are no-ops when signed out", () => {
     state.user.current = null;
     const { result } = renderHook(() => useData(), { wrapper });
@@ -336,51 +381,6 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     if (result.current.wellness.status === "loaded") {
       expect(result.current.wellness.entries[0].hydration).toBe(1);
     }
-  });
-
-  it("4f midnight rotation flushes pending writes (does not lose mid-debounce typing)", () => {
-    // User starts typing 300ms before local midnight; debounce is 500ms.
-    // The midnight floorISO rotation fires (re-issuing the listener
-    // subscription) BEFORE the debounce flushes. The fix: rotation flushes
-    // pending first, so the subscription cleanup has nothing to discard.
-    vi.setSystemTime(new Date("2026-04-29T23:59:59.700"));
-    state.user.current = { uid: "u1" };
-    const wellnessSubsBefore = state.wellnessSubs.length;
-    const { result } = renderHook(() => useData(), { wrapper });
-    driveLoaded(result, "u1");
-    act(() => {
-      result.current.setWellnessEntry(WELLNESS_DATE, { hydration: 5 });
-      result.current.setPerformanceEntry(WELLNESS_DATE, {
-        metrics: { goals: 3 },
-      });
-    });
-    expect(state.setDoc).not.toHaveBeenCalled();
-    // Advance past midnight (300ms) but NOT past the 500ms debounce.
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-    // Both pending writes were flushed by the rotation hook.
-    expect(state.setDoc).toHaveBeenCalledTimes(2);
-    const calls = state.setDoc.mock.calls.map((c) => c[1]);
-    expect(calls).toContainEqual(
-      expect.objectContaining({ hydration: 5, date: WELLNESS_DATE }),
-    );
-    expect(calls).toContainEqual(
-      expect.objectContaining({
-        metrics: { goals: 3 },
-        date: WELLNESS_DATE,
-      }),
-    );
-    // Both flushes used the still-signed-in user's uid.
-    for (const call of state.setDoc.mock.calls) {
-      const ref = call[0] as { path: string };
-      expect(ref.path).toContain("u1");
-    }
-    // And the listener actually rotated (new subscription issued past
-    // the floor change), proving the test exercised the bug path.
-    expect(state.wellnessSubs.length).toBeGreaterThan(
-      wellnessSubsBefore + 1,
-    );
   });
 
   it("omits version stamp when server snapshot is already at CURRENT", () => {

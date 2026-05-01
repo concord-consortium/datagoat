@@ -45,8 +45,8 @@ export function SignupForm() {
     defaultValues: { email: "", password: "" },
   });
 
-  function handleLinked(_user: User) {
-    navigate("/dashboard");
+  function handleLinked(user: User) {
+    navigate(user.emailVerified ? "/dashboard" : "/verify-email");
   }
 
   async function onSubmit(values: SignupValues) {

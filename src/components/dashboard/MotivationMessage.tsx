@@ -18,7 +18,7 @@ import PbClockIcon from "@/icons/motivation-pb-clock.svg?react";
 import TrophyIcon from "@/icons/motivation-trophy.svg?react";
 import ScoreboardIcon from "@/icons/motivation-scoreboard.svg?react";
 
-const ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+export const ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   "motivation-streak": StreakIcon,
   "motivation-pb": PbIcon,
   "motivation-comeback": ComebackIcon,

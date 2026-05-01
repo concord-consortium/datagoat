@@ -4,6 +4,8 @@ import { MetricChart } from "./MetricChart";
 import {
   TimeRangePicker,
   TIME_RANGE_DAYS,
+  rangeLabel,
+  rangeDescriptionPhrase,
   type TimeRangeKey,
 } from "../components/dashboard/TimeRangePicker";
 import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
@@ -13,18 +15,20 @@ import {
   ADDABLE_PERFORMANCE,
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
-import {
-  PROFILE_CHART_GOALS,
-  DEFAULT_PROFILE_KEY,
-} from "../data/profileVariants";
+import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
 import { useUser } from "../contexts/UserContext";
 import {
   useWellnessData,
   usePerformanceData,
 } from "../contexts/DataContext";
-import type { PerformanceEntry, WellnessEntry } from "../types/data";
-import { daysAgoFromISO } from "../utils/dates";
+import {
+  buildSeries,
+  capitalizeAthleteType,
+  capitalizeGender,
+  formatNumber,
+  lookupGoalLine,
+} from "./chartSeries";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -311,23 +315,6 @@ function renderMultiline(text: string) {
   ));
 }
 
-function rangeLabel(range: TimeRangeKey): string {
-  switch (range) {
-    case "7d":
-      return "Last 7 days";
-    case "2w":
-      return "Last 2 weeks";
-    case "30d":
-      return "Last 30 days";
-    case "3mo":
-      return "Last 3 months";
-    case "6mo":
-      return "Last 6 months";
-    case "All":
-      return "All time";
-  }
-}
-
 function composeDescription(
   metric: MetricDefinition,
   range: TimeRangeKey,
@@ -335,7 +322,7 @@ function composeDescription(
   average: number | undefined,
 ): string {
   return [
-    `${metric.name} over the ${rangeLabel(range).toLowerCase()}.`,
+    `${metric.name} ${rangeDescriptionPhrase(range)}.`,
     goalLine !== undefined
       ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
       : null,
@@ -347,10 +334,6 @@ function composeDescription(
     .join(" ");
 }
 
-function formatNumber(n: number): string {
-  return Math.round(n * 10) / 10 + "";
-}
-
 // Per-metric chart type. The prototype renders Sleep Time + Protein as
 // bars (daily totals stack-style); other wellness metrics + performance
 // metrics render as lines. The placeholder doesn't draw differently per
@@ -358,112 +341,4 @@ function formatNumber(n: number): string {
 // correct primitive.
 function chartTypeFor(metricId: string): "line" | "bar" {
   return metricId === "sleepTime" || metricId === "protein" ? "bar" : "line";
-}
-
-function lookupGoalLine(
-  metricId: string,
-  profileKey: string,
-): number | undefined {
-  const goals = PROFILE_CHART_GOALS[profileKey];
-  if (!goals) return undefined;
-  switch (metricId) {
-    case "sleepEfficiency":
-      return goals.sleepEffGoal;
-    case "protein":
-      return goals.proteinGoal;
-    case "leanMass":
-      return goals.leanMassGoal;
-    default:
-      return undefined;
-  }
-}
-
-function capitalizeGender(g: string): string {
-  switch (g) {
-    case "male":
-      return "Male";
-    case "female":
-      return "Female";
-    case "non-binary":
-      return "Non-binary";
-    default:
-      return "Unspecified";
-  }
-}
-
-function capitalizeAthleteType(t: string): string {
-  return t === "endurance" ? "Endurance" : "Strength and Power";
-}
-
-interface BuildSeriesArgs {
-  type: "wellness" | "performance";
-  metricId: string;
-  wellnessEntries: WellnessEntry[];
-  performanceEntries: PerformanceEntry[];
-  rangeDays: number;
-}
-
-// Build the date/value series for the selected metric over the given
-// window. Mirrors DashboardChartCard's buildSeries - kept inline (not
-// extracted to a util) because the wellness vs performance shape access
-// differs and the future real-chart PR will swap these consumers in
-// lockstep.
-function buildSeries({
-  type,
-  metricId,
-  wellnessEntries,
-  performanceEntries,
-  rangeDays,
-}: BuildSeriesArgs): Array<{ date: string; value: number }> {
-  const out: Array<{ date: string; value: number }> = [];
-
-  if (type === "wellness") {
-    for (const e of wellnessEntries) {
-      const days = daysAgoFromISO(e.date);
-      if (Number.isNaN(days) || days >= rangeDays) continue;
-      const value = readWellnessMetric(e, metricId);
-      if (value === undefined) continue;
-      out.push({ date: e.date, value });
-    }
-  } else {
-    for (const e of performanceEntries) {
-      const days = daysAgoFromISO(e.date);
-      if (Number.isNaN(days) || days >= rangeDays) continue;
-      const raw = e.metrics?.[metricId];
-      if (typeof raw !== "number" || !Number.isFinite(raw)) continue;
-      out.push({ date: e.date, value: raw });
-    }
-  }
-
-  out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-  return out;
-}
-
-function readWellnessMetric(
-  e: WellnessEntry,
-  metricId: string,
-): number | undefined {
-  switch (metricId) {
-    case "hydration":
-      return e.hydration > 0 ? e.hydration : undefined;
-    case "sleepTime":
-      return e.sleepTime > 0 ? e.sleepTime : undefined;
-    case "sleepEfficiency":
-      return e.sleepEfficiency > 0 ? e.sleepEfficiency : undefined;
-    case "protein":
-      return e.protein > 0 ? e.protein : undefined;
-    case "leanMass":
-      return e.leanMass > 0 ? e.leanMass : undefined;
-    case "availability":
-      // Availability is a tree, not a scalar. Return 1 if both subtrees
-      // are answered, otherwise undefined. The chart placeholder doesn't
-      // render this anyway; keeping it numeric avoids breaking the
-      // shape contract.
-      return e.availability?.practiceHeld !== null &&
-        e.availability?.gameHeld !== null
-        ? 1
-        : undefined;
-    default:
-      return undefined;
-  }
 }

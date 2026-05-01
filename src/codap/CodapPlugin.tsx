@@ -31,7 +31,7 @@ export default function CodapPlugin() {
   if (loading) {
     return (
       <div className={css.pluginShell}>
-        <p className={css.statusText}>Loading…</p>
+        <p className={css.statusText} role="status">Loading…</p>
       </div>
     );
   }
@@ -189,7 +189,7 @@ function CodapPluginAuthed() {
     <div className={css.pluginShell}>
       <PluginSignOutBar />
       <h1 className={css.heading}>DataGOAT in CODAP</h1>
-      <p className={css.statusText}>
+      <p className={css.statusText} role="status">
         {status === "connecting" && "Connecting to CODAP…"}
         {status === "connected" &&
           (dataLoading

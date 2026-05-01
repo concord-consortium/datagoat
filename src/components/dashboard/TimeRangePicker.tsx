@@ -30,6 +30,33 @@ const RANGE_LABELS: Record<TimeRangeKey, string> = {
   All: "All time",
 };
 
+// Heading-style label (e.g. "Last 7 days", "All time") used by MetricDetail's
+// chart-date strip and shared by the SR description phrase below.
+export function rangeLabel(range: TimeRangeKey): string {
+  switch (range) {
+    case "7d":
+      return "Last 7 days";
+    case "2w":
+      return "Last 2 weeks";
+    case "30d":
+      return "Last 30 days";
+    case "3mo":
+      return "Last 3 months";
+    case "6mo":
+      return "Last 6 months";
+    case "All":
+      return "All time";
+  }
+}
+
+// Natural-language phrase fragment for SR descriptions, e.g. "<metric> ${phrase}.".
+// "All" gets "across all time" so the sentence doesn't collapse to the
+// ungrammatical "over the all time".
+export function rangeDescriptionPhrase(range: TimeRangeKey): string {
+  if (range === "All") return "across all time";
+  return `over the ${rangeLabel(range).toLowerCase()}`;
+}
+
 export interface TimeRangePickerProps {
   value: TimeRangeKey;
   onChange: (next: TimeRangeKey) => void;

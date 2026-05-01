@@ -223,6 +223,69 @@ describe("CodapPlugin", () => {
     });
   });
 
+  it("authenticated-and-verified state disables 'Send to CODAP' while data or profile is still loading and shows a loading status", () => {
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = { status: "loading" };
+    dataState.wellness = { status: "loading" };
+    dataState.performance = { status: "loading" };
+    codapState.status = "connected";
+
+    render(<CodapPlugin />);
+
+    expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send to codap/i }),
+    ).toBeDisabled();
+  });
+
+  it("authenticated-and-verified state ignores load state of unselected datasets", async () => {
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        version: 1,
+        fullName: "Athlete",
+        email: "athlete@school.edu",
+        nickname: "Athlete",
+        age: 16,
+        heightFt: 5,
+        heightIn: 10,
+        weight: 150,
+        gender: "unspecified",
+        athleteType: "endurance",
+        competitionTerm: "season",
+        trackedWellnessMetrics: ["hydration"],
+        trackedPerformanceMetrics: ["fortyYardDash"],
+        profileComplete: true,
+        trackingSetupComplete: true,
+      },
+    };
+    dataState.wellness = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loading" };
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+
+    const sendBtn = screen.getByRole("button", { name: /send to codap/i });
+    expect(sendBtn).toBeDisabled();
+    expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
+
+    const [, performanceBox] = screen.getAllByRole("checkbox");
+    await user.click(performanceBox);
+
+    expect(sendBtn).toBeEnabled();
+    expect(
+      screen.getByText(/connected\. choose what to send/i),
+    ).toBeInTheDocument();
+  });
+
   it("authenticated-and-verified state disables 'Send to CODAP' while CODAP is still connecting", () => {
     ctx.authState = {
       user: { emailVerified: true, email: "athlete@school.edu" },

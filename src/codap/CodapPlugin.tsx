@@ -174,8 +174,14 @@ function CodapPluginAuthed() {
     }
   }
 
+  const dataLoading =
+    loadState.status === "loading" ||
+    (selected.wellness && wellness.status === "loading") ||
+    (selected.performance && performance.status === "loading");
+
   const canSend =
     status === "connected" &&
+    !dataLoading &&
     !sending &&
     (selected.wellness || selected.performance);
 
@@ -185,7 +191,10 @@ function CodapPluginAuthed() {
       <h1 className={css.heading}>DataGOAT in CODAP</h1>
       <p className={css.statusText}>
         {status === "connecting" && "Connecting to CODAP…"}
-        {status === "connected" && "Connected. Choose what to send."}
+        {status === "connected" &&
+          (dataLoading
+            ? "Loading your data…"
+            : "Connected. Choose what to send.")}
         {status === "disconnected" &&
           (error ?? "Disconnected from CODAP.")}
       </p>

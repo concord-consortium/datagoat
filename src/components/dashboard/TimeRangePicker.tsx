@@ -1,3 +1,4 @@
+import common from "../common.module.css";
 import css from "./TimeRangePicker.module.css";
 
 // Day count per pill. Matches the prototype's data-range attribute values
@@ -17,8 +18,9 @@ export type TimeRangeKey = keyof typeof TIME_RANGE_DAYS;
 const RANGES: TimeRangeKey[] = ["7d", "2w", "30d", "3mo", "6mo", "All"];
 
 // Self-describing names for screen readers. Visible buttons keep the
-// short pill label ("7d") for space; the aria-label expands it so SR
-// users hear "7 days" instead of "seven d".
+// short pill label ("7d") for space; a visually-hidden expansion is
+// appended so SR users hear "7d (7 days)" while voice control can
+// still match the visible "7d" (WCAG 2.5.3 Label in Name).
 const RANGE_LABELS: Record<TimeRangeKey, string> = {
   "7d": "7 days",
   "2w": "2 weeks",
@@ -45,7 +47,7 @@ export function TimeRangePicker({
   return (
     <div
       className={css.timeRangePicker}
-      role="radiogroup"
+      role="group"
       aria-label={ariaLabel}
     >
       {RANGES.map((range) => {
@@ -55,12 +57,11 @@ export function TimeRangePicker({
             key={range}
             type="button"
             className={`${css.timeRangeBtn} ${isActive ? css.active : ""}`}
-            role="radio"
-            aria-checked={isActive}
-            aria-label={RANGE_LABELS[range]}
+            aria-pressed={isActive}
             onClick={() => onChange(range)}
           >
             {range}
+            <span className={common.visuallyHidden}> ({RANGE_LABELS[range]})</span>
           </button>
         );
       })}

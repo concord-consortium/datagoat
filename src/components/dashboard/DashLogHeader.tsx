@@ -31,10 +31,13 @@ export function DashLogHeader({
 }: DashLogHeaderProps) {
   const Icon = type === "wellness" ? CalendarIcon : StopwatchIcon;
   const to = type === "wellness" ? "/wellness" : "/performance";
+  // Lead the accessible name with the visible status so WCAG 2.5.3
+  // (Label in Name) is satisfied — voice control "click log your 5
+  // remaining metrics" must match the visible text.
   const label =
     type === "wellness"
-      ? "Go to Health & Wellness Log"
-      : "Go to Performance Log";
+      ? `${status} Go to Health & Wellness Log.`
+      : `${status} Go to Performance Log.`;
 
   const preHasTrailingSpace = !!pre && /\s$/.test(pre);
   const postHasLeadingSpace = !!post && /^\s/.test(post);

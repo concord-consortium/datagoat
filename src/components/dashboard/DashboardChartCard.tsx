@@ -137,7 +137,7 @@ export function DashboardChartCard({
                 : "Performance metric"
             }
             options={selectOptions}
-            value={selectedMetricId}
+            value={metric?.id ?? ""}
             onChange={(e) => setSelectedMetricId(e.target.value)}
           />
         </div>

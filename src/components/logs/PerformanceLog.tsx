@@ -81,14 +81,14 @@ export function PerformanceLog() {
       <DateNav offset={offset} withChip={false} />
       <div className={css.screenContent}>
         {isOnboarding && (
-          <p className={css.profileWelcome}>
-            <strong className={css.profileWelcomeTitle}>
-              Your Performance Log
-            </strong>
-            Track your sport-specific performance data here. Log your numbers
-            after each practice or competition to build a complete picture of
-            your progress.
-          </p>
+          <div className={css.profileWelcome}>
+            <h2 className={css.profileWelcomeTitle}>Your Performance Log</h2>
+            <p>
+              Track your sport-specific performance data here. Log your numbers
+              after each practice or competition to build a complete picture of
+              your progress.
+            </p>
+          </div>
         )}
 
         <table className={css.performanceLogTable}>

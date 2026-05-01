@@ -67,13 +67,13 @@ export function TrackedDataSetup() {
   return (
     <div className={screenCss.screenContent}>
       {profile && !profile.trackingSetupComplete && (
-        <p className={screenCss.profileWelcome}>
-          <strong className={screenCss.profileWelcomeTitle}>
-            Choose what to track
-          </strong>
-          Select the training and performance data you want DataGOAT to
-          collect. You can update these choices anytime.
-        </p>
+        <div className={screenCss.profileWelcome}>
+          <h2 className={screenCss.profileWelcomeTitle}>Choose what to track</h2>
+          <p>
+            Select the training and performance data you want DataGOAT to
+            collect. You can update these choices anytime.
+          </p>
+        </div>
       )}
 
       <TrackedMetricsTable

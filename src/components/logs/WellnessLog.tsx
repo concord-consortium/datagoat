@@ -99,14 +99,16 @@ export function WellnessLog() {
       <DateNav offset={offset} withChip chipState={chipState} />
       <div className={css.screenContent}>
         {isOnboarding && (
-          <p className={css.profileWelcome}>
-            <strong className={css.profileWelcomeTitle}>
+          <div className={css.profileWelcome}>
+            <h2 className={css.profileWelcomeTitle}>
               Your Health & Wellness Log
-            </strong>
-            Record your health & wellness metrics here. Logging consistently
-            - even on rest days - helps you and your team spot patterns
-            over time.
-          </p>
+            </h2>
+            <p>
+              Record your health & wellness metrics here. Logging consistently
+              - even on rest days - helps you and your team spot patterns
+              over time.
+            </p>
+          </div>
         )}
 
         <table className={css.bodyTable}>

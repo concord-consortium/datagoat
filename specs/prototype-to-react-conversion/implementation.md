@@ -776,7 +776,7 @@ useEffect(() => {
 
 *Data-table toggle.* The visible "Show data" button is part of `MetricChart` and works in this step — toggling reveals the real `<ChartDataTable>` below the placeholder. Default `dataTableVisible=false`. Toggle is persisted to component-local state (not URL or context). When the real chart lands, this affordance is unchanged.
 
-*Empty data handling.* When DataContext is `{ status: 'loading' }`, render a skeleton (a different gray-box variant — distinguishable from the "TBD" placeholder so a reviewer doesn't conflate the two states). When `{ status: 'loaded', entries: [] }`, render "No data yet — log a few days to see your trends." Do NOT render zero-value axes during loading per requirements. (Real chart follow-up inherits these states.)
+*Empty data handling.* When DataContext is `{ status: 'loading' }`, render a skeleton (a different gray-box variant — distinguishable from the "TBD" placeholder so a reviewer doesn't conflate the two states). When `{ status: 'loaded', entries: [] }`, render "No data yet - log a few days to see your trends." Do NOT render zero-value axes during loading per requirements. (Real chart follow-up inherits these states.)
 
 *No chart-library dependency added in this step.* No new package, no scales/path math; just React + SVG primitives.
 

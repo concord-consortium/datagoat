@@ -24,7 +24,10 @@
   color: var(--text);
   font-weight: 700;
   font-size: 17px;
-  margin-bottom: 4px;
+  margin: 0 0 4px;
+}
+.profileWelcome p {
+  margin: 0;
 }
 
 /* .performance-log-table - prototype lines 2631-2705 (verbatim). */

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { MetricChart } from "./MetricChart";
 import {
@@ -247,34 +247,69 @@ export function MetricDetail({ type }: MetricDetailProps) {
 // Three labeled brackets above the row of 8 numbered swatches:
 // 1-3 Hydrated / 4-6 Mildly to moderately dehydrated / 7-8 Dehydrated.
 function HydrationColorScale() {
+  const hydratedId = useId();
+  const mildId = useId();
+  const dehydratedId = useId();
+  const segments = [
+    {
+      id: hydratedId,
+      label: "Hydrated",
+      column: "1 / span 3",
+      labelClass: css.scaleLabel,
+      start: 0,
+      end: 3,
+    },
+    {
+      id: mildId,
+      label: "Mildly to moderately dehydrated",
+      column: "4 / span 3",
+      labelClass: css.scaleLabel,
+      start: 3,
+      end: 6,
+    },
+    {
+      id: dehydratedId,
+      label: "Dehydrated",
+      column: "7 / span 2",
+      labelClass: `${css.scaleLabel} ${css.scaleLabelNoWrap}`,
+      start: 6,
+      end: 8,
+    },
+  ];
   return (
     <div
       className={css.colorScaleStatic}
+      role="group"
       aria-label="Hydration color scale"
     >
-      <div className={css.scaleLabel} style={{ gridColumn: "1 / span 3" }}>
-        Hydrated
-      </div>
-      <div className={css.scaleLabel} style={{ gridColumn: "4 / span 3" }}>
-        Mildly to moderately dehydrated
-      </div>
-      <div
-        className={`${css.scaleLabel} ${css.scaleLabelNoWrap}`}
-        style={{ gridColumn: "7 / span 2" }}
-      >
-        Dehydrated
-      </div>
-      <div className={css.scaleBracket} style={{ gridColumn: "1 / span 3" }} />
-      <div className={css.scaleBracket} style={{ gridColumn: "4 / span 3" }} />
-      <div className={css.scaleBracket} style={{ gridColumn: "7 / span 2" }} />
-      {HYDRATION_HEXES.map((hex, i) => (
+      {segments.map(({ id, label, column, labelClass, start, end }) => (
         <div
-          key={hex}
-          className={css.colorSwatch}
-          style={{ background: hex }}
-          aria-label={`Level ${i + 1}`}
+          key={id}
+          role="group"
+          aria-labelledby={id}
+          style={{ display: "contents" }}
         >
-          {i + 1}
+          <div
+            id={id}
+            className={labelClass}
+            style={{ gridColumn: column, gridRow: 1 }}
+          >
+            {label}
+          </div>
+          <div
+            className={css.scaleBracket}
+            style={{ gridColumn: column, gridRow: 2 }}
+            aria-hidden="true"
+          />
+          {HYDRATION_HEXES.slice(start, end).map((hex, i) => (
+            <div
+              key={hex}
+              className={css.colorSwatch}
+              style={{ background: hex, gridColumn: start + i + 1, gridRow: 3 }}
+            >
+              {start + i + 1}
+            </div>
+          ))}
         </div>
       ))}
     </div>

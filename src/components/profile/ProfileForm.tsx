@@ -138,13 +138,13 @@ export function ProfileForm() {
   return (
     <div className={css.screenContent}>
       {mode === "onboarding" && (
-        <p className={css.profileWelcome}>
-          <strong className={css.profileWelcomeTitle}>
-            Welcome to DataGOAT
-          </strong>
-          First, complete your profile. Then you&rsquo;ll choose what training
-          and performance data to track.
-        </p>
+        <div className={css.profileWelcome}>
+          <h2 className={css.profileWelcomeTitle}>Welcome to DataGOAT</h2>
+          <p>
+            First, complete your profile. Then you&rsquo;ll choose what training
+            and performance data to track.
+          </p>
+        </div>
       )}
 
       {user?.email && (

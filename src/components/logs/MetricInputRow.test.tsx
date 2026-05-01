@@ -73,10 +73,10 @@ describe("MetricInputRow ColorScale", () => {
     expect(onChange).toHaveBeenCalledWith(2);
   });
 
-  it("ArrowRight at the right edge clamps at max", () => {
+  it("ArrowRight at the right edge is a no-op (does not fire onChange)", () => {
     const { swatches, onChange } = renderColorScale(8);
     fireEvent.keyDown(swatches[7], { key: "ArrowRight" });
-    expect(onChange).toHaveBeenCalledWith(8);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("ArrowLeft retreats from interior swatch", () => {
@@ -85,10 +85,10 @@ describe("MetricInputRow ColorScale", () => {
     expect(onChange).toHaveBeenCalledWith(2);
   });
 
-  it("ArrowLeft at the left edge stays on level 1 (no wraparound)", () => {
+  it("ArrowLeft at the left edge is a no-op (no wraparound, no onChange)", () => {
     const { swatches, onChange } = renderColorScale(1);
     fireEvent.keyDown(swatches[0], { key: "ArrowLeft" });
-    expect(onChange).toHaveBeenCalledWith(1);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("ArrowUp behaves like ArrowLeft", () => {

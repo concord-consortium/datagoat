@@ -124,12 +124,13 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
   const select = useCallback(
     (next: number) => {
       if (next < 1 || next > max) return;
+      if (next === value) return;
       onChange(next);
       // Focus the newly-selected swatch so the keyboard contract advances.
       const node = refs.current[next - 1];
       if (node) node.focus();
     },
-    [max, onChange],
+    [max, value, onChange],
   );
 
   function onKeyDown(e: KeyboardEvent<HTMLButtonElement>, idx: number) {

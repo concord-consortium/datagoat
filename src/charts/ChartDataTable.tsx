@@ -38,7 +38,7 @@ export function ChartDataTable({
         <p className={css.empty}>
           {loading
             ? `${title} data is loading...`
-            : `No data yet for ${title}.`}
+            : "No data yet - log a few days to see your trends."}
         </p>
       </div>
     );

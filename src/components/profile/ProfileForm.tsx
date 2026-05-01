@@ -197,33 +197,36 @@ export function ProfileForm() {
           <span className={css.fieldUnit}>Yrs</span>
         </div>
 
-        <div className={css.inlineField}>
-          <TextField
-            id="profile-height-ft"
-            label="Height"
-            type="number"
-            min={0}
-            short
-            required
-            value={watched.heightFt ?? ""}
-            error={errors.heightFt?.message}
-            {...register("heightFt")}
-          />
-          <span className={css.fieldUnit}>Ft</span>
-          <TextField
-            id="profile-height-in"
-            label="In"
-            type="number"
-            min={0}
-            short
-            required
-            ariaLabel="Height inches"
-            value={watched.heightIn ?? ""}
-            error={errors.heightIn?.message}
-            {...register("heightIn")}
-          />
-          <span className={css.fieldUnit}>In</span>
-        </div>
+        <fieldset className={css.heightFieldset}>
+          <legend className={css.heightLegend}>Height</legend>
+          <div className={`${css.inlineField} ${css.heightInlineField}`}>
+            <TextField
+              id="profile-height-ft"
+              label="Feet"
+              labelVisuallyHidden
+              type="number"
+              min={0}
+              short
+              required
+              value={watched.heightFt ?? ""}
+              error={errors.heightFt?.message}
+              {...register("heightFt")}
+            />
+            <span className={css.fieldUnit} aria-hidden="true">Ft</span>
+            <TextField
+              id="profile-height-in"
+              label="In"
+              type="number"
+              min={0}
+              short
+              required
+              value={watched.heightIn ?? ""}
+              error={errors.heightIn?.message}
+              {...register("heightIn")}
+            />
+            <span className={css.fieldUnit} aria-hidden="true">In</span>
+          </div>
+        </fieldset>
 
         <div className={css.inlineField}>
           <TextField

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MouseEvent } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppHeader } from "../components/layout/AppHeader";
 import { DashboardHeaderSlide } from "../components/dashboard/DashboardHeaderSlide";
@@ -114,9 +114,12 @@ function AppShellInner() {
         if (cs.position === "sticky" && !node.contains(el)) {
           const r = node.getBoundingClientRect();
           const mainTop = main!.getBoundingClientRect().top;
-          // Counts only when the sticky node is currently pinned at top.
-          if (Math.abs(r.top - mainTop) < 2) {
-            total = Math.max(total, r.bottom - mainTop);
+          // A sticky is "pinned" when its top sits at its CSS `top` offset
+          // relative to the scroll container. Comparing to mainTop alone
+          // would miss stickies pinned beneath an earlier sticky band.
+          const cssTop = parseFloat(cs.top || "0") || 0;
+          if (Math.abs(r.top - mainTop - cssTop) < 2) {
+            total += r.height;
           }
         }
       });
@@ -176,26 +179,24 @@ function AppShellInner() {
     return () => document.removeEventListener("focusin", onFocusIn);
   }, []);
 
-  function handleSkipLinkClick() {
-    // The href="#main-content" anchor jump moves the URL fragment, but
-    // <main tabIndex={-1}> only takes focus programmatically. Schedule the
-    // focus advance after the browser has handled the jump so the user
-    // ends up at the first content focusable, NOT on a SectionHeading
-    // chrome button (.nav-menu-btn / .nav-home-btn / .back-nav-btn).
+  function handleSkipLinkClick(e: MouseEvent<HTMLAnchorElement>) {
+    // Suppress the browser's anchor jump so #main-content doesn't end up
+    // in the URL, then advance focus to the first content focusable -
+    // skipping SectionHeading chrome buttons (.nav-menu-btn /
+    // .nav-home-btn / .back-nav-btn) which carry SKIP_LINK_EXCLUDED_ATTR.
+    e.preventDefault();
     const main = mainRef.current;
     if (!main) return;
-    requestAnimationFrame(() => {
-      const focusables = main.querySelectorAll<HTMLElement>(
-        'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      for (const node of focusables) {
-        if (node.hasAttribute(SKIP_LINK_EXCLUDED_ATTR)) continue;
-        node.focus();
-        return;
-      }
-      // Fallback: focus the main element itself.
-      main.focus();
-    });
+    const focusables = main.querySelectorAll<HTMLElement>(
+      'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    for (const node of focusables) {
+      if (node.hasAttribute(SKIP_LINK_EXCLUDED_ATTR)) continue;
+      node.focus();
+      return;
+    }
+    // Fallback: focus the main element itself.
+    main.focus();
   }
 
   return (

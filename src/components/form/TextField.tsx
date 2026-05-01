@@ -1,5 +1,6 @@
 import { forwardRef, useId, type Ref } from "react";
 import fields from "./fields.module.css";
+import common from "../common.module.css";
 
 export interface TextFieldProps {
   id?: string;
@@ -20,6 +21,7 @@ export interface TextFieldProps {
   placeholder?: string;
   short?: boolean;
   ariaLabel?: string;
+  labelVisuallyHidden?: boolean;
   // For controlled or RHF-uncontrolled use - the component reads this to drive
   // the .has-value declarative toggle. When omitted, the consumer is expected
   // to manage value externally and pass `hasValue` directly.
@@ -62,6 +64,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       placeholder,
       short,
       ariaLabel,
+      labelVisuallyHidden,
       value,
       hasValue,
       name,
@@ -90,9 +93,13 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       .filter(Boolean)
       .join(" ");
 
+    const labelCls = labelVisuallyHidden
+      ? `${fields.fieldLabel} ${common.visuallyHidden}`
+      : fields.fieldLabel;
+
     return (
       <div className={fields.fieldWrap}>
-        <label className={fields.fieldLabel} htmlFor={inputId}>
+        <label className={labelCls} htmlFor={inputId}>
           {label}
           {required && (
             <span className={fields.requiredMark} aria-hidden="true">

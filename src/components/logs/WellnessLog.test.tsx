@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, act } from "@testing-library/react";
+import { render, fireEvent, act, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
@@ -105,17 +105,16 @@ import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 
 const TODAY_ISO = toISO(dateAtOffset(HISTORY));
 
+function inputForMetric(label: string): HTMLInputElement {
+  return screen.getByRole("textbox", { name: label }) as HTMLInputElement;
+}
+
 function setSleepTime(value: string) {
-  const inputs = document.querySelectorAll("input[type='text']");
-  // sleepTime, sleepEfficiency, protein, leanMass - sleepTime is index 0.
-  const sleepTimeInput = inputs[0] as HTMLInputElement;
-  fireEvent.change(sleepTimeInput, { target: { value } });
+  fireEvent.change(inputForMetric("Total Sleep Time"), { target: { value } });
 }
 
 function setProtein(value: string) {
-  const inputs = document.querySelectorAll("input[type='text']");
-  const proteinInput = inputs[2] as HTMLInputElement;
-  fireEvent.change(proteinInput, { target: { value } });
+  fireEvent.change(inputForMetric("Protein Intake"), { target: { value } });
 }
 
 function renderAt(initialPath: string) {
@@ -287,8 +286,7 @@ describe("WellnessLog optimistic state via real DataContext", () => {
       latestSub(state.wellnessSubs)?.emit([]);
       latestSub(state.performanceSubs)?.emit([]);
     });
-    const inputs = document.querySelectorAll("input[type='text']");
-    const sleep = inputs[0] as HTMLInputElement;
+    const sleep = inputForMetric("Total Sleep Time");
     fireEvent.change(sleep, { target: { value: "1." } });
     expect(sleep.value).toBe("1.");
   });
@@ -299,8 +297,7 @@ describe("WellnessLog optimistic state via real DataContext", () => {
       latestSub(state.wellnessSubs)?.emit([]);
       latestSub(state.performanceSubs)?.emit([]);
     });
-    const inputs = document.querySelectorAll("input[type='text']");
-    const sleep = inputs[0] as HTMLInputElement;
+    const sleep = inputForMetric("Total Sleep Time");
     fireEvent.change(sleep, { target: { value: "0" } });
     expect(sleep.value).toBe("0");
   });
@@ -311,8 +308,7 @@ describe("WellnessLog optimistic state via real DataContext", () => {
       latestSub(state.wellnessSubs)?.emit([]);
       latestSub(state.performanceSubs)?.emit([]);
     });
-    const inputs = document.querySelectorAll("input[type='text']");
-    const sleep = inputs[0] as HTMLInputElement;
+    const sleep = inputForMetric("Total Sleep Time");
     fireEvent.change(sleep, { target: { value: "07" } });
     expect(sleep.value).toBe("07");
   });
@@ -323,8 +319,7 @@ describe("WellnessLog optimistic state via real DataContext", () => {
       latestSub(state.wellnessSubs)?.emit([]);
       latestSub(state.performanceSubs)?.emit([]);
     });
-    const inputs = document.querySelectorAll("input[type='text']");
-    const sleep = inputs[0] as HTMLInputElement;
+    const sleep = inputForMetric("Total Sleep Time");
     expect(sleep.value).toBe("");
     // External edit (e.g., another tab) lands via the snapshot listener.
     act(() => {

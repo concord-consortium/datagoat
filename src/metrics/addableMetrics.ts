@@ -1,10 +1,14 @@
 import type { MetricDefinition } from "./types";
 
-// Placeholder addable lists ported from the prototype's `addableWellnessMetrics`
-// / `addablePerformanceMetrics` arrays (both populated with 10 generic
-// placeholder entries pending designer-final additions). Consumers (AddMetric
-// screen) read from this registry; the designer-final list lands as a single-
-// file swap when ready.
+// Verbatim port of the prototype's `addableWellnessMetrics` /
+// `addablePerformanceMetrics` arrays (datagoat-2026-04-27.html lines
+// 8180-8185), which themselves are a synthetic loop of 10 placeholder
+// entries per type pending designer-final additions. The prototype source
+// carries only `id` and `name`; `whoCollects` / `howCollected` /
+// `description` are empty strings because the source has nothing to port.
+// Consumers (AddMetric screen) read from this registry; the designer-final
+// list lands as a single-file swap when ready (see requirements.md
+// "Deferred Work: Designer-final addable-metric set").
 function buildPlaceholders(
   type: "wellness" | "performance",
 ): MetricDefinition[] {

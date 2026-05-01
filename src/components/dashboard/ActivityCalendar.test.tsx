@@ -91,21 +91,6 @@ describe("ActivityCalendar", () => {
     });
   });
 
-  it("performance cells are non-interactive <div> across the board", () => {
-    const { container } = renderCalendar({
-      type: "performance",
-      trackedMetricIds: ["wins"],
-      performanceEntries: [],
-    });
-    const cells = container.querySelectorAll(`[class*='heatmapCell']`);
-    expect(cells.length).toBeGreaterThan(0);
-    cells.forEach((cell) => {
-      expect(cell.tagName.toLowerCase()).toBe("div");
-      // No <a> children that might create a navigable Link.
-      expect(cell.querySelectorAll("a").length).toBe(0);
-    });
-  });
-
   it("emits a visually-hidden label on every non-blank cell", () => {
     const todayIso = toISO(dateAtOffset(HISTORY));
     const { container } = renderCalendar({

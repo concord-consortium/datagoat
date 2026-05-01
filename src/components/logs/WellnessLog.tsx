@@ -11,7 +11,7 @@ import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
 import {
   HISTORY,
   dateAtOffset,
-  dateOffsetFromISO,
+  historyOffsetFromISO,
   toISO,
 } from "../../utils/dates";
 import { getChipState } from "../../utils/wellnessCompleteness";
@@ -26,7 +26,7 @@ export function WellnessLog() {
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
     if (!dateParam) return HISTORY;
-    return dateOffsetFromISO(dateParam);
+    return historyOffsetFromISO(dateParam);
   }, [dateParam]);
 
   // Malformed or out-of-range ?date= triggers a fallback Navigate. Compute

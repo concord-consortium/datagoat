@@ -246,7 +246,12 @@ describe("LinkAccountPanel", () => {
       screen.getByRole("button", { name: /continue with google/i }),
     );
 
-    await waitFor(() => expect(signOutMock).toHaveBeenCalled());
+    await waitFor(() => {
+      expect(signOutMock).toHaveBeenCalled();
+      expect(
+        screen.getByText(/something went wrong\. please try again/i),
+      ).toBeInTheDocument();
+    });
     expect(onLinked).not.toHaveBeenCalled();
   });
 

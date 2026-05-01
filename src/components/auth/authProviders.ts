@@ -125,13 +125,9 @@ export async function signInWithProvider(
       // No pending credential — fall through to the generic error path.
     }
 
-    if (code === "auth/popup-closed-by-user") {
-      // Normal user action; log at debug-level via console.debug. logError is
-      // also called so future telemetry can categorize.
-      logError(err, { stage: "signInWithProvider", code });
-    } else {
-      logError(err, { stage: "signInWithProvider", code });
-    }
+    // auth/popup-closed-by-user is a normal user action rather than a fault;
+    // revisit the log level (or filter upstream) when real telemetry lands.
+    logError(err, { stage: "signInWithProvider", code });
     return { ok: false, kind: "other", code };
   }
 }

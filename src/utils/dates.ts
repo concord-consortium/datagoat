@@ -39,7 +39,9 @@ export function toISO(d: Date): string {
 
 // Inverse of toISO(dateAtOffset(n)). Returns NaN for unparseable input or
 // for parsed dates outside [0, HISTORY] so callers can fall back to today.
-export function dateOffsetFromISO(iso: string): number {
+// Use this only for the HISTORY/DateNav window; for listener-window data
+// (LISTENER_WINDOW_DAYS) use daysAgoFromISO, which does not clamp.
+export function historyOffsetFromISO(iso: string): number {
   const days = daysAgoFromISO(iso);
   if (Number.isNaN(days)) return NaN;
   const offset = HISTORY - days;
@@ -49,7 +51,7 @@ export function dateOffsetFromISO(iso: string): number {
 
 // Days from the given ISO date to today (today === 0, yesterday === 1, ...).
 // Returns NaN for unparseable input or future dates. Unlike
-// dateOffsetFromISO, this does NOT clamp to HISTORY - chart code that
+// historyOffsetFromISO, this does NOT clamp to HISTORY - chart code that
 // renders 3mo / 6mo / All-time windows needs to see older entries.
 export function daysAgoFromISO(iso: string): number {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return NaN;

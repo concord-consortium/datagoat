@@ -1,7 +1,21 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { migrateDocument, registerMigration } from "./index";
 import { resetRegistryForTests } from "./testing";
+import { registry } from "./registry";
 import type { DocType } from "./types";
+
+// Side-effect imports: any top-level registerMigration() calls in the
+// per-doc-type modules populate the registry at module load. The
+// coverage meta-test below relies on this to enforce that every
+// registered migration has an idempotencyFixtures entry.
+import "./userProfile";
+import "./performanceEntry";
+import "./wellnessEntry";
+
+// Snapshot before any test setup runs. The migrateDocument suite calls
+// resetRegistryForTests() in beforeEach, which would otherwise clear
+// the production registrations before the coverage check executes.
+const productionRegistrationKeys = Array.from(registry.keys()).sort();
 
 describe("migrateDocument", () => {
   beforeEach(() => {
@@ -81,8 +95,8 @@ describe("migrateDocument", () => {
 //
 // Each fixture is [docType, fromVersion, sample v_fromVersion input].
 // Add an entry whenever you call registerMigration() in a production
-// module - this list is intentionally maintained by hand so the
-// reviewer notices the contract.
+// module - the coverage meta-test below fails the suite if a registered
+// migration is missing its fixture.
 const idempotencyFixtures: ReadonlyArray<
   readonly [DocType, number, Record<string, unknown>]
 > = [
@@ -90,11 +104,18 @@ const idempotencyFixtures: ReadonlyArray<
 ];
 
 describe("migration idempotency contract", () => {
-  if (idempotencyFixtures.length === 0) {
-    it("(no migrations registered yet - add a fixture when one lands)", () => {
-      expect(idempotencyFixtures.length).toBe(0);
-    });
-  }
+  it("every registered production migration has an idempotency fixture", () => {
+    const fixtureKeys = new Set(
+      idempotencyFixtures.map(
+        ([docType, fromVersion]) => `${docType}:${fromVersion}`,
+      ),
+    );
+    const missing = productionRegistrationKeys.filter(
+      (key) => !fixtureKeys.has(key),
+    );
+    expect(missing).toEqual([]);
+  });
+
   it.each(idempotencyFixtures as Array<[DocType, number, Record<string, unknown>]>)(
     "%s v%i migration is idempotent under version-downgrade",
     (docType, fromVersion, input) => {

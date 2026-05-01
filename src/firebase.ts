@@ -42,8 +42,8 @@ if (
   !emuFlag.__datagoatEmu
 ) {
   emuFlag.__datagoatEmu = true;
-  connectAuthEmulator(auth, "http://localhost:9099");
-  connectFirestoreEmulator(db, "localhost", 8080);
+  connectAuthEmulator(auth, "http://127.0.0.1:9099");
+  connectFirestoreEmulator(db, "127.0.0.1", 8080);
 }
 
 let analyticsPromise: Promise<Analytics | null> | null = null;

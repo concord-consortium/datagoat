@@ -1,5 +1,5 @@
 import type { PerformanceEntry } from "../../types/data";
-import { HISTORY, dateOffsetFromISO } from "../../utils/dates";
+import { HISTORY, historyOffsetFromISO } from "../../utils/dates";
 
 // Per-metric sum over the visible HISTORY window. Skips entries whose
 // date falls outside [0, HISTORY] (matches the date-nav range so the
@@ -16,7 +16,7 @@ export function performanceTotal(
 ): number {
   let total = 0;
   for (const entry of entries) {
-    const offset = dateOffsetFromISO(entry.date);
+    const offset = historyOffsetFromISO(entry.date);
     if (Number.isNaN(offset) || offset < 0 || offset > HISTORY) continue;
     const raw = entry.metrics?.[metricId];
     if (typeof raw === "number" && Number.isFinite(raw)) {

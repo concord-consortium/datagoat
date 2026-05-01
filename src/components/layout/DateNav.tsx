@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   HISTORY,
   dateAtOffset,
-  dateOffsetFromISO,
+  historyOffsetFromISO,
   fmtDate,
   toISO,
 } from "../../utils/dates";
@@ -137,5 +137,5 @@ function chipStatusText(state: ChipState): string {
 }
 
 // Re-export so callers in WellnessLog / PerformanceLog can convert their
-// `?date=` search param to an offset without re-importing dateOffsetFromISO.
-export { dateOffsetFromISO };
+// `?date=` search param to an offset without re-importing historyOffsetFromISO.
+export { historyOffsetFromISO };

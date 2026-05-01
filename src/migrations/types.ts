@@ -11,7 +11,9 @@
 // the migration isn't idempotent, that re-run corrupts the data.
 //
 // Whenever you register a new migration, also add an entry to the
-// idempotency fixture list in migrations/index.test.ts.
+// idempotency fixture list in migrations/index.test.ts. A coverage
+// meta-test in that file fails the suite if a registered migration is
+// missing its fixture.
 export type MigrationFn = (
   data: Record<string, unknown>,
 ) => Record<string, unknown>;

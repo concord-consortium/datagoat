@@ -7,7 +7,7 @@ import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import {
   HISTORY,
   dateAtOffset,
-  dateOffsetFromISO,
+  historyOffsetFromISO,
   toISO,
 } from "../../utils/dates";
 import { performanceTotal } from "./PerformanceTotals";
@@ -24,7 +24,7 @@ export function PerformanceLog() {
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
     if (!dateParam) return HISTORY;
-    return dateOffsetFromISO(dateParam);
+    return historyOffsetFromISO(dateParam);
   }, [dateParam]);
 
   // Malformed or out-of-range ?date= triggers a fallback Navigate. Same

@@ -50,19 +50,31 @@ function getMotivationName(
   return "(name)";
 }
 
+// Module-scope rotation cursor so the index survives /dashboard
+// remounts within a single page-load - matching the prototype's
+// window._motivationIndex lifetime (resets only on full reload).
+// Component-local state would restart at -1 on every remount, causing
+// the streak greeting to repeat each time the user re-enters the
+// dashboard. Initial -1 so the FIRST inactive->active transition
+// lands on index 0; a naive 0 would advance to 1 on the first show.
+let motivationIndex = -1;
+
+// Test-only reset so each test starts from a clean rotation; the
+// production code path never calls this.
+export function __resetMotivationRotationForTests(): void {
+  motivationIndex = -1;
+}
+
 export function MotivationMessage({ active }: MotivationMessageProps) {
   const { loadState } = useUser();
   const profile =
     loadState.status === "loaded" ? loadState.profile : null;
   const name = getMotivationName(profile?.nickname, profile?.fullName);
 
-  // Initial index of -1 so the FIRST inactive->active transition lands
-  // on index 0 (the streak greeting), matching the prototype's pattern
-  // where showNextMotivation() is invoked once on script load and the
-  // first slide-in shows message 0. A naive useState(0) would advance
-  // to index 1 ("We'll only show one message per session …") on the
-  // first show.
-  const [index, setIndex] = useState(-1);
+  // Mirror the module-scope cursor in component state so React
+  // re-renders when we advance. useState reads the current cursor at
+  // mount, so a remount picks up wherever rotation left off.
+  const [index, setIndex] = useState(motivationIndex);
   const prevActiveRef = useRef(false);
 
   // Advance to the next message each time the motivation slide goes
@@ -71,7 +83,8 @@ export function MotivationMessage({ active }: MotivationMessageProps) {
   // showing it.
   useEffect(() => {
     if (active && !prevActiveRef.current) {
-      setIndex((i) => (i + 1) % MOTIVATION_MESSAGES.length);
+      motivationIndex = (motivationIndex + 1) % MOTIVATION_MESSAGES.length;
+      setIndex(motivationIndex);
     }
     prevActiveRef.current = active;
   }, [active]);

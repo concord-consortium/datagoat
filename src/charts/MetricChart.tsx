@@ -66,20 +66,22 @@ export function MetricChart({
       >
         <title id={titleId}>{title}</title>
         <desc id={descId}>{description}</desc>
-        <rect
-          className={loading ? css.skeletonRect : css.placeholderRect}
-          x="0"
-          y="0"
-          width={width}
-          height={height}
-        />
-        <text
-          className={css.placeholderLabel}
-          x={width / 2}
-          y={height / 2}
-        >
-          {loading ? "Loading chart data..." : "Chart placeholder - TBD"}
-        </text>
+        <g aria-hidden="true">
+          <rect
+            className={loading ? css.skeletonRect : css.placeholderRect}
+            x="0"
+            y="0"
+            width={width}
+            height={height}
+          />
+          <text
+            className={css.placeholderLabel}
+            x={width / 2}
+            y={height / 2}
+          >
+            {loading ? "Loading chart data..." : "Chart placeholder - TBD"}
+          </text>
+        </g>
       </svg>
       <button
         type="button"

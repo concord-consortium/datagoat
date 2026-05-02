@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
@@ -31,10 +31,18 @@ vi.mock("../../contexts/UserContext", () => ({
   useUser: () => ({ loadState: ctx.loadState }),
 }));
 
-import { MotivationMessage } from "./MotivationMessage";
+import {
+  MotivationMessage,
+  __resetMotivationRotationForTests,
+} from "./MotivationMessage";
 import { MOTIVATION_MESSAGES } from "../../data/motivationMessages";
 
 describe("MotivationMessage", () => {
+  // Rotation cursor is module-scope (so /dashboard remounts pick up
+  // mid-cycle). Reset it between tests so each case starts from -1.
+  beforeEach(() => {
+    __resetMotivationRotationForTests();
+  });
   it("first inactive->active transition lands on index 0 (the streak greeting), not index 1", () => {
     // Initial render with active=false (not yet rotated in).
     const { rerender, container } = render(<MotivationMessage active={false} />);
@@ -89,6 +97,29 @@ describe("MotivationMessage", () => {
     expect(container.textContent).toContain(expected0);
   });
 
+  it("rotation cursor survives unmount/remount within a page-load", () => {
+    // First mount: advance once -> message 0.
+    const r1 = render(<MotivationMessage active={false} />);
+    r1.rerender(<MotivationMessage active={true} />);
+    const expected0 = MOTIVATION_MESSAGES[0].template
+      .replace(/\{name\}/g, "Casey")
+      .replace(/<br>/g, "");
+    expect(r1.container.textContent).toContain(expected0);
+    r1.unmount();
+
+    // Second mount (simulates leaving /dashboard and returning): the
+    // FIRST inactive->active transition should land on message 1, not
+    // message 0. Mount-lifetime state would replay message 0 here.
+    const r2 = render(<MotivationMessage active={false} />);
+    r2.rerender(<MotivationMessage active={true} />);
+    const expected1 = MOTIVATION_MESSAGES[1].template
+      .replace(/\{name\}/g, "Casey")
+      .replace(/<br>/g, "");
+    expect(r2.container.textContent).toContain(expected1);
+    expect(r2.container.textContent).not.toContain(expected0);
+    r2.unmount();
+  });
+
   it("does not advance while active stays true (rotation only on transition)", () => {
     const { rerender, container } = render(<MotivationMessage active={false} />);
     rerender(<MotivationMessage active={true} />);
@@ -111,6 +142,11 @@ describe("MotivationMessage", () => {
     expect(container.textContent).toContain("Slick");
     unmount();
 
+    // Rotation cursor is module-scope; reset between sub-cases so each
+    // sub-case lands on message 0 (which contains the {name} token -
+    // message 1 has no name substitution and would mask the assertion).
+    __resetMotivationRotationForTests();
+
     // No nickname -> first token of fullName.
     ctx.loadState = {
       ...ctx.loadState,
@@ -125,6 +161,8 @@ describe("MotivationMessage", () => {
     expect(r2.container.textContent).toContain("Jordan");
     expect(r2.container.textContent).not.toContain("Patel");
     r2.unmount();
+
+    __resetMotivationRotationForTests();
 
     // Both empty -> "(name)" placeholder.
     ctx.loadState = {

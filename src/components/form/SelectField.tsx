@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import ChevronDownIcon from "@/icons/chevron-down.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import fields from "./fields.module.css";
+import common from "../common.module.css";
 import css from "./SelectField.module.css";
 
 export interface SelectOption {
@@ -30,6 +31,7 @@ export interface SelectFieldProps {
   onChange?: React.ChangeEventHandler<HTMLSelectElement>;
   onBlur?: React.FocusEventHandler<HTMLSelectElement>;
   disabled?: boolean;
+  labelVisuallyHidden?: boolean;
 }
 
 // Native HTML <select> per the Step-9 spec decision. The prototype's
@@ -54,6 +56,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
       onChange,
       onBlur,
       disabled,
+      labelVisuallyHidden,
     }: SelectFieldProps,
     ref: Ref<HTMLSelectElement>,
   ) {
@@ -74,9 +77,13 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
       .filter(Boolean)
       .join(" ");
 
+    const labelCls = labelVisuallyHidden
+      ? `${fields.fieldLabel} ${common.visuallyHidden}`
+      : fields.fieldLabel;
+
     return (
       <div className={fields.fieldWrap}>
-        <label className={fields.fieldLabel} htmlFor={selectId}>
+        <label className={labelCls} htmlFor={selectId}>
           {label}
           {required && (
             <span className={fields.requiredMark} aria-hidden="true">

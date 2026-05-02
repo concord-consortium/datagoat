@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -35,7 +35,6 @@ function makeMatchMedia(initialMatches: boolean) {
 
 describe("CodapButton", () => {
   let mql: ReturnType<typeof makeMatchMedia>;
-  let openSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     mql = makeMatchMedia(true); // default desktop
@@ -44,31 +43,25 @@ describe("CodapButton", () => {
       configurable: true,
       value: vi.fn(() => mql),
     });
-    openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
   });
 
-  afterEach(() => {
-    openSpy.mockRestore();
-  });
-
-  it("on desktop (>= 640px) opens the CODAP-wrapped URL in a new tab via window.open", async () => {
-    const user = userEvent.setup();
+  it("on desktop (>= 640px) renders an anchor that opens the CODAP-wrapped URL in a new tab", () => {
     render(<CodapButton />);
-    const button = screen.getByRole("button", {
+    const link = screen.getByRole("link", {
       name: /Analyze Your Data in CODAP/,
     });
-    await user.click(button);
-    expect(openSpy).toHaveBeenCalledTimes(1);
-    const [url, target, features] = openSpy.mock.calls[0];
-    expect(url).toMatch(/^https:\/\/codap3\.concord\.org/);
-    expect(url).toContain("?di=");
-    expect(target).toBe("_blank");
-    expect(features).toBe("noopener,noreferrer");
+    const href = link.getAttribute("href") ?? "";
+    expect(href).toMatch(/^https:\/\/codap3\.concord\.org/);
+    expect(href).toContain("?di=");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    // SR-only "(opens in new tab)" cue is part of the accessible name.
+    expect(link.textContent).toContain("(opens in new tab)");
     // Mobile modal should NOT be in the DOM.
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("on mobile (< 640px) opens the MobileCodapModal instead of window.open", async () => {
+  it("on mobile (< 640px) opens the MobileCodapModal", async () => {
     mql = makeMatchMedia(false);
     (
       window.matchMedia as unknown as ReturnType<typeof vi.fn>
@@ -78,16 +71,21 @@ describe("CodapButton", () => {
     const button = screen.getByRole("button", {
       name: /Analyze Your Data in CODAP/,
     });
+    // Mobile button must NOT carry the desktop "opens in new tab" cue.
+    expect(button.textContent).not.toContain("(opens in new tab)");
     await user.click(button);
-    expect(openSpy).not.toHaveBeenCalled();
     const dialog = await screen.findByRole("dialog");
     expect(dialog.textContent).toContain("CODAP doesn");
     expect(dialog.textContent).toContain("desktop");
   });
 
-  it("flips reactively: desktop -> resize narrow -> click opens modal (not window.open)", async () => {
+  it("flips reactively: desktop -> resize narrow -> click opens modal", async () => {
     const user = userEvent.setup();
     render(<CodapButton />);
+    // Initially renders as a link (desktop).
+    expect(
+      screen.getByRole("link", { name: /Analyze Your Data in CODAP/ }),
+    ).toBeTruthy();
     // Resize to narrow viewport.
     act(() => {
       mql._setMatches(false);
@@ -95,7 +93,6 @@ describe("CodapButton", () => {
     await user.click(
       screen.getByRole("button", { name: /Analyze Your Data in CODAP/ }),
     );
-    expect(openSpy).not.toHaveBeenCalled();
     expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 

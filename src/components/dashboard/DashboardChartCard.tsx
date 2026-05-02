@@ -118,6 +118,7 @@ export function DashboardChartCard({
                 ? "Health & Wellness metric"
                 : "Performance metric"
             }
+            labelVisuallyHidden
             options={selectOptions}
             value={metric?.id ?? ""}
             onChange={(e) => setSelectedMetricId(e.target.value)}

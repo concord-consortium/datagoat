@@ -15,6 +15,13 @@ function todayMidnight(): Date {
   return d;
 }
 
+// Returns the local-midnight Date for `offset` within the HISTORY window:
+// offset 0 === HISTORY days ago, offset HISTORY === today. Caller must keep
+// offset in [0, HISTORY]; values outside that range produce dates outside
+// the window (negative offsets go further into the past, offsets > HISTORY
+// produce future dates that NaN out daysAgoFromISO downstream). All current
+// callers either pass HISTORY directly, loop within [0, HISTORY], or derive
+// offset from historyOffsetFromISO which already clamps via NaN.
 export function dateAtOffset(offset: number): Date {
   const today = todayMidnight();
   const d = new Date(today);

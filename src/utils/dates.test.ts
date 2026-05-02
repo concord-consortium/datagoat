@@ -24,6 +24,15 @@ describe("date helpers", () => {
     expect(dateAtOffset(0).getTime()).toBe(expected.getTime());
   });
 
+  it("dateAtOffset boundaries: 0 and HISTORY produce dates within the documented window", () => {
+    // Pin the contract: callers passing offsets in [0, HISTORY] get dates
+    // that round-trip through historyOffsetFromISO without NaN. Out-of-range
+    // offsets are explicitly the caller's responsibility (see JSDoc on
+    // dateAtOffset) and are not tested here.
+    expect(historyOffsetFromISO(toISO(dateAtOffset(0)))).toBe(0);
+    expect(historyOffsetFromISO(toISO(dateAtOffset(HISTORY)))).toBe(HISTORY);
+  });
+
   it("toISO formats YYYY-MM-DD with zero padding", () => {
     const d = new Date(2026, 0, 5); // Jan 5, 2026
     expect(toISO(d)).toBe("2026-01-05");

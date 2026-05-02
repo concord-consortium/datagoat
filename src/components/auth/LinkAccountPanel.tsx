@@ -169,9 +169,8 @@ export function LinkAccountPanel({
 
       {error && (
         <p
-          className={fields.fieldErrorMsg}
+          className={`${fields.fieldErrorMsg} ${css.errorRow}`}
           role="alert"
-          style={{ marginTop: 16 }}
         >
           {error}
         </p>

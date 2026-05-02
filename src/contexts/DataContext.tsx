@@ -57,8 +57,8 @@ const DEBOUNCE_MS = 500;
 
 // Largest window the chart UI can display ("All time" in TimeRangePicker
 // is 365 days). Listeners filter at this floor so we don't pay reads on
-// docs the UI cannot render. The floor advances at local midnight so the
-// window stays current across multi-day sessions.
+// docs the UI cannot render. Floor is computed once at session start;
+// see floorISO state below for why it isn't advanced at midnight.
 const LISTENER_WINDOW_DAYS = 365;
 
 type PendingEntry<T> = { uid: string; partial: Partial<T> };
@@ -343,11 +343,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // changes (the next user's docs are unrelated). Declared AFTER the
   // unmount-flush effect so its cleanup runs after unmount-flush -
   // unmount-flush still needs the cache to compute the version-stamp
-  // decision for each in-flight write. Floor rotation does NOT clear
-  // because the new listener may not redeliver every doc; clearing
-  // would briefly defeat the downgrade guard. Keyed on user?.uid (not
-  // the user object) so token-refresh / reload re-allocations of the
-  // same uid don't wipe the cache and force re-stamping.
+  // decision for each in-flight write. Keyed on user?.uid (not the
+  // user object) so token-refresh / reload re-allocations of the same
+  // uid don't wipe the cache and force re-stamping.
   useEffect(() => {
     return () => {
       wellnessServerVersionsRef.current.clear();

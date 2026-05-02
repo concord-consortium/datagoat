@@ -93,9 +93,10 @@ export function firestoreMockFactory(state: FirestoreMockState) {
           cb(makeSnapshot(docs, metadata));
         },
       };
-      if (ref.path.includes("wellnessEntries")) {
+      const segments = ref.path.split("/");
+      if (segments.includes("wellnessEntries")) {
         state.wellnessSubs.push(handle);
-      } else if (ref.path.includes("performanceEntries")) {
+      } else if (segments.includes("performanceEntries")) {
         state.performanceSubs.push(handle);
       }
       return () => {

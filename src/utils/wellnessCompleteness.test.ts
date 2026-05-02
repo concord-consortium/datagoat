@@ -48,10 +48,14 @@ describe("getChipState", () => {
     expect(getChipState(entry, TRACKED_DEFAULT)).toBe("some");
   });
 
-  it("availability with practiceHeld=null counts as not filled", () => {
+  it("availability null + one numeric tracked field => 'some'", () => {
     const entry = emptyEntry();
     entry.hydration = 4;
     expect(getChipState(entry, ["hydration", "availability"])).toBe("some");
+  });
+
+  it("availability null alone (only metric tracked) => 'none'", () => {
+    expect(getChipState(emptyEntry(), ["availability"])).toBe("none");
   });
 
   it("availability practiceHeld=true without participation does NOT count as filled", () => {

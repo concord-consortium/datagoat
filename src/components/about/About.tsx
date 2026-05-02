@@ -7,9 +7,10 @@ import css from "./About.module.css";
 // decision: the App.tsx sticky-bottom footer was removed at conversion
 // time, and version info migrates here so PWA debugging stays viable.
 export function About() {
-  // import.meta.env.VITE_BUILD_TIME is injected at build time via the
-  // Vite `define` config (see vite.config.ts). In development the
-  // value falls back to the current ISO timestamp on each reload.
+  // import.meta.env.VITE_BUILD_TIME is injected via the Vite `define`
+  // config (see vite.config.ts) and captured once when Vite starts -
+  // build invocation time for `vite build`, dev-server startup time
+  // for `vite dev` (frozen across reloads until the server restarts).
   const buildTime = import.meta.env.VITE_BUILD_TIME ?? "(dev build)";
 
   return (

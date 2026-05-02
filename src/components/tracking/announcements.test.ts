@@ -39,7 +39,7 @@ describe("makeAnnouncements", () => {
     const msg = a.onDragOver!({
       active: node("hydration", 0),
       over: node("protein", 2),
-    } as DragOverEvent);
+    } as unknown as DragOverEvent);
     expect(msg).toBe("Hydration moving to position 3 of 3.");
   });
 
@@ -57,7 +57,7 @@ describe("makeAnnouncements", () => {
     const msg = a.onDragEnd!({
       active: node("hydration", 0),
       over: node("protein", 1),
-    } as DragEndEvent);
+    } as unknown as DragEndEvent);
     expect(msg).toBe("Hydration dropped at position 2 of 3.");
   });
 

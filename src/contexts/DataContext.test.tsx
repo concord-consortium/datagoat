@@ -33,6 +33,7 @@ vi.mock("../utils/logError", () => ({ logError: vi.fn() }));
 
 import { DataProvider, useData } from "./DataContext";
 import { logError } from "../utils/logError";
+import type { WellnessEntry } from "../types/data";
 
 function wrapper({ children }: { children: ReactNode }) {
   return createElement(DataProvider, null, children);
@@ -710,7 +711,7 @@ describe("DataContext reconciliation against onSnapshot", () => {
     // not stick the partial across snapshots.
     act(() => {
       result.current.setWellnessEntry(WELLNESS_DATE, {
-        availability: { practiceHeld: true, practiceParticipation: "played" },
+        availability: { practiceHeld: true, practiceParticipation: "played" } as WellnessEntry["availability"],
       });
     });
     // Server confirms practiceHeld but NOT practiceParticipation.

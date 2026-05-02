@@ -87,25 +87,32 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
                 key={to}
                 className={`${css.menuItem} ${isGated ? css.menuItemDisabled : ""}`}
               >
-                <Link
-                  to={to}
-                  className={`${css.navItem} ${isActive ? css.active : ""}`}
-                  aria-current={isActive ? "page" : undefined}
-                  aria-disabled={isGated || undefined}
-                  aria-describedby={isGated ? "hamburgerGateHint" : undefined}
-                  onClick={(e) => {
-                    if (isGated) {
-                      e.preventDefault();
-                      return;
-                    }
-                    handleNavigate();
-                  }}
-                >
-                  <span className={css.navItemIcon}>
-                    <Icon />
+                {isGated ? (
+                  <span
+                    role="link"
+                    aria-disabled="true"
+                    tabIndex={0}
+                    aria-describedby="hamburgerGateHint"
+                    className={css.navItem}
+                  >
+                    <span className={css.navItemIcon}>
+                      <Icon />
+                    </span>
+                    {label}
                   </span>
-                  {label}
-                </Link>
+                ) : (
+                  <Link
+                    to={to}
+                    className={`${css.navItem} ${isActive ? css.active : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={handleNavigate}
+                  >
+                    <span className={css.navItemIcon}>
+                      <Icon />
+                    </span>
+                    {label}
+                  </Link>
+                )}
               </li>
             );
           })}

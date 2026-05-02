@@ -38,7 +38,7 @@ export function useNumericLocalString(
     // Let in-flight IME composition through unfiltered; reconciling the
     // controlled value mid-composition stalls Android/AT keyboards.
     // handleCompositionEnd validates the committed string.
-    if (e.nativeEvent.isComposing) {
+    if ((e.nativeEvent as InputEvent).isComposing) {
       setLocal(raw);
       return;
     }

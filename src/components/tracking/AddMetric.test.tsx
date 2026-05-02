@@ -24,8 +24,12 @@ const PROFILE: UserProfile = {
 
 const ctx = vi.hoisted(() => ({
   loadState: { status: "loaded" } as ProfileLoadState,
-  setTrackedMetrics: vi.fn(async () => undefined),
-  updateProfile: vi.fn(async () => undefined),
+  setTrackedMetrics: vi.fn<(type: "wellness" | "performance", ids: string[]) => Promise<void>>(
+    async () => undefined,
+  ),
+  updateProfile: vi.fn<(partial: Partial<UserProfile>) => Promise<void>>(
+    async () => undefined,
+  ),
 }));
 
 vi.mock("../../contexts/UserContext", () => ({

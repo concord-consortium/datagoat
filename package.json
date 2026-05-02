@@ -12,7 +12,8 @@
     "deploy:functions": "firebase deploy --only functions -P datagoat-b07dd",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "report:bundle": "node tools/bundle-size-report.mjs"
   },
   "dependencies": {
     "@concord-consortium/codap-plugin-api": "^0.1.9",

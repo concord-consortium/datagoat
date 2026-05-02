@@ -6,8 +6,12 @@ import { createElement } from "react";
 
 // Mock firebase before any imports that touch it.
 const onSnapshotMock = vi.fn();
-const setDocMock = vi.hoisted(() => vi.fn(async () => undefined));
-const updateDocMock = vi.hoisted(() => vi.fn(async () => undefined));
+const setDocMock = vi.hoisted(() =>
+  vi.fn<(...args: unknown[]) => Promise<undefined>>(async () => undefined),
+);
+const updateDocMock = vi.hoisted(() =>
+  vi.fn<(...args: unknown[]) => Promise<undefined>>(async () => undefined),
+);
 
 vi.mock("firebase/firestore", () => ({
   doc: () => ({ path: "users/u1/profile/main" }),

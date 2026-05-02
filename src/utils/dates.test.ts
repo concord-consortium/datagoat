@@ -96,6 +96,8 @@ describe("date helpers", () => {
 // fall-back, so daysAgoFromISO leans on Math.round to land on whole days.
 // These tests pin the system clock and the TZ to a US DST-observing zone so
 // CI (typically UTC) actually exercises the rounding.
+declare const process: { env: { TZ?: string } };
+
 describe("daysAgoFromISO across DST boundaries", () => {
   const originalTZ = process.env.TZ;
 

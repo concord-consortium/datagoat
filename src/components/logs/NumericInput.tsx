@@ -11,7 +11,7 @@ export interface NumericInputProps {
 
 export function NumericInput({ metric, value, onChange, labelledBy }: NumericInputProps) {
   const { local, handleChange, handleCompositionEnd } = useNumericLocalString(value, onChange);
-  const filled = local !== "" && local != null;
+  const filled = local !== "";
   // Prefer the short-form displayUnit ("hr", "g") in the log column;
   // metric.unit's long form ("hr/night", "g/kg/day") is reserved for
   // MetricDetail and info screens. "level" sentinel suppresses unit

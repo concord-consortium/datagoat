@@ -11,14 +11,6 @@ import { resolveRouteMeta } from "./routeMeta";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
-// /dashboard renders DashboardHeaderSlide (the wordmark<->motivation
-// carousel) instead of the static AppHeader. Both render inside the
-// AppShell's <header> element - OUTSIDE <main> - so the brand chrome
-// stays pinned at the top of the column while only the screen content
-// scrolls. (Matches the prototype: `.screen-header` lives outside
-// `.screen-body`, the latter being the scroll container.)
-const DASHBOARD_PATHS = new Set<string>(["/dashboard"]);
-
 // Auth-time routes don't render the hamburger trigger - they get plain auth
 // chrome instead. AppShell still hosts the menu state so any rendered
 // trigger can open it; routes that mount their own SectionHeading will
@@ -53,6 +45,19 @@ const AUTH_TITLES: Record<string, string> = {
 // never match here. The data attribute is stable across modules.
 const SKIP_LINK_EXCLUDED_ATTR = "data-skip-link-exclude";
 
+// Single selector for the skip-link focus advance: filters out
+// excluded chrome buttons inline, and skips disabled form controls
+// (calling .focus() on a disabled element silently no-ops, which would
+// strand focus on the skip link).
+const SKIP_LINK_TARGET_SELECTOR = [
+  `a[href]:not([${SKIP_LINK_EXCLUDED_ATTR}])`,
+  `button:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
+  `input:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
+  `select:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
+  `textarea:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
+  `[tabindex]:not([tabindex="-1"]):not([${SKIP_LINK_EXCLUDED_ATTR}])`,
+].join(", ");
+
 export function AppShell() {
   // NavMenuProvider hosts the open/close state so non-menu components
   // (DashboardHeaderSlide) can pause the carousel while the menu is open.
@@ -70,7 +75,13 @@ function AppShellInner() {
   const { pathname } = useLocation();
   const isAuthRoute = AUTH_PATHS.has(pathname);
   const showHeader = !isAuthRoute;
-  const isDashboard = DASHBOARD_PATHS.has(pathname);
+  // /dashboard renders DashboardHeaderSlide (the wordmark<->motivation
+  // carousel) instead of the static AppHeader. Both render inside the
+  // AppShell's <header> element - OUTSIDE <main> - so the brand chrome
+  // stays pinned at the top of the column while only the screen content
+  // scrolls. (Matches the prototype: `.screen-header` lives outside
+  // `.screen-body`, the latter being the scroll container.)
+  const isDashboard = pathname === "/dashboard";
   const routeMeta = resolveRouteMeta(pathname);
   const mainRef = useRef<HTMLElement | null>(null);
 
@@ -187,16 +198,8 @@ function AppShellInner() {
     e.preventDefault();
     const main = mainRef.current;
     if (!main) return;
-    const focusables = main.querySelectorAll<HTMLElement>(
-      'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    for (const node of focusables) {
-      if (node.hasAttribute(SKIP_LINK_EXCLUDED_ATTR)) continue;
-      node.focus();
-      return;
-    }
-    // Fallback: focus the main element itself.
-    main.focus();
+    const first = main.querySelector<HTMLElement>(SKIP_LINK_TARGET_SELECTOR);
+    (first ?? main).focus();
   }
 
   return (

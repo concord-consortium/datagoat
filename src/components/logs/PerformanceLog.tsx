@@ -94,9 +94,9 @@ export function PerformanceLog() {
         <table className={css.performanceLogTable}>
           <thead>
             <tr>
-              <th>Total</th>
-              <th>Metric</th>
-              <th id="performance-log-value-header" className={css.colRecord}>
+              <th scope="col">Total</th>
+              <th scope="col">Metric</th>
+              <th scope="col" className={css.colRecord}>
                 Record
               </th>
             </tr>

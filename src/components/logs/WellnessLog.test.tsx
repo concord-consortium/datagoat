@@ -94,9 +94,6 @@ vi.mock("../../contexts/DataContext", async () => {
 
 vi.mock("firebase/firestore", () => firestoreMockFactory(state));
 vi.mock("../../firebase", () => ({ db: {} }));
-// Override AuthContext for the real-provider tests via the same
-// switch as DataContext above.
-// (vi.mock above already handles this branch.)
 vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
 import { WellnessLog } from "./WellnessLog";

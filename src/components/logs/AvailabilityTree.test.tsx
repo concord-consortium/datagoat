@@ -23,9 +23,8 @@ function renderTree(value: Avail) {
       labelledBy="lbl"
     />,
   );
-  // Order matches the rendered tree: 0=practice Y, 1=practice N,
-  // 2=practice participation Y, 3=practice participation N,
-  // 4=game Y, 5=game N, 6=game participation Y, 7=game participation N.
+  // Order matches the rendered tree. Participation radios are only mounted
+  // when the corresponding held=true, so indices shift with `value`.
   const radios = Array.from(
     utils.container.querySelectorAll("input[type='radio']"),
   ) as HTMLInputElement[];
@@ -53,7 +52,8 @@ describe("AvailabilityTree", () => {
       gameHeld: true,
       gameParticipation: "dnp",
     });
-    fireEvent.click(radios[5]); // game N
+    // 0=practice Y, 1=practice N, 2=game Y, 3=game N, 4=game played, 5=game dnp
+    fireEvent.click(radios[3]); // game N
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       gameHeld: false,
@@ -93,7 +93,8 @@ describe("AvailabilityTree", () => {
       ...EMPTY,
       gameHeld: true,
     });
-    fireEvent.click(radios[7]); // game dnp
+    // 0=practice Y, 1=practice N, 2=game Y, 3=game N, 4=game played, 5=game dnp
+    fireEvent.click(radios[5]); // game dnp
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       gameHeld: true,

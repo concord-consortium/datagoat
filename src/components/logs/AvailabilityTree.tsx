@@ -75,9 +75,7 @@ export function AvailabilityTree({
         Did you have practice and/or a{" "}
         <span>{gameLower}</span> today?
       </span>
-      <div
-        className={`${css.availOption} ${value.practiceHeld === true ? css.availOpen : ""}`}
-      >
+      <div className={css.availOption}>
         <div
           className={css.availRow}
           role="radiogroup"
@@ -109,45 +107,45 @@ export function AvailabilityTree({
             N
           </label>
         </div>
-        <div
-          className={css.availSubs}
-          role="radiogroup"
-          aria-labelledby={`${practiceHeldLabelId} ${practiceParticipationLabelId}`}
-        >
-          <span
-            id={practiceParticipationLabelId}
-            className={css.availSubPrompt}
+        {value.practiceHeld === true && (
+          <div
+            className={css.availSubs}
+            role="radiogroup"
+            aria-labelledby={`${practiceHeldLabelId} ${practiceParticipationLabelId}`}
           >
-            Did you participate?
-          </span>
-          <label className={css.availSubLabel}>
-            <input
-              type="radio"
-              className={css.availRadio}
-              name={practiceParticipationName}
-              value="played"
-              checked={value.practiceParticipation === "played"}
-              onChange={() => setPracticeParticipation("played")}
-            />{" "}
-            Y
-          </label>
-          <label className={css.availSubLabel}>
-            <input
-              type="radio"
-              className={css.availRadio}
-              name={practiceParticipationName}
-              value="dnp"
-              checked={value.practiceParticipation === "dnp"}
-              onChange={() => setPracticeParticipation("dnp")}
-            />{" "}
-            N
-          </label>
-        </div>
+            <span
+              id={practiceParticipationLabelId}
+              className={css.availSubPrompt}
+            >
+              Did you participate?
+            </span>
+            <label className={css.availSubLabel}>
+              <input
+                type="radio"
+                className={css.availRadio}
+                name={practiceParticipationName}
+                value="played"
+                checked={value.practiceParticipation === "played"}
+                onChange={() => setPracticeParticipation("played")}
+              />{" "}
+              Y
+            </label>
+            <label className={css.availSubLabel}>
+              <input
+                type="radio"
+                className={css.availRadio}
+                name={practiceParticipationName}
+                value="dnp"
+                checked={value.practiceParticipation === "dnp"}
+                onChange={() => setPracticeParticipation("dnp")}
+              />{" "}
+              N
+            </label>
+          </div>
+        )}
       </div>
       <hr className={css.availDivider} />
-      <div
-        className={`${css.availOption} ${value.gameHeld === true ? css.availOpen : ""}`}
-      >
+      <div className={css.availOption}>
         <div
           className={css.availRow}
           role="radiogroup"
@@ -179,40 +177,42 @@ export function AvailabilityTree({
             N
           </label>
         </div>
-        <div
-          className={css.availSubs}
-          role="radiogroup"
-          aria-labelledby={`${gameHeldLabelId} ${gameParticipationLabelId}`}
-        >
-          <span
-            id={gameParticipationLabelId}
-            className={css.availSubPrompt}
+        {value.gameHeld === true && (
+          <div
+            className={css.availSubs}
+            role="radiogroup"
+            aria-labelledby={`${gameHeldLabelId} ${gameParticipationLabelId}`}
           >
-            Did you participate?
-          </span>
-          <label className={css.availSubLabel}>
-            <input
-              type="radio"
-              className={css.availRadio}
-              name={gameParticipationName}
-              value="played"
-              checked={value.gameParticipation === "played"}
-              onChange={() => setGameParticipation("played")}
-            />{" "}
-            Y
-          </label>
-          <label className={css.availSubLabel}>
-            <input
-              type="radio"
-              className={css.availRadio}
-              name={gameParticipationName}
-              value="dnp"
-              checked={value.gameParticipation === "dnp"}
-              onChange={() => setGameParticipation("dnp")}
-            />{" "}
-            N
-          </label>
-        </div>
+            <span
+              id={gameParticipationLabelId}
+              className={css.availSubPrompt}
+            >
+              Did you participate?
+            </span>
+            <label className={css.availSubLabel}>
+              <input
+                type="radio"
+                className={css.availRadio}
+                name={gameParticipationName}
+                value="played"
+                checked={value.gameParticipation === "played"}
+                onChange={() => setGameParticipation("played")}
+              />{" "}
+              Y
+            </label>
+            <label className={css.availSubLabel}>
+              <input
+                type="radio"
+                className={css.availRadio}
+                name={gameParticipationName}
+                value="dnp"
+                checked={value.gameParticipation === "dnp"}
+                onChange={() => setGameParticipation("dnp")}
+              />{" "}
+              N
+            </label>
+          </div>
+        )}
       </div>
     </div>
   );

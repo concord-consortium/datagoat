@@ -181,8 +181,6 @@ describe("PerformanceLog optimistic state via real DataContext", () => {
       latestSub(state.wellnessSubs)?.emit([]);
       latestSub(state.performanceSubs)?.emit([]);
     });
-    // Initial total is empty.
-    const totalCells = document.querySelectorAll("td");
     const goalsRow = Array.from(document.querySelectorAll("tr")).find((r) =>
       r.textContent?.includes("Goals"),
     );
@@ -194,7 +192,5 @@ describe("PerformanceLog optimistic state via real DataContext", () => {
     );
     const totalCell = updatedRow?.querySelector("td");
     expect(totalCell?.textContent).toBe("3");
-    // Avoid unused-var lint.
-    void totalCells;
   });
 });

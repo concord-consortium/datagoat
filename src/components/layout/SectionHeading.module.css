@@ -32,9 +32,9 @@
 
 /* The visible heading sits inside the .sectionHeading div alongside
    the chrome buttons. font: inherit picks up the parent's prototype
-   typography; margin: 0 zeroes the user-agent default <h2> margin
+   typography; margin: 0 zeroes the user-agent default heading margin
    that would otherwise create a gap above/below the heading. */
-.titleH2 {
+.title {
   margin: 0;
   display: inline-flex;
   align-items: center;

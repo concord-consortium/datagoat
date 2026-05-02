@@ -10,9 +10,11 @@ import TacklesIcon from "@/icons/metric-tackles.svg?react";
 // must read from this registry, not hardcode the names.
 // TODO: athlete-type-specific metric sets when designer commits.
 //
-// Wins + Losses share the trophy glyph (the prototype keys both off the
-// 'Wins/Losses' metricIcons entry); the other four perf metrics each have
-// their own glyph.
+// Wins and Losses ship as separate metrics here even though the prototype
+// keyed them off a single 'Wins/Losses' entry - pinned by the resolved
+// "Performance Log metric set" Open Question (requirements.md "Deferred
+// Work"). They share TrophyIcon because the prototype defined only the
+// combined glyph; the per-athlete-type real sets are the deferred follow-up.
 export const PERFORMANCE_METRICS: MetricDefinition[] = [
   {
     id: "wins",

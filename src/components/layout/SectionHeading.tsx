@@ -68,7 +68,7 @@ export function SectionHeading({
             <BackChevron />
           </button>
         ))}
-      <h1 className={css.titleH2}>
+      <h1 className={css.title}>
         {icon && <span className={css.iconSlot}>{icon}</span>}
         <span className={css.titleText}>{title}</span>
       </h1>
@@ -76,7 +76,7 @@ export function SectionHeading({
         <Link
           to="/dashboard"
           className={css.navHomeBtn}
-          aria-label="Dashboard"
+          aria-label="Home"
           onClick={closeMenu}
           data-skip-link-exclude
         >

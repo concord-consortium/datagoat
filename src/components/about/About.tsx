@@ -20,7 +20,7 @@ export function About() {
           src="/icons/about-nsf-logo.svg"
           width={40}
           height={40}
-          alt="NSF logo"
+          alt=""
           className={css.nsfLogo}
         />
         This material is based upon work supported by the National Science
@@ -41,19 +41,19 @@ export function About() {
           src="/icons/about-umd-logo.svg"
           width={40}
           height={40}
-          alt="University of Maryland logo"
+          alt=""
         />
         <img
           src="/icons/about-unc-logo.svg"
           width={45}
           height={36}
-          alt="University of North Carolina logo"
+          alt=""
         />
         <img
           src="/icons/about-cc-logo.svg"
           width={36}
           height={40}
-          alt="Concord Consortium logo"
+          alt=""
         />
       </div>
 

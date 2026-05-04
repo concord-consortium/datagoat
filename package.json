@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "emulators": "firebase emulators:start --only auth,firestore,hosting,functions --project=demo-datagoat --import=./firebase-data --export-on-exit",
     "deploy": "npm run build && firebase deploy --only hosting,functions,firestore:rules -P datagoat-b07dd",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting -P datagoat-b07dd",
     "deploy:functions": "firebase deploy --only functions -P datagoat-b07dd",
     "test": "vitest run",
     "test:watch": "vitest",

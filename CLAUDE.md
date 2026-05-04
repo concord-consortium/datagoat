@@ -11,6 +11,7 @@ For a high-level architectural tour (provider tree, routing, data model, optimis
 - `npm run preview` - Preview production build locally
 - `npm run emulators` - Firebase emulators (Auth 9099, Firestore 8080, Functions 5001, Hosting 5000)
 - `npm run deploy` - Build and deploy hosting + functions + Firestore rules
+- `npm run deploy:hosting` - Build and deploy only Firebase Hosting (skips functions + Firestore rules)
 - `npm run deploy:functions` - Redeploy only the Cloud Functions (e.g., to flip a kill-switch param)
 
 Local dev requires two terminals: `npm run emulators` and `npm run dev`. Set `VITE_USE_EMULATORS=true` in `.env.local` to connect to emulators. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.

@@ -49,13 +49,19 @@ function isAuthError(err: unknown): err is AuthError {
 
 export function extractBlockedNoEmailMessage(err: AuthError): string | null {
   // Blocking-function rejections surface as auth/internal-error with the
-  // thrown message embedded in error.message. We match the sentinel,
-  // strip it, and return the remainder as the user-facing copy.
+  // thrown message embedded in error.message. In production, Firebase
+  // JSON-wraps the message as {"message":"<copy>","status":...}; the JSON
+  // close-quote on the message field is the first " after the sentinel,
+  // and our user-facing copy never contains a ", so splitting at " safely
+  // strips the trailing wrapper cruft. The emulator returns clean text
+  // with no trailing ", so the split is a no-op there.
   const message = typeof err.message === "string" ? err.message : "";
   const idx = message.indexOf(BLOCKED_NO_EMAIL_SENTINEL);
   if (idx === -1) return null;
-  const after = message.slice(idx + BLOCKED_NO_EMAIL_SENTINEL.length).trim();
-  // If nothing followed the sentinel (defensive), provide a fallback.
+  const after = message
+    .slice(idx + BLOCKED_NO_EMAIL_SENTINEL.length)
+    .split('"')[0]
+    .trim();
   return after || "Your sign-in was rejected. Try a different method.";
 }
 

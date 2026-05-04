@@ -67,6 +67,17 @@ describe("extractBlockedNoEmailMessage", () => {
     );
   });
 
+  it("sentinel followed by JSON-wrapped copy (production format) -> truncates at JSON boundary", () => {
+    const err = makeAuthError(
+      "auth/internal-error",
+      undefined,
+      `Firebase: HTTP Cloud Function returned an error: {"error":{"message":"[BLOCKED_NO_EMAIL] Your Facebook account does not share an email address with us. Either share your email with Facebook, or sign up with a different method.","status":"INVALID_ARGUMENT"}} (auth/internal-error).`,
+    );
+    expect(extractBlockedNoEmailMessage(err)).toBe(
+      "Your Facebook account does not share an email address with us. Either share your email with Facebook, or sign up with a different method.",
+    );
+  });
+
   it("sentinel with nothing after -> returns fallback copy", () => {
     const err = makeAuthError(
       "auth/internal-error",

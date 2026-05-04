@@ -15,6 +15,7 @@ import {
   signInWithProvider,
   googleProvider,
   facebookProvider,
+  isEmailVerifiedOrTrustedProvider,
   type LinkingState,
 } from "../components/auth/authProviders";
 import { authErrorMessageFor, getAuthErrorCode } from "../components/auth/authErrorMessages";
@@ -34,10 +35,10 @@ import css from "./CodapPlugin.module.css";
 // in the main app routing tree, and pulling them into the plugin would
 // duplicate flows that already work fine top-level.
 //
-// Email-verification gate: if a sign-in returns a user with
-// emailVerified=false, we sign back out and show a notice pointing to
-// the main app. Same trust boundary as LoginForm's /verify-email
-// redirect, just enforced by sign-out instead of routing.
+// Email-verification gate: if a sign-in returns a user that doesn't
+// pass isEmailVerifiedOrTrustedProvider, we sign back out and show a
+// notice pointing to the main app. Same trust boundary as LoginForm's
+// /verify-email redirect, just enforced by sign-out instead of routing.
 export function CodapPluginSignIn() {
   const [error, setError] = useState("");
   const [linking, setLinking] = useState<LinkingState | null>(null);
@@ -57,7 +58,7 @@ export function CodapPluginSignIn() {
   }
 
   async function gateOnVerified(user: User): Promise<void> {
-    if (user.emailVerified) return;
+    if (isEmailVerifiedOrTrustedProvider(user)) return;
     await signOut(auth);
     setNeedsVerify(true);
   }

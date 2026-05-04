@@ -8,11 +8,23 @@ const { signInWithProviderMock } = vi.hoisted(() => ({
   signInWithProviderMock: vi.fn(),
 }));
 
-vi.mock("../components/auth/authProviders", () => ({
-  googleProvider: { id: "google" } as object,
-  facebookProvider: { id: "facebook" } as object,
-  signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
-}));
+vi.mock("../components/auth/authProviders", () => {
+  const TRUSTED = new Set(["google.com", "facebook.com"]);
+  return {
+    googleProvider: { id: "google" } as object,
+    facebookProvider: { id: "facebook" } as object,
+    signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
+    isEmailVerifiedOrTrustedProvider: (u: {
+      emailVerified?: boolean;
+      email?: string | null;
+      providerData?: Array<{ providerId: string }>;
+    }) => {
+      if (u.emailVerified) return true;
+      if (!u.email) return false;
+      return (u.providerData ?? []).some((p) => TRUSTED.has(p.providerId));
+    },
+  };
+});
 
 const { signInWithEmailAndPasswordMock, signOutMock } = vi.hoisted(() => ({
   signInWithEmailAndPasswordMock: vi.fn(),
@@ -80,7 +92,7 @@ describe("CodapPluginSignIn", () => {
     await waitFor(() => expect(loginBtn).not.toBeDisabled());
   });
 
-  it("OAuth success with unverified email signs back out and shows the verify notice", async () => {
+  it("OAuth success with unverified email (no trusted provider) signs back out and shows the verify notice", async () => {
     const user = userEvent.setup();
     signInWithProviderMock.mockResolvedValue({
       ok: true,
@@ -94,6 +106,25 @@ describe("CodapPluginSignIn", () => {
     expect(
       screen.getByText(/please verify your email/i),
     ).toBeInTheDocument();
+  });
+
+  it("OAuth success via Facebook with emailVerified=false but trusted-provider data leaves the panel quiet (bypasses verify gate)", async () => {
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: true,
+      user: {
+        emailVerified: false,
+        email: "fb@example.com",
+        providerData: [{ providerId: "facebook.com" }],
+      },
+    });
+    render(<CodapPluginSignIn />);
+    await user.click(
+      screen.getByRole("button", { name: /continue with facebook/i }),
+    );
+    await waitFor(() => expect(signInWithProviderMock).toHaveBeenCalledTimes(1));
+    expect(signOutMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
   });
 
   it("account-collision flips to the LinkAccountPanel", async () => {

@@ -8,11 +8,16 @@ import {
 } from "react";
 import { onAuthStateChanged, signOut as firebaseSignOut, type User } from "firebase/auth";
 import { auth } from "../firebase";
+import { isEmailVerifiedOrTrustedProvider } from "../components/auth/authProviders";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  isEmailVerified: boolean;
+  // True if Firebase reports the email as verified, OR the user signed in
+  // via a trusted OAuth provider (Google, Facebook). Renamed from the older
+  // `isEmailVerified` to make the "OR trusted-provider" arm explicit at the
+  // callsite - consumers should be loud about which question they're asking.
+  isEmailVerifiedOrTrusted: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -33,7 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
-      isEmailVerified: user?.emailVerified ?? false,
+      isEmailVerifiedOrTrusted: user
+        ? isEmailVerifiedOrTrustedProvider(user)
+        : false,
       signOut: () => firebaseSignOut(auth),
     }),
     [user, loading],

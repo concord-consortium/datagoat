@@ -43,7 +43,9 @@ vi.mock("../../utils/logError", () => ({
 import {
   signInWithProvider,
   extractBlockedNoEmailMessage,
+  isEmailVerifiedOrTrustedProvider,
 } from "./authProviders";
+import type { User } from "firebase/auth";
 
 const FAKE_PROVIDER = { providerId: "facebook.com" } as never;
 
@@ -54,6 +56,84 @@ function makeAuthError(
 ): AuthError {
   return { code, message, customData, name: "FirebaseError" } as AuthError;
 }
+
+describe("isEmailVerifiedOrTrustedProvider", () => {
+  function makeUser(overrides: Partial<User>): User {
+    return {
+      emailVerified: false,
+      email: "u@example.com",
+      providerData: [],
+      ...overrides,
+    } as unknown as User;
+  }
+
+  it("emailVerified=true short-circuits true regardless of providerData", () => {
+    expect(
+      isEmailVerifiedOrTrustedProvider(
+        makeUser({ emailVerified: true, providerData: [] }),
+      ),
+    ).toBe(true);
+  });
+
+  it("emailVerified=false + providerData includes facebook.com -> true", () => {
+    expect(
+      isEmailVerifiedOrTrustedProvider(
+        makeUser({
+          providerData: [
+            { providerId: "facebook.com" } as User["providerData"][number],
+          ],
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("emailVerified=false + providerData includes google.com -> true", () => {
+    expect(
+      isEmailVerifiedOrTrustedProvider(
+        makeUser({
+          providerData: [
+            { providerId: "google.com" } as User["providerData"][number],
+          ],
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("emailVerified=false + providerData includes only password -> false", () => {
+    expect(
+      isEmailVerifiedOrTrustedProvider(
+        makeUser({
+          providerData: [
+            { providerId: "password" } as User["providerData"][number],
+          ],
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("emailVerified=false + providerData includes facebook.com but no user.email -> false (defensive)", () => {
+    // The trusted-provider check is meaningless without an email to vouch
+    // for; the !user.email short-circuit guards against the user record
+    // somehow ending up email-less even though our blocking trigger
+    // rejects FB sign-ins missing email.
+    expect(
+      isEmailVerifiedOrTrustedProvider(
+        makeUser({
+          email: null,
+          providerData: [
+            { providerId: "facebook.com" } as User["providerData"][number],
+          ],
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("emailVerified=false + providerData empty -> false", () => {
+    expect(
+      isEmailVerifiedOrTrustedProvider(makeUser({ providerData: [] })),
+    ).toBe(false);
+  });
+});
 
 describe("extractBlockedNoEmailMessage", () => {
   it("sentinel followed by copy -> returns trimmed copy", () => {

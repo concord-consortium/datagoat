@@ -11,6 +11,7 @@ import type { WellnessEntry, PerformanceEntry } from "../types/data";
 import { logError } from "../utils/logError";
 import { useCodapApi, type DatasetRow } from "./codapApi";
 import { CodapPluginSignIn } from "./CodapPluginSignIn";
+import { isEmailVerifiedOrTrustedProvider } from "../components/auth/authProviders";
 import buttons from "../components/form/buttons.module.css";
 import css from "./CodapPlugin.module.css";
 
@@ -40,7 +41,7 @@ export default function CodapPlugin() {
     return <CodapPluginSignIn />;
   }
 
-  if (!user.emailVerified) {
+  if (!isEmailVerifiedOrTrustedProvider(user)) {
     return <CodapPluginUnverified />;
   }
 
@@ -67,13 +68,14 @@ function PluginSignOutBar() {
   );
 }
 
-// The verified-email gate here is UI-only: a revived IDB session with
-// emailVerified=false renders this branch without auto-revoking, and the
-// user signs out via PluginSignOutBar. The actual security boundary is
-// the per-user Firestore rule (request.auth.uid == userId), which does
-// not gate on email_verified per spec. Don't add hooks that consume
-// useUser() in this branch - that would leak unverified-user data into
-// components that aren't supposed to see it.
+// The verified-or-trusted-provider gate here is UI-only: a revived IDB
+// session that doesn't pass isEmailVerifiedOrTrustedProvider renders this
+// branch without auto-revoking, and the user signs out via
+// PluginSignOutBar. The actual security boundary is the per-user
+// Firestore rule (request.auth.uid == userId), which does not gate on
+// email_verified per spec. Don't add hooks that consume useUser() in
+// this branch - that would leak unverified-user data into components
+// that aren't supposed to see it.
 function CodapPluginUnverified() {
   return (
     <div className={css.pluginShell}>

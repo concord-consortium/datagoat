@@ -18,6 +18,23 @@ facebookProvider.addScope("email");
 
 const BLOCKED_NO_EMAIL_SENTINEL = "[BLOCKED_NO_EMAIL]";
 
+const TRUSTED_OAUTH_PROVIDERS = new Set(["google.com", "facebook.com"]);
+
+// Single source of truth for "is the user trustworthy enough to skip the
+// /verify-email gate" - used by routing, the verification banner, and the
+// CODAP plugin. Returns true if the user has a verified email per Firebase,
+// OR signed in via a trusted OAuth provider that returned an email. Trusted
+// providers (Google, Facebook) require their users to verify ownership of
+// the email before linking it to the account, so a successful OAuth with
+// email present is equivalent proof of ownership.
+export function isEmailVerifiedOrTrustedProvider(user: User): boolean {
+  if (user.emailVerified) return true;
+  if (!user.email) return false;
+  return (user.providerData ?? []).some((p) =>
+    TRUSTED_OAUTH_PROVIDERS.has(p.providerId),
+  );
+}
+
 export type SignInResult =
   | { ok: true; user: User }
   | {

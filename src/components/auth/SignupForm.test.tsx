@@ -33,11 +33,23 @@ const {
   signOutMock: vi.fn(),
 }));
 
-vi.mock("./authProviders", () => ({
-  googleProvider: { id: "google" } as object,
-  facebookProvider: { id: "facebook" } as object,
-  signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
-}));
+vi.mock("./authProviders", () => {
+  const TRUSTED = new Set(["google.com", "facebook.com"]);
+  return {
+    googleProvider: { id: "google" } as object,
+    facebookProvider: { id: "facebook" } as object,
+    signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
+    isEmailVerifiedOrTrustedProvider: (u: {
+      emailVerified?: boolean;
+      email?: string | null;
+      providerData?: Array<{ providerId: string }>;
+    }) => {
+      if (u.emailVerified) return true;
+      if (!u.email) return false;
+      return (u.providerData ?? []).some((p) => TRUSTED.has(p.providerId));
+    },
+  };
+});
 
 vi.mock("firebase/auth", async () => {
   const actual = await vi.importActual<typeof import("firebase/auth")>(
@@ -107,6 +119,30 @@ describe("SignupForm", () => {
         state: { sendFailed: true },
       }),
     );
+  });
+
+  it("OAuth success via Facebook with emailVerified=false but trusted-provider data -> navigates to /dashboard and does NOT send verification email", async () => {
+    // Trusted-provider OAuth bypasses the verify-email gate AND skips
+    // sendEmailVerification - the FB user already proved email ownership
+    // to Facebook before the OAuth handshake.
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: true,
+      user: {
+        emailVerified: false,
+        email: "fb@example.com",
+        providerData: [{ providerId: "facebook.com" }],
+      },
+    });
+    renderWithRouter(<SignupForm />, { initialEntries: ["/signup"] });
+    await user.click(
+      screen.getByRole("button", { name: /continue with facebook/i }),
+    );
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard"),
+    );
+    expect(navigateMock).not.toHaveBeenCalledWith("/verify-email");
+    expect(sendEmailVerificationMock).not.toHaveBeenCalled();
   });
 
   it("OAuth account-collision -> flips to linking mode (shared LinkAccountPanel)", async () => {

@@ -29,7 +29,7 @@ function daysAgo(n: number): string {
 
 interface MockAuthShape {
   user: { uid: string; metadata?: { creationTime?: string } } | null;
-  isEmailVerified: boolean;
+  isEmailVerifiedOrTrusted: boolean;
 }
 
 function setAuth(value: MockAuthShape) {
@@ -46,10 +46,10 @@ describe("VerificationBanner", () => {
     localStorage.clear();
   });
 
-  it("renders when !isEmailVerified && daysUnverified >= 7", () => {
+  it("renders when !isEmailVerifiedOrTrusted && daysUnverified >= 7", () => {
     setAuth({
       user: { uid: "u1", metadata: { creationTime: daysAgo(7) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -59,16 +59,16 @@ describe("VerificationBanner", () => {
   it("does not render when daysUnverified < 7", () => {
     setAuth({
       user: { uid: "u1", metadata: { creationTime: daysAgo(6) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("does not render when isEmailVerified is true (regardless of daysUnverified)", () => {
+  it("does not render when isEmailVerifiedOrTrusted is true (regardless of daysUnverified)", () => {
     setAuth({
       user: { uid: "u1", metadata: { creationTime: daysAgo(365) } },
-      isEmailVerified: true,
+      isEmailVerifiedOrTrusted: true,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -78,7 +78,7 @@ describe("VerificationBanner", () => {
     const user = userEvent.setup();
     setAuth({
       user: { uid: "u1", metadata: { creationTime: daysAgo(8) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe("VerificationBanner", () => {
 
     setAuth({
       user: { uid: "u2", metadata: { creationTime: daysAgo(8) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     renderWithRouter(<VerificationBanner />);
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe("VerificationBanner", () => {
 
     setAuth({
       user: { uid: "u1", metadata: { creationTime: daysAgo(8) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     const { rerender } = render(wrap("u1"));
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -128,7 +128,7 @@ describe("VerificationBanner", () => {
 
     setAuth({
       user: { uid: "u2", metadata: { creationTime: daysAgo(8) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     rerender(wrap("u2"));
     expect(screen.getByRole("status")).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe("VerificationBanner", () => {
   it("container has role='status'; dismiss button has aria-label='Dismiss verification reminder'", () => {
     setAuth({
       user: { uid: "u1", metadata: { creationTime: daysAgo(8) } },
-      isEmailVerified: false,
+      isEmailVerifiedOrTrusted: false,
     });
     renderWithRouter(<VerificationBanner />);
     const status = screen.getByRole("status");
@@ -163,7 +163,7 @@ describe("VerificationBanner", () => {
       ).toUTCString();
       setAuth({
         user: { uid: "u1", metadata: { creationTime } },
-        isEmailVerified: false,
+        isEmailVerifiedOrTrusted: false,
       });
       renderWithRouter(<VerificationBanner />);
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -181,7 +181,7 @@ describe("VerificationBanner", () => {
       ).toUTCString();
       setAuth({
         user: { uid: "u1", metadata: { creationTime } },
-        isEmailVerified: false,
+        isEmailVerifiedOrTrusted: false,
       });
       renderWithRouter(<VerificationBanner />);
       expect(screen.queryByRole("status")).not.toBeInTheDocument();

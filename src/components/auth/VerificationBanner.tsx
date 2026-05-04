@@ -12,7 +12,7 @@ function dismissedKey(uid: string): string {
 }
 
 export function VerificationBanner() {
-  const { user, isEmailVerified } = useAuth();
+  const { user, isEmailVerifiedOrTrusted } = useAuth();
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState<boolean>(() => {
     if (!user) return false;
@@ -31,7 +31,7 @@ export function VerificationBanner() {
   // reference across token refreshes, so AuthContext alone never re-renders us.
   const [, forceTick] = useState(0);
   useEffect(() => {
-    if (!user || isEmailVerified) return;
+    if (!user || isEmailVerifiedOrTrusted) return;
     const bump = () => forceTick((t) => t + 1);
     const intervalId = window.setInterval(bump, REFRESH_INTERVAL_MS);
     const onVisibility = () => {
@@ -42,7 +42,7 @@ export function VerificationBanner() {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [user, isEmailVerified]);
+  }, [user, isEmailVerifiedOrTrusted]);
 
   let daysUnverified = 0;
   if (user?.metadata?.creationTime) {
@@ -51,7 +51,7 @@ export function VerificationBanner() {
   }
 
   if (!user) return null;
-  if (isEmailVerified) return null;
+  if (isEmailVerifiedOrTrusted) return null;
   if (daysUnverified < DAYS_THRESHOLD) return null;
   if (dismissed) return null;
 

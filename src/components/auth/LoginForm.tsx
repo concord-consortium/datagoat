@@ -8,7 +8,11 @@ import { AuthLayout } from "./AuthLayout";
 import { SocialButtons } from "./SocialButtons";
 import { PasswordField } from "./PasswordField";
 import { LinkAccountPanel } from "./LinkAccountPanel";
-import { googleProvider, facebookProvider } from "./authProviders";
+import {
+  googleProvider,
+  facebookProvider,
+  isEmailVerifiedOrTrustedProvider,
+} from "./authProviders";
 import { authErrorMessageFor, getAuthErrorCode } from "./authErrorMessages";
 import { useOAuthSignIn } from "./useOAuthSignIn";
 import { loginSchema, type LoginValues } from "./authSchemas";
@@ -31,7 +35,9 @@ export function LoginForm() {
   });
 
   function handleLinked(user: User) {
-    navigate(user.emailVerified ? "/dashboard" : "/verify-email");
+    navigate(
+      isEmailVerifiedOrTrustedProvider(user) ? "/dashboard" : "/verify-email",
+    );
   }
 
   async function onSubmit(values: LoginValues) {

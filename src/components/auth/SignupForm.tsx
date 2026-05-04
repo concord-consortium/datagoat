@@ -12,7 +12,11 @@ import { AuthLayout } from "./AuthLayout";
 import { SocialButtons } from "./SocialButtons";
 import { PasswordField } from "./PasswordField";
 import { LinkAccountPanel } from "./LinkAccountPanel";
-import { googleProvider, facebookProvider } from "./authProviders";
+import {
+  googleProvider,
+  facebookProvider,
+  isEmailVerifiedOrTrustedProvider,
+} from "./authProviders";
 import { authErrorMessageFor, getAuthErrorCode } from "./authErrorMessages";
 import { useOAuthSignIn } from "./useOAuthSignIn";
 import { signupSchema, type SignupValues } from "./authSchemas";
@@ -26,6 +30,14 @@ export function SignupForm() {
   const { oauthBusy, error, setError, linking, setLinking, handleOAuth } =
     useOAuthSignIn({
       onUnverifiedOAuth: async (user) => {
+        // Defensive: useOAuthSignIn already gates on
+        // isEmailVerifiedOrTrustedProvider, so trusted-provider users never
+        // reach this callback. Re-checking here keeps the email-send guard
+        // local to the call - if the gate ever loosens, FB users still
+        // don't get an unsolicited verification email.
+        if (isEmailVerifiedOrTrustedProvider(user)) {
+          return { sendFailed: false };
+        }
         let sendFailed = false;
         try {
           await sendEmailVerification(user);
@@ -46,7 +58,9 @@ export function SignupForm() {
   });
 
   function handleLinked(user: User) {
-    navigate(user.emailVerified ? "/dashboard" : "/verify-email");
+    navigate(
+      isEmailVerifiedOrTrustedProvider(user) ? "/dashboard" : "/verify-email",
+    );
   }
 
   async function onSubmit(values: SignupValues) {

@@ -8,7 +8,11 @@ import type { DataLoadState } from "../types/data";
 import type { CodapStatus } from "./codapApi";
 
 interface MockAuthState {
-  user: { emailVerified: boolean; email: string | null } | null;
+  user: {
+    emailVerified: boolean;
+    email: string | null;
+    providerData?: Array<{ providerId: string }>;
+  } | null;
   loading: boolean;
 }
 
@@ -28,12 +32,26 @@ vi.mock("../contexts/AuthContext", () => ({
 
 // CodapPluginSignIn pulls in firebase/auth + authProviders via its imports;
 // stub those at the boundary so the unauthed branch renders without
-// touching real Firebase.
-vi.mock("../components/auth/authProviders", () => ({
-  googleProvider: { id: "google" } as object,
-  facebookProvider: { id: "facebook" } as object,
-  signInWithProvider: vi.fn(),
-}));
+// touching real Firebase. `isEmailVerifiedOrTrustedProvider` mirrors the
+// real helper's logic so the verify-or-trusted-provider gate behaves
+// like production.
+vi.mock("../components/auth/authProviders", () => {
+  const TRUSTED = new Set(["google.com", "facebook.com"]);
+  return {
+    googleProvider: { id: "google" } as object,
+    facebookProvider: { id: "facebook" } as object,
+    signInWithProvider: vi.fn(),
+    isEmailVerifiedOrTrustedProvider: (u: {
+      emailVerified?: boolean;
+      email?: string | null;
+      providerData?: Array<{ providerId: string }>;
+    }) => {
+      if (u.emailVerified) return true;
+      if (!u.email) return false;
+      return (u.providerData ?? []).some((p) => TRUSTED.has(p.providerId));
+    },
+  };
+});
 
 vi.mock("firebase/auth", async () => {
   const actual = await vi.importActual<typeof import("firebase/auth")>(
@@ -130,6 +148,28 @@ describe("CodapPlugin", () => {
     const signOutBtn = screen.getByRole("button", { name: /sign out/i });
     await user.click(signOutBtn);
     expect(signOutMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("Facebook sign-in with emailVerified=false but trusted-provider data renders the data-export UI (bypasses verify-email gate)", () => {
+    // Trusted-provider sign-ins (Google, Facebook with email) skip the
+    // CODAP verify-email gate the same way they skip the main app's gate.
+    ctx.authState = {
+      user: {
+        emailVerified: false,
+        email: "fb@example.com",
+        providerData: [{ providerId: "facebook.com" }],
+      },
+      loading: false,
+    };
+    userState.loadState = { status: "missing" };
+    dataState.wellness = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
+    codapState.status = "connected";
+    render(<CodapPlugin />);
+    expect(
+      screen.getByRole("button", { name: /send to codap/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
   });
 
   it("authenticated-and-verified state toggles 'Send to CODAP' enable-state and forwards selected datasets to sendDataset", async () => {

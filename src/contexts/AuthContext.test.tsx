@@ -8,13 +8,31 @@ const { onAuthStateChangedMock } = vi.hoisted(() => ({
   onAuthStateChangedMock: vi.fn(),
 }));
 
+// AuthContext now imports `isEmailVerifiedOrTrustedProvider` from
+// authProviders, which constructs Google/Facebook providers at module
+// load. Stub those alongside the auth mocks so the module graph loads
+// cleanly under jsdom.
 vi.mock("firebase/auth", () => ({
   onAuthStateChanged: onAuthStateChangedMock,
   signOut: vi.fn(async () => undefined),
+  signInWithPopup: vi.fn(),
+  GoogleAuthProvider: function GoogleAuthProvider() {
+    return {};
+  },
+  FacebookAuthProvider: Object.assign(
+    function FacebookAuthProvider() {
+      return { addScope: vi.fn() };
+    },
+    {
+      credentialFromError: vi.fn(),
+    },
+  ),
 }));
 
 vi.mock("../firebase", () => ({
   auth: {},
+  db: {},
+  getAnalyticsLazy: vi.fn(() => Promise.resolve(null)),
 }));
 
 import { AuthProvider, useAuth } from "./AuthContext";
@@ -33,7 +51,7 @@ function fakeUser(overrides: Partial<User>): User {
   } as unknown as User;
 }
 
-describe("AuthContext.isEmailVerified derivation", () => {
+describe("AuthContext.isEmailVerifiedOrTrusted derivation", () => {
   let emit: (u: User | null) => void = () => {};
 
   beforeEach(() => {
@@ -44,21 +62,47 @@ describe("AuthContext.isEmailVerified derivation", () => {
     });
   });
 
-  it("isEmailVerified is true when user.emailVerified is true (OAuth happy path)", () => {
+  it("is true when user.emailVerified is true (Google OAuth happy path)", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
     act(() => emit(fakeUser({ emailVerified: true })));
-    expect(result.current.isEmailVerified).toBe(true);
+    expect(result.current.isEmailVerifiedOrTrusted).toBe(true);
   });
 
-  it("isEmailVerified is false when user.emailVerified is false (unverified email signup)", () => {
+  it("is true when user signed in via Facebook (trusted provider) even if emailVerified is false", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
-    act(() => emit(fakeUser({ emailVerified: false })));
-    expect(result.current.isEmailVerified).toBe(false);
+    act(() =>
+      emit(
+        fakeUser({
+          emailVerified: false,
+          email: "fb@example.com",
+          providerData: [
+            { providerId: "facebook.com" } as User["providerData"][number],
+          ],
+        }),
+      ),
+    );
+    expect(result.current.isEmailVerifiedOrTrusted).toBe(true);
   });
 
-  it("isEmailVerified is false when no user is signed in", () => {
+  it("is false when user.emailVerified is false and no trusted provider (password signup)", () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() =>
+      emit(
+        fakeUser({
+          emailVerified: false,
+          email: "u@example.com",
+          providerData: [
+            { providerId: "password" } as User["providerData"][number],
+          ],
+        }),
+      ),
+    );
+    expect(result.current.isEmailVerifiedOrTrusted).toBe(false);
+  });
+
+  it("is false when no user is signed in", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
     act(() => emit(null));
-    expect(result.current.isEmailVerified).toBe(false);
+    expect(result.current.isEmailVerifiedOrTrusted).toBe(false);
   });
 });

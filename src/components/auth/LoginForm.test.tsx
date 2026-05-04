@@ -21,11 +21,23 @@ const { signInWithProviderMock } = vi.hoisted(() => ({
   signInWithProviderMock: vi.fn(),
 }));
 
-vi.mock("./authProviders", () => ({
-  googleProvider: { id: "google" } as object,
-  facebookProvider: { id: "facebook" } as object,
-  signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
-}));
+vi.mock("./authProviders", () => {
+  const TRUSTED = new Set(["google.com", "facebook.com"]);
+  return {
+    googleProvider: { id: "google" } as object,
+    facebookProvider: { id: "facebook" } as object,
+    signInWithProvider: (...args: unknown[]) => signInWithProviderMock(...args),
+    isEmailVerifiedOrTrustedProvider: (u: {
+      emailVerified?: boolean;
+      email?: string | null;
+      providerData?: Array<{ providerId: string }>;
+    }) => {
+      if (u.emailVerified) return true;
+      if (!u.email) return false;
+      return (u.providerData ?? []).some((p) => TRUSTED.has(p.providerId));
+    },
+  };
+});
 
 const { signInWithEmailAndPasswordMock, linkWithCredentialMock, signOutMock } =
   vi.hoisted(() => ({
@@ -79,7 +91,7 @@ describe("LoginForm", () => {
     expect(navigateMock).not.toHaveBeenCalledWith("/verify-email");
   });
 
-  it("OAuth success with unverified email -> navigates to /verify-email", async () => {
+  it("OAuth success with unverified email (no trusted provider) -> navigates to /verify-email", async () => {
     const user = userEvent.setup();
     signInWithProviderMock.mockResolvedValue({
       ok: true,
@@ -92,6 +104,27 @@ describe("LoginForm", () => {
     );
     expect(navigateMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).not.toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("OAuth success via Facebook with emailVerified=false but trusted-provider data -> navigates to /dashboard", async () => {
+    // Trusted-provider OAuth (Google + Facebook) is treated as
+    // verified-equivalent: a successful FB sign-in with email present
+    // bypasses the /verify-email gate.
+    const user = userEvent.setup();
+    signInWithProviderMock.mockResolvedValue({
+      ok: true,
+      user: {
+        emailVerified: false,
+        email: "fb@example.com",
+        providerData: [{ providerId: "facebook.com" }],
+      },
+    });
+    renderWithRouter(<LoginForm />, { initialEntries: ["/login"] });
+    await user.click(screen.getByRole("button", { name: /continue with facebook/i }));
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard"),
+    );
+    expect(navigateMock).not.toHaveBeenCalledWith("/verify-email");
   });
 
   it("account-collision -> flips to linking mode with LinkAccountPanel", async () => {

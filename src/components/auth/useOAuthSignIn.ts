@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AuthProvider, User } from "firebase/auth";
-import { signInWithProvider, type LinkingState } from "./authProviders";
+import {
+  signInWithProvider,
+  isEmailVerifiedOrTrustedProvider,
+  type LinkingState,
+} from "./authProviders";
 import { authErrorMessageFor } from "./authErrorMessages";
 
 export interface UseOAuthSignInOptions {
-  // Called after a successful OAuth sign-in where the returned user has
-  // emailVerified=false. Whatever it returns is forwarded as router state on
-  // the /verify-email navigation; SignupForm uses this to send a verification
-  // email and report sendFailed, while LoginForm omits the callback.
+  // Called after a successful OAuth sign-in where the returned user is not
+  // verified and not signed in via a trusted OAuth provider. Whatever it
+  // returns is forwarded as router state on the /verify-email navigation;
+  // SignupForm uses this to send a verification email and report sendFailed,
+  // while LoginForm omits the callback.
   onUnverifiedOAuth?: (user: User) => Promise<unknown> | unknown;
 }
 
@@ -25,7 +30,7 @@ export function useOAuthSignIn(options: UseOAuthSignInOptions = {}) {
     try {
       const result = await signInWithProvider(provider);
       if (result.ok) {
-        if (!result.user.emailVerified) {
+        if (!isEmailVerifiedOrTrustedProvider(result.user)) {
           const navState = onUnverifiedOAuth
             ? await onUnverifiedOAuth(result.user)
             : undefined;

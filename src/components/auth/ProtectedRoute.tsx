@@ -8,7 +8,11 @@ import { ProfileLoadError } from "./ProfileLoadError";
 //   loading -> render <Loading />, never redirect (or returning users get
 //              kicked to /profile on every cold start)
 //   missing -> redirect to /profile (onboarding entry)
-//   loaded  -> render the child route
+//   loaded  -> route to the next incomplete onboarding step, or render
+//              the child once both steps are done. Without this, a user
+//              who saved their profile but skipped tracking setup lands
+//              on /dashboard with a hamburger menu that gates every
+//              non-Profile item, leaving /setup/tracking unreachable.
 //   error   -> render the retry UI (do NOT redirect to /profile, or a
 //              transient Firestore error or migration failure would drop
 //              a real user into onboarding and overwrite their profile
@@ -23,6 +27,10 @@ export function ProtectedRoute() {
     return <ProfileLoadError onRetry={retry} kind={loadState.kind} />;
   if (loadState.status === "missing")
     return <Navigate to="/profile" replace />;
+  if (!loadState.profile.profileComplete)
+    return <Navigate to="/profile" replace />;
+  if (!loadState.profile.trackingSetupComplete)
+    return <Navigate to="/setup/tracking" replace />;
   return <Outlet />;
 }
 

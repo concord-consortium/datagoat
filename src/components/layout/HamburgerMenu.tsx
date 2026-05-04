@@ -38,20 +38,42 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
   const { pathname } = useLocation();
 
   // Narrowed onboarding gate per spec:
-  //   loading -> false (showing all items briefly is the right failure
-  //              mode; menu lives in AppShell, outside ProtectedRoute, so
-  //              this branch fires during the brief Firestore-fetch window
-  //              on cold start. A flash of disabled items would be more
-  //              disruptive than a flash of unlocked items.)
-  //   missing -> true  (new user; lock everything except Profile)
-  //   loaded  -> gate on profileComplete && trackingSetupComplete
-  const isOnboarding =
+  //   loading      -> phase='ready' (showing all items briefly is the
+  //                   right failure mode; menu lives in AppShell, outside
+  //                   ProtectedRoute, so this branch fires during the
+  //                   brief Firestore-fetch window on cold start. A flash
+  //                   of disabled items would be more disruptive than a
+  //                   flash of unlocked items.)
+  //   missing      -> phase='pre-profile' (new user; only /profile reachable)
+  //   loaded       -> phase reflects the next incomplete onboarding step
+  //                   so the user can reach the page they need to finish.
+  //                   /setup/tracking unlocks once profileComplete is true,
+  //                   even before trackingSetupComplete - otherwise a
+  //                   partway-onboarded user can't reach the page they
+  //                   need to finish onboarding.
+  const phase: "ready" | "pre-profile" | "pre-tracking" =
     loadState.status === "missing"
-      ? true
+      ? "pre-profile"
       : loadState.status === "loaded"
-        ? !loadState.profile.profileComplete ||
-          !loadState.profile.trackingSetupComplete
-        : false;
+        ? !loadState.profile.profileComplete
+          ? "pre-profile"
+          : !loadState.profile.trackingSetupComplete
+            ? "pre-tracking"
+            : "ready"
+        : "ready";
+  const isOnboarding = phase !== "ready";
+
+  function isReachable(to: string): boolean {
+    if (!isOnboarding) return true;
+    if (to === "/profile") return true;
+    if (to === "/setup/tracking" && phase === "pre-tracking") return true;
+    return false;
+  }
+
+  const gateHint =
+    phase === "pre-tracking"
+      ? "Complete your tracked data setup to unlock other sections."
+      : "Complete your profile to unlock other sections.";
 
   function handleNavigate() {
     onClose();
@@ -72,16 +94,14 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
     >
       {isOnboarding && (
         <p id="hamburgerGateHint" className={css.gateHint}>
-          Complete your profile to unlock other sections.
+          {gateHint}
         </p>
       )}
       <nav aria-label="Main">
         <ul className={css.menuList}>
           {ITEMS.map(({ label, to, Icon }) => {
             const isActive = pathname === to;
-            // Profile is always reachable so a partway-onboarded user can
-            // finish their profile. Every other route is gated.
-            const isGated = isOnboarding && to !== "/profile";
+            const isGated = !isReachable(to);
             return (
               <li
                 key={to}

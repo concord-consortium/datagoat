@@ -123,4 +123,57 @@ describe("HamburgerMenu narrowed isOnboarding derivation", () => {
     const profileLink = screen.getByRole("link", { name: /^profile$/i });
     expect(profileLink).not.toHaveAttribute("aria-disabled");
   });
+
+  it("Tracked Data Setup is gated in pre-profile phase (status='missing')", () => {
+    ctx.loadState = { status: "missing" };
+    renderMenu();
+    const link = screen.getByRole("link", { name: /tracked data setup/i });
+    expect(link).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("Tracked Data Setup is gated when profileComplete=false", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: false,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderMenu();
+    const link = screen.getByRole("link", { name: /tracked data setup/i });
+    expect(link).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("Tracked Data Setup is reachable when profileComplete=true even if trackingSetupComplete=false", () => {
+    // Bug fix: a partway-onboarded user (profile saved, tracking not yet
+    // set up) needs to be able to navigate to /setup/tracking from the
+    // hamburger menu to finish onboarding.
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: true,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderMenu();
+    const link = screen.getByRole("link", { name: /tracked data setup/i });
+    expect(link).not.toHaveAttribute("aria-disabled");
+    // Other routes (Dashboard, Wellness, etc.) stay gated.
+    const dashLink = screen.getByRole("link", { name: /dashboard/i });
+    expect(dashLink).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("gate hint copy reflects the active onboarding step", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: true,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderMenu();
+    expect(
+      screen.getByText(/complete your tracked data setup/i),
+    ).toBeInTheDocument();
+  });
 });

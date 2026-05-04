@@ -37,6 +37,7 @@ function renderRoute(
           <Route path={childPath} element={<div>CHILD</div>} />
         </Route>
         <Route path="/profile" element={<div>PROFILE</div>} />
+        <Route path="/setup/tracking" element={<div>TRACKING</div>} />
         <Route path="/login" element={<div>LOGIN</div>} />
       </Routes>
     </MemoryRouter>,
@@ -75,6 +76,40 @@ describe("ProtectedRoute", () => {
     };
     renderRoute(<ProtectedRoute />);
     expect(screen.getByText("CHILD")).toBeInTheDocument();
+  });
+
+  it("redirects to /profile when loaded but profileComplete is false", () => {
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: false,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderRoute(<ProtectedRoute />);
+    expect(screen.getByText("PROFILE")).toBeInTheDocument();
+    expect(screen.queryByText("CHILD")).toBeNull();
+  });
+
+  it("redirects to /setup/tracking when profileComplete but trackingSetupComplete is false", () => {
+    // Bug fix: without this, a partway-onboarded user landed on /dashboard
+    // and the HamburgerMenu gated every non-Profile item, leaving
+    // /setup/tracking unreachable.
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: true,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderRoute(<ProtectedRoute />);
+    expect(screen.getByText("TRACKING")).toBeInTheDocument();
+    expect(screen.queryByText("CHILD")).toBeNull();
+    expect(screen.queryByText("PROFILE")).toBeNull();
   });
 
   it("redirects to /login when no auth user", () => {

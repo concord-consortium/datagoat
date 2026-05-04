@@ -68,3 +68,7 @@ npm run dev
 - **React 19** + TypeScript + Vite
 - **Firebase** — Authentication (email/password), Firestore, Hosting
 - **vite-plugin-pwa** for service worker and offline support
+
+## Architecture
+
+For a high-level tour of how the app works (provider tree, routing, data model, optimistic writes, CODAP plugin flow, auth + blocking trigger, PWA), see [ARCHITECTURE.md](ARCHITECTURE.md).

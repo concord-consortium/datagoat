@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+For a high-level architectural tour (provider tree, routing, data model, optimistic writes, CODAP plugin flow, auth + blocking trigger, PWA), see [ARCHITECTURE.md](ARCHITECTURE.md). This file focuses on commands, conventions, and deploy-time gotchas.
+
 ## Commands
 
 - `npm run dev` - Vite dev server (port 5173)

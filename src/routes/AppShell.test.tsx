@@ -113,5 +113,31 @@ describe("AppShell", () => {
       const arg = scrollBy.mock.calls[0][0] as ScrollToOptions;
       expect(arg.top).toBeGreaterThan(0);
     });
+
+    it("does NOT scroll when the focused element sits inside a [role=dialog]", () => {
+      renderShell(
+        "/test",
+        <div role="dialog" aria-modal="true" aria-label="d">
+          <button type="button">Inside dialog</button>
+        </div>,
+      );
+
+      const main = document.getElementById("main-content")!;
+      const target = screen.getByRole("button", { name: "Inside dialog" });
+
+      vi.spyOn(main, "getBoundingClientRect").mockReturnValue(
+        fakeRect({ top: 0, bottom: 500, height: 500, width: 320, right: 320 }),
+      );
+      vi.spyOn(target, "getBoundingClientRect").mockReturnValue(
+        fakeRect({ top: 600, bottom: 650, height: 50, width: 100, right: 100, y: 600 }),
+      );
+
+      const scrollBy = vi.fn();
+      main.scrollBy = scrollBy as unknown as Element["scrollBy"];
+
+      fireEvent.focusIn(target);
+
+      expect(scrollBy).not.toHaveBeenCalled();
+    });
   });
 });

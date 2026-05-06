@@ -152,6 +152,11 @@ function AppShellInner() {
     function onFocusIn(e: FocusEvent) {
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
+      // Skip focus events that originate inside a modal dialog. Dialogs
+      // (HamburgerMenu, MobileCodapModal) mount inside <main> by design,
+      // so the main.contains check below would otherwise let focus moves
+      // inside the dialog scroll <main> behind it.
+      if (target.closest('[role="dialog"]')) return;
       if (!main!.contains(target)) return;
       // Ignore the main element itself.
       if (target === main) return;

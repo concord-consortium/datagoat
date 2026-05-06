@@ -5,8 +5,7 @@ import { render, act } from "@testing-library/react";
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
 
 const ctx = vi.hoisted(() => ({
-  isOpen: false as boolean,
-  setIsOpen: vi.fn(),
+  isAnyOverlayOpen: false as boolean,
   loadState: {
     status: "loaded",
     profile: {
@@ -29,8 +28,8 @@ const ctx = vi.hoisted(() => ({
   } as ProfileLoadState,
 }));
 
-vi.mock("../../contexts/NavMenuContext", () => ({
-  useNavMenu: () => ({ isOpen: ctx.isOpen, setIsOpen: ctx.setIsOpen }),
+vi.mock("../../contexts/OverlayContext", () => ({
+  useIsAnyOverlayOpen: () => ctx.isAnyOverlayOpen,
 }));
 
 vi.mock("../../contexts/UserContext", () => ({
@@ -76,7 +75,7 @@ describe("DashboardHeaderSlide", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    ctx.isOpen = false;
+    ctx.isAnyOverlayOpen = false;
     mql = makeMatchMedia(false);
     Object.defineProperty(window, "matchMedia", {
       writable: true,
@@ -117,8 +116,8 @@ describe("DashboardHeaderSlide", () => {
     expect(after2[0].className).toMatch(/active/);
   });
 
-  it("does NOT advance when nav menu is open (carousel paused)", async () => {
-    ctx.isOpen = true;
+  it("does NOT advance when any overlay is open (carousel paused)", async () => {
+    ctx.isAnyOverlayOpen = true;
     const { container } = render(<DashboardHeaderSlide />);
     const slideItems = container.querySelectorAll(`[class*='headerSlideItem']`);
     expect(slideItems[0].className).toMatch(/active/);

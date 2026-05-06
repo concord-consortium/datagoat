@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavMenu } from "../../contexts/NavMenuContext";
+import { useIsAnyOverlayOpen } from "../../contexts/OverlayContext";
 import { MotivationMessage } from "./MotivationMessage";
 import css from "./DashboardHeaderSlide.module.css";
 
@@ -35,7 +35,11 @@ export function DashboardHeaderSlide() {
   // animation plays. Cleared after EXIT_RESET_MS so the slide goes
   // back to default (off-screen right) for its next entry.
   const [exitingSlide, setExitingSlide] = useState<SlideIndex | null>(null);
-  const { isOpen: navOpen } = useNavMenu();
+  // Pause while any overlay is open (HamburgerMenu, MobileCodapModal,
+  // and any future Dialog). HamburgerMenu IS a Dialog, so this single
+  // signal supersedes the prior NavMenuContext-only check - keeping
+  // both would create two sources of truth for the same state.
+  const isAnyOverlayOpen = useIsAnyOverlayOpen();
   const timerRef = useRef<number | null>(null);
   const resetRef = useRef<number | null>(null);
 
@@ -54,10 +58,10 @@ export function DashboardHeaderSlide() {
     });
   }, []);
 
-  // Reduced-motion + nav-menu pause guard. Three reactive inputs:
+  // Reduced-motion + overlay pause guard. Three reactive inputs:
   //   - mq.matches (prefers-reduced-motion at schedule time AND at OS toggle)
-  //   - navOpen (pause while hamburger open per requirements
-  //              "Ambient-animation coordination")
+  //   - isAnyOverlayOpen (pause while any modal Dialog is open per
+  //                       "Ambient-animation coordination")
   //   - slide (the next-tick uses the CURRENT slide's hold value)
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -71,8 +75,7 @@ export function DashboardHeaderSlide() {
 
     const schedule = () => {
       clear();
-      if (mq.matches) return; // reduced motion - hold on current slide
-      if (navOpen) return; // nav menu open - pause
+      if (mq.matches || isAnyOverlayOpen) return;
       const hold = HOLD_TIMES[slide];
       timerRef.current = window.setTimeout(advance, hold);
     };
@@ -94,7 +97,7 @@ export function DashboardHeaderSlide() {
       }
       mq.removeEventListener("change", onMqChange);
     };
-  }, [slide, navOpen, advance]);
+  }, [slide, isAnyOverlayOpen, advance]);
 
   // Goat-tap-to-advance handler. Same `advance()` call as the timer; the
   // schedule effect re-fires after the slide change and resets the

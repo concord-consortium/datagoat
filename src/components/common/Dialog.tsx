@@ -6,6 +6,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { useOverlayRegister } from "../../contexts/OverlayContext";
 import css from "./Dialog.module.css";
 import common from "../common.module.css";
 
@@ -58,6 +59,16 @@ export function Dialog({
 }: DialogProps) {
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
+  const registerOverlay = useOverlayRegister();
+
+  // Reference-count this dialog with OverlayContext so consumers
+  // (carousel pause, focusin auto-scroll guard) can read a single
+  // "is any overlay open" signal rather than subscribing to each
+  // overlay's state individually.
+  useEffect(() => {
+    if (!open) return;
+    return registerOverlay();
+  }, [open, registerOverlay]);
 
   useEffect(() => {
     if (!open) return;

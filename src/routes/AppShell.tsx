@@ -7,6 +7,7 @@ import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import { VerificationBanner } from "../components/auth/VerificationBanner";
 import { useAuth } from "../contexts/AuthContext";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
+import { OverlayProvider } from "../contexts/OverlayContext";
 import { resolveRouteMeta } from "./routeMeta";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
@@ -63,9 +64,11 @@ export function AppShell() {
   // (DashboardHeaderSlide) can pause the carousel while the menu is open.
   // Inner shell consumes the context for the AppHeader trigger + Dialog.
   return (
-    <NavMenuProvider>
-      <AppShellInner />
-    </NavMenuProvider>
+    <OverlayProvider>
+      <NavMenuProvider>
+        <AppShellInner />
+      </NavMenuProvider>
+    </OverlayProvider>
   );
 }
 

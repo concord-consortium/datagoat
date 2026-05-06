@@ -1,22 +1,33 @@
 import { z } from "zod";
 
-// Profile validation per spec: name required, age 5-100, height ft 3-8 +
-// in 0-11, weight 50-500, gender required, athleteType required,
-// competitionTerm required.
+// Profile validation per spec: name required; age 5-100; height ft 3-8
+// (integer) + in 0-11; weight 50-500; gender required; athleteType
+// required; competitionTerm required.
 //
 // Inputs are typed as text + numeric inputmode in the prototype (so the user
 // gets a numeric keypad on iOS/Android without losing copy/paste); the schema
 // coerces the string to a number so the writer hands typed data to Firestore.
 
-// Validates a numeric string from a <input type="number">. Required +
-// non-negative, no upper bound. type="number" inputs surface their value
-// as a string (RHF default), so we coerce + range-check here.
-const numericString = (label: string) =>
+// Validates a numeric string from an <input type="number">. type="number"
+// inputs surface their value as a string (RHF default), so we coerce +
+// range-check here. HTML min/max is bypassed by paste, autofill, and
+// devtools, so the schema is the only enforcement seam.
+const numericString = (
+  label: string,
+  opts: { min: number; max: number; integer?: boolean },
+) =>
   z
     .string()
     .min(1, `${label} is required`)
     .refine((s) => /^\d+(\.\d+)?$/.test(s), `${label} must be a number`)
-    .refine((s) => Number(s) >= 0, `${label} must be 0 or greater`);
+    .refine((s) => {
+      const n = Number(s);
+      return n >= opts.min && n <= opts.max;
+    }, `${label} must be between ${opts.min} and ${opts.max}`)
+    .refine(
+      (s) => !opts.integer || Number.isInteger(Number(s)),
+      `${label} must be a whole number`,
+    );
 
 export const profileSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
@@ -32,10 +43,13 @@ export const profileSchema = z.object({
   // Resolver<TInput, _, TOutput> divergence when the schema has a
   // default()).
   nickname: z.string(),
-  age: numericString("Age"),
-  heightFt: numericString("Height (ft)"),
-  heightIn: numericString("Height (in)"),
-  weight: numericString("Weight"),
+  age: numericString("Age", { min: 5, max: 100 }),
+  // heightFt is paired with heightIn; a fractional foot would collide
+  // with the inches field (5.5 ft vs 5 ft 6 in), so it's the lone
+  // structural integer.
+  heightFt: numericString("Height (ft)", { min: 3, max: 8, integer: true }),
+  heightIn: numericString("Height (in)", { min: 0, max: 11 }),
+  weight: numericString("Weight", { min: 50, max: 500 }),
   gender: z.enum(["male", "female", "non-binary", "unspecified"], {
     message: "Please select a gender",
   }),

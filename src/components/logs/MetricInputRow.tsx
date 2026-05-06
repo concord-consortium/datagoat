@@ -12,17 +12,7 @@ import { NumericInput } from "./NumericInput";
 import type { WellnessEntry } from "../../types/data";
 import css from "./MetricInputRow.module.css";
 
-// Hydration color-scale palette - prototype line 6725.
-const HYDRATION_HEXES = [
-  "#F9F7DA",
-  "#FFFAC7",
-  "#FFF585",
-  "#FFF234",
-  "#FFEE70",
-  "#FFEA41",
-  "#DBC37A",
-  "#A7944B",
-];
+import { HYDRATION_HEXES } from "../../data/hydrationColors";
 
 interface BaseProps {
   metric: MetricDefinition;

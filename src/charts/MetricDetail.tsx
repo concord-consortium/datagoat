@@ -18,6 +18,7 @@ import type { MetricDefinition } from "../metrics/types";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
 import { getCompTermPlural } from "../data/competitionTerms";
+import { HYDRATION_HEXES } from "../data/hydrationColors";
 import { useUser } from "../contexts/UserContext";
 import {
   useWellnessData,
@@ -37,19 +38,10 @@ interface MetricDetailProps {
   type: "wellness" | "performance";
 }
 
-// Hydration color-scale palette + bracket labels (verbatim port of the
-// prototype's hydrationHexes + label runs around HTML lines 6724-6739).
-// Renders only on the Hydration MetricDetail under "Estimated Range".
-const HYDRATION_HEXES = [
-  "#F9F7DA",
-  "#FFFAC7",
-  "#FFF585",
-  "#FFF234",
-  "#FFEE70",
-  "#FFEA41",
-  "#DBC37A",
-  "#A7944B",
-];
+// Hydration bracket labels (verbatim port of the prototype's label runs
+// around HTML lines 6724-6739). Renders only on the Hydration MetricDetail
+// under "Estimated Range". The hex palette lives at
+// data/hydrationColors.ts so MetricInputRow can share it.
 
 // Single-metric deep-dive view. Reuses <MetricChart> (the placeholder from
 // Step 14). Adds metric info (Definition / Who Collects It / How Collected

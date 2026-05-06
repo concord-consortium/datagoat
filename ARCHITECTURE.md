@@ -10,7 +10,7 @@ A high-level tour of how the app is wired together, intended for a developer pic
 - **@concord-consortium/codap-plugin-api** for the CODAP integration
 - **Vitest** + **@testing-library/react** for tests (colocated `*.test.ts(x)`)
 
-No linter is configured. No CSS framework — vanilla CSS Modules per component, with shared tokens / responsive layout in [src/index.css](src/index.css).
+No linter is configured. No CSS framework — vanilla CSS Modules per component, with shared tokens / responsive layout in [src/index.css](src/index.css). See [CLAUDE.md](CLAUDE.md#css-conventions) for the full set of CSS conventions (no SCSS, no nesting, `clsx` for conditional classes, font-family tokens).
 
 ## App shell
 

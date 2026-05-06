@@ -119,11 +119,19 @@ All buttons use `appearance: none` to reset browser defaults (required for consi
 
 The app column width and height are controlled by media queries in `src/index.css` targeting `#root > main`. Component styles should not set their own width constraints beyond `max-width` on inner content (e.g., the login form uses `max-width: 320px`). Horizontal padding for all views comes from `.centered` in `common.module.css`.
 
-## Conventions
+### CSS conventions
 
 - **CSS Modules** for component styles (`*.module.css`). Import as `css`: `import css from "./Foo.module.css"`. Shared styles live in `common.module.css`.
 - **Global CSS** only in `index.css` (resets, responsive layout, surround styling).
+- **Vanilla CSS only.** No Tailwind, DaisyUI, or other utility-first frameworks. CSS custom properties (declared at `:root` in `index.css`) cover variables; CSS Modules cover scoping.
+- **No SCSS / no preprocessors.** The "no framework" rule extends to preprocessors. Concord's wider team norm of SCSS is intentionally diverged from for this project.
+- **No CSS nesting (`&`).** The implicit browser support floor is Vite's default `'modules'` baseline (no `browserslist` declared, no `build.target` override). Native CSS nesting requires Safari 16.5+/FF 117+/Chrome 120+, above that floor. Revisit if/when a higher floor is declared.
+- **Tag selectors inside class scopes use bare names** (`.foo strong`). Don't wrap them in `:global()`. CSS Modules only hash classes and ids; tag selectors pass through unchanged. `:global()` is only needed to reach a class/id defined outside the module.
+- **Conditional classNames go through `clsx()`** rather than hand-rolled template-literal concatenation. `clsx(css.btn, isActive && css.active, error && css.error)` is the convention.
+- **Font-family is tokenized at `:root`** as `--font-body` and `--font-display`. Use `var(--font-body)` / `var(--font-display)` rather than restating font-family stacks per component.
+
+### Other conventions
+
 - No em dashes - use regular hyphens.
-- No Tailwind, DaisyUI, or CSS frameworks - vanilla CSS only.
 - `APP_VERSION` and `APP_VERSION_DESC` constants in `App.tsx` control the version footer.
 

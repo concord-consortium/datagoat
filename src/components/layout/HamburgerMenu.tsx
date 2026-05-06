@@ -1,5 +1,6 @@
 import { useId, type ComponentType, type SVGProps } from "react";
 import { Link, useLocation } from "react-router-dom";
+import clsx from "clsx";
 import { Dialog } from "../common/Dialog";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
@@ -106,7 +107,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
             return (
               <li
                 key={to}
-                className={`${css.menuItem} ${isGated ? css.menuItemDisabled : ""}`}
+                className={clsx(css.menuItem, isGated && css.menuItemDisabled)}
               >
                 {isGated ? (
                   <span
@@ -124,7 +125,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
                 ) : (
                   <Link
                     to={to}
-                    className={`${css.navItem} ${isActive ? css.active : ""}`}
+                    className={clsx(css.navItem, isActive && css.active)}
                     aria-current={isActive ? "page" : undefined}
                     onClick={handleNavigate}
                   >

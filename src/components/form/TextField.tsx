@@ -1,4 +1,5 @@
 import { forwardRef, useId, type Ref } from "react";
+import clsx from "clsx";
 import fields from "./fields.module.css";
 import common from "../common.module.css";
 
@@ -84,14 +85,12 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const filled =
       hasValue ?? (typeof value === "string" ? value.length > 0 : false);
 
-    const cls = [
+    const cls = clsx(
       fields.fieldInput,
-      filled ? fields.hasValue : "",
-      short ? fields.short : "",
-      error ? fields.fieldError : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
+      filled && fields.hasValue,
+      short && fields.short,
+      error && fields.fieldError,
+    );
 
     const labelCls = labelVisuallyHidden
       ? `${fields.fieldLabel} ${common.visuallyHidden}`

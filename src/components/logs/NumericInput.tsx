@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { MetricDefinition } from "../../metrics/types";
 import { useNumericLocalString } from "./useNumericLocalString";
 import css from "./NumericInput.module.css";
@@ -24,7 +25,7 @@ export function NumericInput({ metric, value, onChange, labelledBy }: NumericInp
         <input
           type="text"
           inputMode="decimal"
-          className={`${css.recordInput} ${filled ? css.hasValue : ""}`}
+          className={clsx(css.recordInput, filled && css.hasValue)}
           value={local}
           onChange={handleChange}
           onCompositionEnd={handleCompositionEnd}

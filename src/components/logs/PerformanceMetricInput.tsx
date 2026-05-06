@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useNumericLocalString } from "./useNumericLocalString";
 import css from "./PerformanceMetricInput.module.css";
 
@@ -21,7 +22,7 @@ export function PerformanceMetricInput({
     <input
       type="text"
       inputMode="decimal"
-      className={`${css.valueInput} ${filled ? css.hasValue : ""}`}
+      className={clsx(css.valueInput, filled && css.hasValue)}
       value={local}
       onChange={handleChange}
       onCompositionEnd={handleCompositionEnd}

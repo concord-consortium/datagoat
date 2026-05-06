@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import common from "../common.module.css";
 import css from "./TimeRangePicker.module.css";
 
@@ -85,7 +86,7 @@ export function TimeRangePicker({
           <button
             key={range}
             type="button"
-            className={`${css.timeRangeBtn} ${isActive ? css.active : ""}`}
+            className={clsx(css.timeRangeBtn, isActive && css.active)}
             aria-pressed={isActive}
             onClick={() => onChange(range)}
           >

@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { Link } from "react-router-dom";
+import clsx from "clsx";
 import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
@@ -174,7 +175,11 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
               refs.current[idx] = node;
             }}
             type="button"
-            className={`${css.colorSwatch} ${css.swatchDark} ${selected ? css.selected : ""}`}
+            className={clsx(
+              css.colorSwatch,
+              css.swatchDark,
+              selected && css.selected,
+            )}
             style={{ background: bg }}
             aria-label={`${level} of ${max}`}
             aria-pressed={selected}

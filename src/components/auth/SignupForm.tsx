@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import clsx from "clsx";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
@@ -121,7 +122,7 @@ export function SignupForm() {
               id="signup-email"
               type="email"
               autoComplete="email"
-              className={`${fields.fieldInput}${errors.email ? ` ${fields.fieldError}` : ""}`}
+              className={clsx(fields.fieldInput, errors.email && fields.fieldError)}
               placeholder="you@school.edu"
               aria-required="true"
               aria-invalid={errors.email ? true : undefined}

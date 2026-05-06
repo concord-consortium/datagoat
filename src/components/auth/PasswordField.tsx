@@ -1,4 +1,5 @@
 import { forwardRef, useState, type Ref } from "react";
+import clsx from "clsx";
 import EyeIcon from "../../icons/eye.svg?react";
 import EyeOffIcon from "../../icons/eye-off.svg?react";
 import fields from "../form/fields.module.css";
@@ -79,7 +80,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
             id={id}
             name={name ?? id}
             type={shown ? "text" : "password"}
-            className={`${fields.fieldInput}${error ? ` ${fields.fieldError}` : ""}`}
+            className={clsx(fields.fieldInput, error && fields.fieldError)}
             autoComplete={autoComplete}
             aria-required={required || undefined}
             aria-invalid={error ? true : undefined}

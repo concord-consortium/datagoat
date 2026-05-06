@@ -11,7 +11,6 @@ import type { WellnessEntry, PerformanceEntry } from "../types/data";
 import { logError } from "../utils/logError";
 import { useCodapApi, type DatasetRow } from "./codapApi";
 import { CodapPluginSignIn } from "./CodapPluginSignIn";
-import { isEmailVerifiedOrTrustedProvider } from "../components/auth/authProviders";
 import buttons from "../components/form/buttons.module.css";
 import css from "./CodapPlugin.module.css";
 
@@ -27,7 +26,7 @@ import css from "./CodapPlugin.module.css";
 // library out of the initial bundle for the 99% of users who never
 // visit /codap.
 export default function CodapPlugin() {
-  const { user, loading } = useAuth();
+  const { user, loading, isEmailVerifiedOrTrusted } = useAuth();
 
   if (loading) {
     return (
@@ -41,7 +40,7 @@ export default function CodapPlugin() {
     return <CodapPluginSignIn />;
   }
 
-  if (!isEmailVerifiedOrTrustedProvider(user)) {
+  if (!isEmailVerifiedOrTrusted) {
     return <CodapPluginUnverified />;
   }
 

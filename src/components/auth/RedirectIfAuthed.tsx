@@ -1,7 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Loading } from "../Loading";
-import { isEmailVerifiedOrTrustedProvider } from "./authProviders";
 
 // Wraps /login, /signup, and /forgot-password (NOT /verify-email — see
 // AppRoutes.tsx for that exception). Authenticated users are sent on so
@@ -13,16 +12,12 @@ import { isEmailVerifiedOrTrustedProvider } from "./authProviders";
 // /login gets bounced to /dashboard, defeating the verification holding
 // pattern.
 export function RedirectIfAuthed() {
-  const { user, loading } = useAuth();
+  const { user, loading, isEmailVerifiedOrTrusted } = useAuth();
   if (loading) return <Loading />;
   if (user) {
     return (
       <Navigate
-        to={
-          isEmailVerifiedOrTrustedProvider(user)
-            ? "/dashboard"
-            : "/verify-email"
-        }
+        to={isEmailVerifiedOrTrusted ? "/dashboard" : "/verify-email"}
         replace
       />
     );

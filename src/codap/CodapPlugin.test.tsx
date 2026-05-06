@@ -22,13 +22,25 @@ const ctx: { authState: MockAuthState } = {
 
 const signOutMock = vi.fn(() => Promise.resolve());
 
-vi.mock("../contexts/AuthContext", () => ({
-  useAuth: () => ({
-    user: ctx.authState.user,
-    loading: ctx.authState.loading,
-    signOut: signOutMock,
-  }),
-}));
+vi.mock("../contexts/AuthContext", () => {
+  const TRUSTED = new Set(["google.com", "facebook.com"]);
+  return {
+    useAuth: () => {
+      const u = ctx.authState.user;
+      const isEmailVerifiedOrTrusted = u
+        ? u.emailVerified ||
+          (!!u.email &&
+            (u.providerData ?? []).some((p) => TRUSTED.has(p.providerId)))
+        : false;
+      return {
+        user: u,
+        loading: ctx.authState.loading,
+        signOut: signOutMock,
+        isEmailVerifiedOrTrusted,
+      };
+    },
+  };
+});
 
 // CodapPluginSignIn pulls in firebase/auth + authProviders via its imports;
 // stub those at the boundary so the unauthed branch renders without

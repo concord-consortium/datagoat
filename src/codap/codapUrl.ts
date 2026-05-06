@@ -12,14 +12,15 @@
 
 const CODAP_ORIGIN = "https://codap3.concord.org";
 
-// Resolves the di= origin: localhost dev wants the dev server's port so
-// CODAP iframes the *local* /codap; deployed builds want the prod
-// origin. window.location.origin already encodes the port, so we just
-// branch on hostname.
+// Resolves the di= origin to the current window's origin. This already
+// covers localhost (with port), prod, and Firebase Hosting preview
+// channels (e.g. datagoat-production--pr-3-abc.web.app), so CODAP
+// iframes the *current* /codap rather than always pointing at prod.
+// The SSR guard returns the prod origin as a defensive default; we
+// don't ship SSR.
 function diOrigin(): string {
   if (typeof window === "undefined") return "https://datagoat.concord.org";
-  if (window.location.hostname === "localhost") return window.location.origin;
-  return "https://datagoat.concord.org";
+  return window.location.origin;
 }
 
 export function buildCodapWrappedUrl(): string {

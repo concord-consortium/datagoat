@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import clsx from "clsx";
 import {
   HISTORY,
   dateAtOffset,
@@ -38,9 +39,7 @@ export function DateNav({ offset, withChip, chipState }: DateNavProps) {
     setSearchParams(params, { replace: false });
   }
 
-  const containerCls = withChip
-    ? `${css.dateNav} ${css.dateNavWithLegend}`
-    : css.dateNav;
+  const containerCls = clsx(css.dateNav, withChip && css.dateNavWithLegend);
 
   return (
     <div className={containerCls} data-sticky-chrome>

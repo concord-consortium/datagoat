@@ -92,9 +92,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       error && fields.fieldError,
     );
 
-    const labelCls = labelVisuallyHidden
-      ? `${fields.fieldLabel} ${common.visuallyHidden}`
-      : fields.fieldLabel;
+    const labelCls = clsx(fields.fieldLabel, labelVisuallyHidden && common.visuallyHidden);
 
     return (
       <div className={fields.fieldWrap}>

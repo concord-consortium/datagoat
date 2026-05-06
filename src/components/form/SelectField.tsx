@@ -1,5 +1,6 @@
 import { forwardRef, useId, type Ref } from "react";
 import { Link } from "react-router-dom";
+import clsx from "clsx";
 import ChevronDownIcon from "@/icons/chevron-down.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import fields from "./fields.module.css";
@@ -69,17 +70,13 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
       hasValue ??
       (typeof value === "string" ? value.length > 0 : false);
 
-    const selectCls = [
+    const selectCls = clsx(
       fields.fieldSelect,
-      filled ? fields.hasValue : "",
-      error ? fields.fieldError : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
+      filled && fields.hasValue,
+      error && fields.fieldError,
+    );
 
-    const labelCls = labelVisuallyHidden
-      ? `${fields.fieldLabel} ${common.visuallyHidden}`
-      : fields.fieldLabel;
+    const labelCls = clsx(fields.fieldLabel, labelVisuallyHidden && common.visuallyHidden);
 
     return (
       <div className={fields.fieldWrap}>

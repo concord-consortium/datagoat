@@ -1,4 +1,4 @@
-import type { ComponentType, SVGProps } from "react";
+import { useId, type ComponentType, type SVGProps } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Dialog } from "../common/Dialog";
 import { useAuth } from "../../contexts/AuthContext";
@@ -36,6 +36,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
   const { signOut } = useAuth();
   const { loadState } = useUser();
   const { pathname } = useLocation();
+  const gateHintId = useId();
 
   // Narrowed onboarding gate per spec:
   //   loading      -> phase='ready' (showing all items briefly is the
@@ -93,7 +94,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
       variant="topSheet"
     >
       {isOnboarding && (
-        <p id="hamburgerGateHint" className={css.gateHint}>
+        <p id={gateHintId} className={css.gateHint}>
           {gateHint}
         </p>
       )}
@@ -112,7 +113,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
                     role="link"
                     aria-disabled="true"
                     tabIndex={0}
-                    aria-describedby="hamburgerGateHint"
+                    aria-describedby={gateHintId}
                     className={css.navItem}
                   >
                     <span className={css.navItemIcon}>

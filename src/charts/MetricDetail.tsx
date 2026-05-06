@@ -17,6 +17,7 @@ import {
 import type { MetricDefinition } from "../metrics/types";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
+import { getCompTermPlural } from "../data/competitionTerms";
 import { useUser } from "../contexts/UserContext";
 import {
   useWellnessData,
@@ -125,9 +126,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
   // gender + athleteType are known; React port defers to the profile
   // when loaded, falls back to DEFAULT_PROFILE_KEY otherwise so the
   // sentence still reads (with the fallback profile's mapping).
-  const compTermPlural = profile?.competitionTerm
-    ? `${profile.competitionTerm}s`
-    : "games";
+  const compTermPlural = getCompTermPlural(profile?.competitionTerm ?? "");
   const goalText = resolveGoalText(metric.id, profileKey, compTermPlural);
   const profileLabel = profile
     ? `${capitalizeGender(profile.gender)} ${capitalizeAthleteType(profile.athleteType)}`

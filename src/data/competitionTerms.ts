@@ -41,3 +41,23 @@ export function getCompTermLowerLabel(term: string): string {
   if (!term) return "game";
   return term.toLowerCase();
 }
+
+// Plural form for body copy ("number of {games} this week"). Most terms
+// take a plain '+s' but 'match' pluralizes as 'matches' - so a naive
+// `term + "s"` produces 'matchs'. Mirror the singular fallback table
+// rather than adding an English-rules pluralizer for one outlier.
+const PLURAL_FALLBACK: Record<string, string> = {
+  bout: "bouts",
+  game: "games",
+  match: "matches",
+  meet: "meets",
+  race: "races",
+  regatta: "regattas",
+  tournament: "tournaments",
+};
+
+export function getCompTermPlural(term: string): string {
+  if (!term) return "games";
+  const lower = term.toLowerCase();
+  return PLURAL_FALLBACK[lower] ?? `${lower}s`;
+}

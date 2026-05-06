@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { getCompTermLabel, getCompTermLowerLabel } from "./competitionTerms";
+import {
+  getCompTermLabel,
+  getCompTermLowerLabel,
+  getCompTermPlural,
+} from "./competitionTerms";
 
 describe("getCompTermLabel", () => {
   it("returns 'Game' for an empty string", () => {
@@ -34,5 +38,32 @@ describe("getCompTermLowerLabel", () => {
 
   it("lowercases all-caps input", () => {
     expect(getCompTermLowerLabel("MEET")).toBe("meet");
+  });
+});
+
+describe("getCompTermPlural", () => {
+  it("returns 'games' for an empty string", () => {
+    expect(getCompTermPlural("")).toBe("games");
+  });
+
+  it.each([
+    ["bout", "bouts"],
+    ["game", "games"],
+    ["match", "matches"],
+    ["meet", "meets"],
+    ["race", "races"],
+    ["regatta", "regattas"],
+    ["tournament", "tournaments"],
+  ])("pluralizes '%s' as '%s'", (term, expected) => {
+    expect(getCompTermPlural(term)).toBe(expected);
+  });
+
+  it("falls back to '+s' for an unknown term", () => {
+    expect(getCompTermPlural("curling")).toBe("curlings");
+  });
+
+  it("normalizes case before looking up the table", () => {
+    expect(getCompTermPlural("Match")).toBe("matches");
+    expect(getCompTermPlural("MATCH")).toBe("matches");
   });
 });

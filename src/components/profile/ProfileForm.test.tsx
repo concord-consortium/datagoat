@@ -198,6 +198,27 @@ describe("ProfileForm submit", () => {
       expect(ctx.navigateMock).toHaveBeenCalledWith("/dashboard");
     });
   });
+
+  it("renders a form-level error and does not navigate when the Firestore write rejects", async () => {
+    ctx.loadState = { status: "loaded", profile: makeProfile() };
+    (ctx.updateProfileMock as unknown as Mock).mockRejectedValueOnce(
+      new Error("permission-denied"),
+    );
+    renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(ctx.logErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ stage: "profileForm.updateProfile" }),
+      );
+    });
+    expect(ctx.navigateMock).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/couldn['’]t save your profile/i),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("ProfileForm a11y", () => {

@@ -151,3 +151,10 @@
 
 /* Setup button is rendered via the shared `.cta-btn` primitive in
    form/buttons.module.css; no per-screen rule needed here. */
+
+.formError {
+  font-family: 'Barlow', sans-serif;
+  color: #F98080;
+  font-size: 16px;
+  margin: 12px 0 0;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +33,7 @@ export function ProfileForm() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { loadState, updateProfile } = useUser();
+  const [formError, setFormError] = useState("");
 
   const mode: "onboarding" | "edit" =
     loadState.status === "loaded" ? "edit" : "onboarding";
@@ -87,6 +88,7 @@ export function ProfileForm() {
 
   async function onSubmit(values: ProfileFormValues) {
     if (!user) return;
+    setFormError("");
     if (auth.currentUser) {
       try {
         await firebaseUpdateProfile(auth.currentUser, {
@@ -115,24 +117,32 @@ export function ProfileForm() {
       competitionTerm: values.competitionTerm,
     };
 
-    if (mode === "onboarding") {
-      // Only the form fields + profileComplete are written. tracked*Metrics
-      // and trackingSetupComplete are intentionally omitted: setDoc(merge:true)
-      // leaves untouched fields alone, so a true new user gets a doc without
-      // them (TrackedDataSetup defaults to the full registry when these are
-      // undefined), and a returning user who reached the form via a stale
-      // load state keeps any existing tracking selections rather than having
-      // them clobbered. The next screen (TrackedDataSetup) is what writes
-      // these fields for real.
-      await updateProfile({
-        ...profilePartial,
-        profileComplete: true,
-      });
-      navigate("/setup/tracking");
-      return;
+    try {
+      if (mode === "onboarding") {
+        // Only the form fields + profileComplete are written. tracked*Metrics
+        // and trackingSetupComplete are intentionally omitted: setDoc(merge:true)
+        // leaves untouched fields alone, so a true new user gets a doc without
+        // them (TrackedDataSetup defaults to the full registry when these are
+        // undefined), and a returning user who reached the form via a stale
+        // load state keeps any existing tracking selections rather than having
+        // them clobbered. The next screen (TrackedDataSetup) is what writes
+        // these fields for real.
+        await updateProfile({
+          ...profilePartial,
+          profileComplete: true,
+        });
+        navigate("/setup/tracking");
+        return;
+      }
+      await updateProfile(profilePartial);
+      navigate("/dashboard");
+    } catch (err) {
+      // The Auth-side displayName may have already updated; we don't
+      // try to roll it back since Firebase Auth has no transactional
+      // API. The next successful submit re-syncs both writes.
+      logError(err, { stage: "profileForm.updateProfile", mode });
+      setFormError("Couldn't save your profile. Please try again.");
     }
-    await updateProfile(profilePartial);
-    navigate("/dashboard");
   }
 
   return (
@@ -285,6 +295,12 @@ export function ProfileForm() {
         >
           {mode === "onboarding" ? "Set Up Your Tracked Data" : "Save"}
         </button>
+
+        {formError && (
+          <p className={css.formError} role="alert">
+            {formError}
+          </p>
+        )}
       </form>
     </div>
   );

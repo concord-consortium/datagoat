@@ -26,7 +26,7 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
         Skip to main content
       </a>
 
-      <div className={css.headerZone}>
+      <header className={css.headerZone}>
         {/* Diagonal speed-lines port of the prototype's `.speed-lines`
             decoration. Mounted inside the headerZone so the zone's
             overflow:hidden clips the bottom edge flush with the top of
@@ -59,18 +59,18 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
           </div>
           <p className={css.tagline}>Empowering Student Athletes through Data</p>
         </div>
-      </div>
+      </header>
 
       <div className={css.accentLine} aria-hidden="true" />
 
-      <div
+      <main
         className={css.contentBlock}
         id="main-content"
         tabIndex={-1}
       >
         <h1 className={css.authHeading}>{heading}</h1>
         <div className={css.formArea}>{children}</div>
-      </div>
+      </main>
     </div>
   );
 }

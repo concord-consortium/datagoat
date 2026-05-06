@@ -455,7 +455,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubscribe();
       // Clear pending+timers on user change. On unmount this is a
-      // no-op because the unmount effect (declared last) runs its
+      // no-op because the unmount effect (declared first) runs its
       // cleanup first, flushes, and leaves these empty.
       for (const t of wellnessTimersRef.current.values()) {
         window.clearTimeout(t);

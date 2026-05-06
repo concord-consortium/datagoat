@@ -139,6 +139,20 @@ describe("DashboardHeaderSlide", () => {
     expect(after[0].className).toMatch(/active/);
   });
 
+  it("inactive-slide wordmark has tabIndex=-1 to avoid focusable inside aria-hidden", async () => {
+    const { container } = render(<DashboardHeaderSlide />);
+    const wordmark = container.querySelector("button[class*='wordmark']");
+    expect(wordmark).not.toBeNull();
+    // Initially active (slide 0): tabIndex 0.
+    expect((wordmark as HTMLElement).tabIndex).toBe(0);
+
+    await act(async () => {
+      vi.advanceTimersByTime(WORDMARK_HOLD_MS + 10);
+    });
+    // Now inactive (slide 1 active): tabIndex -1.
+    expect((wordmark as HTMLElement).tabIndex).toBe(-1);
+  });
+
   it("subscribes to matchMedia 'change' and unsubscribes on unmount", () => {
     const { unmount } = render(<DashboardHeaderSlide />);
     expect(mql.addEventListener).toHaveBeenCalledWith(

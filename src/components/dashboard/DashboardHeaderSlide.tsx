@@ -138,6 +138,7 @@ export function DashboardHeaderSlide() {
             className={css.wordmark}
             aria-label="DataGOAT - tap to advance dashboard message"
             onClick={handleGoatClick}
+            tabIndex={slide === 0 ? 0 : -1}
             data-skip-link-exclude
           >
             <span className={css.data}>Data</span>

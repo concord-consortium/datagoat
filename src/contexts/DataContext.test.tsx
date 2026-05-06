@@ -8,7 +8,12 @@ import {
   afterEach,
 } from "vitest";
 import { renderHook, act, waitFor, render } from "@testing-library/react";
-import { createElement, useState, type ReactNode } from "react";
+import {
+  createElement,
+  StrictMode,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   firestoreMockFactory,
   authMockFactory,
@@ -36,7 +41,14 @@ import { logError } from "../utils/logError";
 import type { WellnessEntry } from "../types/data";
 
 function wrapper({ children }: { children: ReactNode }) {
-  return createElement(DataProvider, null, children);
+  // Wrap in StrictMode so the test suite catches latent
+  // double-invocation bugs that production already exercises (the
+  // app mounts under <StrictMode> in main.tsx).
+  return createElement(
+    StrictMode,
+    null,
+    createElement(DataProvider, null, children),
+  );
 }
 
 function emit(

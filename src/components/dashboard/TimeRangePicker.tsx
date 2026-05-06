@@ -4,18 +4,22 @@ import css from "./TimeRangePicker.module.css";
 // Day count per pill. Matches the prototype's data-range attribute values
 // (HTML around line 4211-4216). The pill label "7d" / "2w" / etc. is
 // purely display - the key/days are the load-bearing values.
+//
+// Values are approximate (prototype-fidelity), not load-bearing - drift
+// of +/-1-2 days at chart edges is intentional. The 365 cap matches
+// DataContext.LISTENER_WINDOW_DAYS, which IS load-bearing.
 export const TIME_RANGE_DAYS = {
   "7d": 7,
   "2w": 14,
   "30d": 30,
   "3mo": 90,
   "6mo": 180,
-  All: 365,
+  "1y": 365,
 } as const;
 
 export type TimeRangeKey = keyof typeof TIME_RANGE_DAYS;
 
-const RANGES: TimeRangeKey[] = ["7d", "2w", "30d", "3mo", "6mo", "All"];
+const RANGES: TimeRangeKey[] = ["7d", "2w", "30d", "3mo", "6mo", "1y"];
 
 // Self-describing names for screen readers. Visible buttons keep the
 // short pill label ("7d") for space; a visually-hidden expansion is
@@ -27,10 +31,10 @@ const RANGE_LABELS: Record<TimeRangeKey, string> = {
   "30d": "30 days",
   "3mo": "3 months",
   "6mo": "6 months",
-  All: "All time",
+  "1y": "Last year",
 };
 
-// Heading-style label (e.g. "Last 7 days", "All time") used by MetricDetail's
+// Heading-style label (e.g. "Last 7 days", "Last year") used by MetricDetail's
 // chart-date strip and shared by the SR description phrase below.
 export function rangeLabel(range: TimeRangeKey): string {
   switch (range) {
@@ -44,16 +48,14 @@ export function rangeLabel(range: TimeRangeKey): string {
       return "Last 3 months";
     case "6mo":
       return "Last 6 months";
-    case "All":
-      return "All time";
+    case "1y":
+      return "Last year";
   }
 }
 
 // Natural-language phrase fragment for SR descriptions, e.g. "<metric> ${phrase}.".
-// "All" gets "across all time" so the sentence doesn't collapse to the
-// ungrammatical "over the all time".
 export function rangeDescriptionPhrase(range: TimeRangeKey): string {
-  if (range === "All") return "across all time";
+  if (range === "1y") return "over the last year";
   return `over the ${rangeLabel(range).toLowerCase()}`;
 }
 

@@ -23,8 +23,8 @@ describe("TimeRangePicker", () => {
     expect(labels[0]).toContain("(7 days)");
     expect(labels[1]).toContain("2w");
     expect(labels[1]).toContain("(2 weeks)");
-    expect(labels[5]).toContain("All");
-    expect(labels[5]).toContain("(All time)");
+    expect(labels[5]).toContain("1y");
+    expect(labels[5]).toContain("(Last year)");
 
     const pressed = Array.from(buttons).filter(
       (b) => b.getAttribute("aria-pressed") === "true",
@@ -55,8 +55,8 @@ describe("TimeRangePicker", () => {
     await user.click(buttons[2]); // "30d"
     expect(onChange).toHaveBeenCalledWith("30d");
 
-    await user.click(buttons[5]); // "All"
-    expect(onChange).toHaveBeenLastCalledWith("All");
+    await user.click(buttons[5]); // "1y"
+    expect(onChange).toHaveBeenLastCalledWith("1y");
   });
 
   it("does not fire onChange when clicking the already-active pill (no re-affirmation)", async () => {

@@ -118,24 +118,25 @@ export function ProfileForm() {
     };
 
     try {
-      if (mode === "onboarding") {
-        // Only the form fields + profileComplete are written. tracked*Metrics
-        // and trackingSetupComplete are intentionally omitted: setDoc(merge:true)
-        // leaves untouched fields alone, so a true new user gets a doc without
-        // them (TrackedDataSetup defaults to the full registry when these are
-        // undefined), and a returning user who reached the form via a stale
-        // load state keeps any existing tracking selections rather than having
-        // them clobbered. The next screen (TrackedDataSetup) is what writes
-        // these fields for real.
-        await updateProfile({
-          ...profilePartial,
-          profileComplete: true,
-        });
-        navigate("/setup/tracking");
-        return;
-      }
-      await updateProfile(profilePartial);
-      navigate("/dashboard");
+      // Only the form fields + profileComplete are written. tracked*Metrics
+      // and trackingSetupComplete are intentionally omitted: setDoc(merge:true)
+      // leaves untouched fields alone, so a true new user gets a doc without
+      // them (TrackedDataSetup defaults to the full registry when these are
+      // undefined), and a returning user who reached the form via a stale
+      // load state keeps any existing tracking selections rather than having
+      // them clobbered. The next screen (TrackedDataSetup) is what writes
+      // these fields for real.
+      //
+      // profileComplete: true is set on every submit (not just onboarding)
+      // so an incomplete-but-loaded doc - reachable via routing alone, since
+      // mode is derived from loadState.status without checking
+      // profileComplete - heals on the next save instead of bouncing the
+      // user back to /profile in a loop.
+      await updateProfile({
+        ...profilePartial,
+        profileComplete: true,
+      });
+      navigate(mode === "onboarding" ? "/setup/tracking" : "/dashboard");
     } catch (err) {
       // The Auth-side displayName may have already updated; we don't
       // try to roll it back since Firebase Auth has no transactional

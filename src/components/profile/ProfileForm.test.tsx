@@ -199,6 +199,23 @@ describe("ProfileForm submit", () => {
     });
   });
 
+  it("edit submit always writes profileComplete: true so an incomplete doc heals on save", async () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({ profileComplete: false }),
+    };
+    renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(ctx.updateProfileMock).toHaveBeenCalledWith(
+        expect.objectContaining({ profileComplete: true }),
+      );
+      expect(ctx.navigateMock).toHaveBeenCalledWith("/dashboard");
+    });
+  });
+
   it("renders a form-level error and does not navigate when the Firestore write rejects", async () => {
     ctx.loadState = { status: "loaded", profile: makeProfile() };
     (ctx.updateProfileMock as unknown as Mock).mockRejectedValueOnce(

@@ -17,7 +17,7 @@
   gap: 12px;
   padding: 8px 8px;
   border-bottom: 1.5px solid var(--border);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -55,7 +55,7 @@
   gap: 12px;
   padding: 14px 8px;
   border-bottom: 1px solid var(--border);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   font-weight: 600;
   color: var(--text);

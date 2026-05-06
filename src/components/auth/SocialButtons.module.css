@@ -19,7 +19,7 @@
   border-radius: 6px;
   background: var(--surface2);
   color: var(--text);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
@@ -60,7 +60,7 @@
   gap: 14px;
   margin: 12px 0;
   color: var(--subtext);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   text-transform: lowercase;

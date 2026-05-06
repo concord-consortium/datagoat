@@ -3,7 +3,7 @@
 
 .availHelper {
   display: block;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
   font-weight: 400;
@@ -37,7 +37,7 @@
 }
 
 .availRowLabel {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--text);
   min-width: 68px;
@@ -47,7 +47,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--text);
   cursor: pointer;
@@ -55,7 +55,7 @@
 }
 
 .availSubPrompt {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
   width: 100%;
@@ -84,7 +84,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--text);
   cursor: pointer;

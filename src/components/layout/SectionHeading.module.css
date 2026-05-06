@@ -22,7 +22,7 @@
     rgba(0, 90, 115, 0.25)
   );
   color: var(--text);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.12em;

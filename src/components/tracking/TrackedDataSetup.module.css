@@ -20,7 +20,7 @@
   margin: 0 0 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 .profileWelcomeTitle {
   display: block;

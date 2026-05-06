@@ -8,7 +8,7 @@
 }
 
 .fieldLabel {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   line-height: 1;
   font-weight: 600;
@@ -44,7 +44,7 @@
   border-radius: 6px;
   padding: 14px 16px;
   color: var(--text);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   outline: none;
   -webkit-appearance: none;
@@ -99,14 +99,14 @@
 }
 
 .fieldErrorMsg {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   color: #F98080;
   font-size: 16px;
   margin: 6px 0 0;
 }
 
 .fieldHint {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
   margin: 6px 0 0;
@@ -121,7 +121,7 @@
   border-radius: 6px;
   padding: 14px 16px;
   color: var(--text);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   outline: none;
   appearance: none;
@@ -200,7 +200,7 @@
   min-height: 44px;
   background: var(--surface2);
   color: var(--text);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   border-bottom: 1px solid var(--border);
 }

@@ -79,7 +79,7 @@
 }
 
 .dateNavLabel {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 18px;
   font-weight: 700;
   color: var(--text);
@@ -130,13 +130,13 @@
   justify-content: center;
   gap: 12px;
   padding: 0 24px 6px;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
 }
 
 .dateNavLegendLabel {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 500;
   color: var(--subtext);

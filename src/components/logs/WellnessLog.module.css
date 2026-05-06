@@ -18,7 +18,7 @@
   margin: 0 0 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 .profileWelcomeTitle {
   display: block;
@@ -35,12 +35,12 @@
 .bodyTable {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   margin-bottom: 16px;
 }
 .bodyTable thead th {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;

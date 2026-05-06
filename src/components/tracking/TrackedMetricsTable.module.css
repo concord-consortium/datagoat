@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -29,7 +29,7 @@
    reads as a help line, not a body paragraph. Each drag handle
    aria-describedby's it so the keyboard shortcuts are announced on focus. */
 .reorderHint {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--subtext);
   margin: 0 0 8px;
@@ -59,12 +59,12 @@
 .dataTable {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   table-layout: auto;
 }
 .dataTable thead th {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -204,7 +204,7 @@
   border: 1.5px dashed var(--muted);
   border-radius: 6px;
   color: var(--subtext);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.08em;

@@ -60,7 +60,7 @@
 
 .dialogTitle {
   margin: 0 0 16px 0;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: 0.05em;

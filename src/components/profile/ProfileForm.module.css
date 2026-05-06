@@ -21,7 +21,7 @@
    bold-accent email; right under the welcome (or section heading in
    edit mode). */
 .signedInAs {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.4;
   color: var(--subtext);
@@ -44,7 +44,7 @@
   margin: 0 0 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 
 /* .profile-welcome-title - prototype lines 928-934 */
@@ -79,7 +79,7 @@
 
 /* .field-unit - prototype lines 1221-1226 */
 .fieldUnit {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   color: var(--subtext);
@@ -126,7 +126,7 @@
   left: 0;
   margin: 0;
   padding: 0;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   line-height: 1;
   font-weight: 600;
@@ -153,7 +153,7 @@
    form/buttons.module.css; no per-screen rule needed here. */
 
 .formError {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   color: #F98080;
   font-size: 16px;
   margin: 12px 0 0;

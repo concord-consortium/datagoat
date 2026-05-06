@@ -9,7 +9,7 @@
   color: #080A0E;
   border: none;
   border-radius: 4px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -23,7 +23,7 @@
   margin-top: 16px;
   appearance: none;
   -webkit-appearance: none;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   transition: filter var(--dur-quick) var(--ease-default),
               transform var(--dur-tap) var(--ease-default);
 }
@@ -75,7 +75,7 @@
 
 /* MobileCodapModal slot content (centered Dialog variant). */
 .modalCopy {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.5;
   color: var(--text);
@@ -96,7 +96,7 @@
   color: #080A0E;
   padding: 10px 24px;
   border-radius: 4px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;

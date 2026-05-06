@@ -21,7 +21,7 @@
   margin: 0 0 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 
 .dashboardWelcomeTitle {
@@ -53,7 +53,7 @@
 }
 
 .sectionCalToday {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   text-transform: uppercase;

@@ -118,25 +118,25 @@ describe("useCodapApi sendDataset", () => {
       });
     });
 
-    const sendRequestCall =
-      codapMocks.codapInterface.sendRequest.mock.calls[0]?.[0];
-    expect(sendRequestCall).toMatchObject({
-      action: "create",
-      resource: "dataContext",
-      values: expect.objectContaining({
-        name: "DataGOAT-Wellness",
-        title: "Health & Wellness",
-        collections: [
-          expect.objectContaining({
-            name: "Health-and-Wellness",
-            attrs: [
-              { name: "date", type: "date" },
-              { name: "hydration", type: "numeric" },
-            ],
-          }),
-        ],
+    expect(codapMocks.codapInterface.sendRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "create",
+        resource: "dataContext",
+        values: expect.objectContaining({
+          name: "DataGOAT-Wellness",
+          title: "Health & Wellness",
+          collections: [
+            expect.objectContaining({
+              name: "Health-and-Wellness",
+              attrs: [
+                { name: "date", type: "date" },
+                { name: "hydration", type: "numeric" },
+              ],
+            }),
+          ],
+        }),
       }),
-    });
+    );
     expect(codapMocks.createTable).toHaveBeenCalledWith(
       "DataGOAT-Wellness",
       undefined,

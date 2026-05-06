@@ -167,7 +167,7 @@
 }
 
 .streakMsg {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 15px;
   font-weight: 500;
   color: var(--subtext);
@@ -192,7 +192,7 @@
    override at line 955-961 narrows the wordmark to 32px and tagline
    to 13px when nested. */
 .wordmark {
-  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-family: var(--font-display);
   font-size: 32px;
   line-height: 1;
   color: var(--text);
@@ -242,7 +242,7 @@
   flex: 1;
   font-size: 13px;
   line-height: 1.35;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-weight: 500;
   color: var(--subtext);
   letter-spacing: 0.2px;

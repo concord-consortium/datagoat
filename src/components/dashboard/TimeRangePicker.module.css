@@ -19,7 +19,7 @@
   color: var(--subtext);
   border: none;
   border-radius: 0;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.04em;

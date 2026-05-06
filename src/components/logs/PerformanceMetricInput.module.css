@@ -7,7 +7,7 @@
   min-height: 44px;
   padding: 14px 16px;
   color: var(--text);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   width: 60px;
   text-align: center;

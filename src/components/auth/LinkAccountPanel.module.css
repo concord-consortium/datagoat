@@ -4,7 +4,7 @@
    from shared modules. Layout-only rules live here. */
 
 .panelHeading {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -15,7 +15,7 @@
 }
 
 .panelBody {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
   line-height: 1.45;

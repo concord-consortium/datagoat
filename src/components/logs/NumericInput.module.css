@@ -13,7 +13,7 @@
 }
 
 .fieldUnit {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   color: var(--subtext);
@@ -25,7 +25,7 @@
 /* Per-metric hint rendered below the record-input (e.g., Lean Mass:
    "Entered 2-3×/yr"). Prototype HTML line 4342. */
 .fieldHint {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
   margin: 6px 0 0;
@@ -39,7 +39,7 @@
   min-height: 44px;
   padding: 14px 16px;
   color: var(--text);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   width: 100%;
   max-width: 90px;

@@ -72,7 +72,7 @@
 /* Wordmark - prototype line 955-958 (the .screen-header override at 32px
    font-size, NOT the 52px auth-screen variant). */
 .wordmark {
-  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-family: var(--font-display);
   font-size: 32px;
   line-height: 1;
   color: var(--text);
@@ -105,7 +105,7 @@
 /* Tagline - prototype line 959-961 (.screen-header override at 13px,
    flex: 1 so it fills the remaining row width). */
 .tagline {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.35;
   font-weight: 500;

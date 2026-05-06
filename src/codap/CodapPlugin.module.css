@@ -16,12 +16,12 @@
   color: var(--text);
   padding: 24px 20px;
   box-sizing: border-box;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 
 .heading {
   margin: 0 0 12px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -45,7 +45,7 @@
 }
 
 .legend {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -79,7 +79,7 @@
 }
 
 .signedInAs {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--subtext);
   overflow: hidden;
@@ -98,7 +98,7 @@
   background: none;
   border: none;
   color: var(--accent);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -117,14 +117,14 @@
 }
 
 .signInError {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   color: #f98080;
   font-size: 16px;
   margin: 12px 0 0;
 }
 
 .signInNotice {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);

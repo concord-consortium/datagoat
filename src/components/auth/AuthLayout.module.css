@@ -96,7 +96,7 @@
 }
 
 .wordmark {
-  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-family: var(--font-display);
   font-size: 52px;
   line-height: 1;
   color: var(--text);
@@ -125,7 +125,7 @@
 }
 
 .tagline {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   color: var(--subtext);
@@ -187,7 +187,7 @@
 }
 
 .authHeading {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -198,7 +198,7 @@
 }
 
 .authSubtext {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   color: var(--subtext);
   line-height: 1.45;
@@ -217,7 +217,7 @@
   background: none;
   border: none;
   color: var(--accent);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;

@@ -16,7 +16,7 @@
 }
 
 .formError {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   color: #F98080;
   font-size: 16px;
   margin: 12px 0 0;

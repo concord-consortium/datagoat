@@ -35,7 +35,7 @@
 
 .placeholderLabel {
   fill: var(--subtext);
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   text-anchor: middle;
@@ -51,7 +51,7 @@
   border-radius: 4px;
   padding: 6px 10px;
   margin-top: 8px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;

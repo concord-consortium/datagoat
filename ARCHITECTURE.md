@@ -98,7 +98,7 @@ All app data lives under `/users/{uid}/` in Firestore:
 | `/users/{uid}/wellnessEntries/{YYYY-MM-DD}` | One [`WellnessEntry`](src/types/data.ts) per day — hydration, sleepTime, sleepEfficiency, protein, leanMass, availability tree |
 | `/users/{uid}/performanceEntries/{YYYY-MM-DD}` | One [`PerformanceEntry`](src/types/data.ts) per day — `metrics: Record<string, number \| string>` keyed by metric id |
 
-The doc id IS the date string, which is what makes the per-date upsert trivially correct (no separate query for "today's row").
+The doc id IS the date string, which is what makes the per-date upsert trivially correct (no separate query for "today's row"). One entry per metric per day is intentional — see PERFORMANCE LOG UI for the daily TOTAL column users log against (two-a-day training, prelim+final track days, AM/PM splits all collapse into the day's total). The wellness side is the same shape for the same reason.
 
 [firestore.rules](firestore.rules) is one match block: `allow read, write: if request.auth != null && request.auth.uid == userId` over `/users/{userId}/{document=**}`. Every user-scoped subcollection inherits owner-only access automatically; anything outside that path is default-denied.
 

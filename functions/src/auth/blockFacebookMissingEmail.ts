@@ -12,6 +12,11 @@ const BLOCKER_ENABLED = defineString("FACEBOOK_BLOCKER_ENABLED", {
 // rejection; the rest of the message is the user-facing copy. Keep the
 // sentinel stable even if the copy is edited — the client matches on the
 // sentinel only.
+//
+// IMPORTANT: do NOT introduce a `"` (straight or smart) into this string.
+// The client extractor at src/components/auth/authProviders.ts splits on
+// `"` to strip Firebase's JSON wrapper, so a quote in the copy would
+// silently truncate the user-facing message.
 export const BLOCKED_NO_EMAIL_MESSAGE =
   "[BLOCKED_NO_EMAIL] Your Facebook account does not share an email address with us. Either share your email with Facebook, or sign up with a different method.";
 

@@ -77,7 +77,8 @@ interface ExistingDataContextShape {
   }>;
 }
 
-function ensureSuccess(
+// Exported for unit tests; not part of the public hook surface.
+export function ensureSuccess(
   result: { success?: boolean } | undefined,
   step: string,
 ): void {
@@ -92,7 +93,9 @@ function ensureSuccess(
 // number gets `numeric`, anything else `categorical`. With no non-null
 // samples (empty data), falls back to `categorical` - CODAP's default
 // when the type isn't set.
-function inferAttributeType(name: string, rows: DatasetRow[]): string {
+//
+// Exported for unit tests; not part of the public hook surface.
+export function inferAttributeType(name: string, rows: DatasetRow[]): string {
   if (name === "date") return "date";
   for (const row of rows) {
     const v = row[name];

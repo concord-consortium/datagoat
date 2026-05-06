@@ -96,11 +96,83 @@ function CodapPluginUnverified() {
   );
 }
 
+// Profile-load-error surface for the plugin. /codap is outside
+// ProtectedRoute so the top-level <ProfileLoadError> never renders
+// here; we render an in-shell variant matching CodapPluginUnverified's
+// shape (PluginSignOutBar + heading + status copy + retry CTA). Copy
+// is reused from ProfileLoadError so wording stays consistent.
+function CodapPluginProfileError({
+  kind,
+  onRetry,
+}: {
+  kind: "migration" | "subscription";
+  onRetry: () => void;
+}) {
+  const body =
+    kind === "migration"
+      ? "There's a problem with your saved profile data. If retrying doesn't help, please contact support."
+      : "Check your connection and try again. Your data is safe.";
+  return (
+    <div className={css.pluginShell}>
+      <PluginSignOutBar />
+      <h1 className={css.heading}>DataGOAT in CODAP</h1>
+      <p className={css.signInNotice} role="alert" aria-live="assertive">
+        Couldn&rsquo;t load your profile. {body}
+      </p>
+      <button
+        type="button"
+        className={buttons.ctaBtnSecondary}
+        onClick={onRetry}
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
+// "No usable profile" surface for the plugin: the user has no
+// Firestore profile doc, or one without profileComplete=true. We
+// can't redirect to /profile from inside the iframe, so direct the
+// user to the top-level site and reload.
+function CodapPluginNoProfile() {
+  return (
+    <div className={css.pluginShell}>
+      <PluginSignOutBar />
+      <h1 className={css.heading}>DataGOAT in CODAP</h1>
+      <p className={css.signInNotice} role="status">
+        Please complete your profile at{" "}
+        <a
+          href={`${window.location.origin}/profile`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          datagoat.concord.org
+        </a>
+        , then reload this plugin.
+      </p>
+    </div>
+  );
+}
+
 function CodapPluginAuthed() {
   const { status, error, sendDataset } = useCodapApi();
-  const { loadState } = useUser();
+  const { loadState, retry } = useUser();
   const wellness = useWellnessData();
   const performance = usePerformanceData();
+
+  // Three "no usable profile" branches. Without these, the plugin
+  // would fall back to the registry default for trackedWellness /
+  // trackedPerformance and silently push wrong-by-default columns
+  // into CODAP - invisible to upstream observers.
+  if (loadState.status === "error") {
+    return <CodapPluginProfileError kind={loadState.kind} onRetry={retry} />;
+  }
+  if (
+    loadState.status === "missing" ||
+    (loadState.status === "loaded" && !loadState.profile.profileComplete)
+  ) {
+    return <CodapPluginNoProfile />;
+  }
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const [selected, setSelected] = useState<{

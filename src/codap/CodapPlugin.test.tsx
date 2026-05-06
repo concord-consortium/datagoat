@@ -88,10 +88,40 @@ vi.mock("./codapApi", () => ({
 const userState: { loadState: ProfileLoadState } = {
   loadState: { status: "loading" },
 };
+const retryMock = vi.fn();
 
 vi.mock("../contexts/UserContext", () => ({
-  useUser: () => ({ loadState: userState.loadState }),
+  useUser: () => ({ loadState: userState.loadState, retry: retryMock }),
 }));
+
+function makeCompleteProfile(
+  overrides: Partial<{
+    trackedWellnessMetrics: string[];
+    trackedPerformanceMetrics: string[];
+  }> = {},
+) {
+  return {
+    status: "loaded" as const,
+    profile: {
+      version: 1,
+      fullName: "Athlete",
+      email: "athlete@school.edu",
+      nickname: "Athlete",
+      age: 16,
+      heightFt: 5,
+      heightIn: 10,
+      weight: 150,
+      gender: "unspecified" as const,
+      athleteType: "endurance" as const,
+      competitionTerm: "season",
+      trackedWellnessMetrics: ["hydration"],
+      trackedPerformanceMetrics: ["fortyYardDash"],
+      profileComplete: true,
+      trackingSetupComplete: true,
+      ...overrides,
+    },
+  };
+}
 
 const dataState: {
   wellness: DataLoadState<WellnessEntry>;
@@ -161,7 +191,7 @@ describe("CodapPlugin", () => {
       },
       loading: false,
     };
-    userState.loadState = { status: "missing" };
+    userState.loadState = makeCompleteProfile();
     dataState.wellness = { status: "loaded", entries: [] };
     dataState.performance = { status: "loaded", entries: [] };
     codapState.status = "connected";
@@ -331,7 +361,7 @@ describe("CodapPlugin", () => {
       user: { emailVerified: true, email: "athlete@school.edu" },
       loading: false,
     };
-    userState.loadState = { status: "missing" };
+    userState.loadState = makeCompleteProfile();
     dataState.wellness = { status: "loaded", entries: [] };
     dataState.performance = { status: "loaded", entries: [] };
     codapState.status = "connecting";
@@ -342,5 +372,80 @@ describe("CodapPlugin", () => {
     expect(
       screen.getByRole("button", { name: /send to codap/i }),
     ).toBeDisabled();
+  });
+
+  it("renders profile-load-error surface with a retry button when loadState is error/migration", async () => {
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "error",
+      error: new Error("bad doc"),
+      kind: "migration",
+    };
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    expect(
+      screen.getByText(/couldn['’]t load your profile/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/problem with your saved profile data/i),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+    expect(retryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders profile-load-error surface for subscription kind with retry-friendly copy", () => {
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "error",
+      error: new Error("net"),
+      kind: "subscription",
+    };
+    render(<CodapPlugin />);
+    expect(screen.getByText(/check your connection/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /try again/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the no-profile surface when loadState is missing", () => {
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = { status: "missing" };
+    render(<CodapPlugin />);
+    expect(
+      screen.getByText(/please complete your profile/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /send to codap/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the no-profile surface when loaded profile is incomplete (profileComplete=false)", () => {
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        profileComplete: false,
+      },
+    };
+    render(<CodapPlugin />);
+    expect(
+      screen.getByText(/please complete your profile/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /send to codap/i }),
+    ).not.toBeInTheDocument();
   });
 });

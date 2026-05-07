@@ -1,27 +1,28 @@
 import type { PerformanceEntry, WellnessEntry } from "../types/data";
 import { daysAgoFromISO } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
+import { getMetricChartConfig } from "./metricChartConfig";
 
-// Look up the per-metric goal value from PROFILE_CHART_GOALS for the
-// user's gender + athleteType combo. Only sleepEfficiency / protein /
-// leanMass have goal values in the prototype; other metrics return
-// undefined and the chart simply doesn't render a goal line.
+// Resolve the chart goal line for a metric in raw units.
+// Per-profile goals from PROFILE_CHART_GOALS take precedence; metrics
+// without a per-profile entry fall back to the static goal in
+// metricChartConfig (e.g., Hydration's 3, Availability's 80%).
 export function lookupGoalLine(
   metricId: string,
   profileKey: string,
 ): number | undefined {
   const goals = PROFILE_CHART_GOALS[profileKey];
-  if (!goals) return undefined;
-  switch (metricId) {
-    case "sleepEfficiency":
-      return goals.sleepEffGoal;
-    case "protein":
-      return goals.proteinGoal;
-    case "leanMass":
-      return goals.leanMassGoal;
-    default:
-      return undefined;
+  if (goals) {
+    switch (metricId) {
+      case "sleepEfficiency":
+        return goals.sleepEffGoal;
+      case "protein":
+        return goals.proteinGoal;
+      case "leanMass":
+        return goals.leanMassGoal;
+    }
   }
+  return getMetricChartConfig(metricId).goalRaw;
 }
 
 export function formatNumber(n: number): string {

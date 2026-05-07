@@ -25,12 +25,13 @@ import {
   usePerformanceData,
 } from "../contexts/DataContext";
 import {
-  buildSeries,
+  buildAlignedSeries,
   capitalizeAthleteType,
   capitalizeGender,
   formatNumber,
   lookupGoalLine,
 } from "./chartSeries";
+import { getMetricChartConfig } from "./metricChartConfig";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -83,7 +84,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
   const series = useMemo(
     () =>
       metric
-        ? buildSeries({
+        ? buildAlignedSeries({
             type,
             metricId: metric.id,
             wellnessEntries,
@@ -105,9 +106,14 @@ export function MetricDetail({ type }: MetricDetailProps) {
 
   const goalLine =
     type === "wellness" ? lookupGoalLine(metric.id, profileKey) : undefined;
+
+  const filledValues = series
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null);
+
   const average =
-    series.length > 0
-      ? series.reduce((s, p) => s + p.value, 0) / series.length
+    filledValues.length > 0
+      ? filledValues.reduce((s, v) => s + v, 0) / filledValues.length
       : undefined;
 
   const description = dataLoading
@@ -131,13 +137,15 @@ export function MetricDetail({ type }: MetricDetailProps) {
         <div className={css.chartTitle}>Your {metric.name}</div>
         <div className={css.chartDate}>{rangeLabel(range)}</div>
         <MetricChart
-          type={chartTypeFor(metric.id)}
+          type={getMetricChartConfig(metric.id).chartType}
+          metricId={metric.id}
           data={dataLoading ? [] : series}
           goalLine={goalLine}
           averageLine={average}
           title={`Your ${metric.name}`}
           description={description}
           dataTableTitle={`${metric.name} data`}
+          rangeKey={range}
           loading={dataLoading}
         />
         <TimeRangePicker
@@ -360,11 +368,3 @@ function composeDescription(
     .join(" ");
 }
 
-// Per-metric chart type. The prototype renders Sleep Time + Protein as
-// bars (daily totals stack-style); other wellness metrics + performance
-// metrics render as lines. The placeholder doesn't draw differently per
-// type, but the prop is forwarded so the future real-chart PR picks the
-// correct primitive.
-function chartTypeFor(metricId: string): "line" | "bar" {
-  return metricId === "sleepTime" || metricId === "protein" ? "bar" : "line";
-}

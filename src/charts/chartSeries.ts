@@ -1,5 +1,5 @@
 import type { PerformanceEntry, WellnessEntry } from "../types/data";
-import { daysAgoFromISO } from "../utils/dates";
+import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
 import { getMetricChartConfig } from "./metricChartConfig";
 
@@ -122,4 +122,43 @@ export function readWellnessMetric(
     default:
       return undefined;
   }
+}
+
+// Same args as buildSeries, but emits one entry per day in the range
+// (oldest first, today last) with null for days with no entry. The
+// bar chart consumes this so it can render today-ghost when today is
+// null and leave empty slots for missing past days.
+//
+// Performance metrics: 0 is preserved (valid score). Wellness metrics:
+// 0 is treated as "not logged" (matches buildSeries / readWellnessMetric).
+export function buildAlignedSeries({
+  type,
+  metricId,
+  wellnessEntries,
+  performanceEntries,
+  rangeDays,
+}: BuildSeriesArgs): Array<{ date: string; value: number | null }> {
+  const valueByDate = new Map<string, number>();
+
+  if (type === "wellness") {
+    for (const e of wellnessEntries) {
+      const v = readWellnessMetric(e, metricId);
+      if (v !== undefined) valueByDate.set(e.date, v);
+    }
+  } else {
+    for (const e of performanceEntries) {
+      const raw = e.metrics?.[metricId];
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        valueByDate.set(e.date, raw);
+      }
+    }
+  }
+
+  const out: Array<{ date: string; value: number | null }> = [];
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const date = isoAtDaysAgo(i);
+    const v = valueByDate.get(date);
+    out.push({ date, value: v === undefined ? null : v });
+  }
+  return out;
 }

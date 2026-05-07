@@ -74,6 +74,11 @@ const LEAN_MASS: MetricChartConfig = {
   formatValue: fmtRaw,
 };
 
+// Availability is currently a tree (practice + game yes/no) reduced to a
+// single 0/1 sentinel by readWellnessMetric, so a 0..100% axis with a goal
+// line at 80 is aspirational — the bar will appear as a 1-unit sliver
+// against this scale. Content-team work to define a real availability
+// percentage (e.g., participation rate over a week) is a follow-up.
 const AVAILABILITY: MetricChartConfig = {
   chartType: "bar",
   yTopRaw: 100,

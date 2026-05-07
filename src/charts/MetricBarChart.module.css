@@ -32,7 +32,7 @@
 }
 
 .goalLine {
-  stroke: var(--accent2, #E8E29A);
+  stroke: #E8E29A;
   stroke-width: 1;
 }
 
@@ -44,12 +44,12 @@
 }
 
 .goalBadgeRect {
-  fill: var(--accent2, #E8E29A);
+  fill: #E8E29A;
 }
 
 .avgBadgeRect {
-  fill: var(--surface2, #20262E);
-  stroke: var(--accent2, #E8E29A);
+  fill: var(--surface2);
+  stroke: #E8E29A;
 }
 
 .badgeText {

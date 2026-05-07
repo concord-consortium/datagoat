@@ -16,6 +16,12 @@
   text-anchor: middle;
 }
 
+.xAxisLine,
+.yAxisLine {
+  stroke: var(--subtext);
+  stroke-width: 1;
+}
+
 .barAtOrAboveGoal {
   fill: #2ECC52;
 }

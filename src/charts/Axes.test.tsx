@@ -49,6 +49,42 @@ describe("Axes — y-axis labels", () => {
   });
 });
 
+describe("Axes — axis lines", () => {
+  it("draws a vertical y-axis line at plotLeft from plotTop to plotBottom", () => {
+    const { container } = renderInSvg(
+      <Axes
+        config={getMetricChartConfig("sleepEfficiency")}
+        geom={geom}
+        data={[]}
+        rangeKey="7d"
+      />,
+    );
+    const yAxis = container.querySelector('line[class*="yAxisLine"]')!;
+    expect(yAxis).toBeTruthy();
+    expect(Number(yAxis.getAttribute("x1"))).toBe(geom.plotLeft);
+    expect(Number(yAxis.getAttribute("x2"))).toBe(geom.plotLeft);
+    expect(Number(yAxis.getAttribute("y1"))).toBe(geom.plotTop);
+    expect(Number(yAxis.getAttribute("y2"))).toBe(geom.plotBottom);
+  });
+
+  it("draws a horizontal x-axis line at plotBottom from plotLeft to plotRight", () => {
+    const { container } = renderInSvg(
+      <Axes
+        config={getMetricChartConfig("sleepEfficiency")}
+        geom={geom}
+        data={[]}
+        rangeKey="7d"
+      />,
+    );
+    const xAxis = container.querySelector('line[class*="xAxisLine"]')!;
+    expect(xAxis).toBeTruthy();
+    expect(Number(xAxis.getAttribute("x1"))).toBe(geom.plotLeft);
+    expect(Number(xAxis.getAttribute("x2"))).toBe(geom.plotRight);
+    expect(Number(xAxis.getAttribute("y1"))).toBe(geom.plotBottom);
+    expect(Number(xAxis.getAttribute("y2"))).toBe(geom.plotBottom);
+  });
+});
+
 describe("Axes — x-axis labels", () => {
   function xLabels(container: HTMLElement) {
     return Array.from(container.querySelectorAll('text[class*="xLabel"]')).map(

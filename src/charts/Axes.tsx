@@ -18,6 +18,20 @@ export function Axes({ config, geom, data, rangeKey }: AxesProps) {
 
   return (
     <g aria-hidden="true">
+      <line
+        className={css.yAxisLine}
+        x1={geom.plotLeft}
+        x2={geom.plotLeft}
+        y1={geom.plotTop}
+        y2={geom.plotBottom}
+      />
+      <line
+        className={css.xAxisLine}
+        x1={geom.plotLeft}
+        x2={geom.plotRight}
+        y1={geom.plotBottom}
+        y2={geom.plotBottom}
+      />
       <text
         className={css.yLabel}
         x={geom.plotLeft - 6}

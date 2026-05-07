@@ -7,8 +7,35 @@
   padding: 0 1rem;
 }
 
-.title {
-  font-size: 3rem;
-  font-weight: 700;
-  margin: 0;
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skipLink {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  z-index: 1000;
+  padding: 8px 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  border: 2px solid var(--focus-ring);
+  border-radius: 0 0 4px 0;
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: top var(--dur-quick) var(--ease-default);
+}
+
+.skipLink:focus {
+  top: 0;
+  outline: none;
 }

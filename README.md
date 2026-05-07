@@ -53,6 +53,28 @@ npm run emulators
 npm run dev
 ```
 
+## Preview channels
+
+Firebase Hosting preview channels publish a temporary URL pointing at a build of the app, useful for testing changes against the real Firebase project before promoting to production.
+
+```bash
+npm run build
+firebase hosting:channel:deploy <channel-name>
+```
+
+The CLI prints a URL like `https://<project>--<channel-name>-<hash>.web.app`. Channels auto-expire after 7 days by default (pass `--expires 30d` to extend, max 30).
+
+Before building, set `VITE_USE_EMULATORS=false` (or unset) in `.env.local` — Vite loads `.env.local` for production builds too, so a build with the emulator flag still set will try to connect to emulators that don't exist on the deployed URL.
+
+Only **hosting** is channel-isolated. **Cloud Functions, Firestore data, and Auth state** are project-level and shared with production — sign-ins and writes from the preview URL hit the same backend as the live site.
+
+To list or delete channels:
+
+```bash
+firebase hosting:channel:list
+firebase hosting:channel:delete <channel-name>
+```
+
 ## Available Scripts
 
 | Script              | Description                                         |
@@ -68,3 +90,7 @@ npm run dev
 - **React 19** + TypeScript + Vite
 - **Firebase** — Authentication (email/password), Firestore, Hosting
 - **vite-plugin-pwa** for service worker and offline support
+
+## Architecture
+
+For a high-level tour of how the app works (provider tree, routing, data model, optimistic writes, CODAP plugin flow, auth + blocking trigger, PWA), see [ARCHITECTURE.md](ARCHITECTURE.md).

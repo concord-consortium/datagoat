@@ -1,0 +1,191 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html
+   (.date-nav rules at lines 2543-2628). */
+
+.dateNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 4px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  background-image: linear-gradient(
+    rgba(0, 90, 115, 0.25),
+    rgba(0, 90, 115, 0.25)
+  );
+  border-bottom: 1px solid var(--border);
+}
+
+.dateNavWithLegend {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dateNavRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 4px 24px 0;
+  width: 100%;
+}
+
+.dateNavCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.dateNavBtn {
+  background: none;
+  border: none;
+  color: var(--subtext);
+  cursor: pointer;
+  padding: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--dur-quick) var(--ease-default),
+              background var(--dur-quick) var(--ease-default);
+}
+
+.dateNavBtn:hover {
+  color: var(--accent);
+  background: rgba(0, 179, 192, 0.12);
+}
+
+.dateNavBtn:active {
+  transform: scale(0.95);
+}
+
+.dateNavBtn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.dateNavBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dateNavLabel {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+/* Chip - color + shape encoding so deuteranopic / protanopic users get a
+   non-color cue. Per spec RESOLVED issue:
+     All  = solid filled square
+     Some = filled square with diagonal stripe overlay
+     None = empty bordered square
+   */
+.dateNavChip {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: background var(--dur-base) var(--ease-default),
+              border-color var(--dur-base) var(--ease-default);
+}
+
+.chipAll {
+  background: var(--accent);
+}
+
+.chipSome {
+  background: linear-gradient(
+    45deg,
+    var(--accent-dark) 0%,
+    var(--accent-dark) 40%,
+    rgba(255, 255, 255, 0.3) 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    var(--accent-dark) 50%,
+    var(--accent-dark) 100%
+  );
+}
+
+.chipNone {
+  background: transparent;
+  border: 1.5px solid var(--border);
+}
+
+/* Legend - prototype lines 2611-2628 */
+.dateNavLegend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 24px 6px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--subtext);
+}
+
+.dateNavLegendLabel {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--subtext);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.heatmapLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heatmapLegendSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.swatchAll {
+  background: var(--accent);
+}
+
+/* Match the chip's color+shape encoding so the legend preview reflects
+   the live chip - per spec RESOLVED issue, "Some" uses a diagonal stripe
+   for non-color cue. The prototype's legend uses solid #007A84; the
+   spec's a11y improvement applies the stripe to BOTH chip and legend
+   for visual consistency. */
+.swatchSome {
+  background: linear-gradient(
+    45deg,
+    var(--accent-dark) 0%,
+    var(--accent-dark) 40%,
+    rgba(255, 255, 255, 0.3) 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    var(--accent-dark) 50%,
+    var(--accent-dark) 100%
+  );
+}
+
+.swatchNone {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dateNavBtn,
+  .dateNavChip {
+    transition: none;
+  }
+}

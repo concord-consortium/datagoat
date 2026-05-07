@@ -1,0 +1,39 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Header wraps the brand chrome (AppHeader / DashboardHeaderSlide) and
+   the route's SectionHeading. Sits OUTSIDE <main> so the entire header
+   stack stays pinned at the top of the column - only screen content
+   scrolls. Matches the prototype's `.screen-header + .accent-line +
+   .section-heading` layout where the section-heading is positioned
+   above `.screen-body` (the scroll container). */
+.header {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  /* No gap or padding - children butt up against each other. The
+     accent-line at the bottom of AppHeader/DashboardHeaderSlide flows
+     directly into the SectionHeading below with no visible black
+     stripe between them. */
+}
+
+.main {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  /* Solid var(--bg) matches the prototype's .screen-body (HTML line 962),
+     which blocks the .phone::before ambient gradient from bleeding into
+     the screen content. The header above still shows the gradient via
+     its own ::before overlay (AppHeader / DashboardHeaderSlide). */
+  background: var(--bg);
+  color: var(--text);
+}
+
+.main:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}

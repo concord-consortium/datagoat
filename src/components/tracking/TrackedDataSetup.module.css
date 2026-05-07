@@ -1,0 +1,50 @@
+/* Ported from /home/doug/docs/datagoat-2026-04-27.html. Profile-welcome
+   and screen-content rules are shared with ProfileForm. */
+
+/* .screen-content - prototype line 1025 */
+.screenContent {
+  padding: 20px 24px 100px;
+}
+.screenContent > *:last-child,
+.screenContent > *:last-child > *:last-child {
+  margin-bottom: 0;
+}
+
+/* .profile-welcome - prototype lines 918-927.
+   The prototype reuses .profile-welcome on Tracked Data Setup; same
+   visual rule as ProfileForm. */
+.profileWelcome {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+}
+.profileWelcomeTitle {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.profileWelcome p {
+  margin: 0;
+}
+
+/* "Go To Dashboard" wrapper - prototype "<div style='margin-top:16px;'>" */
+.dashboardBtnWrap {
+  margin-top: 16px;
+}
+
+/* Setup-btn arrow - prototype lines 1387-1391 */
+.arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}

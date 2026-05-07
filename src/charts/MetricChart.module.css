@@ -1,0 +1,83 @@
+/* MetricChart placeholder. Real chart rendering is a follow-up story; this
+   ships the prop API and a11y contract behind a gray-box rect with TBD
+   text. The chart-wrapper class is ported from the prototype (line 2322)
+   but the placeholder visuals are new. */
+
+.chartWrapper {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+.chartSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid #567092;
+}
+
+.placeholderRect {
+  fill: var(--surface2);
+}
+
+/* Distinguishable from .placeholderRect so a reviewer can tell loading
+   from "TBD placeholder" at a glance. Per spec line 774: "skeleton (a
+   different gray-box variant - distinguishable from the 'TBD'
+   placeholder so a reviewer doesn't conflate the two states)." */
+.skeletonRect {
+  fill: var(--surface);
+  stroke: #567092;
+  stroke-dasharray: 4 4;
+  stroke-width: 1;
+}
+
+.placeholderLabel {
+  fill: var(--subtext);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* "Show data" toggle button. */
+.showDataToggle {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: color var(--dur-quick) var(--ease-default),
+              border-color var(--dur-quick) var(--ease-default),
+              background var(--dur-quick) var(--ease-default);
+}
+
+.showDataToggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(0, 179, 192, 0.08);
+}
+
+.showDataToggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showDataToggle {
+    transition: none;
+  }
+}

@@ -1,0 +1,92 @@
+/* Backdrop is position: absolute (not fixed) so it scopes to its nearest
+   positioned ancestor. AppShell mounts the HamburgerMenu's Dialog inside
+   <main> (position: relative), so the overlay covers the content area
+   only and the AppHeader stays visible above it. The same primitive
+   inside the .app container (max-width 440px, position: relative) keeps
+   the menu inside the column on desktop. */
+.dialogBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 10, 14, 0.85);
+  z-index: 50;
+  display: flex;
+  animation: fadeIn var(--dur-base) var(--ease-out);
+}
+
+.centered {
+  align-items: center;
+  justify-content: center;
+}
+
+/* topSheet: a top-anchored panel that drops in from above
+   (translateY(-100%) -> translateY(0)) inside its container. Material
+   Design's "top sheet" — paired conceptually with bottom-sheet and
+   side-sheet. Used by the prototype's .nav-menu and any future
+   top-anchored overlay (notifications, banners, etc.). */
+.topSheet {
+  align-items: flex-start;
+  justify-content: stretch;
+  flex-direction: column;
+}
+
+.dialogSurfaceCentered {
+  position: relative;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin: 16px;
+  max-width: 360px;
+  width: calc(100% - 32px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  animation: rise var(--dur-base) var(--ease-out);
+}
+
+.dialogSurfaceTopSheet {
+  position: relative;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  margin: 0 12px;
+  width: calc(100% - 24px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: topSheetSlideDown var(--dur-base) var(--ease-out);
+  transform-origin: top center;
+}
+
+.dialogTitle {
+  margin: 0 0 16px 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes topSheetSlideDown {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialogBackdrop,
+  .dialogSurfaceCentered,
+  .dialogSurfaceTopSheet {
+    animation: none;
+  }
+}

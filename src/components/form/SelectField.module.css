@@ -1,0 +1,56 @@
+/* Inline info button alongside the select. Matches the prototype's
+   .field-with-info pattern (a small helper next to the select). */
+.selectWithInfo {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.selectWithInfo > .selectInner {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Wrapper so the chevron can be absolutely positioned relative to the
+   <select>. Rotation is driven by the :open pseudo-class so it tracks
+   the dropdown's actual open/close state (selecting an option un-rotates
+   immediately, even though the select retains focus). */
+.selectInner {
+  position: relative;
+}
+
+.selectInner > select {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  color: #9BAFC4;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: transform var(--dur-base) var(--ease-default),
+              color var(--dur-base) var(--ease-default);
+}
+
+.selectInner > select:hover ~ .chevron,
+.selectInner > select:focus ~ .chevron {
+  color: var(--accent);
+}
+
+.selectInner > select:open ~ .chevron {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: color var(--dur-quick) var(--ease-default);
+  }
+  .selectInner > select:open ~ .chevron {
+    transform: translateY(-50%);
+  }
+}

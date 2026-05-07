@@ -1,0 +1,16 @@
+/* LoginForm — port of #login-panel. Most of the chrome lives in shared
+   modules (AuthLayout for form-area + headings, fields.module for inputs,
+   buttons.module for the CTA, SocialButtons for the OAuth row,
+   PasswordField for the password input + eye toggle). Only screen-local
+   layout overrides live here. */
+
+.panel {
+  /* Slot inside AuthLayout's .formArea — no padding of its own */
+}
+
+.formError {
+  font-family: var(--font-body);
+  color: #F98080;
+  font-size: 16px;
+  margin: 12px 0 0;
+}

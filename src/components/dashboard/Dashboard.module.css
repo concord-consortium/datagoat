@@ -1,0 +1,70 @@
+/* Ported from /home/doug/docs/datagoat-2026-04-27.html dashboard
+   container rules. The screen-content padding + section-rule + dash-log-
+   section + dashboard-welcome are the structural pieces. */
+
+.dashboardScreen {
+  display: flex;
+  flex-direction: column;
+}
+
+.screenContent {
+  padding: 20px 24px 100px;
+}
+
+/* .profile-welcome shared between profile and dashboard - prototype line
+   918-935; #dashboard-welcome anchor at 4166. The .show class is
+   dropped because we always render this on the dashboard. */
+.dashboardWelcome {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+}
+
+.dashboardWelcomeTitle {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+.dashLogSection {
+  margin-bottom: 16px;
+}
+
+.dashWellnessSection {
+  /* prototype #dash-wellness-section anchor; reserved for future
+     wellness-only color rules. */
+}
+
+.dashPerformanceSection {
+  /* prototype #dash-performance-section anchor. */
+}
+
+.dashLogLabelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.sectionCalToday {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+/* .section-rule - prototype line 2708-2713. */
+.sectionRule {
+  border: none;
+  border-top: 2px solid var(--border);
+  width: 40%;
+  margin: 20px auto;
+}

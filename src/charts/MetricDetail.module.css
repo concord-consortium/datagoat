@@ -1,0 +1,252 @@
+/* MetricDetail screen. Verbatim CSS port of the prototype's
+   .metric-chart-section / .metric-chart-title / .metric-chart-date /
+   .chart-divider / .info-section-heading / .metric-description rules
+   (HTML lines 2770-2844, 683-697, 2529-2541) into camelCased CSS
+   Modules. The prototype injects this content into #detail-content via
+   showMetricDetail() (HTML around line 6631); the React port renders it
+   declaratively from the metric registry. */
+
+.detailScreen {
+  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
+     100px bottom for the iOS Safari home-bar gap. The screen-level
+     wrapper applies it once; inner sections don't add their own. */
+  padding: 20px 24px 100px;
+}
+
+/* ── Chart section (prototype lines 2827-2844) ── */
+
+.chartSection {
+  padding: 0;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.chartTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.chartDate {
+  font-size: 16px;
+  color: var(--subtext);
+  margin-bottom: 16px;
+}
+
+/* ── Chart divider (prototype lines 2529-2541) ── */
+
+.chartDivider {
+  width: 60px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 4px auto 16px;
+}
+
+/* ── Info section heading (prototype lines 683-697) ── */
+
+.infoSectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The chart divider sits immediately above the first info-section-heading;
+   collapse the heading's top margin so the visual rhythm matches the
+   prototype (line 2539). */
+.chartDivider + .infoSectionHeading {
+  margin-top: 0;
+}
+
+/* ── Metric description (prototype lines 2770-2776) ── */
+
+.metricDescription {
+  padding: 0;
+  margin-bottom: 20px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--subtext);
+}
+
+.metricDescription p {
+  margin: 0 0 12px;
+}
+
+.metricDescription p:last-child {
+  margin-bottom: 0;
+}
+
+/* First paragraph in a multi-paragraph block has no top margin so the
+   heading + description rhythm reads consistently. */
+.firstPara {
+  margin-top: 0;
+}
+
+/* "Coming soon" placeholder for fields that don't have copy yet (e.g.,
+   the addable-metric placeholders that AddMetric will exercise in
+   Step 16, but reachable from MetricDetail by direct URL today). */
+.placeholder {
+  opacity: 0.55;
+  font-style: italic;
+}
+
+/* ── Learn-more + Reference links (prototype lines 2777-2826) ── */
+
+.learnMoreWrap {
+  margin: 12px 0 0;
+}
+
+.learnMore {
+  display: inline;
+  position: relative;
+  margin-top: 12px;
+  font-size: 16px;
+  line-height: 24px;
+  padding: 0 0 5px;
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter var(--dur-quick) var(--ease-default);
+}
+
+.learnMore::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 44px;
+}
+
+.learnMore:hover {
+  filter: brightness(1.2);
+}
+
+.learnMore:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.linkText {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkIconWrap {
+  display: inline-block;
+  position: relative;
+  width: 24px;
+  height: 1em;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+.linkIcon {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+}
+
+.referenceLinkWrap {
+  margin: 10px 0 0;
+}
+
+.referenceLinkWrap:first-child {
+  margin-top: 0;
+}
+
+.referenceLink {
+  display: inline;
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learnMore {
+    transition: none;
+  }
+}
+
+/* ── Goal-line text (prototype HTML around lines 6720-6721, 6739) ── */
+
+.goalLine {
+  display: block;
+  margin-top: 6px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--subtext);
+}
+
+.goalDot {
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: var(--text);
+}
+
+/* ── Hydration color-scale-static swatch grid (prototype HTML around
+   lines 6724-6740, plus the .color-scale-static rules at lines 3116-
+   3117). The grid + label / bracket / swatch styling is inlined in
+   the prototype JS; ported here as scoped class rules. ── */
+
+.colorScaleStatic {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px 3px;
+  margin-top: 10px;
+}
+
+.scaleLabel {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--subtext);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.2;
+  padding: 0 2px 2px;
+  align-self: end;
+}
+
+.scaleLabelNoWrap {
+  justify-self: center;
+  width: max-content;
+  white-space: nowrap;
+}
+
+.scaleBracket {
+  height: 6px;
+  border-top: 1px solid var(--subtext);
+  border-left: 1px solid var(--subtext);
+  border-right: 1px solid var(--subtext);
+  margin: 0 2px 2px;
+}
+
+.colorSwatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--bg);
+  cursor: default;
+}

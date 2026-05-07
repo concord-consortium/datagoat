@@ -1,0 +1,170 @@
+/* Ported VERBATIM from prototype `.section-heading` (lines 1034-1047),
+   `.nav-menu-btn` (1087-1110), `.nav-home-btn` (1111-1132). */
+
+.sectionHeading {
+  /* No longer position: sticky - SectionHeading is rendered by AppShell
+     inside <header> (outside the scroll container), so the entire
+     header stack is naturally pinned at the top of the column. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* Prototype line 1040: `padding: 18px 24px` and font/letter-spacing
+     ported verbatim. */
+  padding: 18px 24px;
+  background: var(--bg);
+  /* Subtle teal tint matches the prototype's `.section-heading`
+     background-image (line 1043) - keeps the section-heading visually
+     continuous with the brand chrome above. */
+  background-image: linear-gradient(
+    rgba(0, 90, 115, 0.25),
+    rgba(0, 90, 115, 0.25)
+  );
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The visible heading sits inside the .sectionHeading div alongside
+   the chrome buttons. font: inherit picks up the parent's prototype
+   typography; margin: 0 zeroes the user-agent default heading margin
+   that would otherwise create a gap above/below the heading. */
+.title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+/* Page-level icon rendered inline with the title (flex flow, centered
+   together via the parent's justify-content). Color matches the
+   prototype: muted-stroke for the icon (line 1196-1198 of prototype). */
+.iconSlot {
+  display: inline-flex;
+  align-items: center;
+  color: var(--subtext);
+  flex-shrink: 0;
+}
+
+/* Source SVGs in src/icons/ have viewBox but no explicit width/height
+   attributes - browsers render an unsized SVG at 300x150 (the SVG
+   default) which floods the section heading. Pin the icon at 24x24
+   to match the prototype's stroke-width:2 grid. */
+.iconSlot svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.titleText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Absolute-positioned chrome buttons. Per prototype:
+   - .nav-home-btn:  left: 12px  (NOT right - the home button is on the LEFT)
+   - .nav-menu-btn:  right: 12px
+   - .back-nav-btn:  left: 12px (overrides home when both present, but
+                                 routes don't currently combine them)
+   color: var(--text) per prototype line 1093 + 1117. */
+.backNavBtn,
+.navHomeBtn,
+.navMenuBtn {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  z-index: 4;
+  transition:
+    background var(--dur-quick) var(--ease-default),
+    transform var(--dur-tap) var(--ease-default);
+}
+
+.backNavBtn { left: 12px; }
+.navHomeBtn { left: 12px; }
+.navMenuBtn { right: 12px; }
+
+/* Mute the icon inside chrome buttons - matches prototype line
+   1197-1199 where `.nav-home-btn svg` and `.nav-menu-btn svg` use
+   `color: var(--subtext)`. */
+.backNavBtn svg,
+.navHomeBtn svg,
+.navMenuBtn svg {
+  color: var(--subtext);
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.backNavBtn:hover svg,
+.navHomeBtn:hover svg,
+.navMenuBtn:hover svg {
+  color: var(--text);
+}
+
+.backNavBtn:hover,
+.navHomeBtn:hover,
+.navMenuBtn:hover {
+  background: rgba(0, 179, 192, 0.12);
+}
+
+/* Hamburger button stays in an "active" state while the menu is open
+   (matches prototype line 1108: `.nav-menu-btn.active`). aria-expanded
+   is already wired by SectionHeading, so we hang the active style off
+   that attribute instead of threading a className through. */
+.navMenuBtn[aria-expanded="true"] {
+  background: rgba(0, 179, 192, 0.2);
+}
+
+.navMenuBtn[aria-expanded="true"] svg {
+  color: var(--text);
+}
+
+.backNavBtn:active,
+.navHomeBtn:active,
+.navMenuBtn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.backNavBtn:focus-visible,
+.navHomeBtn:focus-visible,
+.navMenuBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backNavBtn,
+  .navHomeBtn,
+  .navMenuBtn {
+    transition: none;
+  }
+  .backNavBtn:active,
+  .navHomeBtn:active,
+  .navMenuBtn:active {
+    transform: translateY(-50%);
+  }
+}

@@ -1,0 +1,251 @@
+/* Shared field primitives ported from prototype 2026-04-27.
+   First consumers are LoginForm / SignupForm / ForgotPassword (auth screens
+   step). ProfileForm + log screens consume the same module in later steps. */
+
+.fieldWrap {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.fieldLabel {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.requiredMark {
+  color: var(--accent);
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.labelRow .fieldLabel {
+  margin-bottom: 0;
+}
+
+.fieldInput {
+  width: 100%;
+  min-height: 48px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;  /* 3.06:1 UI contrast */
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur-base) var(--ease-default),
+              box-shadow var(--dur-base) var(--ease-default);
+}
+
+.fieldInput:hover {
+  border-color: var(--accent);
+}
+
+.fieldInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.fieldInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.fieldInput::placeholder {
+  color: #7A8DA6;  /* 5.10:1 on surface2 */
+}
+
+.fieldInput.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.fieldInput.hasValue:hover {
+  border-color: var(--accent);
+}
+
+.fieldInput.hasValue:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.fieldInput.short {
+  max-width: 120px;
+}
+
+.fieldInput.fieldError {
+  border-color: #E5484D;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.18);
+}
+
+.fieldInput.fieldError:focus {
+  border-color: #E5484D;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.25);
+}
+
+.fieldErrorMsg {
+  font-family: var(--font-body);
+  color: #F98080;
+  font-size: 16px;
+  margin: 6px 0 0;
+}
+
+.fieldHint {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--subtext);
+  margin: 6px 0 0;
+  max-width: 194px;
+}
+
+.fieldSelect {
+  width: 100%;
+  min-height: 48px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease-default),
+              box-shadow var(--dur-base) var(--ease-default);
+}
+
+.fieldSelect:hover {
+  border-color: var(--accent);
+}
+
+/* Mouse-focus alone (after click+close) intentionally does NOT change
+   border/shadow - matches the prototype's .custom-select-trigger,
+   which only shows the bright accent + glow when the dropdown is
+   actually open. Keyboard focus uses :focus-visible for the ring. */
+.fieldSelect:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.fieldSelect.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.fieldSelect.hasValue:hover {
+  border-color: var(--accent);
+}
+
+.fieldSelect.fieldError {
+  border-color: #E5484D;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.18);
+}
+
+/* Customizable-select opt-in (Chrome 135+; degrades to native picker
+   in browsers that don't support it). Lets the dropdown panel inherit
+   the prototype's accent-bordered .custom-select-options look while
+   keeping the underlying element a native <select>. */
+.fieldSelect,
+.fieldSelect::picker(select) {
+  appearance: base-select;
+}
+
+/* Hide the built-in picker arrow - SelectField paints its own chevron
+   overlay so it can rotate via :open. */
+.fieldSelect::picker-icon {
+  display: none;
+}
+
+/* When open, paint the bright accent border + glow, square off the
+   bottom corners so the trigger merges with the picker panel below,
+   and clip the bottom of the painted area so the focus glow doesn't
+   bleed into the seam (matches the prototype's .custom-select.open
+   state). */
+.fieldSelect:open {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+  border-radius: 6px 6px 0 0;
+  clip-path: inset(-20px -20px 0 -20px);
+}
+
+.fieldSelect::picker(select) {
+  background: var(--surface2);
+  border: 1.5px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5),
+              0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  margin: 0;
+}
+
+.fieldSelect option {
+  padding: 12px 16px;
+  min-height: 44px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fieldSelect option:last-child {
+  border-bottom: none;
+}
+
+.fieldSelect option:hover {
+  background: rgba(0, 179, 192, 0.12);
+}
+
+.fieldSelect option:checked {
+  background: rgba(0, 179, 192, 0.18);
+  color: var(--accent);
+}
+
+.fieldInfoBtn {
+  flex-shrink: 0;
+  width: 44px;
+  min-height: 44px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  color: var(--subtext);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--dur-quick), border-color var(--dur-quick),
+              background var(--dur-quick);
+}
+
+.fieldInfoBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fieldInfoBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(0, 179, 192, 0.12);
+}
+
+.fieldInfoBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

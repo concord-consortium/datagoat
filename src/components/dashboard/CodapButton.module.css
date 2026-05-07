@@ -1,0 +1,115 @@
+/* Ported VERBATIM from /home/doug/docs/datagoat-2026-04-27.html
+   .codap-btn rules (lines 2714-2749). */
+
+.codapBtn {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 20px;
+  background: var(--accent);
+  color: #080A0E;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: var(--font-display);
+  transition: filter var(--dur-quick) var(--ease-default),
+              transform var(--dur-tap) var(--ease-default);
+}
+
+.codapLogo {
+  display: flex;
+  align-items: center;
+}
+
+.codapLogo svg {
+  width: 27px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.codapLabel {
+  text-align: center;
+}
+
+.extLinkIcon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.codapBtn:hover {
+  filter: brightness(1.08);
+}
+
+.codapBtn:active {
+  transform: scale(0.98);
+}
+
+.codapBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .codapBtn {
+    transition: none;
+  }
+  .codapBtn:active {
+    transform: none;
+  }
+}
+
+/* MobileCodapModal slot content (centered Dialog variant). */
+.modalCopy {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+}
+
+.modalDismissBtn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #080A0E;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter var(--dur-quick) var(--ease-default);
+}
+
+.modalDismissBtn:hover {
+  filter: brightness(1.08);
+}
+
+.modalDismissBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

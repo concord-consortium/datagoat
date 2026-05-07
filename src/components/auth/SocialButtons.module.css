@@ -1,0 +1,75 @@
+/* Shared social sign-in buttons + "or" divider, ported from prototype
+   2026-04-27. Used by both LoginForm and SignupForm. */
+
+.socialButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.socialBtn {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-base) var(--ease-default),
+    box-shadow var(--dur-base) var(--ease-default),
+    transform var(--dur-tap) var(--ease-default);
+}
+
+.socialBtn:hover {
+  border-color: var(--accent);
+}
+
+.socialBtn:active {
+  transform: scale(0.98);
+}
+
+.socialBtn:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.socialBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.socialBtn img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 12px 0;
+  color: var(--subtext);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.authDivider::before,
+.authDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}

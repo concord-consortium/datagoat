@@ -1,0 +1,6 @@
+<svg viewBox="0 0 40 40" fill="none">
+        <path d="M5,6.67 L35,6.67 C36.1,6.67 37,7.56 37,8.67 L37,27.75 L31.25,33.33 L5,33.33 C3.9,33.33 3,32.44 3,31.33 L3,8.67 C3,7.56 3.9,6.67 5,6.67 Z" fill="rgba(0,179,192,0.35)"/>
+        <path d="M18.5,33.33 L5,33.33 C3.9,33.33 3,32.44 3,31.33 L3,8.67 C3,7.56 3.9,6.67 5,6.67 L35,6.67 C36.1,6.67 37,7.56 37,8.67 L37,21" stroke="var(--subtext)" stroke-width="2.5"/>
+        <polyline points="37,8.5 20,20.5 3,8.5" stroke="var(--subtext)" stroke-width="2.5"/>
+        <polyline points="38.79,25.85 29.21,35.44 23.5,29.73" stroke="var(--subtext)" stroke-width="2.75"/>
+      </svg>

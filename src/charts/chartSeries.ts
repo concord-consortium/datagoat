@@ -1,0 +1,124 @@
+import type { PerformanceEntry, WellnessEntry } from "../types/data";
+import { daysAgoFromISO } from "../utils/dates";
+import { PROFILE_CHART_GOALS } from "../data/profileVariants";
+
+// Look up the per-metric goal value from PROFILE_CHART_GOALS for the
+// user's gender + athleteType combo. Only sleepEfficiency / protein /
+// leanMass have goal values in the prototype; other metrics return
+// undefined and the chart simply doesn't render a goal line.
+export function lookupGoalLine(
+  metricId: string,
+  profileKey: string,
+): number | undefined {
+  const goals = PROFILE_CHART_GOALS[profileKey];
+  if (!goals) return undefined;
+  switch (metricId) {
+    case "sleepEfficiency":
+      return goals.sleepEffGoal;
+    case "protein":
+      return goals.proteinGoal;
+    case "leanMass":
+      return goals.leanMassGoal;
+    default:
+      return undefined;
+  }
+}
+
+export function formatNumber(n: number): string {
+  return Math.round(n * 10) / 10 + "";
+}
+
+// Profile keys in PROFILE_CHART_GOALS use prototype-style capitalized
+// strings ('Male/Strength and Power', 'Female/Endurance', ...). The
+// UserProfile type stores them as lowercase enum values, so map back.
+export function capitalizeGender(g: string): string {
+  switch (g) {
+    case "male":
+      return "Male";
+    case "female":
+      return "Female";
+    case "non-binary":
+      return "Non-binary";
+    default:
+      return "Unspecified";
+  }
+}
+
+export function capitalizeAthleteType(t: string): string {
+  return t === "endurance" ? "Endurance" : "Strength and Power";
+}
+
+export interface BuildSeriesArgs {
+  type: "wellness" | "performance";
+  metricId: string;
+  wellnessEntries: WellnessEntry[];
+  performanceEntries: PerformanceEntry[];
+  rangeDays: number;
+}
+
+// Build a date/value series for the selected metric over the given window.
+// Skips entries outside [today - rangeDays + 1, today]. Wellness reads
+// the metric off the flat WellnessEntry shape; performance reads off the
+// metrics map. Non-numeric values are skipped entirely.
+export function buildSeries({
+  type,
+  metricId,
+  wellnessEntries,
+  performanceEntries,
+  rangeDays,
+}: BuildSeriesArgs): Array<{ date: string; value: number }> {
+  const out: Array<{ date: string; value: number }> = [];
+
+  if (type === "wellness") {
+    for (const e of wellnessEntries) {
+      const days = daysAgoFromISO(e.date);
+      if (Number.isNaN(days) || days >= rangeDays) continue;
+      const value = readWellnessMetric(e, metricId);
+      if (value === undefined) continue;
+      out.push({ date: e.date, value });
+    }
+  } else {
+    for (const e of performanceEntries) {
+      const days = daysAgoFromISO(e.date);
+      if (Number.isNaN(days) || days >= rangeDays) continue;
+      const raw = e.metrics?.[metricId];
+      if (typeof raw !== "number" || !Number.isFinite(raw)) continue;
+      out.push({ date: e.date, value: raw });
+    }
+  }
+
+  // The data table is keyed on date; sort ascending so it reads
+  // chronologically for SR users. Also produces a stable shape for the
+  // future real chart's path generation.
+  out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return out;
+}
+
+export function readWellnessMetric(
+  e: WellnessEntry,
+  metricId: string,
+): number | undefined {
+  switch (metricId) {
+    case "hydration":
+      return e.hydration > 0 ? e.hydration : undefined;
+    case "sleepTime":
+      return e.sleepTime > 0 ? e.sleepTime : undefined;
+    case "sleepEfficiency":
+      return e.sleepEfficiency > 0 ? e.sleepEfficiency : undefined;
+    case "protein":
+      return e.protein > 0 ? e.protein : undefined;
+    case "leanMass":
+      return e.leanMass > 0 ? e.leanMass : undefined;
+    case "availability":
+      // Availability is a tree, not a scalar. Return 1 if both subtrees
+      // are answered, otherwise undefined. The chart placeholder doesn't
+      // render this anyway; keeping it numeric avoids breaking the
+      // shape contract.
+      return e.availability?.practiceHeld !== null &&
+        e.availability?.gameHeld !== null
+        ? 1
+        : undefined;
+    default:
+      return undefined;
+  }
+}

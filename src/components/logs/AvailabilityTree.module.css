@@ -1,0 +1,149 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html lines
+   3133-3252 (.avail-* family). */
+
+.availHelper {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--subtext);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.availGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 194px;
+}
+
+.availDivider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+.availOption {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.availRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.availRowLabel {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text);
+  min-width: 68px;
+}
+
+.availYnLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.availSubPrompt {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--subtext);
+  width: 100%;
+}
+
+/* Only mounted when the parent Y/N is "yes" - see AvailabilityTree.tsx. */
+.availSubs {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px 10px;
+  padding-left: 0;
+  margin-top: -4px;
+}
+
+.availSubs .availSubLabel {
+  margin-left: 78px;
+}
+
+.availSubs .availSubLabel ~ .availSubLabel {
+  margin-left: 0;
+}
+
+.availSubLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.availRadio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+  background: var(--surface2);
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  transition: background var(--dur-quick) var(--ease-default),
+              border-color var(--dur-quick) var(--ease-default);
+}
+
+.availRadio::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+}
+
+.availRadio:hover {
+  border-color: var(--accent);
+}
+
+.availRadio:checked {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
+
+.availRadio:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.availRadio:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .availRadio {
+    transition: none;
+  }
+}

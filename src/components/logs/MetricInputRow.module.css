@@ -1,0 +1,138 @@
+/* Ported verbatim from /home/doug/docs/datagoat-2026-04-27.html. */
+
+/* .body-table tbody td (lines 3008-3013) - applied per-row here so
+   MetricInputRow remains structurally a <tr>. */
+.metricInputRow td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.metricInputRow:last-child td {
+  border-bottom: none;
+}
+
+/* track-cell (lines 3024-3033) - the leftmost "Avg" cell. */
+.trackCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.metricName {
+  font-weight: 600;
+}
+
+/* metric-link (lines 3037-3055) - the underlined accent-colored link */
+.metricLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  display: inline;
+  position: relative;
+  padding: 0 0 5px;
+  transition: filter var(--dur-quick) var(--ease-default);
+}
+
+.metricLink::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 44px;
+}
+
+.metricLink:hover {
+  filter: brightness(1.2);
+}
+
+.metricLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Color-scale (lines 3092-3132) - hydration swatch picker. */
+.colorScale {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-width: 194px;
+}
+
+.colorSwatch {
+  width: 100%;
+  height: 32px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  transition: border-color var(--dur-quick) var(--ease-default),
+              transform var(--dur-tap) var(--ease-default);
+}
+
+.swatchLight {
+  color: #fff;
+}
+
+.swatchDark {
+  color: #080A0E;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.05);
+}
+
+.colorSwatch:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.colorSwatch.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.colorSwatch.selected::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.43' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E")
+      center / 14px 14px no-repeat,
+    #0F2E31;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .colorSwatch,
+  .metricLink {
+    transition: none;
+  }
+  .colorSwatch:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,28 @@
+<svg class="speed-lines" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 400" aria-hidden="true">
+    <line x1="-130" y1="400" x2="0"   y2="0"   stroke="rgba(0,179,192,1)" stroke-width="5.00" opacity="0.180"/>
+    <line x1="-108" y1="400" x2="22"  y2="0"   stroke="rgba(0,179,192,1)" stroke-width="4.84" opacity="0.175"/>
+    <line x1="-86"  y1="400" x2="44"  y2="0"   stroke="rgba(0,179,192,1)" stroke-width="4.68" opacity="0.169"/>
+    <line x1="-64"  y1="400" x2="66"  y2="0"   stroke="rgba(0,179,192,1)" stroke-width="4.52" opacity="0.164"/>
+    <line x1="-42"  y1="400" x2="88"  y2="0"   stroke="rgba(0,179,192,1)" stroke-width="4.36" opacity="0.159"/>
+    <line x1="-20"  y1="400" x2="110" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="4.20" opacity="0.153"/>
+    <line x1="2"    y1="400" x2="132" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="4.04" opacity="0.148"/>
+    <line x1="24"   y1="400" x2="154" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="3.88" opacity="0.143"/>
+    <line x1="46"   y1="400" x2="176" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="3.72" opacity="0.137"/>
+    <line x1="68"   y1="400" x2="198" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="3.56" opacity="0.132"/>
+    <line x1="90"   y1="400" x2="220" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="3.40" opacity="0.127"/>
+    <line x1="112"  y1="400" x2="242" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="3.24" opacity="0.121"/>
+    <line x1="134"  y1="400" x2="264" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="3.08" opacity="0.116"/>
+    <line x1="156"  y1="400" x2="286" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="2.92" opacity="0.111"/>
+    <line x1="178"  y1="400" x2="308" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="2.76" opacity="0.105"/>
+    <line x1="200"  y1="400" x2="330" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="2.60" opacity="0.100"/>
+    <line x1="222"  y1="400" x2="352" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="2.44" opacity="0.095"/>
+    <line x1="244"  y1="400" x2="374" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="2.28" opacity="0.089"/>
+    <line x1="266"  y1="400" x2="396" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="2.12" opacity="0.084"/>
+    <line x1="288"  y1="400" x2="418" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.96" opacity="0.079"/>
+    <line x1="310"  y1="400" x2="440" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.80" opacity="0.073"/>
+    <line x1="332"  y1="400" x2="462" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.64" opacity="0.068"/>
+    <line x1="354"  y1="400" x2="484" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.48" opacity="0.063"/>
+    <line x1="376"  y1="400" x2="506" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.32" opacity="0.057"/>
+    <line x1="398"  y1="400" x2="528" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.16" opacity="0.052"/>
+    <line x1="420"  y1="400" x2="550" y2="0"   stroke="rgba(0,179,192,1)" stroke-width="1.00" opacity="0.046"/>
+  </svg>

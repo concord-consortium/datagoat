@@ -1,0 +1,14 @@
+/* SignupForm — port of #signup-panel. Most chrome lives in shared modules
+   (AuthLayout, fields, buttons, SocialButtons, PasswordField). Only
+   screen-local layout overrides live here. */
+
+.panel {
+  /* Slot inside AuthLayout's .formArea — no padding of its own */
+}
+
+.formError {
+  font-family: var(--font-body);
+  color: #F98080;
+  font-size: 16px;
+  margin: 12px 0 0;
+}

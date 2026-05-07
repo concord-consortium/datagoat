@@ -1,0 +1,103 @@
+/* Ported VERBATIM from /home/doug/docs/datagoat-2026-04-27.html
+   .dash-log-header rules at lines 1907-1993. */
+
+.dashLogHeader {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform var(--dur-tap) var(--ease-default);
+}
+
+.dashLogHeader:hover .dashLogNavBtn {
+  filter: brightness(1.08);
+}
+
+.dashLogHeader:hover .dashLogStatus {
+  filter: brightness(1.08);
+}
+
+.dashLogHeader:active {
+  transform: scale(0.96);
+}
+
+.dashLogHeader:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dashLogNavBtn {
+  flex-shrink: 0;
+  width: 52px;
+  min-height: 52px;
+  background: var(--accent-dark);
+  border: none;
+  border-radius: 4.5px 0 0 4.5px;
+  padding: 3px;
+  color: #080A0E;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.dashLogNavBtn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-dark);
+  border-radius: 4.5px 0 0 4.5px;
+  transition: transform var(--dur-tap) var(--ease-default);
+}
+
+.dashLogNavBtn svg {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  transition: transform var(--dur-tap) var(--ease-default);
+}
+
+.dashLogNavBtn:focus-visible {
+  outline: none;
+}
+
+.dashLogStatus {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: #080A0E;
+  flex: 1;
+  margin: 0;
+  padding: 0 12px 2px;
+  background: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-left: none;
+  border-radius: 0 4.5px 4.5px 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.statusHighlight {
+  color: #080A0E;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashLogHeader,
+  .dashLogNavBtn::before,
+  .dashLogNavBtn svg {
+    transition: none;
+  }
+  .dashLogHeader:active {
+    transform: none;
+  }
+}

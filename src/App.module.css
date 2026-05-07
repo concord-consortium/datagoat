@@ -1,26 +1,52 @@
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 640px;
+  max-width: 440px;
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
-  background: #ffffff;
-  overflow: auto;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
 }
 
-.app:focus-visible {
-  outline: 2px solid #0693e3;
-  outline-offset: -2px;
+/* Top-of-column ambient teal tint, port of prototype's .phone::before.
+   Renders from y=0 down 210px (the prototype's 260px reaches too far
+   into our column; this height keeps the visible portion confined to
+   the header zone area). Alphas match the prototype's literal values
+   exactly. z-index: 0 keeps it behind in-flow content but above the
+   column's bg. */
+.app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 210px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 90, 115, 0.7) 0%,
+    rgba(0, 70, 90, 0.45) 45%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
-.footer {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
-  padding: 1rem;
-  font-size: 0.75rem;
-  color: #999;
-  text-align: center;
+@media (min-width: 1024px) {
+  .app {
+    height: 95vh;
+    height: 95dvh;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .app {
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+  }
 }

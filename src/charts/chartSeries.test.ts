@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { lookupGoalLine, buildAlignedSeries } from "./chartSeries";
-import type { WellnessEntry } from "../types/data";
+import { emptyWellnessEntry, type WellnessEntry } from "../types/data";
 import { isoAtDaysAgo } from "../utils/dates";
 
 describe("lookupGoalLine", () => {
@@ -25,14 +25,9 @@ describe("lookupGoalLine", () => {
 describe("buildAlignedSeries", () => {
   function makeWellnessEntry(daysAgo: number, hydration: number): WellnessEntry {
     return {
-      date: isoAtDaysAgo(daysAgo),
+      ...emptyWellnessEntry(isoAtDaysAgo(daysAgo)),
       hydration,
-      sleepTime: 0,
-      sleepEfficiency: 0,
-      protein: 0,
-      leanMass: 0,
-      availability: { practiceHeld: null, practiceParticipated: null, gameHeld: null, gameParticipated: null },
-    } as WellnessEntry;
+    };
   }
 
   it("emits one entry per day in the range, oldest first, today last", () => {

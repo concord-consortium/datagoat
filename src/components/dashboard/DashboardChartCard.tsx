@@ -14,12 +14,13 @@ import type { PerformanceEntry, WellnessEntry } from "../../types/data";
 import { useUser } from "../../contexts/UserContext";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import {
-  buildSeries,
+  buildAlignedSeries,
   capitalizeAthleteType,
   capitalizeGender,
   formatNumber,
   lookupGoalLine,
 } from "../../charts/chartSeries";
+import { getMetricChartConfig } from "../../charts/metricChartConfig";
 import css from "./DashboardChartCard.module.css";
 
 interface DashboardChartCardProps {
@@ -67,7 +68,7 @@ export function DashboardChartCard({
 
   const series = useMemo(
     () =>
-      buildSeries({
+      buildAlignedSeries({
         type,
         metricId: metric?.id ?? "",
         wellnessEntries: wellnessEntries ?? [],
@@ -77,9 +78,13 @@ export function DashboardChartCard({
     [type, metric?.id, wellnessEntries, performanceEntries, range],
   );
 
+  const filledValues = series
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null);
+
   const average =
-    series.length > 0
-      ? series.reduce((s, p) => s + p.value, 0) / series.length
+    filledValues.length > 0
+      ? filledValues.reduce((s, v) => s + v, 0) / filledValues.length
       : undefined;
   const goalLine =
     metric && type === "wellness"
@@ -126,12 +131,14 @@ export function DashboardChartCard({
         </div>
       </div>
       <MetricChart
-        type="line"
+        type={metric ? getMetricChartConfig(metric.id).chartType : "bar"}
+        metricId={metric?.id ?? ""}
         data={loading ? [] : series}
         goalLine={goalLine}
         averageLine={average}
         title={metric ? metric.name : "Metric"}
         description={description}
+        rangeKey={range}
         loading={loading}
       />
       <TimeRangePicker

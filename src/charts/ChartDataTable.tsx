@@ -4,7 +4,7 @@ import css from "./ChartDataTable.module.css";
 export interface ChartDataTableProps {
   id?: string;
   title: string;
-  data: Array<{ date: string; value: number }>;
+  data: Array<{ date: string; value: number | null }>;
   // When true, the table is rendered with the visually-hidden utility so
   // SR users can read it but sighted users don't see it. The "Show data"
   // toggle in MetricChart flips this.
@@ -61,7 +61,7 @@ export function ChartDataTable({
           {data.map((row) => (
             <tr key={row.date}>
               <td>{row.date}</td>
-              <td>{row.value}</td>
+              <td>{row.value === null ? "—" : row.value}</td>
             </tr>
           ))}
         </tbody>

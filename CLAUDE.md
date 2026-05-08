@@ -6,7 +6,8 @@ For a high-level architectural tour (provider tree, routing, data model, optimis
 
 ## Commands
 
-- `npm run dev` - Vite dev server (port 5173)
+- `npm run dev` - Vite dev server pointed at local Firebase emulators (port 5173)
+- `npm run dev:cloud` - Vite dev server pointed at the cloud Firebase project (no emulators required)
 - `npm run build` - TypeScript check + production Vite build
 - `npm run preview` - Preview production build locally
 - `npm run emulators` - Firebase emulators (Auth 9099, Firestore 8080, Functions 5001, Hosting 5000)
@@ -14,7 +15,9 @@ For a high-level architectural tour (provider tree, routing, data model, optimis
 - `npm run deploy:hosting` - Build and deploy only Firebase Hosting (skips functions + Firestore rules)
 - `npm run deploy:functions` - Redeploy only the Cloud Functions (e.g., to flip a kill-switch param)
 
-Local dev requires two terminals: `npm run emulators` and `npm run dev`. Set `VITE_USE_EMULATORS=true` in `.env.local` to connect to emulators. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.
+Default local dev uses two terminals: `npm run emulators` and `npm run dev`. The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true`) on top of `.env.local` (your personal Firebase keys), so no per-developer toggle is needed. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.
+
+If you want to point the dev server at the cloud Firebase project instead — for example, to verify a change against real data — use `npm run dev:cloud`. That runs `vite` without a mode, so `.env.emulators` is not loaded and no emulators need to be running.
 
 No linter is configured. Tests run via `npm test` (Vitest, colocated `*.test.ts` / `*.test.tsx`).
 

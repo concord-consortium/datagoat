@@ -73,10 +73,14 @@ describe("CustomMetricForm (create)", () => {
       expect(screen.getByText("back to list")).toBeInTheDocument();
     });
     expect(mockedSetDoc).toHaveBeenCalledTimes(1);
-    const written = (mockedSetDoc as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][1] as Record<string, unknown>;
-    expect(written.name).toBe("Stretch Minutes");
-    expect(written.metricType).toBe("wellness");
-    expect(written.unit).toBe("min");
-    expect(written.goalRaw).toBe(15);
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        name: "Stretch Minutes",
+        metricType: "wellness",
+        unit: "min",
+        goalRaw: 15,
+      }),
+    );
   });
 });

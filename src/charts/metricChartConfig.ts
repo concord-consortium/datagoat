@@ -11,6 +11,7 @@
 // the resolved fields below and does not assume any metric is special.
 
 import { randomInt, randomFloat } from "./randomValues";
+import type { CustomMetricDef } from "../types/customMetrics";
 
 export interface MetricChartConfig {
   chartType: "bar" | "line";
@@ -173,6 +174,54 @@ const DEFAULT_CONFIG: MetricChartConfig = {
   random: (rng) => randomInt(rng, 0, 100),
 };
 
+// Module-level overlay for user-defined custom metrics. The
+// CustomMetricsProvider syncs this on every change via
+// setCustomChartConfigs() below. getMetricChartConfig consults this
+// after the built-in CONFIG and before falling back to DEFAULT_CONFIG.
+//
+// This is a deliberate side-effect channel rather than a parameter
+// thread because getMetricChartConfig is called from many pure
+// functions and components throughout the chart pipeline; threading
+// the customs map through every call site is more invasive than the
+// registry overlay justifies for the DGT-36 demo slice.
+let _customConfigs: Record<string, MetricChartConfig> = {};
+
+export function setCustomChartConfigs(
+  next: Record<string, MetricChartConfig>,
+): void {
+  _customConfigs = next;
+}
+
 export function getMetricChartConfig(metricId: string): MetricChartConfig {
-  return CONFIG[metricId] ?? DEFAULT_CONFIG;
+  return CONFIG[metricId] ?? _customConfigs[metricId] ?? DEFAULT_CONFIG;
+}
+
+// Build a MetricChartConfig from a user-authored CustomMetricDef.
+// Inseparable percent suffix is folded into formatValue (matching the
+// existing built-in pattern); other units render as the separable
+// `unit` field. avgDecimals controls toFixed rounding. Random
+// generators span the user's y-range for numeric metrics; radio
+// metrics random in {0, 1} regardless of y-range.
+export function customDefToChartConfig(
+  def: CustomMetricDef,
+): MetricChartConfig {
+  const isPct = def.unit === "%";
+  const decimals = Number.isFinite(def.avgDecimals)
+    ? Math.max(0, Math.floor(def.avgDecimals))
+    : 1;
+  return {
+    chartType: "bar",
+    yTopRaw: def.yTopRaw,
+    yBottomRaw: def.yBottomRaw,
+    goalRaw: def.goalRaw,
+    formatValue: isPct
+      ? (v) => `${v.toFixed(decimals)}%`
+      : (v) => v.toFixed(decimals),
+    unit: isPct ? undefined : def.unit || undefined,
+    avgDecimals: decimals,
+    random:
+      def.inputType === "radio"
+        ? (rng) => randomInt(rng, 0, 1)
+        : (rng) => randomInt(rng, def.yBottomRaw, def.yTopRaw),
+  };
 }

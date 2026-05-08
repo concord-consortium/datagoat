@@ -8,6 +8,11 @@ import {
 } from "react";
 import type { CustomMetricDef } from "../types/customMetrics";
 import { mintCustomMetricId } from "../utils/customMetricId";
+import {
+  customDefToChartConfig,
+  setCustomChartConfigs,
+  type MetricChartConfig,
+} from "../charts/metricChartConfig";
 
 interface CustomMetricsValue {
   metrics: CustomMetricDef[];
@@ -29,6 +34,22 @@ interface ProviderProps {
 
 export function CustomMetricsProvider({ children, initialMetrics }: ProviderProps) {
   const [metrics, setMetrics] = useState<CustomMetricDef[]>(initialMetrics ?? []);
+
+  // Sync a runtime overlay so getMetricChartConfig (used throughout
+  // the chart pipeline as a pure function) sees the user's custom
+  // axis range, goal, formatter, and demo-mode random generator.
+  // Runs during render — not in useEffect — so consuming children
+  // (rendered after the provider in React's top-down pass) see the
+  // updated overlay on the same render that introduces a new metric.
+  // setCustomChartConfigs is idempotent and cheap.
+  const overlay = useMemo<Record<string, MetricChartConfig>>(() => {
+    const next: Record<string, MetricChartConfig> = {};
+    for (const def of metrics) {
+      next[def.id] = customDefToChartConfig(def);
+    }
+    return next;
+  }, [metrics]);
+  setCustomChartConfigs(overlay);
 
   const addMetric = useCallback<CustomMetricsValue["addMetric"]>((input) => {
     const now = Date.now();

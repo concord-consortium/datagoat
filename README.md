@@ -84,7 +84,7 @@ firebase hosting:channel:delete <channel-name>
 | `npm run deploy`           | Build and deploy hosting + functions + Firestore rules               |
 | `npm run deploy:hosting`   | Build and deploy only Firebase Hosting (skips functions + rules)     |
 | `npm run deploy:functions` | Redeploy only the Cloud Functions                                    |
-| `npm run deploy:preview`   | Build + publish a Firebase Hosting preview channel (30-day expiry)   |
+| `npm run deploy:preview`   | Build + publish a preview channel (30-day expiry, `-- <channel-name>`) |
 
 ## Tech Stack
 

@@ -29,10 +29,14 @@
   font-family: inherit;
   font-size: 16px;
   padding: 10px 12px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid #546888;
   border-radius: 6px;
-  background: white;
+  background: var(--surface2);
   color: var(--text);
+}
+
+.input::placeholder {
+  color: #7A8DA6;
 }
 
 .input:focus-visible,

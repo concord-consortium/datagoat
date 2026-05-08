@@ -2,10 +2,25 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+  type Timestamp,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "./AuthContext";
 import type { CustomMetricDef } from "../types/customMetrics";
 import { mintCustomMetricId } from "../utils/customMetricId";
 import {
@@ -18,9 +33,12 @@ interface CustomMetricsValue {
   metrics: CustomMetricDef[];
   addMetric: (
     input: Omit<CustomMetricDef, "id" | "createdAt" | "updatedAt">,
-  ) => CustomMetricDef;
-  updateMetric: (id: string, patch: Partial<Omit<CustomMetricDef, "id">>) => void;
-  deleteMetric: (id: string) => void;
+  ) => Promise<CustomMetricDef>;
+  updateMetric: (
+    id: string,
+    patch: Partial<Omit<CustomMetricDef, "id" | "ownerId">>,
+  ) => Promise<void>;
+  deleteMetric: (id: string) => Promise<void>;
   getMetric: (id: string) => CustomMetricDef | undefined;
 }
 
@@ -28,20 +46,82 @@ const CustomMetricsContext = createContext<CustomMetricsValue | null>(null);
 
 interface ProviderProps {
   children: ReactNode;
-  // Test seam — pre-seeds the in-memory list. Production callers omit this.
+  // Test seam — pre-seeds the in-memory list AND short-circuits the
+  // Firestore subscription. Production callers omit this.
   initialMetrics?: CustomMetricDef[];
 }
 
+const COLLECTION = "metricDefinitions";
+
+// Firestore Timestamp -> ms epoch (matches the in-memory Date.now() shape).
+function tsToMillis(ts: unknown): number {
+  if (
+    ts &&
+    typeof ts === "object" &&
+    typeof (ts as Timestamp).toMillis === "function"
+  ) {
+    return (ts as Timestamp).toMillis();
+  }
+  return 0;
+}
+
+function fromDoc(id: string, data: Record<string, unknown>): CustomMetricDef {
+  return {
+    id,
+    ownerId: String(data.ownerId ?? ""),
+    name: String(data.name ?? ""),
+    metricType: data.metricType === "performance" ? "performance" : "wellness",
+    inputType: data.inputType === "radio" ? "radio" : "numeric",
+    unit: String(data.unit ?? ""),
+    goalRaw: Number(data.goalRaw ?? 0),
+    yTopRaw: Number(data.yTopRaw ?? 10),
+    yBottomRaw: Number(data.yBottomRaw ?? 0),
+    avgDecimals: Number(data.avgDecimals ?? 1),
+    createdAt: tsToMillis(data.createdAt),
+    updatedAt: tsToMillis(data.updatedAt),
+  };
+}
+
 export function CustomMetricsProvider({ children, initialMetrics }: ProviderProps) {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState<CustomMetricDef[]>(initialMetrics ?? []);
 
-  // Sync a runtime overlay so getMetricChartConfig (used throughout
-  // the chart pipeline as a pure function) sees the user's custom
-  // axis range, goal, formatter, and demo-mode random generator.
-  // Runs during render — not in useEffect — so consuming children
-  // (rendered after the provider in React's top-down pass) see the
-  // updated overlay on the same render that introduces a new metric.
-  // setCustomChartConfigs is idempotent and cheap.
+  // Subscribe to the current user's metric definitions. Skipped when
+  // initialMetrics is provided (test seam) or when no user is signed in.
+  useEffect(() => {
+    if (initialMetrics) return;
+    if (!user) {
+      setMetrics([]);
+      return;
+    }
+    const q = query(
+      collection(db, COLLECTION),
+      where("ownerId", "==", user.uid),
+    );
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        const next: CustomMetricDef[] = [];
+        snap.forEach((d) => {
+          next.push(fromDoc(d.id, d.data()));
+        });
+        next.sort((a, b) => a.createdAt - b.createdAt);
+        setMetrics(next);
+      },
+      (err) => {
+        // Surface in console; the demo can keep running with whatever
+        // local state we already have.
+        // eslint-disable-next-line no-console
+        console.error("CustomMetrics onSnapshot error", err);
+      },
+    );
+    return unsubscribe;
+  }, [user, initialMetrics]);
+
+  // Sync runtime overlay so getMetricChartConfig sees the user's custom
+  // axis range, goal, formatter, and demo-mode random generator. Runs
+  // during render so children rendered in the same React pass see the
+  // updated overlay.
   const overlay = useMemo<Record<string, MetricChartConfig>>(() => {
     const next: Record<string, MetricChartConfig> = {};
     for (const def of metrics) {
@@ -51,31 +131,68 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
   }, [metrics]);
   setCustomChartConfigs(overlay);
 
-  const addMetric = useCallback<CustomMetricsValue["addMetric"]>((input) => {
-    const now = Date.now();
-    const def: CustomMetricDef = {
-      ...input,
-      id: mintCustomMetricId(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    setMetrics((prev) => [...prev, def]);
-    return def;
-  }, []);
-
-  const updateMetric = useCallback<CustomMetricsValue["updateMetric"]>(
-    (id, patch) => {
+  const addMetric = useCallback<CustomMetricsValue["addMetric"]>(
+    async (input) => {
+      if (!user) {
+        throw new Error("addMetric requires a signed-in user");
+      }
+      const id = mintCustomMetricId();
+      const ref = doc(db, COLLECTION, id);
       const now = Date.now();
-      setMetrics((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, ...patch, updatedAt: now } : m)),
-      );
+      const def: CustomMetricDef = {
+        ...input,
+        id,
+        ownerId: user.uid,
+        createdAt: now,
+        updatedAt: now,
+      };
+      // Persist with server timestamps; the snapshot listener will
+      // reconcile with the actual Timestamp values shortly.
+      await setDoc(ref, {
+        ownerId: user.uid,
+        name: def.name,
+        metricType: def.metricType,
+        inputType: def.inputType,
+        unit: def.unit,
+        goalRaw: def.goalRaw,
+        yTopRaw: def.yTopRaw,
+        yBottomRaw: def.yBottomRaw,
+        avgDecimals: def.avgDecimals,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      return def;
     },
-    [],
+    [user],
   );
 
-  const deleteMetric = useCallback<CustomMetricsValue["deleteMetric"]>((id) => {
-    setMetrics((prev) => prev.filter((m) => m.id !== id));
-  }, []);
+  const updateMetric = useCallback<CustomMetricsValue["updateMetric"]>(
+    async (id, patch) => {
+      if (!user) {
+        throw new Error("updateMetric requires a signed-in user");
+      }
+      const ref = doc(db, COLLECTION, id);
+      // Strip undefined values from the patch so we never write
+      // undefined into Firestore.
+      const cleaned: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(patch)) {
+        if (v !== undefined) cleaned[k] = v;
+      }
+      cleaned.updatedAt = serverTimestamp();
+      await updateDoc(ref, cleaned);
+    },
+    [user],
+  );
+
+  const deleteMetric = useCallback<CustomMetricsValue["deleteMetric"]>(
+    async (id) => {
+      if (!user) {
+        throw new Error("deleteMetric requires a signed-in user");
+      }
+      await deleteDoc(doc(db, COLLECTION, id));
+    },
+    [user],
+  );
 
   const value = useMemo<CustomMetricsValue>(
     () => ({
@@ -96,18 +213,18 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
 }
 
 // Empty fallback returned when no provider is mounted. Lets existing
-// tests for unrelated components (Dashboard, PerformanceLog) keep
-// rendering without wrapping in CustomMetricsProvider, while the
-// production App.tsx always supplies the real provider.
+// tests for unrelated components keep rendering without wrapping in
+// CustomMetricsProvider, while the production App.tsx always supplies
+// the real provider.
 const NOOP_VALUE: CustomMetricsValue = {
   metrics: [],
-  addMetric: () => {
+  addMetric: async () => {
     throw new Error("addMetric called without CustomMetricsProvider");
   },
-  updateMetric: () => {
+  updateMetric: async () => {
     throw new Error("updateMetric called without CustomMetricsProvider");
   },
-  deleteMetric: () => {
+  deleteMetric: async () => {
     throw new Error("deleteMetric called without CustomMetricsProvider");
   },
   getMetric: () => undefined,

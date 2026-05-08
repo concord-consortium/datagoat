@@ -1,28 +1,41 @@
 // @vitest-environment jsdom
-import { useEffect } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("firebase/firestore", () => ({
+  collection: () => ({}),
+  doc: (_db: unknown, _col: string, id: string) => ({ id }),
+  onSnapshot: (_q: unknown, listener: (snap: { forEach: (cb: (d: unknown) => void) => void }) => void) => {
+    listener({ forEach: () => {} });
+    return () => {};
+  },
+  query: () => ({}),
+  serverTimestamp: () => ({ toMillis: () => Date.now() }),
+  setDoc: vi.fn(async () => {}),
+  updateDoc: vi.fn(async () => {}),
+  deleteDoc: vi.fn(async () => {}),
+  where: () => ({}),
+}));
+vi.mock("../../firebase", () => ({ db: {} }));
+
+const stableAuth = vi.hoisted(() => ({
+  user: { uid: "u1" } as { uid: string },
+  loading: false,
+  isEmailVerifiedOrTrusted: true,
+  signOut: async () => {},
+}));
+
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuth: () => stableAuth,
+}));
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import {
-  CustomMetricsProvider,
-  useCustomMetrics,
-} from "../../contexts/CustomMetricsContext";
-import type { CustomMetricDef } from "../../types/customMetrics";
+import { setDoc as mockedSetDoc } from "firebase/firestore";
+import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
 import { CustomMetricForm } from "./CustomMetricForm";
 
-// Probe component that mirrors the latest metrics list into a captured
-// array for test assertions. Uses useEffect to avoid render-phase side
-// effects.
-function CaptureMetrics({ into }: { into: { current: CustomMetricDef[] } }) {
-  const { metrics } = useCustomMetrics();
-  useEffect(() => {
-    into.current = metrics;
-  }, [metrics, into]);
-  return null;
-}
-
-function renderAt(path: string, into?: { current: CustomMetricDef[] }) {
+function renderAt(path: string) {
   return render(
     <CustomMetricsProvider>
       <MemoryRouter initialEntries={[path]}>
@@ -32,7 +45,6 @@ function renderAt(path: string, into?: { current: CustomMetricDef[] }) {
           <Route path="/add-metric/:type" element={<div>back to list</div>} />
         </Routes>
       </MemoryRouter>
-      {into && <CaptureMetrics into={into} />}
     </CustomMetricsProvider>,
   );
 }
@@ -47,8 +59,7 @@ describe("CustomMetricForm (create)", () => {
 
   it("saves a numeric metric on submit and navigates back", async () => {
     const user = userEvent.setup();
-    const captured: { current: CustomMetricDef[] } = { current: [] };
-    renderAt("/add-metric/wellness/new", captured);
+    renderAt("/add-metric/wellness/new");
 
     await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
     await user.type(screen.getByLabelText(/unit/i), "min");
@@ -61,10 +72,11 @@ describe("CustomMetricForm (create)", () => {
     await waitFor(() => {
       expect(screen.getByText("back to list")).toBeInTheDocument();
     });
-    expect(captured.current).toHaveLength(1);
-    expect(captured.current[0].name).toBe("Stretch Minutes");
-    expect(captured.current[0].metricType).toBe("wellness");
-    expect(captured.current[0].unit).toBe("min");
-    expect(captured.current[0].goalRaw).toBe(15);
+    expect(mockedSetDoc).toHaveBeenCalledTimes(1);
+    const written = (mockedSetDoc as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][1] as Record<string, unknown>;
+    expect(written.name).toBe("Stretch Minutes");
+    expect(written.metricType).toBe("wellness");
+    expect(written.unit).toBe("min");
+    expect(written.goalRaw).toBe(15);
   });
 });

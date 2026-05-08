@@ -1,7 +1,21 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
+// CustomMetricsProvider now reads useAuth() unconditionally. These tests
+// use the initialMetrics test seam (skipping Firestore), but still need
+// a stub auth context for the provider to mount.
+const stableAuth = vi.hoisted(() => ({
+  user: { uid: "u1" } as { uid: string },
+  loading: false,
+  isEmailVerifiedOrTrusted: true,
+  signOut: async () => {},
+}));
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuth: () => stableAuth,
+}));
+
 import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import { AddMetric } from "./AddMetric";

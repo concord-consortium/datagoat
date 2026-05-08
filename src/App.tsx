@@ -3,6 +3,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
+import { CustomMetricsProvider } from "./contexts/CustomMetricsContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import css from "./App.module.css";
 
@@ -16,9 +17,11 @@ export default function App() {
         <DemoModeProvider>
           <AuthProvider>
             <UserProvider>
-              <DataProvider>
-                <AppRoutes />
-              </DataProvider>
+              <CustomMetricsProvider>
+                <DataProvider>
+                  <AppRoutes />
+                </DataProvider>
+              </CustomMetricsProvider>
             </UserProvider>
           </AuthProvider>
         </DemoModeProvider>

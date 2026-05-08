@@ -69,6 +69,11 @@ export function CustomMetricForm() {
     return <Navigate to={`/add-metric/${type}`} replace />;
   }
 
+  // Capture the narrowed value so the closures below see CustomMetricType
+  // rather than `string | undefined` — TypeScript does not propagate the
+  // isValidType narrowing into nested function declarations.
+  const metricType: CustomMetricType = type;
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = draft.name.trim();
@@ -107,7 +112,7 @@ export function CustomMetricForm() {
       addMetric({
         ownerId: DEMO_OWNER_ID,
         name: trimmed,
-        metricType: type,
+        metricType,
         inputType: draft.inputType,
         unit: draft.unit.trim(),
         goalRaw,
@@ -116,7 +121,7 @@ export function CustomMetricForm() {
         avgDecimals,
       });
     }
-    navigate(`/add-metric/${type}`);
+    navigate(`/add-metric/${metricType}`);
   }
 
   function handleDelete() {
@@ -125,7 +130,7 @@ export function CustomMetricForm() {
       return;
     }
     deleteMetric(editing.id);
-    navigate(`/add-metric/${type}`);
+    navigate(`/add-metric/${metricType}`);
   }
 
   function update<K extends keyof DraftState>(key: K, value: DraftState[K]) {

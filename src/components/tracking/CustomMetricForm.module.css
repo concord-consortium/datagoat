@@ -1,49 +1,9 @@
 .form {
   padding: 20px 24px 100px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
   max-width: 420px;
   margin: 0 auto;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.label {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--subtext);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.input,
-.select {
-  appearance: none;
-  -webkit-appearance: none;
-  font-family: inherit;
-  font-size: 16px;
-  padding: 10px 12px;
-  border: 1.5px solid #546888;
-  border-radius: 6px;
-  background: var(--surface2);
-  color: var(--text);
-}
-
-.input::placeholder {
-  color: #7A8DA6;
-}
-
-.input:focus-visible,
-.select:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-  border-color: var(--accent);
+  /* Field-to-field spacing comes from each TextField/SelectField's own
+     fieldWrap margin-bottom; no flex/gap needed at the form level. */
 }
 
 .row {
@@ -51,7 +11,10 @@
   gap: 12px;
 }
 
-.row .field {
+/* TextField renders <div class="fieldWrap"> as its outer element; make
+   those direct-child wrappers flex evenly so the y-axis top/bottom
+   inputs share the row width. */
+.row > div {
   flex: 1;
 }
 

@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
+import { TextField } from "../form/TextField";
+import { SelectField } from "../form/SelectField";
 import type {
   CustomMetricInputType,
   CustomMetricType,
@@ -11,6 +13,11 @@ const NAME_MAX = 128;
 // Demo slice: in-memory state doesn't need a real owner. The next
 // plan replaces this with the auth UID when wiring Firestore.
 const DEMO_OWNER_ID = "demo-user";
+
+const INPUT_TYPE_OPTIONS = [
+  { value: "numeric", label: "Numeric" },
+  { value: "radio", label: "Yes / No" },
+];
 
 function isValidType(t: string | undefined): t is CustomMetricType {
   return t === "wellness" || t === "performance";
@@ -139,96 +146,70 @@ export function CustomMetricForm() {
 
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
-      <div className={css.field}>
-        <label className={css.label} htmlFor="cm-name">Name</label>
-        <input
-          id="cm-name"
-          className={css.input}
-          type="text"
-          value={draft.name}
-          maxLength={NAME_MAX}
-          onChange={(e) => update("name", e.target.value)}
-          autoFocus
-        />
-      </div>
+      <TextField
+        id="cm-name"
+        label="Name"
+        value={draft.name}
+        maxLength={NAME_MAX}
+        onChange={(e) => update("name", e.target.value)}
+      />
 
-      <div className={css.field}>
-        <label className={css.label} htmlFor="cm-type">Input type</label>
-        <select
-          id="cm-type"
-          className={css.select}
-          value={draft.inputType}
-          onChange={(e) => update("inputType", e.target.value as CustomMetricInputType)}
-        >
-          <option value="numeric">Numeric</option>
-          <option value="radio">Yes / No</option>
-        </select>
-      </div>
+      <SelectField
+        id="cm-type"
+        label="Input type"
+        value={draft.inputType}
+        options={INPUT_TYPE_OPTIONS}
+        onChange={(e) => update("inputType", e.target.value as CustomMetricInputType)}
+      />
 
-      <div className={css.field}>
-        <label className={css.label} htmlFor="cm-unit">Unit (optional)</label>
-        <input
-          id="cm-unit"
-          className={css.input}
-          type="text"
-          value={draft.unit}
-          onChange={(e) => update("unit", e.target.value)}
-        />
-      </div>
+      <TextField
+        id="cm-unit"
+        label="Unit (optional)"
+        value={draft.unit}
+        onChange={(e) => update("unit", e.target.value)}
+      />
 
-      <div className={css.field}>
-        <label className={css.label} htmlFor="cm-goal">Goal</label>
-        <input
-          id="cm-goal"
-          className={css.input}
-          type="number"
-          inputMode="decimal"
-          value={draft.goalRaw}
-          onChange={(e) => update("goalRaw", e.target.value)}
-        />
-      </div>
+      <TextField
+        id="cm-goal"
+        label="Goal"
+        type="number"
+        inputMode="decimal"
+        value={draft.goalRaw}
+        onChange={(e) => update("goalRaw", e.target.value)}
+      />
 
       <div className={css.row}>
-        <div className={css.field}>
-          <label className={css.label} htmlFor="cm-ytop">Y-axis top</label>
-          <input
-            id="cm-ytop"
-            className={css.input}
-            type="number"
-            inputMode="decimal"
-            value={draft.yTopRaw}
-            onChange={(e) => update("yTopRaw", e.target.value)}
-          />
-        </div>
-        <div className={css.field}>
-          <label className={css.label} htmlFor="cm-ybot">Y-axis bottom</label>
-          <input
-            id="cm-ybot"
-            className={css.input}
-            type="number"
-            inputMode="decimal"
-            value={draft.yBottomRaw}
-            onChange={(e) => update("yBottomRaw", e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className={css.field}>
-        <label className={css.label} htmlFor="cm-dec">Decimals</label>
-        <input
-          id="cm-dec"
-          className={css.input}
+        <TextField
+          id="cm-ytop"
+          label="Y-axis top"
           type="number"
-          inputMode="numeric"
-          value={draft.avgDecimals}
-          onChange={(e) => update("avgDecimals", e.target.value)}
+          inputMode="decimal"
+          value={draft.yTopRaw}
+          onChange={(e) => update("yTopRaw", e.target.value)}
+        />
+        <TextField
+          id="cm-ybot"
+          label="Y-axis bottom"
+          type="number"
+          inputMode="decimal"
+          value={draft.yBottomRaw}
+          onChange={(e) => update("yBottomRaw", e.target.value)}
         />
       </div>
+
+      <TextField
+        id="cm-dec"
+        label="Decimals"
+        type="number"
+        inputMode="numeric"
+        value={draft.avgDecimals}
+        onChange={(e) => update("avgDecimals", e.target.value)}
+      />
 
       {error && <p className={css.error}>{error}</p>}
 
       <div className={css.actions}>
-        <button type="button" className={css.secondary} onClick={() => navigate(`/add-metric/${type}`)}>
+        <button type="button" className={css.secondary} onClick={() => navigate(`/add-metric/${metricType}`)}>
           Cancel
         </button>
         {editing && (

@@ -32,7 +32,7 @@ import {
 interface CustomMetricsValue {
   metrics: CustomMetricDef[];
   addMetric: (
-    input: Omit<CustomMetricDef, "id" | "createdAt" | "updatedAt">,
+    input: Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">,
   ) => Promise<CustomMetricDef>;
   updateMetric: (
     id: string,

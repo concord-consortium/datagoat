@@ -10,9 +10,6 @@ import type {
 import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
-// Demo slice: in-memory state doesn't need a real owner. The next
-// plan replaces this with the auth UID when wiring Firestore.
-const DEMO_OWNER_ID = "demo-user";
 
 const INPUT_TYPE_OPTIONS = [
   { value: "numeric", label: "Numeric" },
@@ -81,7 +78,7 @@ export function CustomMetricForm() {
   // isValidType narrowing into nested function declarations.
   const metricType: CustomMetricType = type;
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = draft.name.trim();
     if (!trimmed) {
@@ -106,7 +103,7 @@ export function CustomMetricForm() {
     }
 
     if (editing) {
-      updateMetric(editing.id, {
+      await updateMetric(editing.id, {
         name: trimmed,
         inputType: draft.inputType,
         unit: draft.unit.trim(),
@@ -116,8 +113,7 @@ export function CustomMetricForm() {
         avgDecimals,
       });
     } else {
-      addMetric({
-        ownerId: DEMO_OWNER_ID,
+      await addMetric({
         name: trimmed,
         metricType,
         inputType: draft.inputType,
@@ -131,12 +127,12 @@ export function CustomMetricForm() {
     navigate(`/add-metric/${metricType}`);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!editing) return;
     if (!window.confirm(`Delete "${editing.name}"? Past entries become invisible.`)) {
       return;
     }
-    deleteMetric(editing.id);
+    await deleteMetric(editing.id);
     navigate(`/add-metric/${metricType}`);
   }
 

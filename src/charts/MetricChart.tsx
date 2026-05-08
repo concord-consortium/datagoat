@@ -111,6 +111,7 @@ export function MetricChart({
         id={`${titleId}-data`}
         title={dataTableTitle ?? title}
         data={data}
+        metricId={metricId}
         visuallyHidden={!showData}
         loading={loading}
       />

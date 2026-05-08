@@ -27,7 +27,14 @@ export function Bars({ data, goalRaw, config, yScale, geom }: BarsProps) {
       {data.map((d, i) => {
         if (d.value === null) return null;
         const x = geom.plotLeft + i * cellW + (cellW - barW) / 2;
-        const yTop = yScale(d.value);
+        // Clamp yTop into the plot vertical range so values outside the
+        // configured y-axis domain (e.g., a Lean Mass entry of 130 kg
+        // when the chart tops out at 100) cap at the top/bottom edge
+        // instead of overflowing into the y-axis label area.
+        const yTop = Math.max(
+          geom.plotTop,
+          Math.min(yScale(d.value), geom.plotBottom),
+        );
         const h = Math.max(2, geom.plotBottom - yTop);
         const className = meetsGoal(d.value)
           ? css.barAtOrAboveGoal

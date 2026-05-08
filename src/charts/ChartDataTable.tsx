@@ -1,10 +1,17 @@
 import common from "../components/common.module.css";
+import { formatMetricValue } from "./chartSeries";
 import css from "./ChartDataTable.module.css";
 
 export interface ChartDataTableProps {
   id?: string;
   title: string;
   data: Array<{ date: string; value: number | null }>;
+  // Metric id used to format each value cell with the same per-metric
+  // unit and decimal rules as the chart badges/axes — so SR users
+  // hear "75%" / "65 kg" / "1.4 g/kg" rather than the raw number.
+  // Optional for unconfigured / unknown metrics; falls back to the
+  // raw number string.
+  metricId?: string;
   // When true, the table is rendered with the visually-hidden utility so
   // SR users can read it but sighted users don't see it. The "Show data"
   // toggle in MetricChart flips this.
@@ -26,9 +33,12 @@ export function ChartDataTable({
   id,
   title,
   data,
+  metricId,
   visuallyHidden = true,
   loading = false,
 }: ChartDataTableProps) {
+  const formatCell = (v: number) =>
+    metricId ? formatMetricValue(metricId, v) : `${v}`;
   if (data.length === 0) {
     return (
       <div
@@ -61,7 +71,7 @@ export function ChartDataTable({
           {data.map((row) => (
             <tr key={row.date}>
               <td>{row.date}</td>
-              <td>{row.value === null ? "—" : row.value}</td>
+              <td>{row.value === null ? "—" : formatCell(row.value)}</td>
             </tr>
           ))}
         </tbody>

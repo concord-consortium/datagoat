@@ -75,13 +75,14 @@ firebase hosting:channel:delete <channel-name>
 
 ## Available Scripts
 
-| Script              | Description                                         |
-| ------------------- | --------------------------------------------------- |
-| `npm run dev`       | Start Vite dev server with hot reload               |
-| `npm run build`     | TypeScript check + production Vite build            |
-| `npm run preview`   | Preview the production build locally                |
-| `npm run emulators` | Start Firebase emulators (Auth, Firestore, Hosting) |
-| `npm run deploy`    | Build and deploy to Firebase Hosting                |
+| Script              | Description                                                          |
+| ------------------- | -------------------------------------------------------------------- |
+| `npm run dev`       | Vite dev server pointed at local Firebase emulators (hot reload)     |
+| `npm run dev:cloud` | Vite dev server pointed at the cloud Firebase project (no emulators) |
+| `npm run build`     | TypeScript check + production Vite build                             |
+| `npm run preview`   | Preview the production build locally                                 |
+| `npm run emulators` | Start Firebase emulators (Auth, Firestore, Hosting)                  |
+| `npm run deploy`    | Build and deploy to Firebase Hosting                                 |
 
 ## Tech Stack
 

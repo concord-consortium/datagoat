@@ -19,7 +19,9 @@ export function randomInt(rng: () => number, min: number, max: number): number {
   return Math.floor(rng() * (max - min + 1)) + min;
 }
 
-// Float in [min, max), rounded to `decimals` places.
+// Float in [min, max], rounded to `decimals` places. The pre-rounding
+// value is in [min, max), but rounding can push it up to max (e.g.
+// rng()=0.9999, min=6, max=10, decimals=1 → 9.9996 → 10.0).
 export function randomFloat(
   rng: () => number,
   min: number,

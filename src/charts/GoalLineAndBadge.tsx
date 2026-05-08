@@ -37,6 +37,11 @@ export function GoalLineAndBadge({
   const longestChars = Math.max("Goal".length, valueText.length);
   const badgeW = Math.ceil(longestChars * CHAR_W) + PADDING_X * 2;
   const halfW = badgeW / 2;
+  // Clamp the badge's right-edge anchor so the rect (drawn from x = -badgeW
+  // relative to translate) never bleeds past the SVG's left edge. Wide
+  // value text (e.g. "65 kg") that would otherwise clip gets shifted
+  // right just enough to keep the full badge inside the viewBox.
+  const anchorX = Math.max(badgeW, geom.plotLeft - RIGHT_GAP);
   return (
     <g aria-hidden="true">
       <line
@@ -48,7 +53,7 @@ export function GoalLineAndBadge({
       />
       <g
         className={css.goalBadge}
-        transform={`translate(${geom.plotLeft - RIGHT_GAP}, ${y})`}
+        transform={`translate(${anchorX}, ${y})`}
       >
         <rect
           className={css.goalBadgeRect}

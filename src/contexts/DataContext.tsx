@@ -595,6 +595,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...(partial.availability ?? {}),
           } as WellnessEntry["availability"];
         }
+        // Deep-merge customMetrics for the same reason as availability —
+        // accumulating writes across different custom-metric inputs
+        // within the debounce window must not clobber earlier keys.
+        if (
+          existingPartial.customMetrics !== undefined ||
+          partial.customMetrics !== undefined
+        ) {
+          merged.customMetrics = {
+            ...(existingPartial.customMetrics ?? {}),
+            ...(partial.customMetrics ?? {}),
+          };
+        }
         const next: PendingMap<WellnessEntry> = {
           ...prev,
           [date]: { uid, partial: merged },

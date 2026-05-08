@@ -15,6 +15,10 @@ export interface WellnessEntry {
     gameHeld: boolean | null;
     gameParticipation: "played" | "dnp" | null;
   };
+  // User-defined custom wellness metric values, keyed by CustomMetricDef.id.
+  // Optional so existing entries without the field read fine. Matches the
+  // PerformanceEntry.metrics pattern for non-typed values.
+  customMetrics?: Record<string, number | string>;
 }
 
 export interface PerformanceEntry {

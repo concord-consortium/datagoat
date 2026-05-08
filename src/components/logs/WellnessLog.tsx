@@ -7,7 +7,10 @@ import { DateNav } from "../layout/DateNav";
 import { MetricInputRow } from "./MetricInputRow";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
+import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
+import type { MetricDefinition } from "../../metrics/types";
+import type { CustomMetricDef } from "../../types/customMetrics";
 import {
   HISTORY,
   dateAtOffset,
@@ -22,6 +25,7 @@ export function WellnessLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
   const { wellness, setWellnessEntry } = useData();
+  const { metrics: allCustom } = useCustomMetrics();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
@@ -83,6 +87,28 @@ export function WellnessLog() {
   function setAvailability(next: WellnessEntry["availability"]) {
     setWellnessEntry(dateIso, { availability: next });
   }
+
+  function setCustomMetric(metricId: string, raw: string) {
+    const numeric = raw === "" ? 0 : Number(raw);
+    if (!Number.isFinite(numeric)) return;
+    setWellnessEntry(dateIso, { customMetrics: { [metricId]: numeric } });
+  }
+
+  // Custom wellness metrics bypass the tracked-IDs filter (DGT-36 demo
+  // decision: no per-custom checkbox). Adapter shapes them to the
+  // MetricDefinition contract MetricInputRow expects.
+  const customWellness = allCustom.filter((m) => m.metricType === "wellness");
+  const adaptCustom = (def: CustomMetricDef): MetricDefinition => ({
+    id: def.id,
+    name: def.name,
+    unit: def.unit,
+    displayUnit: def.unit,
+    type: "wellness",
+    whoCollects: "",
+    howCollected: "",
+    description: "",
+    inputType: "numeric",
+  });
 
   // Welcome paragraph is shown only during onboarding (matches the
   // prototype's `.profile-welcome.show` gate keyed on `window.isNewUser`
@@ -170,6 +196,24 @@ export function WellnessLog() {
                 );
               },
             )}
+            {customWellness.map((def) => {
+              const live = currentEntry.customMetrics?.[def.id];
+              const stringValue =
+                typeof live === "number" && live > 0
+                  ? String(live)
+                  : typeof live === "string"
+                    ? live
+                    : "";
+              return (
+                <MetricInputRow
+                  key={def.id}
+                  metric={adaptCustom(def)}
+                  inputType="numeric"
+                  value={stringValue}
+                  onChange={(raw) => setCustomMetric(def.id, raw)}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>

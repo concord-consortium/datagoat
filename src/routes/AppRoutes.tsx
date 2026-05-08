@@ -17,6 +17,7 @@ import { PerformanceLog } from "../components/logs/PerformanceLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { MetricDetail } from "../charts/MetricDetail";
 import { AddMetric } from "../components/tracking/AddMetric";
+import { CustomMetricForm } from "../components/tracking/CustomMetricForm";
 import { InfoScreen } from "../components/info/InfoScreen";
 import { About } from "../components/about/About";
 import { Loading } from "../components/Loading";
@@ -87,6 +88,11 @@ export function AppRoutes() {
           <Route
             path="/performance/:metricId"
             element={<MetricDetail type="performance" />}
+          />
+          <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
+          <Route
+            path="/add-metric/:type/:metricId"
+            element={<CustomMetricForm />}
           />
           <Route path="/add-metric/:type" element={<AddMetric />} />
           <Route path="/about" element={<About />} />

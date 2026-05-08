@@ -1,20 +1,15 @@
 import { Link, Navigate, useParams } from "react-router-dom";
-import { useUser } from "../../contexts/UserContext";
-import { ADDABLE_WELLNESS, ADDABLE_PERFORMANCE } from "../../metrics/addableMetrics";
-import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
-import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
-import type { MetricDefinition } from "../../metrics/types";
-import PlusIcon from "@/icons/plus.svg?react";
-import MinusIcon from "@/icons/minus.svg?react";
+import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./AddMetric.module.css";
 
-// Browse + add new metrics. Reads :type ('wellness' | 'performance')
-// from the URL, lists ADDABLE_* in full, and toggles each row's tracked
-// state via setTrackedMetrics(). Already-tracked rows show a red minus
-// button that un-tracks the metric; not-yet-tracked rows show a plus
-// button that tracks it. Per the prototype, rows never disappear from
-// this list — the toggle just flips state.
+// AddMetric (rewritten for DGT-36 demo slice). Lists the user's
+// custom metrics for the current type ("wellness" | "performance"),
+// with a "+ Create custom metric" CTA at the top. Each row links to
+// the edit form. Built-in metric browsing and the per-row tracking
+// toggle are intentionally removed for the demo slice — built-in
+// tracking is managed from /setup/tracking; custom-metric tracking
+// integration is deferred to the next plan.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
   if (type !== "wellness" && type !== "performance") {
@@ -24,81 +19,51 @@ export function AddMetric() {
 }
 
 function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
-  const { loadState, updateProfile, setTrackedMetrics } = useUser();
-  const profile = loadState.status === "loaded" ? loadState.profile : null;
-
-  const addable = type === "wellness" ? ADDABLE_WELLNESS : ADDABLE_PERFORMANCE;
-  const builtIn = type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
-
-  const trackedKey =
-    type === "wellness" ? "trackedWellnessMetrics" : "trackedPerformanceMetrics";
-
-  const trackedIds = profile?.[trackedKey] ?? builtIn.map((m) => m.id);
-
-  async function persist(next: string[]) {
-    if (!profile) {
-      await updateProfile({ [trackedKey]: next });
-      return;
-    }
-    await setTrackedMetrics(type, next);
-  }
-
-  async function handleAdd(metric: MetricDefinition) {
-    const next = [...trackedIds, metric.id].filter(
-      (v, i, arr) => arr.indexOf(v) === i,
-    );
-    await persist(next);
-  }
-
-  async function handleRemove(metric: MetricDefinition) {
-    const next = trackedIds.filter((id) => id !== metric.id);
-    await persist(next);
-  }
+  const { metrics: allCustom } = useCustomMetrics();
+  const customForType = allCustom.filter((m) => m.metricType === type);
 
   return (
     <div className={css.addMetricScreen}>
-      <div className={css.colHeaders}>
-        <span className={css.colHMetric}>Metric</span>
-        <span className={css.colHInfo}>Info</span>
-        <span className={css.colHAction} />
-      </div>
-      <ul className={css.addMetricList}>
-        {addable.map((m) => {
-          const isTracked = trackedIds.includes(m.id);
-          const detailHref = `/${type}/${m.id}`;
-          return (
+      <Link to={`/add-metric/${type}/new`} className={css.createCta}>
+        + Create custom metric
+      </Link>
+
+      <h2 className={css.sectionHead}>Your custom {type} metrics</h2>
+
+      {customForType.length === 0 ? (
+        <p className={css.emptyHint}>None yet. Create one above to get started.</p>
+      ) : (
+        <ul className={css.addMetricList}>
+          {customForType.map((m) => (
             <li key={m.id}>
-              <span className={css.metricNameCol}>{m.name}</span>
+              <span className={css.metricNameCol}>
+                <CustomMetricIcon
+                  style={{
+                    width: 20,
+                    height: 20,
+                    verticalAlign: "middle",
+                    marginRight: 8,
+                  }}
+                  aria-hidden="true"
+                />
+                {m.name}
+                {m.unit && (
+                  <span style={{ color: "var(--subtext)", marginLeft: 6 }}>
+                    ({m.unit})
+                  </span>
+                )}
+              </span>
               <Link
-                to={detailHref}
-                className={css.metricInfoBtn}
-                aria-label={`${m.name} info`}
+                to={`/add-metric/${type}/${m.id}`}
+                className={css.editBtn}
+                aria-label={`Edit ${m.name}`}
               >
-                <CustomMetricIcon />
+                ✏︎
               </Link>
-              {isTracked ? (
-                <button
-                  type="button"
-                  className={css.removeBtn}
-                  aria-label={`Remove ${m.name}`}
-                  onClick={() => void handleRemove(m)}
-                >
-                  <MinusIcon />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={css.addBtn}
-                  aria-label={`Add ${m.name}`}
-                  onClick={() => void handleAdd(m)}
-                >
-                  <PlusIcon />
-                </button>
-              )}
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

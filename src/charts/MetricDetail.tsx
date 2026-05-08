@@ -28,7 +28,7 @@ import {
   capitalizeAthleteType,
   capitalizeGender,
   computeAverage,
-  formatNumber,
+  formatMetricValue,
   lookupGoalLine,
 } from "./chartSeries";
 import { getMetricChartConfig } from "./metricChartConfig";
@@ -350,10 +350,10 @@ function composeDescription(
   return [
     `${metric.name} ${rangeDescriptionPhrase(range)}.`,
     goalLine !== undefined
-      ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
+      ? `Goal: ${formatMetricValue(metric.id, goalLine)}.`
       : null,
     average !== undefined
-      ? `Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
+      ? `Recent average: ${formatMetricValue(metric.id, average)}.`
       : null,
   ]
     .filter(Boolean)

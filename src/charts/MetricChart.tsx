@@ -87,13 +87,15 @@ export function MetricChart({
             height={height}
           />
         ) : (
-          <text
-            className={css.placeholderLabel}
-            x={width / 2}
-            y={height / 2}
-          >
-            Line chart not yet implemented
-          </text>
+          <g aria-hidden="true">
+            <text
+              className={css.placeholderLabel}
+              x={width / 2}
+              y={height / 2}
+            >
+              Line chart not yet implemented
+            </text>
+          </g>
         )}
       </svg>
       <button

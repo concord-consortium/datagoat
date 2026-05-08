@@ -33,8 +33,22 @@ export function lookupGoalLine(
   return getMetricChartConfig(metricId).goalRaw;
 }
 
-export function formatNumber(n: number): string {
-  return Math.round(n * 10) / 10 + "";
+// Format a raw metric value for narrative text (chart screen-reader
+// descriptions, etc.) using the same per-metric rules as the chart
+// badges: avgDecimals for rounding, formatValue for inseparable
+// suffixes like "%", and config.unit for separable units like "kg".
+//
+// Examples:
+//   formatMetricValue("sleepEfficiency", 82.5) → "83%"  (avgDecimals: 0)
+//   formatMetricValue("leanMass", 65)          → "65 kg"
+//   formatMetricValue("protein", 1.42)         → "1.4 g/kg"
+//   formatMetricValue("hydration", 3)          → "3"
+export function formatMetricValue(metricId: string, raw: number): string {
+  const config = getMetricChartConfig(metricId);
+  const decimals = config.avgDecimals ?? 1;
+  const rounded = Number(raw.toFixed(decimals));
+  const formatted = config.formatValue(rounded);
+  return config.unit ? `${formatted} ${config.unit}` : formatted;
 }
 
 // Profile keys in PROFILE_CHART_GOALS use prototype-style capitalized

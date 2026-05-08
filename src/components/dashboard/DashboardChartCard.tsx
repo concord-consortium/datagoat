@@ -14,13 +14,15 @@ import type { PerformanceEntry, WellnessEntry } from "../../types/data";
 import { useUser } from "../../contexts/UserContext";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import {
-  buildAlignedSeries,
   capitalizeAthleteType,
   capitalizeGender,
+  computeAverage,
   formatNumber,
   lookupGoalLine,
 } from "../../charts/chartSeries";
 import { getMetricChartConfig } from "../../charts/metricChartConfig";
+import { useChartSeries } from "../../charts/useChartSeries";
+import { useDemoMode } from "../../contexts/DemoModeContext";
 import css from "./DashboardChartCard.module.css";
 
 interface DashboardChartCardProps {
@@ -66,26 +68,21 @@ export function DashboardChartCard({
   const metric =
     tracked.find((m) => m.id === selectedMetricId) ?? tracked[0] ?? allMetrics[0];
 
-  const series = useMemo(
-    () =>
-      buildAlignedSeries({
-        type,
-        metricId: metric?.id ?? "",
-        wellnessEntries: wellnessEntries ?? [],
-        performanceEntries: performanceEntries ?? [],
-        rangeDays: TIME_RANGE_DAYS[range],
-      }),
-    [type, metric?.id, wellnessEntries, performanceEntries, range],
-  );
+  const demoMode = useDemoMode();
+  const series = useChartSeries({
+    type,
+    metricId: metric?.id ?? "",
+    wellnessEntries: wellnessEntries ?? [],
+    performanceEntries: performanceEntries ?? [],
+    rangeDays: TIME_RANGE_DAYS[range],
+    demoMode,
+  });
 
-  const filledValues = series
-    .map((d) => d.value)
-    .filter((v): v is number => v !== null);
-
-  const average =
-    filledValues.length > 0
-      ? filledValues.reduce((s, v) => s + v, 0) / filledValues.length
-      : undefined;
+  const average = computeAverage(series, {
+    nullsCountAsZero: metric
+      ? getMetricChartConfig(metric.id).nullsCountAsZero
+      : false,
+  });
   const goalLine =
     metric && type === "wellness"
       ? lookupGoalLine(metric.id, profileKey)

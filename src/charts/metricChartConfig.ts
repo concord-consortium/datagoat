@@ -1,6 +1,7 @@
 // Per-metric chart configuration. Single source of truth for chart type,
-// axis range, axis inversion, value formatting, and (for metrics whose
-// goal does not vary by profile) a static goal value.
+// axis range, axis inversion, value formatting, the demo-mode random
+// generator, and (for metrics whose goal does not vary by profile) a
+// static goal value.
 //
 // Metrics whose goal IS profile-keyed (sleepEfficiency, protein, leanMass)
 // leave goalRaw undefined — chartSeries.lookupGoalLine resolves those
@@ -8,6 +9,8 @@
 //
 // Content can revise these values freely; the chart engine reads only
 // the resolved fields below and does not assume any metric is special.
+
+import { randomInt, randomFloat } from "./randomValues";
 
 export interface MetricChartConfig {
   chartType: "bar" | "line";
@@ -21,8 +24,35 @@ export interface MetricChartConfig {
   // resolve via PROFILE_CHART_GOALS instead.
   goalRaw?: number;
   // Format a raw value for display in axis labels and goal/avg badges.
-  // E.g. v => `${v}%` for sleepEfficiency, v => `${v}` for hydration.
+  // Returns the bare number (no unit). The unit, if any, is appended by
+  // the chart components according to the unit / showUnitOnGoalBadge
+  // rules below. Percent metrics keep their "%" inside formatValue
+  // because the suffix is inseparable from the number.
   formatValue: (raw: number) => string;
+  // Optional separable unit ("kg", "g/kg", "h") shown on the top y-axis
+  // label and on the average badge (always when present). Never shown
+  // on the bottom y-axis label. Use formatValue for inseparable
+  // suffixes (%).
+  unit?: string;
+  // True when the unit string is too wide to render comfortably inline
+  // (e.g. "g/kg"). Long units get stacked on a second line under the
+  // y-axis top label and are dropped from the goal badge. Short units
+  // (default; e.g. "kg", "h") render inline next to the value
+  // everywhere they appear.
+  isLongUnit?: boolean;
+  // Decimals to round the computed average to before formatting. Default
+  // is 1 (so e.g. sleepTime's avg renders as "8.3" not "8.283333..."").
+  // Set to 0 for metrics whose averages should read as integers (e.g.
+  // sleepEfficiency: "Avg: 82%").
+  avgDecimals?: number;
+  // When true, nulls (missing days) count as 0 in the average — useful
+  // for availability-style metrics where "no entry" semantically means
+  // "not available." Default: nulls are filtered out of the average.
+  nullsCountAsZero?: boolean;
+  // Demo-mode random generator (consumed only when the user opens the
+  // app with `?demo`). Receives a seeded RNG returning 0..1 floats and
+  // returns a typical raw value. Real data flows through Firestore.
+  random: (rng: () => number) => number;
 }
 
 const fmtRaw = (v: number) => `${v}`;
@@ -36,6 +66,7 @@ const HYDRATION: MetricChartConfig = {
   inverted: true,
   goalRaw: 3,
   formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 1, 5),
 };
 
 const SLEEP_TIME: MetricChartConfig = {
@@ -44,6 +75,8 @@ const SLEEP_TIME: MetricChartConfig = {
   yBottomRaw: 0,
   goalRaw: 8, // 7-9 hr typical recommendation; pick midpoint as static default
   formatValue: fmtRaw,
+  unit: "h",
+  random: (rng) => randomFloat(rng, 6, 10, 1),
 };
 
 const SLEEP_EFFICIENCY: MetricChartConfig = {
@@ -52,6 +85,8 @@ const SLEEP_EFFICIENCY: MetricChartConfig = {
   yBottomRaw: 0,
   // goal is profile-keyed via PROFILE_CHART_GOALS.sleepEffGoal
   formatValue: fmtPct,
+  avgDecimals: 0,
+  random: (rng) => randomInt(rng, 50, 100),
 };
 
 const PROTEIN: MetricChartConfig = {
@@ -63,6 +98,9 @@ const PROTEIN: MetricChartConfig = {
   yBottomRaw: 0,
   // goal is profile-keyed via PROFILE_CHART_GOALS.proteinGoal
   formatValue: fmtRaw,
+  unit: "g/kg",
+  isLongUnit: true,
+  random: (rng) => randomFloat(rng, 0.6, 2.0, 1),
 };
 
 const LEAN_MASS: MetricChartConfig = {
@@ -72,6 +110,8 @@ const LEAN_MASS: MetricChartConfig = {
   yBottomRaw: 0,
   // goal is profile-keyed via PROFILE_CHART_GOALS.leanMassGoal
   formatValue: fmtRaw,
+  unit: "kg",
+  random: (rng) => randomInt(rng, 30, 80),
 };
 
 // Availability is currently a tree (practice + game yes/no) reduced to a
@@ -85,6 +125,9 @@ const AVAILABILITY: MetricChartConfig = {
   yBottomRaw: 0,
   goalRaw: 80,
   formatValue: fmtPct,
+  avgDecimals: 0,
+  nullsCountAsZero: true,
+  random: () => 100,
 };
 
 // Performance metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
@@ -95,6 +138,7 @@ const PERFORMANCE_GENERIC: MetricChartConfig = {
   yBottomRaw: 0,
   // No goalRaw — performance goals haven't been content-defined.
   formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 0, 5),
 };
 
 const CONFIG: Record<string, MetricChartConfig> = {
@@ -117,6 +161,7 @@ const DEFAULT_CONFIG: MetricChartConfig = {
   yTopRaw: 100,
   yBottomRaw: 0,
   formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 0, 100),
 };
 
 export function getMetricChartConfig(metricId: string): MetricChartConfig {

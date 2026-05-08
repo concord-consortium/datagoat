@@ -7,8 +7,8 @@
 .yLabel,
 .xLabel {
   fill: var(--subtext);
-  font-family: var(--font-body);
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -23,17 +23,17 @@
 }
 
 .barAtOrAboveGoal {
-  fill: #2ECC52;
+  fill: var(--above-goal);
 }
 
 .barBelowGoal {
-  fill: #4A7A5B;
+  fill: var(--below-goal);
 }
 
 .todayGhost {
   fill: none;
-  stroke: var(--subtext);
-  stroke-width: 1;
+  stroke: var(--secondary);
+  stroke-width: 2;
   stroke-dasharray: 3 3;
 }
 
@@ -44,24 +44,25 @@
 
 .goalBadge,
 .avgBadge {
-  font-family: var(--font-body);
-  font-size: 10px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .goalBadgeRect {
-  fill: #E8E29A;
-}
-
-.avgBadgeRect {
   fill: var(--surface2);
   stroke: #E8E29A;
 }
 
+.avgBadgeRect {
+  fill: var(--surface2);
+  stroke: var(--subtext);
+}
+
 .badgeText {
-  fill: var(--text);
+  fill: var(--subtext);
 }
 
 .goalBadgeText {
-  fill: #1A1F26;
+  fill: #E8E29A;
 }

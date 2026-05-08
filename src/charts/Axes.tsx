@@ -34,15 +34,27 @@ export function Axes({ config, geom, data, rangeKey }: AxesProps) {
       />
       <text
         className={css.yLabel}
-        x={geom.plotLeft - 6}
-        y={geom.plotTop + 4}
+        x={geom.plotLeft - 8}
+        y={geom.plotTop + 12}
         textAnchor="end"
       >
-        {config.formatValue(config.yTopRaw)}
+        {config.unit && !config.isLongUnit
+          ? `${config.formatValue(config.yTopRaw)} ${config.unit}`
+          : config.formatValue(config.yTopRaw)}
       </text>
+      {config.unit && config.isLongUnit ? (
+        <text
+          className={css.yLabel}
+          x={geom.plotLeft - 8}
+          y={geom.plotTop + 28}
+          textAnchor="end"
+        >
+          {config.unit}
+        </text>
+      ) : null}
       <text
         className={css.yLabel}
-        x={geom.plotLeft - 6}
+        x={geom.plotLeft - 8}
         y={geom.plotBottom}
         textAnchor="end"
       >
@@ -55,7 +67,7 @@ export function Axes({ config, geom, data, rangeKey }: AxesProps) {
             key={`xlbl-${d.date}`}
             className={css.xLabel}
             x={geom.plotLeft + i * cellW + cellW / 2}
-            y={geom.plotBottom + 14}
+            y={geom.plotBottom + 20}
           >
             {formatXLabel(d.date)}
           </text>

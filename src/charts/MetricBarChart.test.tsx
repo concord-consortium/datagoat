@@ -41,7 +41,7 @@ describe("MetricBarChart — integration", () => {
       ).length,
     ).toBe(6);
     // Today ghost (today is null)
-    expect(container.querySelector('rect[class*="todayGhost"]')).toBeTruthy();
+    expect(container.querySelector('polyline[class*="todayGhost"]')).toBeTruthy();
     // Goal line + badge
     expect(container.querySelector('line[class*="goalLine"]')).toBeTruthy();
     expect(txts).toContain("Goal");

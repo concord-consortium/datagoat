@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { MetricChart } from "./MetricChart";
 import {
@@ -25,13 +25,15 @@ import {
   usePerformanceData,
 } from "../contexts/DataContext";
 import {
-  buildAlignedSeries,
   capitalizeAthleteType,
   capitalizeGender,
+  computeAverage,
   formatNumber,
   lookupGoalLine,
 } from "./chartSeries";
 import { getMetricChartConfig } from "./metricChartConfig";
+import { useChartSeries } from "./useChartSeries";
+import { useDemoMode } from "../contexts/DemoModeContext";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -80,20 +82,16 @@ export function MetricDetail({ type }: MetricDetailProps) {
     performance.status === "loaded" ? performance.entries : [];
 
   const [range, setRange] = useState<TimeRangeKey>("7d");
+  const demoMode = useDemoMode();
 
-  const series = useMemo(
-    () =>
-      metric
-        ? buildAlignedSeries({
-            type,
-            metricId: metric.id,
-            wellnessEntries,
-            performanceEntries,
-            rangeDays: TIME_RANGE_DAYS[range],
-          })
-        : [],
-    [type, metric, wellnessEntries, performanceEntries, range],
-  );
+  const series = useChartSeries({
+    type,
+    metricId: metric?.id ?? "",
+    wellnessEntries,
+    performanceEntries,
+    rangeDays: TIME_RANGE_DAYS[range],
+    demoMode,
+  });
 
   if (!metric) {
     return (
@@ -107,14 +105,9 @@ export function MetricDetail({ type }: MetricDetailProps) {
   const goalLine =
     type === "wellness" ? lookupGoalLine(metric.id, profileKey) : undefined;
 
-  const filledValues = series
-    .map((d) => d.value)
-    .filter((v): v is number => v !== null);
-
-  const average =
-    filledValues.length > 0
-      ? filledValues.reduce((s, v) => s + v, 0) / filledValues.length
-      : undefined;
+  const average = computeAverage(series, {
+    nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,
+  });
 
   const description = dataLoading
     ? `${metric.name} chart is loading.`

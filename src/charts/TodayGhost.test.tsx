@@ -28,7 +28,7 @@ describe("TodayGhost", () => {
     const { container } = renderInSvg(
       <TodayGhost data={data} goalRaw={75} yScale={yScalePct} geom={geom} />,
     );
-    expect(container.querySelector('rect[class*="todayGhost"]')).toBeTruthy();
+    expect(container.querySelector('polyline[class*="todayGhost"]')).toBeTruthy();
   });
 
   it("does not render when today has a value", () => {
@@ -39,7 +39,7 @@ describe("TodayGhost", () => {
     const { container } = renderInSvg(
       <TodayGhost data={data} goalRaw={75} yScale={yScalePct} geom={geom} />,
     );
-    expect(container.querySelector('rect[class*="todayGhost"]')).toBeNull();
+    expect(container.querySelector('polyline[class*="todayGhost"]')).toBeNull();
   });
 
   it("does not render when a missing-data day is in the past (not last)", () => {
@@ -50,14 +50,14 @@ describe("TodayGhost", () => {
     const { container } = renderInSvg(
       <TodayGhost data={data} goalRaw={75} yScale={yScalePct} geom={geom} />,
     );
-    expect(container.querySelector('rect[class*="todayGhost"]')).toBeNull();
+    expect(container.querySelector('polyline[class*="todayGhost"]')).toBeNull();
   });
 
   it("renders nothing when data is empty", () => {
     const { container } = renderInSvg(
       <TodayGhost data={[]} goalRaw={75} yScale={yScalePct} geom={geom} />,
     );
-    expect(container.querySelector('rect[class*="todayGhost"]')).toBeNull();
+    expect(container.querySelector('polyline[class*="todayGhost"]')).toBeNull();
   });
 
   it("positions the ghost at the today slot's x and the goal y as its top edge", () => {
@@ -68,7 +68,12 @@ describe("TodayGhost", () => {
     const { container } = renderInSvg(
       <TodayGhost data={data} goalRaw={75} yScale={yScalePct} geom={geom} />,
     );
-    const ghost = container.querySelector('rect[class*="todayGhost"]')!;
-    expect(Number(ghost.getAttribute("y"))).toBeCloseTo(yScalePct(75), 0);
+    const ghost = container.querySelector('polyline[class*="todayGhost"]')!;
+    // Points: bottom-left, top-left, top-right, bottom-right.
+    // The two middle points are at the top y; the outer two are at
+    // plotBottom. The top y should equal yScale(goalRaw).
+    const points = ghost.getAttribute("points")!.trim().split(/\s+/);
+    const topLeftY = Number(points[1].split(",")[1]);
+    expect(topLeftY).toBeCloseTo(yScalePct(75), 0);
   });
 });

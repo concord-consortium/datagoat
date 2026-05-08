@@ -19,16 +19,21 @@ export function TodayGhost({ data, goalRaw, yScale, geom }: TodayGhostProps) {
   const cellW = geom.plotWidth / N;
   const barW = cellW * BAR_WIDTH_RATIO;
   const x = geom.plotLeft + (N - 1) * cellW + (cellW - barW) / 2;
+  const w = Math.max(barW, 1);
   const ghostTop = goalRaw !== undefined ? yScale(goalRaw) : geom.plotTop;
-  const h = Math.max(geom.plotBottom - ghostTop, 4);
+  const ghostBottom = Math.max(ghostTop + 4, geom.plotBottom);
+
+  // Polyline: bottom-left → top-left → top-right → bottom-right.
+  // Three sides only — the bottom edge is intentionally absent so the
+  // x-axis line carries that visual weight instead of a heavier dashed
+  // stroke right on top of it.
+  const points = `${x},${ghostBottom} ${x},${ghostTop} ${x + w},${ghostTop} ${x + w},${ghostBottom}`;
 
   return (
-    <rect
+    <polyline
       className={css.todayGhost}
-      x={x}
-      y={ghostTop}
-      width={Math.max(barW, 1)}
-      height={h}
+      points={points}
+      fill="none"
       aria-hidden="true"
     />
   );

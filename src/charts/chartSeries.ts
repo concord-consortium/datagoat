@@ -162,3 +162,24 @@ export function buildAlignedSeries({
   }
   return out;
 }
+
+// Compute the average over a date-aligned series. Default behavior:
+// filter nulls and average over the days that have data. When
+// `nullsCountAsZero` is true, nulls are treated as 0 and the divisor
+// is the full series length — useful for availability-style metrics
+// where a missing entry semantically means "not available."
+export function computeAverage(
+  series: Array<{ value: number | null }>,
+  options: { nullsCountAsZero?: boolean } = {},
+): number | undefined {
+  if (options.nullsCountAsZero) {
+    if (series.length === 0) return undefined;
+    const sum = series.reduce((s, d) => s + (d.value ?? 0), 0);
+    return sum / series.length;
+  }
+  const filled = series
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null);
+  if (filled.length === 0) return undefined;
+  return filled.reduce((s, v) => s + v, 0) / filled.length;
+}

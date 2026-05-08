@@ -14,9 +14,7 @@
   width: 100%;
   height: auto;
   display: block;
-  border-radius: 6px;
   background: var(--surface2);
-  border: 1px solid #567092;
 }
 
 /* Loading skeleton fills the chart area while DataContext resolves. */

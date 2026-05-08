@@ -84,6 +84,11 @@
   --secondary: #FAF0C8;
   --focus-ring:#4D9FFF;
 
+  /* Chart bar colors. above-goal renders bright green for "good"
+     days; below-goal renders muted green for "missed goal" days. */
+  --above-goal: #2ECC52;
+  --below-goal: #4A7A5B;
+
   /* Motion duration tokens */
   --dur-tap:        100ms;
   --dur-quick:      150ms;

@@ -12,6 +12,7 @@
     "deploy": "npm run build && firebase deploy --only hosting,functions,firestore:rules -P datagoat-b07dd",
     "deploy:hosting": "npm run build && firebase deploy --only hosting -P datagoat-b07dd",
     "deploy:functions": "firebase deploy --only functions -P datagoat-b07dd",
+    "deploy:preview": "npm run build && firebase hosting:channel:deploy --expires 30d -P datagoat-b07dd",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

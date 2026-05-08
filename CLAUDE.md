@@ -14,6 +14,7 @@ For a high-level architectural tour (provider tree, routing, data model, optimis
 - `npm run deploy` - Build and deploy hosting + functions + Firestore rules
 - `npm run deploy:hosting` - Build and deploy only Firebase Hosting (skips functions + Firestore rules)
 - `npm run deploy:functions` - Redeploy only the Cloud Functions (e.g., to flip a kill-switch param)
+- `npm run deploy:preview -- <channel-name>` - Build and publish a Firebase Hosting preview channel (30-day expiry; share the printed URL with stakeholders)
 
 Default local dev uses two terminals: `npm run emulators` and `npm run dev`. The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true`) on top of `.env.local` (your personal Firebase keys), so no per-developer toggle is needed. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.
 

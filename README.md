@@ -58,11 +58,10 @@ npm run dev
 Firebase Hosting preview channels publish a temporary URL pointing at a build of the app, useful for testing changes against the real Firebase project before promoting to production.
 
 ```bash
-npm run build
-firebase hosting:channel:deploy <channel-name>
+npm run deploy:preview -- <channel-name>
 ```
 
-The CLI prints a URL like `https://<project>--<channel-name>-<hash>.web.app`. Channels auto-expire after 7 days by default (pass `--expires 30d` to extend, max 30).
+(The `--` separates npm's args from the script's args; the channel name is forwarded to `firebase hosting:channel:deploy`.) The CLI prints a URL like `https://<project>--<channel-name>-<hash>.web.app`. The script sets a 30-day expiry (the maximum); without that, channels auto-expire after 7 days.
 
 Only **hosting** is channel-isolated. **Cloud Functions, Firestore data, and Auth state** are project-level and shared with production — sign-ins and writes from the preview URL hit the same backend as the live site.
 
@@ -85,6 +84,7 @@ firebase hosting:channel:delete <channel-name>
 | `npm run deploy`           | Build and deploy hosting + functions + Firestore rules               |
 | `npm run deploy:hosting`   | Build and deploy only Firebase Hosting (skips functions + rules)     |
 | `npm run deploy:functions` | Redeploy only the Cloud Functions                                    |
+| `npm run deploy:preview`   | Build + publish a Firebase Hosting preview channel (30-day expiry)   |
 
 ## Tech Stack
 

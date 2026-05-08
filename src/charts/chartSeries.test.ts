@@ -21,8 +21,16 @@ describe("lookupGoalLine", () => {
     expect(lookupGoalLine("hydration", "Female/Endurance")).toBe(3);
   });
 
-  it("returns undefined for metrics with neither profile nor config goal", () => {
-    expect(lookupGoalLine("goals", "Male/Strength and Power")).toBeUndefined();
+  it("returns the per-profile goal for performance metrics that have one", () => {
+    expect(lookupGoalLine("goals", "Male/Strength and Power")).toBe(1);
+    expect(lookupGoalLine("assists", "Female/Endurance")).toBe(2);
+    expect(lookupGoalLine("yards", "Male/Endurance")).toBe(50);
+    expect(lookupGoalLine("tackles", "Female/Strength and Power")).toBe(5);
+  });
+
+  it("returns undefined for performance metrics intentionally without a goal", () => {
+    expect(lookupGoalLine("wins", "Male/Strength and Power")).toBeUndefined();
+    expect(lookupGoalLine("losses", "Female/Endurance")).toBeUndefined();
   });
 });
 

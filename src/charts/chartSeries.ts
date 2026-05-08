@@ -20,6 +20,14 @@ export function lookupGoalLine(
         return goals.proteinGoal;
       case "leanMass":
         return goals.leanMassGoal;
+      case "goals":
+        return goals.goalsGoal;
+      case "assists":
+        return goals.assistsGoal;
+      case "yards":
+        return goals.yardsGoal;
+      case "tackles":
+        return goals.tacklesGoal;
     }
   }
   return getMetricChartConfig(metricId).goalRaw;

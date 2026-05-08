@@ -102,8 +102,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
     );
   }
 
-  const goalLine =
-    type === "wellness" ? lookupGoalLine(metric.id, profileKey) : undefined;
+  const goalLine = lookupGoalLine(metric.id, profileKey);
 
   const average = computeAverage(series, {
     nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,

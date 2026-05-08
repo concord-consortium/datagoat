@@ -158,17 +158,21 @@ describe("DashboardChartCard", () => {
     expect(getSvgDesc(container)).toBe("Hydration chart is loading.");
   });
 
-  it("works with performance metric definitions (different tracked list, same un-track snap-back)", () => {
+  it("works with performance metric definitions and renders an empty state when nothing is tracked", () => {
     const { container, rerender } = render(
       <DashboardChartCard
         type="performance"
-        trackedMetricIds={["weight"]}
+        trackedMetricIds={["goals"]}
         performanceEntries={[]}
       />,
     );
     const initialName = getSvgTitle(container);
     expect(initialName.length).toBeGreaterThan(0);
-    // Un-track everything (degenerate edge: no tracked metrics).
+    // Un-track everything: chart and picker disappear, replaced by a
+    // human-readable empty-state message. Previously the chart fell
+    // back to allMetrics[0], producing a chart for an untracked metric
+    // while the picker sat empty — exactly the inconsistency we want
+    // to avoid.
     rerender(
       <DashboardChartCard
         type="performance"
@@ -176,21 +180,9 @@ describe("DashboardChartCard", () => {
         performanceEntries={[]}
       />,
     );
-    const select = container.querySelector("select");
-    // No options means the placeholder falls back to the first available
-    // metric in the catalog (per the `?? allMetrics[0]` chain) so the
-    // chart does not orphan with an undefined name.
-    expect(getSvgTitle(container).length).toBeGreaterThan(0);
-    // And the SR description doesn't say "No metric selected" because
-    // the fallback exists.
-    expect(getSvgDesc(container)).not.toBe("No metric selected.");
-    // No tracked metrics means only the disabled placeholder option is
-    // rendered (SelectField always emits one); the catalog fallback
-    // drives the chart but the dropdown itself is empty of choices.
-    const realOptions = Array.from(select?.options ?? []).filter(
-      (o) => o.value !== "",
-    );
-    expect(realOptions.length).toBe(0);
+    expect(container.querySelector("svg")).toBeNull();
+    expect(container.querySelector("select")).toBeNull();
+    expect(container.textContent).toContain("No tracked performance metrics");
   });
 
   it("dropdown lists exactly the tracked metrics by name (catches label/value mismatches)", () => {

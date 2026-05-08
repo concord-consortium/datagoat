@@ -61,14 +61,17 @@ export function DashboardChartCard({
   );
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(
-    tracked[0]?.id ?? allMetrics[0]?.id ?? "",
+    tracked[0]?.id ?? "",
   );
   const [range, setRange] = useState<TimeRangeKey>("7d");
-
-  const metric =
-    tracked.find((m) => m.id === selectedMetricId) ?? tracked[0] ?? allMetrics[0];
-
   const demoMode = useDemoMode();
+
+  // metric is undefined when no metrics are tracked — handled by the
+  // empty-state return below. Don't fall back to allMetrics[0]; that
+  // would produce a chart for an untracked metric while the picker
+  // stays empty.
+  const metric = tracked.find((m) => m.id === selectedMetricId) ?? tracked[0];
+
   const series = useChartSeries({
     type,
     metricId: metric?.id ?? "",
@@ -78,35 +81,39 @@ export function DashboardChartCard({
     demoMode,
   });
 
-  const average = computeAverage(series, {
-    nullsCountAsZero: metric
-      ? getMetricChartConfig(metric.id).nullsCountAsZero
-      : false,
-  });
-  const goalLine =
-    metric && type === "wellness"
-      ? lookupGoalLine(metric.id, profileKey)
-      : undefined;
+  if (!metric) {
+    return (
+      <div className={css.chartCard}>
+        <p className={css.emptyState}>
+          {type === "wellness"
+            ? "No tracked health & wellness metrics."
+            : "No tracked performance metrics."}
+        </p>
+      </div>
+    );
+  }
 
-  // Compose the chart description for SR users. Includes the goal AND
-  // average context the placeholder doesn't render visually but the
-  // <desc> exposes - giving SR users a complete experience even before
-  // the visual chart lands. Per spec line 770.
-  const description = metric
-    ? loading
-      ? `${metric.name} chart is loading.`
-      : [
-          `${metric.name} ${rangeDescriptionPhrase(range)}.`,
-          goalLine !== undefined
-            ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
-            : null,
-          average !== undefined
-            ? `Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" ")
-    : "No metric selected.";
+  const config = getMetricChartConfig(metric.id);
+  const average = computeAverage(series, {
+    nullsCountAsZero: config.nullsCountAsZero,
+  });
+  const goalLine = lookupGoalLine(metric.id, profileKey);
+
+  // Compose the chart description for SR users — includes goal and
+  // average context that the visual chart conveys.
+  const description = loading
+    ? `${metric.name} chart is loading.`
+    : [
+        `${metric.name} ${rangeDescriptionPhrase(range)}.`,
+        goalLine !== undefined
+          ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
+          : null,
+        average !== undefined
+          ? `Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
   const selectOptions = tracked.map((m) => ({ value: m.id, label: m.name }));
 
@@ -122,18 +129,18 @@ export function DashboardChartCard({
             }
             labelVisuallyHidden
             options={selectOptions}
-            value={metric?.id ?? ""}
+            value={metric.id}
             onChange={(e) => setSelectedMetricId(e.target.value)}
           />
         </div>
       </div>
       <MetricChart
-        type={metric ? getMetricChartConfig(metric.id).chartType : "bar"}
-        metricId={metric?.id ?? ""}
+        type={config.chartType}
+        metricId={metric.id}
         data={loading ? [] : series}
         goalLine={goalLine}
         averageLine={average}
-        title={metric ? metric.name : "Metric"}
+        title={metric.name}
         description={description}
         rangeKey={range}
         loading={loading}
@@ -141,7 +148,7 @@ export function DashboardChartCard({
       <TimeRangePicker
         value={range}
         onChange={setRange}
-        ariaLabel={`${metric ? metric.name : "Metric"} time range`}
+        ariaLabel={`${metric.name} time range`}
       />
     </div>
   );

@@ -131,15 +131,24 @@ const AVAILABILITY: MetricChartConfig = {
 };
 
 // Performance metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
-// All numeric, all sport-counter-shaped. Generous yMax so demo data fits.
-const PERFORMANCE_GENERIC: MetricChartConfig = {
-  chartType: "bar",
-  yTopRaw: 10,
-  yBottomRaw: 0,
-  // No goalRaw — performance goals haven't been content-defined.
-  formatValue: fmtRaw,
-  random: (rng) => randomInt(rng, 0, 5),
-};
+// All numeric, all sport-counter-shaped. Demo random values span the
+// metric's full [yBottomRaw, yTopRaw] range so bars exercise the full
+// chart height. The bottom is parameterized so a future metric with
+// negative values (e.g., a score differential ranging -5..5) gets
+// correct random data without code changes here.
+function performanceConfig(
+  yBottomRaw: number,
+  yTopRaw: number,
+): MetricChartConfig {
+  return {
+    chartType: "bar",
+    yTopRaw,
+    yBottomRaw,
+    // No goalRaw — performance goals haven't been content-defined.
+    formatValue: fmtRaw,
+    random: (rng) => randomInt(rng, yBottomRaw, yTopRaw),
+  };
+}
 
 const CONFIG: Record<string, MetricChartConfig> = {
   hydration: HYDRATION,
@@ -148,12 +157,12 @@ const CONFIG: Record<string, MetricChartConfig> = {
   protein: PROTEIN,
   leanMass: LEAN_MASS,
   availability: AVAILABILITY,
-  goals: PERFORMANCE_GENERIC,
-  assists: PERFORMANCE_GENERIC,
-  yards: { ...PERFORMANCE_GENERIC, yTopRaw: 200 },
-  tackles: PERFORMANCE_GENERIC,
-  wins: { ...PERFORMANCE_GENERIC, yTopRaw: 5 },
-  losses: { ...PERFORMANCE_GENERIC, yTopRaw: 5 },
+  goals: performanceConfig(0, 10),
+  assists: performanceConfig(0, 10),
+  yards: performanceConfig(0, 200),
+  tackles: performanceConfig(0, 10),
+  wins: performanceConfig(0, 5),
+  losses: performanceConfig(0, 5),
 };
 
 const DEFAULT_CONFIG: MetricChartConfig = {

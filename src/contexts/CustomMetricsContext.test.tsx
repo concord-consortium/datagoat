@@ -99,7 +99,6 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     const { result } = renderHook(() => useCustomMetrics(), { wrapper });
     await act(async () => {
       await result.current.addMetric({
-        ownerId: "u1",
         name: "5K Time",
         metricType: "performance",
         inputType: "numeric",
@@ -122,7 +121,6 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     let id = "";
     await act(async () => {
       const def = await result.current.addMetric({
-        ownerId: "u1",
         name: "x",
         metricType: "wellness",
         inputType: "numeric",
@@ -147,7 +145,6 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     let id = "";
     await act(async () => {
       const def = await result.current.addMetric({
-        ownerId: "u1",
         name: "x",
         metricType: "wellness",
         inputType: "numeric",

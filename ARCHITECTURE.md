@@ -202,7 +202,7 @@ Configured in [vite.config.ts](vite.config.ts) (`vite-plugin-pwa`) with two inte
 
 ## Local development
 
-Two terminals: `npm run emulators` (Firebase Auth :9099, Firestore :8080, Functions :5001, Hosting :5000) and `npm run dev` (Vite :5173). Set `VITE_USE_EMULATORS=true` in `.env.local` to make the app connect to the emulators. The `beforeUserCreated` blocking trigger runs locally in the functions emulator regardless of Identity Platform upgrade state, so the Facebook-no-email rejection path can be exercised without deploying.
+Two terminals: `npm run emulators` (Firebase Auth :9099, Firestore :8080, Functions :5001, Hosting :5000) and `npm run dev` (Vite :5173). The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true`) on top of `.env.local` (your personal Firebase keys), so no per-developer toggle is needed. To run the dev server against the cloud Firebase project instead, use `npm run dev:cloud` (no emulators required). The `beforeUserCreated` blocking trigger runs locally in the functions emulator regardless of Identity Platform upgrade state, so the Facebook-no-email rejection path can be exercised without deploying.
 
 The Firestore SDK uses `persistentLocalCache` with the multi-tab manager so offline writes survive tab close / reload — the PWA can be used on the sideline with no connection.
 

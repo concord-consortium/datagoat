@@ -10,14 +10,19 @@ service cloud.firestore {
     // Top-level custom metric definitions. Each doc carries `ownerId`;
     // a user can only read / write / delete docs they own. On create,
     // the new document's `ownerId` must match the caller's uid (so a
-    // user cannot create a doc owned by someone else).
+    // user cannot create a doc owned by someone else). On update,
+    // `ownerId` must remain the caller's uid (so an owner cannot
+    // hand the doc off to another account by patching `ownerId`).
     match /metricDefinitions/{metricId} {
       allow read: if request.auth != null
                   && resource.data.ownerId == request.auth.uid;
       allow create: if request.auth != null
                     && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-                            && resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+                    && resource.data.ownerId == request.auth.uid
+                    && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if request.auth != null
+                    && resource.data.ownerId == request.auth.uid;
     }
   }
 }

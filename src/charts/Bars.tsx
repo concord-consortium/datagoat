@@ -13,7 +13,6 @@ export interface BarsProps {
 const BAR_WIDTH_RATIO = 0.8;
 
 const TOOLTIP_DATE_FMT = new Intl.DateTimeFormat(undefined, {
-  weekday: "short",
   month: "short",
   day: "numeric",
 });

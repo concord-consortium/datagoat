@@ -20,8 +20,16 @@ export function TodayGhost({ data, goalRaw, yScale, geom }: TodayGhostProps) {
   const barW = cellW * BAR_WIDTH_RATIO;
   const x = geom.plotLeft + (N - 1) * cellW + (cellW - barW) / 2;
   const w = Math.max(barW, 1);
-  const ghostTop = goalRaw !== undefined ? yScale(goalRaw) : geom.plotTop;
-  const ghostBottom = Math.max(ghostTop + 4, geom.plotBottom);
+  // Clamp ghostTop into [plotTop, plotBottom - 4] so the bottom edge
+  // stays at plotBottom and there's always at least 4px of visible
+  // height (matters for goals near yMin).
+  const rawGhostTop =
+    goalRaw !== undefined ? yScale(goalRaw) : geom.plotTop;
+  const ghostTop = Math.max(
+    geom.plotTop,
+    Math.min(rawGhostTop, geom.plotBottom - 4),
+  );
+  const ghostBottom = geom.plotBottom;
 
   // Polyline: bottom-left → top-left → top-right → bottom-right.
   // Three sides only — the bottom edge is intentionally absent so the

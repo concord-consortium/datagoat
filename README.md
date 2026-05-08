@@ -35,7 +35,7 @@ A mobile-first PWA for student athletes to track daily health metrics, sport out
    VITE_FIREBASE_APP_ID=
    ```
 
-   When running against the Firebase emulator, most of these values can be any placeholder, but the project ID needs to be lowercase and hyphen-allowed (use `demo-<anything>`, e.g., `demo-datagoat` for emulator work). In addition, `VITE_USE_EMULATORS` must be set to `true` — uncomment the line from `.env.example`. The app auto-connects to the emulator in dev mode.
+   When running against the Firebase emulator, most of these values can be any placeholder, but the project ID needs to be lowercase and hyphen-allowed (use `demo-<anything>`, e.g., `demo-datagoat` for emulator work). The emulator toggle (`VITE_USE_EMULATORS`) is no longer set in `.env.local`; it lives in `.env.emulators` and `.env.cloud` and is selected automatically by the `npm run dev` and `npm run dev:cloud` scripts via Vite's `--mode` flag. See [CLAUDE.md](CLAUDE.md) for details.
 
 ## Local Development
 
@@ -63,8 +63,6 @@ firebase hosting:channel:deploy <channel-name>
 ```
 
 The CLI prints a URL like `https://<project>--<channel-name>-<hash>.web.app`. Channels auto-expire after 7 days by default (pass `--expires 30d` to extend, max 30).
-
-Before building, set `VITE_USE_EMULATORS=false` (or unset) in `.env.local` — Vite loads `.env.local` for production builds too, so a build with the emulator flag still set will try to connect to emulators that don't exist on the deployed URL.
 
 Only **hosting** is channel-isolated. **Cloud Functions, Firestore data, and Auth state** are project-level and shared with production — sign-ins and writes from the preview URL hit the same backend as the live site.
 

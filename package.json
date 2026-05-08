@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode emulators",
-    "dev:cloud": "vite",
+    "dev:cloud": "vite --mode cloud",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "emulators": "firebase emulators:start --only auth,firestore,hosting,functions --project=demo-datagoat --import=./firebase-data --export-on-exit",

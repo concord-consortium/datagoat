@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
+import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import {
   HISTORY,
@@ -19,6 +20,7 @@ export function PerformanceLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
   const { performance, setPerformanceEntry } = useData();
+  const { metrics: allCustom } = useCustomMetrics();
   const nameIdBase = useId();
 
   const dateParam = searchParams.get("date");
@@ -64,9 +66,16 @@ export function PerformanceLog() {
     setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
 
-  const displayedMetrics = PERFORMANCE_METRICS.filter((m) =>
-    trackedIds.includes(m.id),
+  // Built-ins respect the user's tracked-IDs preference. Custom
+  // performance metrics bypass the tracked filter and always appear
+  // (DGT-36 demo decision: no per-custom checkbox).
+  const customPerformance = allCustom.filter(
+    (m) => m.metricType === "performance",
   );
+  const displayedMetrics: Array<{ id: string; name: string }> = [
+    ...PERFORMANCE_METRICS.filter((m) => trackedIds.includes(m.id)),
+    ...customPerformance,
+  ];
 
   // Welcome shown only during onboarding (matches prototype's
   // .profile-welcome.show gate keyed on window.isNewUser).

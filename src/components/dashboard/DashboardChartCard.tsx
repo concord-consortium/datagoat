@@ -12,6 +12,7 @@ import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { PerformanceEntry, WellnessEntry } from "../../types/data";
 import { useUser } from "../../contexts/UserContext";
+import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import {
   capitalizeAthleteType,
@@ -51,13 +52,25 @@ export function DashboardChartCard({
   const allMetrics: MetricDefinition[] =
     type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
   const { loadState } = useUser();
+  const { metrics: allCustom } = useCustomMetrics();
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const profileKey = profile
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
     : DEFAULT_PROFILE_KEY;
-  const tracked = useMemo(
+  // Built-in metrics filter by the user's tracked-IDs preference.
+  // Custom metrics bypass the tracked filter and always appear (per
+  // DGT-36 demo decision: no per-custom checkbox).
+  const trackedBuiltIns = useMemo(
     () => allMetrics.filter((m) => trackedMetricIds.includes(m.id)),
     [allMetrics, trackedMetricIds],
+  );
+  const customsForType = useMemo(
+    () => allCustom.filter((m) => m.metricType === type),
+    [allCustom, type],
+  );
+  const tracked = useMemo<Array<{ id: string; name: string }>>(
+    () => [...trackedBuiltIns, ...customsForType],
+    [trackedBuiltIns, customsForType],
   );
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(

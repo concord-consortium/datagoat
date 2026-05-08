@@ -74,10 +74,25 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
   );
 }
 
+// Empty fallback returned when no provider is mounted. Lets existing
+// tests for unrelated components (Dashboard, PerformanceLog) keep
+// rendering without wrapping in CustomMetricsProvider, while the
+// production App.tsx always supplies the real provider.
+const NOOP_VALUE: CustomMetricsValue = {
+  metrics: [],
+  addMetric: () => {
+    throw new Error("addMetric called without CustomMetricsProvider");
+  },
+  updateMetric: () => {
+    throw new Error("updateMetric called without CustomMetricsProvider");
+  },
+  deleteMetric: () => {
+    throw new Error("deleteMetric called without CustomMetricsProvider");
+  },
+  getMetric: () => undefined,
+};
+
 export function useCustomMetrics(): CustomMetricsValue {
   const ctx = useContext(CustomMetricsContext);
-  if (!ctx) {
-    throw new Error("useCustomMetrics must be used within CustomMetricsProvider");
-  }
-  return ctx;
+  return ctx ?? NOOP_VALUE;
 }

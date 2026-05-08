@@ -110,15 +110,18 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type",
     resolve: (params) => {
-      // Match the prototype's #add-metric-title text (HTML around line
-      // 8596: "Add Health & Wellness Metric" / "Add Performance Metric").
+      // The page lists user-defined custom metrics for the chosen type
+      // and offers a "+ Create custom metric" CTA. Title was previously
+      // "Add ..." (matching the prototype) but the action is now
+      // navigating to a create page rather than directly adding, so
+      // the label reads as "Custom ..." per DGT-36.
       const t = params.type;
       if (t !== "wellness" && t !== "performance") return null;
       return {
         title:
           t === "wellness"
-            ? "Add Health & Wellness Metric"
-            : "Add Performance Metric",
+            ? "Custom Health & Wellness Metrics"
+            : "Custom Performance Metrics",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };

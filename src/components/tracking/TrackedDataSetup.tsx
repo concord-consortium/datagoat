@@ -86,7 +86,7 @@ export function TrackedDataSetup() {
           void handleToggleCheck("wellness", id, checked)
         }
         addToHref="/add-metric/wellness"
-        addToLabel="Add Health & Wellness Metric"
+        addToLabel="Custom Health & Wellness Metrics"
       />
 
       <div className={css.chartDivider} aria-hidden="true" />
@@ -101,7 +101,7 @@ export function TrackedDataSetup() {
           void handleToggleCheck("performance", id, checked)
         }
         addToHref="/add-metric/performance"
-        addToLabel="Add Performance Metric"
+        addToLabel="Custom Performance Metrics"
       />
 
       <div className={screenCss.dashboardBtnWrap}>

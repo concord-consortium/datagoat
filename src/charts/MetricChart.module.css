@@ -1,7 +1,8 @@
-/* MetricChart placeholder. Real chart rendering is a follow-up story; this
-   ships the prop API and a11y contract behind a gray-box rect with TBD
-   text. The chart-wrapper class is ported from the prototype (line 2322)
-   but the placeholder visuals are new. */
+/* MetricChart wraps the SVG canvas and the "Show data" toggle. The bar
+   chart rendering itself lives in MetricBarChart and its subcomponents.
+   This file owns only the outer chrome plus the loading-skeleton variant
+   and the placeholder text used for type="line" until the line variant
+   lands. */
 
 .chartWrapper {
   position: relative;
@@ -13,19 +14,10 @@
   width: 100%;
   height: auto;
   display: block;
-  border-radius: 6px;
   background: var(--surface2);
-  border: 1px solid #567092;
 }
 
-.placeholderRect {
-  fill: var(--surface2);
-}
-
-/* Distinguishable from .placeholderRect so a reviewer can tell loading
-   from "TBD placeholder" at a glance. Per spec line 774: "skeleton (a
-   different gray-box variant - distinguishable from the 'TBD'
-   placeholder so a reviewer doesn't conflate the two states)." */
+/* Loading skeleton fills the chart area while DataContext resolves. */
 .skeletonRect {
   fill: var(--surface);
   stroke: #567092;

@@ -1,0 +1,68 @@
+/* src/charts/MetricBarChart.module.css
+   Shared styles for all bar-chart subcomponents (Axes, Bars, TodayGhost,
+   GoalLineAndBadge, AverageBadge). Each component imports the classes it
+   needs. Keeping them in one file matches the visual coupling — these
+   styles are part of the same chart system. */
+
+.yLabel,
+.xLabel {
+  fill: var(--subtext);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.xLabel {
+  text-anchor: middle;
+}
+
+.xAxisLine,
+.yAxisLine {
+  stroke: var(--subtext);
+  stroke-width: 1;
+}
+
+.barAtOrAboveGoal {
+  fill: var(--above-goal);
+}
+
+.barBelowGoal {
+  fill: var(--below-goal);
+}
+
+.todayGhost {
+  fill: none;
+  stroke: var(--secondary);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+
+.goalLine {
+  stroke: #E8E29A;
+  stroke-width: 1;
+}
+
+.goalBadge,
+.avgBadge {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.goalBadgeRect {
+  fill: var(--surface2);
+  stroke: #E8E29A;
+}
+
+.avgBadgeRect {
+  fill: var(--surface2);
+  stroke: var(--subtext);
+}
+
+.badgeText {
+  fill: var(--subtext);
+}
+
+.goalBadgeText {
+  fill: #E8E29A;
+}

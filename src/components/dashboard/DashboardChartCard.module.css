@@ -25,3 +25,12 @@
 .metricSelectWrap > * {
   width: 100%;
 }
+
+/* Shown in place of the chart and picker when the user has no
+   tracked metrics for this section. */
+.emptyState {
+  margin: 0;
+  padding: 24px 12px;
+  color: var(--subtext);
+  text-align: center;
+}

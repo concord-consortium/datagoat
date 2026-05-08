@@ -35,7 +35,7 @@ A mobile-first PWA for student athletes to track daily health metrics, sport out
    VITE_FIREBASE_APP_ID=
    ```
 
-   When running against the Firebase emulator, these values can be any placeholder — the app auto-connects to the emulator in dev mode.
+   When running against the Firebase emulator, most of these values can be any placeholder, but the project ID needs to be lowercase and hyphen-allowed (use `demo-<anything>`, e.g., `demo-datagoat` for emulator work). In addition, `VITE_USE_EMULATORS` must be set to `true` — uncomment the line from `.env.example`. The app auto-connects to the emulator in dev mode.
 
 ## Local Development
 

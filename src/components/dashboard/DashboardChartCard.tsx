@@ -14,12 +14,15 @@ import type { PerformanceEntry, WellnessEntry } from "../../types/data";
 import { useUser } from "../../contexts/UserContext";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import {
-  buildSeries,
   capitalizeAthleteType,
   capitalizeGender,
-  formatNumber,
+  computeAverage,
+  formatMetricValue,
   lookupGoalLine,
 } from "../../charts/chartSeries";
+import { getMetricChartConfig } from "../../charts/metricChartConfig";
+import { useChartSeries } from "../../charts/useChartSeries";
+import { useDemoMode } from "../../contexts/DemoModeContext";
 import css from "./DashboardChartCard.module.css";
 
 interface DashboardChartCardProps {
@@ -58,53 +61,59 @@ export function DashboardChartCard({
   );
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(
-    tracked[0]?.id ?? allMetrics[0]?.id ?? "",
+    tracked[0]?.id ?? "",
   );
   const [range, setRange] = useState<TimeRangeKey>("7d");
+  const demoMode = useDemoMode();
 
-  const metric =
-    tracked.find((m) => m.id === selectedMetricId) ?? tracked[0] ?? allMetrics[0];
+  // metric is undefined when no metrics are tracked — handled by the
+  // empty-state return below. Don't fall back to allMetrics[0]; that
+  // would produce a chart for an untracked metric while the picker
+  // stays empty.
+  const metric = tracked.find((m) => m.id === selectedMetricId) ?? tracked[0];
 
-  const series = useMemo(
-    () =>
-      buildSeries({
-        type,
-        metricId: metric?.id ?? "",
-        wellnessEntries: wellnessEntries ?? [],
-        performanceEntries: performanceEntries ?? [],
-        rangeDays: TIME_RANGE_DAYS[range],
-      }),
-    [type, metric?.id, wellnessEntries, performanceEntries, range],
-  );
+  const series = useChartSeries({
+    type,
+    metricId: metric?.id ?? "",
+    wellnessEntries: wellnessEntries ?? [],
+    performanceEntries: performanceEntries ?? [],
+    rangeDays: TIME_RANGE_DAYS[range],
+    demoMode,
+  });
 
-  const average =
-    series.length > 0
-      ? series.reduce((s, p) => s + p.value, 0) / series.length
-      : undefined;
-  const goalLine =
-    metric && type === "wellness"
-      ? lookupGoalLine(metric.id, profileKey)
-      : undefined;
+  if (!metric) {
+    return (
+      <div className={css.chartCard}>
+        <p className={css.emptyState}>
+          {type === "wellness"
+            ? "No tracked health & wellness metrics."
+            : "No tracked performance metrics."}
+        </p>
+      </div>
+    );
+  }
 
-  // Compose the chart description for SR users. Includes the goal AND
-  // average context the placeholder doesn't render visually but the
-  // <desc> exposes - giving SR users a complete experience even before
-  // the visual chart lands. Per spec line 770.
-  const description = metric
-    ? loading
-      ? `${metric.name} chart is loading.`
-      : [
-          `${metric.name} ${rangeDescriptionPhrase(range)}.`,
-          goalLine !== undefined
-            ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
-            : null,
-          average !== undefined
-            ? `Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" ")
-    : "No metric selected.";
+  const config = getMetricChartConfig(metric.id);
+  const average = computeAverage(series, {
+    nullsCountAsZero: config.nullsCountAsZero,
+  });
+  const goalLine = lookupGoalLine(metric.id, profileKey);
+
+  // Compose the chart description for SR users — includes goal and
+  // average context that the visual chart conveys.
+  const description = loading
+    ? `${metric.name} chart is loading.`
+    : [
+        `${metric.name} ${rangeDescriptionPhrase(range)}.`,
+        goalLine !== undefined
+          ? `Goal: ${formatMetricValue(metric.id, goalLine)}.`
+          : null,
+        average !== undefined
+          ? `Recent average: ${formatMetricValue(metric.id, average)}.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
   const selectOptions = tracked.map((m) => ({ value: m.id, label: m.name }));
 
@@ -120,24 +129,26 @@ export function DashboardChartCard({
             }
             labelVisuallyHidden
             options={selectOptions}
-            value={metric?.id ?? ""}
+            value={metric.id}
             onChange={(e) => setSelectedMetricId(e.target.value)}
           />
         </div>
       </div>
       <MetricChart
-        type="line"
+        type={config.chartType}
+        metricId={metric.id}
         data={loading ? [] : series}
         goalLine={goalLine}
         averageLine={average}
-        title={metric ? metric.name : "Metric"}
+        title={metric.name}
         description={description}
+        rangeKey={range}
         loading={loading}
       />
       <TimeRangePicker
         value={range}
         onChange={setRange}
-        ariaLabel={`${metric ? metric.name : "Metric"} time range`}
+        ariaLabel={`${metric.name} time range`}
       />
     </div>
   );

@@ -2,6 +2,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
+import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import css from "./App.module.css";
 
@@ -12,13 +13,15 @@ export default function App() {
   return (
     <div className={css.app}>
       <BrowserRouter>
-        <AuthProvider>
-          <UserProvider>
-            <DataProvider>
-              <AppRoutes />
-            </DataProvider>
-          </UserProvider>
-        </AuthProvider>
+        <DemoModeProvider>
+          <AuthProvider>
+            <UserProvider>
+              <DataProvider>
+                <AppRoutes />
+              </DataProvider>
+            </UserProvider>
+          </AuthProvider>
+        </DemoModeProvider>
       </BrowserRouter>
     </div>
   );

@@ -1,0 +1,84 @@
+import type { MetricChartConfig } from "./metricChartConfig";
+import type { ChartGeom } from "./chartGeom";
+import type { TimeRangeKey } from "../components/dashboard/TimeRangePicker";
+import { xAxisLabelIndices } from "./xAxisLabels";
+import css from "./MetricBarChart.module.css";
+
+export interface AxesProps {
+  config: MetricChartConfig;
+  geom: ChartGeom;
+  data: Array<{ date: string; value: number | null }>;
+  rangeKey: TimeRangeKey;
+}
+
+export function Axes({ config, geom, data, rangeKey }: AxesProps) {
+  const N = data.length;
+  const cellW = N > 0 ? geom.plotWidth / N : 0;
+  const labelSet = xAxisLabelIndices(rangeKey, N);
+
+  return (
+    <g aria-hidden="true">
+      <line
+        className={css.yAxisLine}
+        x1={geom.plotLeft}
+        x2={geom.plotLeft}
+        y1={geom.plotTop}
+        y2={geom.plotBottom}
+      />
+      <line
+        className={css.xAxisLine}
+        x1={geom.plotLeft}
+        x2={geom.plotRight}
+        y1={geom.plotBottom}
+        y2={geom.plotBottom}
+      />
+      <text
+        className={css.yLabel}
+        x={geom.plotLeft - 8}
+        y={geom.plotTop + 12}
+        textAnchor="end"
+      >
+        {config.unit && !config.isLongUnit
+          ? `${config.formatValue(config.yTopRaw)} ${config.unit}`
+          : config.formatValue(config.yTopRaw)}
+      </text>
+      {config.unit && config.isLongUnit ? (
+        <text
+          className={css.yLabel}
+          x={geom.plotLeft - 8}
+          y={geom.plotTop + 28}
+          textAnchor="end"
+        >
+          {config.unit}
+        </text>
+      ) : null}
+      <text
+        className={css.yLabel}
+        x={geom.plotLeft - 8}
+        y={geom.plotBottom}
+        textAnchor="end"
+      >
+        {config.formatValue(config.yBottomRaw)}
+      </text>
+
+      {data.map((d, i) =>
+        labelSet.has(i) ? (
+          <text
+            key={`xlbl-${d.date}`}
+            className={css.xLabel}
+            x={geom.plotLeft + i * cellW + cellW / 2}
+            y={geom.plotBottom + 20}
+          >
+            {formatXLabel(d.date)}
+          </text>
+        ) : null,
+      )}
+    </g>
+  );
+}
+
+function formatXLabel(iso: string): string {
+  const m = iso.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (!m) return iso;
+  return `${Number(m[1])}/${Number(m[2])}`;
+}

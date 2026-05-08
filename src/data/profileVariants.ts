@@ -30,6 +30,13 @@ export interface ChartGoals {
   leanMassGoalLabel: string;
   leanMassYTop: string;
   leanMassYMid: string;
+  // Performance metric goals — placeholder values; content team will
+  // refine per-profile down the road. wins/losses intentionally have
+  // no goal (leaving the goal badge off for those metrics).
+  goalsGoal?: number;
+  assistsGoal?: number;
+  yardsGoal?: number;
+  tacklesGoal?: number;
 }
 
 const maleStrength: ProfileVariant = {
@@ -89,24 +96,28 @@ const maleStrengthGoals: ChartGoals = {
   sleepEffGoal: 75, sleepEffGoalLabel: "75%",
   proteinGoal: 1.4, proteinGoalPct: 56, proteinGoalLabel: "1.4", proteinMax: 2.5, proteinYTop: "2.5", proteinYMid: "1.25",
   leanMassGoal: 65, leanMassMax: 100, leanMassGoalPct: 65, leanMassGoalLabel: "65 kg", leanMassYTop: "100 kg", leanMassYMid: "50 kg",
+  goalsGoal: 1, assistsGoal: 2, yardsGoal: 50, tacklesGoal: 5,
 };
 
 const maleEnduranceGoals: ChartGoals = {
   sleepEffGoal: 80, sleepEffGoalLabel: "80%",
   proteinGoal: 1.2, proteinGoalPct: 60, proteinGoalLabel: "1.2", proteinMax: 2.0, proteinYTop: "2.0", proteinYMid: "1.0",
   leanMassGoal: 55, leanMassMax: 80, leanMassGoalPct: 69, leanMassGoalLabel: "55 kg", leanMassYTop: "80 kg", leanMassYMid: "40 kg",
+  goalsGoal: 1, assistsGoal: 2, yardsGoal: 50, tacklesGoal: 5,
 };
 
 const femaleStrengthGoals: ChartGoals = {
   sleepEffGoal: 70, sleepEffGoalLabel: "70%",
   proteinGoal: 1.4, proteinGoalPct: 56, proteinGoalLabel: "1.4", proteinMax: 2.5, proteinYTop: "2.5", proteinYMid: "1.25",
   leanMassGoal: 42, leanMassMax: 80, leanMassGoalPct: 53, leanMassGoalLabel: "42 kg", leanMassYTop: "80 kg", leanMassYMid: "40 kg",
+  goalsGoal: 1, assistsGoal: 2, yardsGoal: 50, tacklesGoal: 5,
 };
 
 const femaleEnduranceGoals: ChartGoals = {
   sleepEffGoal: 75, sleepEffGoalLabel: "75%",
   proteinGoal: 1.2, proteinGoalPct: 60, proteinGoalLabel: "1.2", proteinMax: 2.0, proteinYTop: "2.0", proteinYMid: "1.0",
   leanMassGoal: 38, leanMassMax: 65, leanMassGoalPct: 58, leanMassGoalLabel: "38 kg", leanMassYTop: "65 kg", leanMassYMid: "33 kg",
+  goalsGoal: 1, assistsGoal: 2, yardsGoal: 50, tacklesGoal: 5,
 };
 
 export const PROFILE_CHART_GOALS: Record<string, ChartGoals> = {

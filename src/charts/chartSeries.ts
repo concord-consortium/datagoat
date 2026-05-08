@@ -1,31 +1,54 @@
 import type { PerformanceEntry, WellnessEntry } from "../types/data";
-import { daysAgoFromISO } from "../utils/dates";
+import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
+import { getMetricChartConfig } from "./metricChartConfig";
 
-// Look up the per-metric goal value from PROFILE_CHART_GOALS for the
-// user's gender + athleteType combo. Only sleepEfficiency / protein /
-// leanMass have goal values in the prototype; other metrics return
-// undefined and the chart simply doesn't render a goal line.
+// Resolve the chart goal line for a metric in raw units.
+// Per-profile goals from PROFILE_CHART_GOALS take precedence; metrics
+// without a per-profile entry fall back to the static goal in
+// metricChartConfig (e.g., Hydration's 3, Availability's 80%).
 export function lookupGoalLine(
   metricId: string,
   profileKey: string,
 ): number | undefined {
   const goals = PROFILE_CHART_GOALS[profileKey];
-  if (!goals) return undefined;
-  switch (metricId) {
-    case "sleepEfficiency":
-      return goals.sleepEffGoal;
-    case "protein":
-      return goals.proteinGoal;
-    case "leanMass":
-      return goals.leanMassGoal;
-    default:
-      return undefined;
+  if (goals) {
+    switch (metricId) {
+      case "sleepEfficiency":
+        return goals.sleepEffGoal;
+      case "protein":
+        return goals.proteinGoal;
+      case "leanMass":
+        return goals.leanMassGoal;
+      case "goals":
+        return goals.goalsGoal;
+      case "assists":
+        return goals.assistsGoal;
+      case "yards":
+        return goals.yardsGoal;
+      case "tackles":
+        return goals.tacklesGoal;
+    }
   }
+  return getMetricChartConfig(metricId).goalRaw;
 }
 
-export function formatNumber(n: number): string {
-  return Math.round(n * 10) / 10 + "";
+// Format a raw metric value for narrative text (chart screen-reader
+// descriptions, etc.) using the same per-metric rules as the chart
+// badges: avgDecimals for rounding, formatValue for inseparable
+// suffixes like "%", and config.unit for separable units like "kg".
+//
+// Examples:
+//   formatMetricValue("sleepEfficiency", 82.5) → "83%"  (avgDecimals: 0)
+//   formatMetricValue("leanMass", 65)          → "65 kg"
+//   formatMetricValue("protein", 1.42)         → "1.4 g/kg"
+//   formatMetricValue("hydration", 3)          → "3"
+export function formatMetricValue(metricId: string, raw: number): string {
+  const config = getMetricChartConfig(metricId);
+  const decimals = config.avgDecimals ?? 1;
+  const rounded = Number(raw.toFixed(decimals));
+  const formatted = config.formatValue(rounded);
+  return config.unit ? `${formatted} ${config.unit}` : formatted;
 }
 
 // Profile keys in PROFILE_CHART_GOALS use prototype-style capitalized
@@ -121,4 +144,64 @@ export function readWellnessMetric(
     default:
       return undefined;
   }
+}
+
+// Same args as buildSeries, but emits one entry per day in the range
+// (oldest first, today last) with null for days with no entry. The
+// bar chart consumes this so it can render today-ghost when today is
+// null and leave empty slots for missing past days.
+//
+// Performance metrics: 0 is preserved (valid score). Wellness metrics:
+// 0 is treated as "not logged" (matches buildSeries / readWellnessMetric).
+export function buildAlignedSeries({
+  type,
+  metricId,
+  wellnessEntries,
+  performanceEntries,
+  rangeDays,
+}: BuildSeriesArgs): Array<{ date: string; value: number | null }> {
+  const valueByDate = new Map<string, number>();
+
+  if (type === "wellness") {
+    for (const e of wellnessEntries) {
+      const v = readWellnessMetric(e, metricId);
+      if (v !== undefined) valueByDate.set(e.date, v);
+    }
+  } else {
+    for (const e of performanceEntries) {
+      const raw = e.metrics?.[metricId];
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        valueByDate.set(e.date, raw);
+      }
+    }
+  }
+
+  const out: Array<{ date: string; value: number | null }> = [];
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const date = isoAtDaysAgo(i);
+    const v = valueByDate.get(date);
+    out.push({ date, value: v === undefined ? null : v });
+  }
+  return out;
+}
+
+// Compute the average over a date-aligned series. Default behavior:
+// filter nulls and average over the days that have data. When
+// `nullsCountAsZero` is true, nulls are treated as 0 and the divisor
+// is the full series length — useful for availability-style metrics
+// where a missing entry semantically means "not available."
+export function computeAverage(
+  series: Array<{ value: number | null }>,
+  options: { nullsCountAsZero?: boolean } = {},
+): number | undefined {
+  if (options.nullsCountAsZero) {
+    if (series.length === 0) return undefined;
+    const sum = series.reduce((s, d) => s + (d.value ?? 0), 0);
+    return sum / series.length;
+  }
+  const filled = series
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null);
+  if (filled.length === 0) return undefined;
+  return filled.reduce((s, v) => s + v, 0) / filled.length;
 }

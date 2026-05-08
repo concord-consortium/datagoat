@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 
 import { MetricChart } from "./MetricChart";
 
-const sampleData = [
+const sampleData: Array<{ date: string; value: number | null }> = [
   { date: "2026-04-25", value: 4 },
   { date: "2026-04-26", value: 5 },
   { date: "2026-04-27", value: 6 },
@@ -16,6 +16,7 @@ describe("MetricChart", () => {
     const { container } = render(
       <MetricChart
         type="line"
+        metricId="sleepEfficiency"
         data={sampleData}
         title="Hydration"
         description="Hydration over the last 7 days. Goal: 4 level. Recent average: 5 level."
@@ -47,6 +48,7 @@ describe("MetricChart", () => {
     const { container } = render(
       <MetricChart
         type="line"
+        metricId="sleepEfficiency"
         data={sampleData}
         title="Hydration"
         description="desc"
@@ -75,6 +77,7 @@ describe("MetricChart", () => {
     const { container } = render(
       <MetricChart
         type="line"
+        metricId="sleepEfficiency"
         data={[]}
         title="Sleep Time"
         description="Sleep Time chart is loading."
@@ -87,11 +90,34 @@ describe("MetricChart", () => {
     expect(container.textContent).toContain("Sleep Time data is loading...");
   });
 
-  it("renders the placeholder label when not loading", () => {
+  it("renders a MetricBarChart for type='bar' (no placeholder text)", () => {
     const { container } = render(
-      <MetricChart type="line" data={sampleData} title="Hydration" description="d" />,
+      <MetricChart
+        type="bar"
+        metricId="sleepEfficiency"
+        data={[{ date: "2026-05-06", value: 80 }]}
+        title="Sleep Efficiency"
+        description="d"
+      />,
     );
-    const text = container.querySelector("svg text");
-    expect(text?.textContent).toBe("Chart placeholder - TBD");
+    // Placeholder text gone
+    expect(container.textContent).not.toContain("Chart placeholder - TBD");
+    // Bar present
+    expect(
+      container.querySelector("rect[class*=\"barAtOrAboveGoal\"], rect[class*=\"barBelowGoal\"]"),
+    ).toBeTruthy();
+  });
+
+  it("renders a small TBD note for type='line' until the line variant ships", () => {
+    const { container } = render(
+      <MetricChart
+        type="line"
+        metricId="sleepEfficiency"
+        data={[{ date: "2026-05-06", value: 80 }]}
+        title="Sleep Efficiency"
+        description="d"
+      />,
+    );
+    expect(container.textContent).toContain("Line chart not yet implemented");
   });
 });

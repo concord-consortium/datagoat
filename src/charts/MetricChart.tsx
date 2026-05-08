@@ -1,18 +1,16 @@
 import { useId, useState } from "react";
 import { ChartDataTable } from "./ChartDataTable";
+import { MetricBarChart } from "./MetricBarChart";
+import type { TimeRangeKey } from "../components/dashboard/TimeRangePicker";
 import css from "./MetricChart.module.css";
 
-// Final prop API for the chart - this contract is the seam the follow-up
-// "real chart rendering" story will swap behind. The placeholder doesn't
-// render goalLine/averageLine visually, but they're forwarded so the
-// follow-up swap is purely path-generation math. The `description` prop
-// is composed by the caller (DashboardChartCard / MetricDetail) to
-// include the goal + average context that the placeholder doesn't render
-// visually but the <desc> exposes to SR users - giving SR users a
-// complete experience even before the visual chart lands.
+// Final prop API for the chart. The `description` prop is composed by the
+// caller (DashboardChartCard / MetricDetail) to include the goal + average
+// context so SR users get a complete experience.
 export interface MetricChartProps {
   type: "line" | "bar";
-  data: Array<{ date: string; value: number }>;
+  metricId: string;
+  data: Array<{ date: string; value: number | null }>;
   goalLine?: number;
   averageLine?: number;
   // Title becomes the <title> in the SVG and is the SR-name. Description
@@ -21,10 +19,10 @@ export interface MetricChartProps {
   description: string;
   width?: number;
   height?: number;
+  rangeKey?: TimeRangeKey;
   // Data table label override (defaults to the title).
   dataTableTitle?: string;
-  // Distinguishable skeleton variant during DataContext loading. Per
-  // spec "Empty data handling": never flash zero-value axes during load.
+  // Distinguishable skeleton variant during DataContext loading.
   loading?: boolean;
 }
 
@@ -33,6 +31,7 @@ const DEFAULT_HEIGHT = 180;
 
 export function MetricChart({
   type,
+  metricId,
   data,
   goalLine,
   averageLine,
@@ -40,16 +39,10 @@ export function MetricChart({
   description,
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
+  rangeKey = "7d",
   dataTableTitle,
   loading = false,
 }: MetricChartProps) {
-  // type, data, goalLine, averageLine are all part of the final prop
-  // surface but the placeholder doesn't draw them - referenced here so
-  // strict TS doesn't flag them as unused.
-  void type;
-  void goalLine;
-  void averageLine;
-
   const titleId = useId();
   const descId = useId();
   const [showData, setShowData] = useState(false);
@@ -66,22 +59,44 @@ export function MetricChart({
       >
         <title id={titleId}>{title}</title>
         <desc id={descId}>{description}</desc>
-        <g aria-hidden="true">
-          <rect
-            className={loading ? css.skeletonRect : css.placeholderRect}
-            x="0"
-            y="0"
+        {loading ? (
+          <g aria-hidden="true">
+            <rect
+              className={css.skeletonRect}
+              x="0"
+              y="0"
+              width={width}
+              height={height}
+            />
+            <text
+              className={css.placeholderLabel}
+              x={width / 2}
+              y={height / 2}
+            >
+              Loading chart data...
+            </text>
+          </g>
+        ) : type === "bar" ? (
+          <MetricBarChart
+            metricId={metricId}
+            data={data}
+            goalRaw={goalLine}
+            averageRaw={averageLine}
+            rangeKey={rangeKey}
             width={width}
             height={height}
           />
-          <text
-            className={css.placeholderLabel}
-            x={width / 2}
-            y={height / 2}
-          >
-            {loading ? "Loading chart data..." : "Chart placeholder - TBD"}
-          </text>
-        </g>
+        ) : (
+          <g aria-hidden="true">
+            <text
+              className={css.placeholderLabel}
+              x={width / 2}
+              y={height / 2}
+            >
+              Line chart not yet implemented
+            </text>
+          </g>
+        )}
       </svg>
       <button
         type="button"
@@ -96,6 +111,7 @@ export function MetricChart({
         id={`${titleId}-data`}
         title={dataTableTitle ?? title}
         data={data}
+        metricId={metricId}
         visuallyHidden={!showData}
         loading={loading}
       />

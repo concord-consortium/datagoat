@@ -163,6 +163,32 @@ The plugin renders one of three branches off the `useAuth()` state ([CodapPlugin
    - **Upsert by `date`** — `getAllItems(name)` builds a `date → itemId` map; rows whose date matches an existing item are sent through `updateItemByID`, the rest are appended via `createItems`. This is what makes the CODAP table stay in sync with the user's daily logs across re-sends. If the user has manually duplicated rows in CODAP, only the first match per key is updated and a console warning surfaces the divergence.
 3. `wellnessEntryToRow` / `performanceEntryToRow` in [CodapPlugin.tsx](src/codap/CodapPlugin.tsx) do the entry → flat-row conversion. The wellness `availability` sub-tree is flattened to a single string (e.g., `"practice:played / no-game"`) so the CODAP cell is human-readable at a glance.
 
+## Charts
+
+The chart engine lives in [src/charts/](src/charts/). [MetricChart](src/charts/MetricChart.tsx) is the public seam — it owns the SVG `role="img"` wiring, the `<title>` / `<desc>` a11y contract, the loading skeleton, and the visually-hidden `<ChartDataTable>` with its "Show data" toggle. Inside that SVG, [MetricBarChart](src/charts/MetricBarChart.tsx) is a thin orchestrator that computes geometry + scale once and composes five focused subcomponents — [Axes](src/charts/Axes.tsx), [Bars](src/charts/Bars.tsx), [TodayGhost](src/charts/TodayGhost.tsx), [GoalLineAndBadge](src/charts/GoalLineAndBadge.tsx), [AverageBadge](src/charts/AverageBadge.tsx) — inside a single `<g>` group. Render order is bars → today-ghost → axes → goal → avg, so the axis lines paint over any bar pixel that touches them and the avg badge sits on top of everything.
+
+[metricChartConfig.ts](src/charts/metricChartConfig.ts) is the single source of truth for per-metric chart settings: `chartType`, axis range, axis inversion (Hydration's 1..8 urine-color scale displays low values at the top), value formatter, optional `unit` + `isLongUnit` flag (long units like `"g/kg"` stack on a second line and drop from the goal badge), `avgDecimals`, `nullsCountAsZero` (used by Availability), and the `random(rng)` generator that powers demo mode. The config is the right place to add per-metric chart concerns; [MetricDefinition](src/metrics/types.ts) stays focused on the metric registry (name, icon, who-collects-it, etc.).
+
+### Adding a new metric to the chart engine
+
+Three files, in order:
+
+1. Add the metric to [src/metrics/wellnessMetrics.ts](src/metrics/wellnessMetrics.ts) or [performanceMetrics.ts](src/metrics/performanceMetrics.ts) with name, icon, descriptions.
+2. Add an entry to `CONFIG` in [metricChartConfig.ts](src/charts/metricChartConfig.ts) — for performance metrics, `performanceConfig(yBottomRaw, yTopRaw)` is the factory; for wellness metrics define the config object explicitly.
+3. If the metric needs a profile-keyed goal (different goal per Gender × AthleteType), add a field to [`ChartGoals`](src/data/profileVariants.ts), populate the four canonical profile entries, and add a switch case to `lookupGoalLine` in [chartSeries.ts](src/charts/chartSeries.ts). Otherwise set `goalRaw` directly on the chart config and the static-fallback path in `lookupGoalLine` picks it up.
+
+### Goal resolution
+
+[`lookupGoalLine(metricId, profileKey)`](src/charts/chartSeries.ts) resolves the chart's goal line in raw units. Per-profile values from `PROFILE_CHART_GOALS` win; metrics without a per-profile entry fall back to `metricChartConfig[metricId].goalRaw`; if neither is set the goal line and badge don't render. Both [DashboardChartCard](src/components/dashboard/DashboardChartCard.tsx) and [MetricDetail](src/charts/MetricDetail.tsx) use the same lookup — they don't gate on metric type.
+
+### Adding the line-chart variant
+
+The `type: "line" | "bar"` prop on `MetricChart` already exists; `type === "line"` currently renders a "Line chart not yet implemented" note. To slot in a real line variant, add a `LineLayer` (sibling of `Bars`) that walks the same date-aligned `value: number | null` series and emits a `<polyline>` + `<circle>` per non-null point, then have a `MetricLineChart` orchestrator compose it with the existing `Axes`, `GoalLineAndBadge`, and `AverageBadge` subcomponents — those three are already metric-shape agnostic. `MetricChart` routes to the new orchestrator when `type === "line"`.
+
+### Demo mode
+
+[`DemoModeProvider`](src/contexts/DemoModeContext.tsx) reads `?demo` from the URL once at mount; once set, the flag is sticky for the session (navigation that drops the param doesn't kick the user out). [`useChartSeries`](src/charts/useChartSeries.ts) reads the context and either calls `buildAlignedSeries` (real data from Firestore) or generates a seeded random series with a 20% null rate. Random values are seeded by `(SESSION_SEED, metricId, dayOffset)` so the data is stable within a session but varies between sessions. The richer scenario-driven demo system in [DGT-30](https://concord-consortium.atlassian.net/browse/DGT-30) replaces the random generator without touching the chart engine.
+
 ## PWA / service worker
 
 Configured in [vite.config.ts](vite.config.ts) (`vite-plugin-pwa`) with two intentional choices:

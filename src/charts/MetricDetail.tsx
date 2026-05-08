@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { MetricChart } from "./MetricChart";
 import {
@@ -25,12 +25,15 @@ import {
   usePerformanceData,
 } from "../contexts/DataContext";
 import {
-  buildSeries,
   capitalizeAthleteType,
   capitalizeGender,
-  formatNumber,
+  computeAverage,
+  formatMetricValue,
   lookupGoalLine,
 } from "./chartSeries";
+import { getMetricChartConfig } from "./metricChartConfig";
+import { useChartSeries } from "./useChartSeries";
+import { useDemoMode } from "../contexts/DemoModeContext";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -79,20 +82,16 @@ export function MetricDetail({ type }: MetricDetailProps) {
     performance.status === "loaded" ? performance.entries : [];
 
   const [range, setRange] = useState<TimeRangeKey>("7d");
+  const demoMode = useDemoMode();
 
-  const series = useMemo(
-    () =>
-      metric
-        ? buildSeries({
-            type,
-            metricId: metric.id,
-            wellnessEntries,
-            performanceEntries,
-            rangeDays: TIME_RANGE_DAYS[range],
-          })
-        : [],
-    [type, metric, wellnessEntries, performanceEntries, range],
-  );
+  const series = useChartSeries({
+    type,
+    metricId: metric?.id ?? "",
+    wellnessEntries,
+    performanceEntries,
+    rangeDays: TIME_RANGE_DAYS[range],
+    demoMode,
+  });
 
   if (!metric) {
     return (
@@ -103,12 +102,11 @@ export function MetricDetail({ type }: MetricDetailProps) {
     );
   }
 
-  const goalLine =
-    type === "wellness" ? lookupGoalLine(metric.id, profileKey) : undefined;
-  const average =
-    series.length > 0
-      ? series.reduce((s, p) => s + p.value, 0) / series.length
-      : undefined;
+  const goalLine = lookupGoalLine(metric.id, profileKey);
+
+  const average = computeAverage(series, {
+    nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,
+  });
 
   const description = dataLoading
     ? `${metric.name} chart is loading.`
@@ -131,13 +129,15 @@ export function MetricDetail({ type }: MetricDetailProps) {
         <div className={css.chartTitle}>Your {metric.name}</div>
         <div className={css.chartDate}>{rangeLabel(range)}</div>
         <MetricChart
-          type={chartTypeFor(metric.id)}
+          type={getMetricChartConfig(metric.id).chartType}
+          metricId={metric.id}
           data={dataLoading ? [] : series}
           goalLine={goalLine}
           averageLine={average}
           title={`Your ${metric.name}`}
           description={description}
           dataTableTitle={`${metric.name} data`}
+          rangeKey={range}
           loading={dataLoading}
         />
         <TimeRangePicker
@@ -350,21 +350,13 @@ function composeDescription(
   return [
     `${metric.name} ${rangeDescriptionPhrase(range)}.`,
     goalLine !== undefined
-      ? `Goal: ${formatNumber(goalLine)}${metric.unit ? ` ${metric.unit}` : ""}.`
+      ? `Goal: ${formatMetricValue(metric.id, goalLine)}.`
       : null,
     average !== undefined
-      ? `Recent average: ${formatNumber(average)}${metric.unit ? ` ${metric.unit}` : ""}.`
+      ? `Recent average: ${formatMetricValue(metric.id, average)}.`
       : null,
   ]
     .filter(Boolean)
     .join(" ");
 }
 
-// Per-metric chart type. The prototype renders Sleep Time + Protein as
-// bars (daily totals stack-style); other wellness metrics + performance
-// metrics render as lines. The placeholder doesn't draw differently per
-// type, but the prop is forwarded so the future real-chart PR picks the
-// correct primitive.
-function chartTypeFor(metricId: string): "line" | "bar" {
-  return metricId === "sleepTime" || metricId === "protein" ? "bar" : "line";
-}

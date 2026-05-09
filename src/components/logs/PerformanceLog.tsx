@@ -66,15 +66,14 @@ export function PerformanceLog() {
     setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
 
-  // Built-ins respect the user's tracked-IDs preference. Custom
-  // performance metrics bypass the tracked filter and always appear
-  // (DGT-36 demo decision: no per-custom checkbox).
-  const customPerformance = allCustom.filter(
-    (m) => m.metricType === "performance",
-  );
+  // Both built-ins and customs respect the user's tracked-IDs
+  // preference. TrackedDataSetup's per-custom checkbox toggles whether
+  // a custom appears here.
   const displayedMetrics: Array<{ id: string; name: string }> = [
     ...PERFORMANCE_METRICS.filter((m) => trackedIds.includes(m.id)),
-    ...customPerformance,
+    ...allCustom.filter(
+      (m) => m.metricType === "performance" && trackedIds.includes(m.id),
+    ),
   ];
 
   // Welcome shown only during onboarding (matches prototype's

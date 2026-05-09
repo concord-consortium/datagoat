@@ -61,16 +61,19 @@ export function DashboardChartCard({
   const profileKey = profile
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
     : DEFAULT_PROFILE_KEY;
-  // Built-in metrics filter by the user's tracked-IDs preference.
-  // Custom metrics bypass the tracked filter and always appear (per
-  // DGT-36 demo decision: no per-custom checkbox).
+  // Both built-ins and customs respect the user's tracked-IDs
+  // preference. TrackedDataSetup's per-custom checkbox toggles whether
+  // a custom appears in this picker.
   const trackedBuiltIns = useMemo(
     () => allMetrics.filter((m) => trackedMetricIds.includes(m.id)),
     [allMetrics, trackedMetricIds],
   );
   const customsForType = useMemo(
-    () => allCustom.filter((m) => m.metricType === type),
-    [allCustom, type],
+    () =>
+      allCustom.filter(
+        (m) => m.metricType === type && trackedMetricIds.includes(m.id),
+      ),
+    [allCustom, type, trackedMetricIds],
   );
   const tracked = useMemo<Array<{ id: string; name: string }>>(
     () => [...trackedBuiltIns, ...customsForType],

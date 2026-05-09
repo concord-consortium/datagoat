@@ -94,10 +94,13 @@ export function WellnessLog() {
     setWellnessEntry(dateIso, { customMetrics: { [metricId]: numeric } });
   }
 
-  // Custom wellness metrics bypass the tracked-IDs filter (DGT-36 demo
-  // decision: no per-custom checkbox). Adapter shapes them to the
+  // Custom wellness metrics respect the user's tracked-IDs preference
+  // the same way built-ins do — TrackedDataSetup's per-custom checkbox
+  // toggles whether they appear here. Adapter shapes them to the
   // MetricDefinition contract MetricInputRow expects.
-  const customWellness = allCustom.filter((m) => m.metricType === "wellness");
+  const customWellness = allCustom.filter(
+    (m) => m.metricType === "wellness" && trackedIds.includes(m.id),
+  );
   const adaptCustom = (def: CustomMetricDef): MetricDefinition => ({
     id: def.id,
     name: def.name,

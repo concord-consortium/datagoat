@@ -13,6 +13,14 @@
   padding: 20px 24px 100px;
 }
 
+/* Shown while the CustomMetrics Firestore snapshot is in flight on a
+   /wellness/:metricId or /performance/:metricId deep-link, so an
+   unresolved id doesn't Navigate away before the snapshot lands. */
+.loading {
+  padding: 20px 24px;
+  color: var(--subtext);
+}
+
 /* ── Chart section (prototype lines 2827-2844) ── */
 
 .chartSection {

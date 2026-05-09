@@ -6,6 +6,7 @@ import { SectionHeading } from "../components/layout/SectionHeading";
 import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import { VerificationBanner } from "../components/auth/VerificationBanner";
 import { useAuth } from "../contexts/AuthContext";
+import { useCustomMetrics } from "../contexts/CustomMetricsContext";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
 import { OverlayProvider } from "../contexts/OverlayContext";
 import { resolveRouteMeta } from "./routeMeta";
@@ -85,7 +86,12 @@ function AppShellInner() {
   // scrolls. (Matches the prototype: `.screen-header` lives outside
   // `.screen-body`, the latter being the scroll container.)
   const isDashboard = pathname === "/dashboard";
-  const routeMeta = resolveRouteMeta(pathname);
+  // Custom-metric titles live in CustomMetricsContext rather than the
+  // static metric registries; thread the array into resolveRouteMeta so
+  // /wellness/:metricId and /performance/:metricId can resolve a custom
+  // metric's name + back-target.
+  const { metrics: customs } = useCustomMetrics();
+  const routeMeta = resolveRouteMeta(pathname, customs);
   const mainRef = useRef<HTMLElement | null>(null);
 
   // WCAG 2.4.2 (Page Titled): keep document.title in sync with the active

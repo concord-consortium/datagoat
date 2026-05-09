@@ -65,7 +65,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
     type === "wellness"
       ? [...WELLNESS_METRICS, ...ADDABLE_WELLNESS]
       : [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE];
-  const { metrics: allCustom } = useCustomMetrics();
+  const { metrics: allCustom, loading: customsLoading } = useCustomMetrics();
   // Match the route's :type so a wellness URL doesn't resolve a
   // performance-typed custom metric (and vice versa) — without the
   // metricType filter, MetricDetail would render but read from the
@@ -77,6 +77,13 @@ export function MetricDetail({ type }: MetricDetailProps) {
       allCustom.find((m) => m.id === metricId && m.metricType === type),
       type,
     );
+  // Wait for the custom-metrics snapshot before deciding an unknown id
+  // should redirect — otherwise a deep-link or refresh on
+  // /wellness/c_xyz bounces back to the log before the snapshot
+  // resolves the metric. Built-in ids resolve synchronously above, so
+  // the gate only fires when neither a built-in nor an already-loaded
+  // custom matches.
+  const metricLookupLoading = !metric && customsLoading;
 
   const { loadState } = useUser();
   const profile = loadState.status === "loaded" ? loadState.profile : null;
@@ -107,6 +114,9 @@ export function MetricDetail({ type }: MetricDetailProps) {
     demoMode,
   });
 
+  if (metricLookupLoading) {
+    return <p className={css.loading}>Loading…</p>;
+  }
   if (!metric) {
     return (
       <Navigate

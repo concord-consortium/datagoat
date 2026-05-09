@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
+import { useData } from "../../contexts/DataContext";
+import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { TextField } from "../form/TextField";
 import { SelectField } from "../form/SelectField";
 import type {
@@ -49,6 +51,12 @@ export function CustomMetricForm() {
   // NOT early-return before useState. React's Rules of Hooks require
   // the same hook calls every render.
   const editing = metricId ? getMetric(metricId) : undefined;
+
+  const { wellness, performance } = useData();
+  const wellnessEntries =
+    wellness.status === "loaded" ? wellness.entries : [];
+  const performanceEntries =
+    performance.status === "loaded" ? performance.entries : [];
 
   const [draft, setDraft] = useState<DraftState>(() =>
     editing
@@ -103,6 +111,27 @@ export function CustomMetricForm() {
     }
 
     if (editing) {
+      const inputTypeChanged = draft.inputType !== editing.inputType;
+      const unitChanged = draft.unit.trim() !== editing.unit;
+      const dataShapingChanged = inputTypeChanged || unitChanged;
+      if (
+        dataShapingChanged &&
+        hasEntriesForMetric(editing.id, wellnessEntries, performanceEntries)
+      ) {
+        const fields = [
+          inputTypeChanged ? "input type" : null,
+          unitChanged ? "unit" : null,
+        ]
+          .filter(Boolean)
+          .join(" and ");
+        if (
+          !window.confirm(
+            `Changing the ${fields} will affect entries you have already logged. Continue?`,
+          )
+        ) {
+          return;
+        }
+      }
       await updateMetric(editing.id, {
         name: trimmed,
         inputType: draft.inputType,

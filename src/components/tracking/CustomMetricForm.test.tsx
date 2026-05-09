@@ -28,11 +28,35 @@ vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => stableAuth,
 }));
 
+vi.mock("../../contexts/DataContext", async () => {
+  // Import inside the async factory so we get the real
+  // emptyWellnessEntry — vi.mock factories are hoisted above static
+  // imports, so we cannot reach top-level imports from here.
+  const { emptyWellnessEntry } = await import("../../types/data");
+  return {
+    useData: () => ({
+      wellness: {
+        status: "loaded",
+        entries: [
+          {
+            ...emptyWellnessEntry("2026-05-01"),
+            customMetrics: { c_x: 30 },
+          },
+        ],
+      },
+      performance: { status: "loaded", entries: [] },
+      setWellnessEntry: vi.fn(),
+      setPerformanceEntry: vi.fn(),
+    }),
+  };
+});
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { setDoc as mockedSetDoc } from "firebase/firestore";
 import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
+import type { CustomMetricDef } from "../../types/customMetrics";
 import { CustomMetricForm } from "./CustomMetricForm";
 
 function renderAt(path: string) {
@@ -82,5 +106,51 @@ describe("CustomMetricForm (create)", () => {
         goalRaw: 15,
       }),
     );
+  });
+});
+
+describe("CustomMetricForm (edit confirmation)", () => {
+  it("prompts before saving an inputType change when entries exist", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const seed: CustomMetricDef[] = [
+      {
+        id: "c_x",
+        ownerId: "u1",
+        name: "Stretch Minutes",
+        metricType: "wellness",
+        inputType: "numeric",
+        unit: "min",
+        goalRaw: 15,
+        yTopRaw: 60,
+        yBottomRaw: 0,
+        avgDecimals: 1,
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ];
+
+    render(
+      <CustomMetricsProvider initialMetrics={seed}>
+        <MemoryRouter initialEntries={["/add-metric/wellness/c_x"]}>
+          <Routes>
+            <Route
+              path="/add-metric/:type/:metricId"
+              element={<CustomMetricForm />}
+            />
+            <Route path="/add-metric/:type" element={<div>back to list</div>} />
+          </Routes>
+        </MemoryRouter>
+      </CustomMetricsProvider>,
+    );
+
+    await user.selectOptions(screen.getByLabelText(/input type/i), "radio");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy.mock.calls[0][0]).toMatch(/input type/i);
+    expect(screen.queryByText("back to list")).toBeNull();
+
+    confirmSpy.mockRestore();
   });
 });

@@ -15,6 +15,8 @@ import {
   ADDABLE_PERFORMANCE,
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
+import { useCustomMetrics } from "../contexts/CustomMetricsContext";
+import type { CustomMetricDef } from "../types/customMetrics";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
 import { getCompTermPlural } from "../data/competitionTerms";
@@ -62,7 +64,13 @@ export function MetricDetail({ type }: MetricDetailProps) {
     type === "wellness"
       ? [...WELLNESS_METRICS, ...ADDABLE_WELLNESS]
       : [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE];
-  const metric = allMetrics.find((m) => m.id === metricId);
+  const { metrics: allCustom } = useCustomMetrics();
+  const metric: MetricDefinition | undefined =
+    allMetrics.find((m) => m.id === metricId) ??
+    customAsMetricDefinition(
+      allCustom.find((m) => m.id === metricId),
+      type,
+    );
 
   const { loadState } = useUser();
   const profile = loadState.status === "loaded" ? loadState.profile : null;
@@ -339,6 +347,29 @@ function renderMultiline(text: string) {
       {p}
     </p>
   ));
+}
+
+// Adapt a CustomMetricDef into the MetricDefinition shape MetricDetail
+// renders. The empty whoCollects/howCollected/description strings flow
+// through renderMultiline's "Coming soon" fallback. references and
+// learnMoreUrl are intentionally absent — those sections won't render
+// for custom metrics, which is the correct fall-through.
+function customAsMetricDefinition(
+  def: CustomMetricDef | undefined,
+  type: "wellness" | "performance",
+): MetricDefinition | undefined {
+  if (!def) return undefined;
+  return {
+    id: def.id,
+    name: def.name,
+    unit: def.unit,
+    displayUnit: def.unit,
+    type,
+    whoCollects: "",
+    howCollected: "",
+    description: "",
+    inputType: def.inputType,
+  };
 }
 
 function composeDescription(

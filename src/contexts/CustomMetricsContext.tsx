@@ -98,8 +98,10 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
 
   // Subscribe to the current user's metric definitions. Skipped when
   // initialMetrics is provided (test seam) or when no user is signed in.
+  // Use `!== undefined` so an empty-array seed (`[]`) still short-circuits
+  // the subscription instead of falling through as falsy.
   useEffect(() => {
-    if (initialMetrics) {
+    if (initialMetrics !== undefined) {
       setLoading(false);
       return;
     }
@@ -138,9 +140,10 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
   }, [user, initialMetrics]);
 
   // Sync runtime overlay so getMetricChartConfig sees the user's custom
-  // axis range, goal, formatter, and demo-mode random generator. Runs
-  // during render so children rendered in the same React pass see the
-  // updated overlay.
+  // axis range, goal, formatter, and demo-mode random generator. Runs in
+  // an effect (post-commit) so renders stay pure — the overlay is keyed
+  // on `metrics`, so the same `metrics` change that recomputes overlay
+  // also re-renders consumers that read getMetricChartConfig.
   const overlay = useMemo<Record<string, MetricChartConfig>>(() => {
     const next: Record<string, MetricChartConfig> = {};
     for (const def of metrics) {
@@ -148,7 +151,9 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
     }
     return next;
   }, [metrics]);
-  setCustomChartConfigs(overlay);
+  useEffect(() => {
+    setCustomChartConfigs(overlay);
+  }, [overlay]);
 
   const addMetric = useCallback<CustomMetricsValue["addMetric"]>(
     async (input) => {

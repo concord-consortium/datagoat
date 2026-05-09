@@ -14,9 +14,13 @@ import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
 
+// `radio` (Yes/No) input is reserved in the type system but not yet
+// wired through the wellness/performance log render + storage paths.
+// Surfacing it in the form would let users create metrics that can't
+// actually be logged, so the option is hidden until the end-to-end
+// path lands. Re-add `{ value: "radio", label: "Yes / No" }` then.
 const INPUT_TYPE_OPTIONS = [
   { value: "numeric", label: "Numeric" },
-  { value: "radio", label: "Yes / No" },
 ];
 
 function isValidType(t: string | undefined): t is CustomMetricType {
@@ -54,6 +58,7 @@ const EMPTY_DRAFT: DraftState = {
 export function CustomMetricForm() {
   const { type, metricId } = useParams<{ type: string; metricId?: string }>();
   const { getMetric, loading } = useCustomMetrics();
+  const { wellness, performance } = useData();
 
   if (!isValidType(type)) {
     return <Navigate to="/setup/tracking" replace />;
@@ -66,6 +71,14 @@ export function CustomMetricForm() {
     const editing = getMetric(metricId);
     if (!editing) {
       return <Navigate to={`/add-metric/${type}`} replace />;
+    }
+    // The body's edit-confirmation guard reads wellness/performance
+    // entries to decide whether changing input type or unit needs user
+    // confirmation. While those logs are still loading, the body would
+    // fall back to empty arrays and silently skip the prompt — wait for
+    // both to land so the prompt fires reliably.
+    if (wellness.status !== "loaded" || performance.status !== "loaded") {
+      return <p className={css.loading}>Loading…</p>;
     }
     return <CustomMetricFormBody type={type} editing={editing} />;
   }

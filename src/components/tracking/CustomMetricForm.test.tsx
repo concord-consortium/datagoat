@@ -110,7 +110,7 @@ describe("CustomMetricForm (create)", () => {
 });
 
 describe("CustomMetricForm (edit confirmation)", () => {
-  it("prompts before saving an inputType change when entries exist", async () => {
+  it("prompts before saving a unit change when entries exist", async () => {
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     const seed: CustomMetricDef[] = [
@@ -144,11 +144,12 @@ describe("CustomMetricForm (edit confirmation)", () => {
       </CustomMetricsProvider>,
     );
 
-    await user.selectOptions(screen.getByLabelText(/input type/i), "radio");
+    await user.clear(screen.getByLabelText(/unit/i));
+    await user.type(screen.getByLabelText(/unit/i), "minutes");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(confirmSpy).toHaveBeenCalledTimes(1);
-    expect(confirmSpy.mock.calls[0][0]).toMatch(/input type/i);
+    expect(confirmSpy.mock.calls[0][0]).toMatch(/unit/i);
     expect(screen.queryByText("back to list")).toBeNull();
 
     confirmSpy.mockRestore();

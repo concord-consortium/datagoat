@@ -40,9 +40,15 @@ interface CustomMetricsValue {
   addMetric: (
     input: Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">,
   ) => Promise<CustomMetricDef>;
+  // `createdAt` / `updatedAt` are provider-managed (server timestamps
+  // on write, Firestore Timestamp on read). They're omitted from the
+  // patch shape so a future caller can't accidentally overwrite them
+  // and destabilize ordering. The provider stamps `updatedAt` itself.
   updateMetric: (
     id: string,
-    patch: Partial<Omit<CustomMetricDef, "id" | "ownerId">>,
+    patch: Partial<
+      Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">
+    >,
   ) => Promise<void>;
   deleteMetric: (id: string) => Promise<void>;
   getMetric: (id: string) => CustomMetricDef | undefined;
@@ -215,10 +221,14 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
         throw new Error("updateMetric requires a signed-in user");
       }
       const ref = doc(db, COLLECTION, id);
-      // Strip undefined values from the patch so we never write
-      // undefined into Firestore.
+      // Strip undefined values so we never write undefined into
+      // Firestore. Also strip createdAt / updatedAt — the type system
+      // already rules them out of the patch shape, but a TS-bypassed
+      // caller could still pass them and silently overwrite the
+      // provider-managed timestamps.
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
+        if (k === "createdAt" || k === "updatedAt") continue;
         if (v !== undefined) cleaned[k] = v;
       }
       cleaned.updatedAt = serverTimestamp();

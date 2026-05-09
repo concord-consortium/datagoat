@@ -50,9 +50,16 @@ export function Bars({ data, goalRaw, config, yScale, geom }: BarsProps) {
         const className = meetsGoal(d.value)
           ? css.barAtOrAboveGoal
           : css.barBelowGoal;
+        // Round to the metric's display decimals before formatting so
+        // the tooltip never leaks an unrounded float (e.g. 8.283333…)
+        // for metrics whose `formatValue` is a passthrough (built-ins
+        // using fmtRaw). Matches what `formatMetricValue` does for
+        // SR descriptions and what AverageBadge does for badges.
+        const decimals = config.avgDecimals ?? 1;
+        const rounded = Number(d.value.toFixed(decimals));
         const valueLabel = config.unit
-          ? `${config.formatValue(d.value)} ${config.unit}`
-          : config.formatValue(d.value);
+          ? `${config.formatValue(rounded)} ${config.unit}`
+          : config.formatValue(rounded);
         const tooltip = `${valueLabel} on ${formatTooltipDate(d.date)}`;
         return (
           <rect

@@ -1,5 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { getMetricChartConfig } from "./metricChartConfig";
+import {
+  customDefToChartConfig,
+  getMetricChartConfig,
+} from "./metricChartConfig";
+import type { CustomMetricDef } from "../types/customMetrics";
+
+function customDef(overrides: Partial<CustomMetricDef> = {}): CustomMetricDef {
+  return {
+    id: "c_test",
+    ownerId: "u1",
+    name: "Test",
+    metricType: "wellness",
+    inputType: "numeric",
+    unit: "",
+    goalRaw: 5,
+    yTopRaw: 10,
+    yBottomRaw: 0,
+    avgDecimals: 1,
+    createdAt: 0,
+    updatedAt: 0,
+    ...overrides,
+  };
+}
 
 describe("getMetricChartConfig", () => {
   it("returns bar chart config for hydration with inverted axis", () => {
@@ -41,3 +63,106 @@ describe("getMetricChartConfig", () => {
     expect(c.yBottomRaw).toBe(0);
   });
 });
+
+describe("customDefToChartConfig", () => {
+  it("carries through user y-range, goal, and avgDecimals", () => {
+    const def = customDef({
+      yTopRaw: 60,
+      yBottomRaw: -5,
+      goalRaw: 30,
+      avgDecimals: 2,
+    });
+    const c = customDefToChartConfig(def);
+    expect(c.chartType).toBe("bar");
+    expect(c.yTopRaw).toBe(60);
+    expect(c.yBottomRaw).toBe(-5);
+    expect(c.goalRaw).toBe(30);
+    expect(c.avgDecimals).toBe(2);
+  });
+
+  it("folds a `%` unit into formatValue and leaves the separable unit unset", () => {
+    const def = customDef({ unit: "%", avgDecimals: 0 });
+    const c = customDefToChartConfig(def);
+    expect(c.unit).toBeUndefined();
+    expect(c.formatValue(82.4)).toBe("82%");
+  });
+
+  it("keeps a non-percent unit as the separable unit string", () => {
+    const def = customDef({ unit: "min" });
+    const c = customDefToChartConfig(def);
+    expect(c.unit).toBe("min");
+    // formatValue does NOT include the unit; Bars / AverageBadge append it.
+    expect(c.formatValue(15)).toBe("15.0");
+  });
+
+  it("treats an empty unit string as no unit", () => {
+    const c = customDefToChartConfig(customDef({ unit: "" }));
+    expect(c.unit).toBeUndefined();
+  });
+
+  it("clamps avgDecimals to the [0, 100] range Number.prototype.toFixed accepts", () => {
+    // toFixed throws RangeError outside [0, 100]; clamp protects against
+    // legacy or externally-written Firestore values even when the form
+    // already validates on write.
+    const overflow = customDefToChartConfig(customDef({ avgDecimals: 250 }));
+    expect(() => overflow.formatValue(1)).not.toThrow();
+    expect(overflow.avgDecimals).toBeLessThanOrEqual(100);
+
+    const underflow = customDefToChartConfig(customDef({ avgDecimals: -3 }));
+    expect(() => underflow.formatValue(1)).not.toThrow();
+    expect(underflow.avgDecimals).toBeGreaterThanOrEqual(0);
+
+    const fractional = customDefToChartConfig(customDef({ avgDecimals: 1.7 }));
+    expect(Number.isInteger(fractional.avgDecimals)).toBe(true);
+  });
+
+  it("falls back to 1 decimal when avgDecimals is non-finite", () => {
+    const c = customDefToChartConfig(customDef({ avgDecimals: NaN }));
+    expect(c.avgDecimals).toBe(1);
+  });
+
+  it("returns a numeric random generator that respects user bounds", () => {
+    const def = customDef({ yBottomRaw: 0.2, yTopRaw: 0.8, avgDecimals: 1 });
+    const c = customDefToChartConfig(def);
+    // Sample many values; ALL should fall within the user's range,
+    // rounded to the configured decimals. randomInt would mis-bin a
+    // non-integer range and produce out-of-range values; randomFloat
+    // (used for numeric metrics) keeps them in range.
+    const rng = mulberry32(0xa5a5a5);
+    for (let i = 0; i < 200; i++) {
+      const v = c.random(rng);
+      expect(v).toBeGreaterThanOrEqual(0.2);
+      expect(v).toBeLessThanOrEqual(0.8);
+    }
+  });
+
+  it("returns a 0/1 random generator for radio metrics regardless of y-range", () => {
+    const def = customDef({
+      inputType: "radio",
+      yTopRaw: 100,
+      yBottomRaw: -50,
+    });
+    const c = customDefToChartConfig(def);
+    const rng = mulberry32(0xb6b6b6);
+    const values = new Set<number>();
+    for (let i = 0; i < 100; i++) {
+      values.add(c.random(rng));
+    }
+    // Only 0 and 1 should appear.
+    for (const v of values) {
+      expect(v === 0 || v === 1).toBe(true);
+    }
+  });
+});
+
+// Tiny seedable PRNG so the random-generator tests are deterministic.
+// Mirrors the algorithm used in src/charts/randomValues.ts.
+function mulberry32(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

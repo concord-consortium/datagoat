@@ -72,6 +72,18 @@ export function CustomMetricForm() {
     if (!editing) {
       return <Navigate to={`/add-metric/${type}`} replace />;
     }
+    // Redirect to the canonical type-matched route if the URL :type
+    // disagrees with the metric's actual metricType. Without this,
+    // Cancel/Save/Delete navigation in the body would go back to the
+    // wrong type's list page.
+    if (editing.metricType !== type) {
+      return (
+        <Navigate
+          to={`/add-metric/${editing.metricType}/${editing.id}`}
+          replace
+        />
+      );
+    }
     // The body's edit-confirmation guard reads wellness/performance
     // entries to decide whether changing input type or unit needs user
     // confirmation. While those logs are still loading, the body would

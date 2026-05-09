@@ -147,9 +147,10 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
 
   // Sync runtime overlay so getMetricChartConfig sees the user's custom
   // axis range, goal, formatter, and demo-mode random generator. Runs in
-  // an effect (post-commit) so renders stay pure — the overlay is keyed
-  // on `metrics`, so the same `metrics` change that recomputes overlay
-  // also re-renders consumers that read getMetricChartConfig.
+  // an effect (post-commit) so renders stay pure. setCustomChartConfigs
+  // notifies subscribers (components that called useChartConfigSync), so
+  // any component reading getMetricChartConfig in render re-renders with
+  // the fresh overlay — not just consumers of this provider's context.
   const overlay = useMemo<Record<string, MetricChartConfig>>(() => {
     const next: Record<string, MetricChartConfig> = {};
     for (const def of metrics) {

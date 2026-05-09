@@ -10,6 +10,7 @@
 // Content can revise these values freely; the chart engine reads only
 // the resolved fields below and does not assume any metric is special.
 
+import { useSyncExternalStore } from "react";
 import { randomFloat, randomInt } from "./randomValues";
 import type { CustomMetricDef } from "../types/customMetrics";
 
@@ -183,13 +184,42 @@ const DEFAULT_CONFIG: MetricChartConfig = {
 // thread because getMetricChartConfig is called from many pure
 // functions and components throughout the chart pipeline; threading
 // the customs map through every call site is more invasive than the
-// registry overlay justifies for the DGT-36 demo slice.
+// registry overlay justifies for the DGT-36 demo slice. To keep
+// consumers reactive across overlay changes, components that read
+// getMetricChartConfig in render should call useChartConfigSync(),
+// which subscribes via useSyncExternalStore.
 let _customConfigs: Record<string, MetricChartConfig> = {};
+const _subscribers = new Set<() => void>();
 
 export function setCustomChartConfigs(
   next: Record<string, MetricChartConfig>,
 ): void {
+  if (next === _customConfigs) return;
   _customConfigs = next;
+  for (const callback of _subscribers) callback();
+}
+
+function subscribeCustomChartConfigs(callback: () => void): () => void {
+  _subscribers.add(callback);
+  return () => {
+    _subscribers.delete(callback);
+  };
+}
+
+function getCustomChartConfigsSnapshot(): Record<string, MetricChartConfig> {
+  return _customConfigs;
+}
+
+// Subscribe a component to overlay changes so subsequent
+// getMetricChartConfig reads pick up newly-arrived custom-metric
+// configs. Components that render charts (or otherwise read
+// getMetricChartConfig in their render) should call this once.
+export function useChartConfigSync(): void {
+  useSyncExternalStore(
+    subscribeCustomChartConfigs,
+    getCustomChartConfigsSnapshot,
+    getCustomChartConfigsSnapshot,
+  );
 }
 
 export function getMetricChartConfig(metricId: string): MetricChartConfig {

@@ -21,7 +21,10 @@ import {
   formatMetricValue,
   lookupGoalLine,
 } from "../../charts/chartSeries";
-import { getMetricChartConfig } from "../../charts/metricChartConfig";
+import {
+  getMetricChartConfig,
+  useChartConfigSync,
+} from "../../charts/metricChartConfig";
 import { useChartSeries } from "../../charts/useChartSeries";
 import { useDemoMode } from "../../contexts/DemoModeContext";
 import css from "./DashboardChartCard.module.css";
@@ -49,6 +52,7 @@ export function DashboardChartCard({
   performanceEntries,
   loading = false,
 }: DashboardChartCardProps) {
+  useChartConfigSync();
   const allMetrics: MetricDefinition[] =
     type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
   const { loadState } = useUser();

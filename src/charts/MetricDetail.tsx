@@ -33,7 +33,7 @@ import {
   formatMetricValue,
   lookupGoalLine,
 } from "./chartSeries";
-import { getMetricChartConfig } from "./metricChartConfig";
+import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { useChartSeries } from "./useChartSeries";
 import { useDemoMode } from "../contexts/DemoModeContext";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
@@ -56,6 +56,7 @@ interface MetricDetailProps {
 // Unknown :metricId falls back via <Navigate replace /> to the parent log.
 // No dedicated 404 view - bouncing back is the right recovery.
 export function MetricDetail({ type }: MetricDetailProps) {
+  useChartConfigSync();
   const { metricId } = useParams<{ metricId: string }>();
   // Tracked + addable registries are both searched so the AddMetric
   // info button (which links into the addable space) doesn't
@@ -65,10 +66,15 @@ export function MetricDetail({ type }: MetricDetailProps) {
       ? [...WELLNESS_METRICS, ...ADDABLE_WELLNESS]
       : [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE];
   const { metrics: allCustom } = useCustomMetrics();
+  // Match the route's :type so a wellness URL doesn't resolve a
+  // performance-typed custom metric (and vice versa) — without the
+  // metricType filter, MetricDetail would render but read from the
+  // wrong entry map, producing an empty/misleading chart instead of
+  // the "not found → Navigate back" branch below.
   const metric: MetricDefinition | undefined =
     allMetrics.find((m) => m.id === metricId) ??
     customAsMetricDefinition(
-      allCustom.find((m) => m.id === metricId),
+      allCustom.find((m) => m.id === metricId && m.metricType === type),
       type,
     );
 

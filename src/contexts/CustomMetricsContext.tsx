@@ -136,7 +136,17 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       if (!user) {
         throw new Error("addMetric requires a signed-in user");
       }
-      const id = mintCustomMetricId();
+      let id = mintCustomMetricId();
+      let retries = 0;
+      while (metrics.some((m) => m.id === id)) {
+        id = mintCustomMetricId();
+        retries += 1;
+        if (retries > 5) {
+          throw new Error(
+            "Could not mint a unique custom-metric id after 5 attempts",
+          );
+        }
+      }
       const ref = doc(db, COLLECTION, id);
       const now = Date.now();
       const def: CustomMetricDef = {
@@ -163,7 +173,7 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       });
       return def;
     },
-    [user],
+    [user, metrics],
   );
 
   const updateMetric = useCallback<CustomMetricsValue["updateMetric"]>(

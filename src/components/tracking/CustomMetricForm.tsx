@@ -110,48 +110,55 @@ export function CustomMetricForm() {
       return;
     }
 
-    if (editing) {
-      const inputTypeChanged = draft.inputType !== editing.inputType;
-      const unitChanged = draft.unit.trim() !== editing.unit;
-      const dataShapingChanged = inputTypeChanged || unitChanged;
-      if (
-        dataShapingChanged &&
-        hasEntriesForMetric(editing.id, wellnessEntries, performanceEntries)
-      ) {
-        const fields = [
-          inputTypeChanged ? "input type" : null,
-          unitChanged ? "unit" : null,
-        ]
-          .filter(Boolean)
-          .join(" and ");
+    try {
+      if (editing) {
+        const inputTypeChanged = draft.inputType !== editing.inputType;
+        const unitChanged = draft.unit.trim() !== editing.unit;
+        const dataShapingChanged = inputTypeChanged || unitChanged;
         if (
-          !window.confirm(
-            `Changing the ${fields} will affect entries you have already logged. Continue?`,
-          )
+          dataShapingChanged &&
+          hasEntriesForMetric(editing.id, wellnessEntries, performanceEntries)
         ) {
-          return;
+          const fields = [
+            inputTypeChanged ? "input type" : null,
+            unitChanged ? "unit" : null,
+          ]
+            .filter(Boolean)
+            .join(" and ");
+          if (
+            !window.confirm(
+              `Changing the ${fields} will affect entries you have already logged. Continue?`,
+            )
+          ) {
+            return;
+          }
         }
+        await updateMetric(editing.id, {
+          name: trimmed,
+          inputType: draft.inputType,
+          unit: draft.unit.trim(),
+          goalRaw,
+          yTopRaw,
+          yBottomRaw,
+          avgDecimals,
+        });
+      } else {
+        await addMetric({
+          name: trimmed,
+          metricType,
+          inputType: draft.inputType,
+          unit: draft.unit.trim(),
+          goalRaw,
+          yTopRaw,
+          yBottomRaw,
+          avgDecimals,
+        });
       }
-      await updateMetric(editing.id, {
-        name: trimmed,
-        inputType: draft.inputType,
-        unit: draft.unit.trim(),
-        goalRaw,
-        yTopRaw,
-        yBottomRaw,
-        avgDecimals,
-      });
-    } else {
-      await addMetric({
-        name: trimmed,
-        metricType,
-        inputType: draft.inputType,
-        unit: draft.unit.trim(),
-        goalRaw,
-        yTopRaw,
-        yBottomRaw,
-        avgDecimals,
-      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to save custom metric", err);
+      setError("Couldn't save your metric. Please try again.");
+      return;
     }
     navigate(`/add-metric/${metricType}`);
   }
@@ -161,7 +168,14 @@ export function CustomMetricForm() {
     if (!window.confirm(`Delete "${editing.name}"? Past entries become invisible.`)) {
       return;
     }
-    await deleteMetric(editing.id);
+    try {
+      await deleteMetric(editing.id);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to delete custom metric", err);
+      setError("Couldn't delete your metric. Please try again.");
+      return;
+    }
     navigate(`/add-metric/${metricType}`);
   }
 

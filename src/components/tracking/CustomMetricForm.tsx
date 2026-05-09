@@ -73,7 +73,7 @@ export function CustomMetricForm() {
     }
     const editing = getMetric(metricId);
     if (!editing) {
-      return <Navigate to={`/add-metric/${type}`} replace />;
+      return <Navigate to="/setup/tracking" replace />;
     }
     // Redirect to the canonical type-matched route if the URL :type
     // disagrees with the metric's actual metricType. Without this,
@@ -258,7 +258,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       setError("Couldn't save your metric. Please try again.");
       return;
     }
-    navigate(`/add-metric/${type}`);
+    navigate("/setup/tracking");
   }
 
   async function handleDelete() {
@@ -274,7 +274,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       setError("Couldn't delete your metric. Please try again.");
       return;
     }
-    navigate(`/add-metric/${type}`);
+    navigate("/setup/tracking");
   }
 
   function update<K extends keyof DraftState>(key: K, value: DraftState[K]) {
@@ -346,7 +346,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       {error && <p className={css.error}>{error}</p>}
 
       <div className={css.actions}>
-        <button type="button" className={css.secondary} onClick={() => navigate(`/add-metric/${type}`)}>
+        <button type="button" className={css.secondary} onClick={() => navigate("/setup/tracking")}>
           Cancel
         </button>
         {editing && (

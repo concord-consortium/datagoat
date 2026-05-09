@@ -80,7 +80,7 @@ function renderAt(path: string) {
         <Routes>
           <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
           <Route path="/add-metric/:type/:metricId" element={<CustomMetricForm />} />
-          <Route path="/add-metric/:type" element={<div>back to list</div>} />
+          <Route path="/setup/tracking" element={<div>back to tracking setup</div>} />
         </Routes>
       </MemoryRouter>
     </CustomMetricsProvider>,
@@ -108,7 +108,7 @@ describe("CustomMetricForm (create)", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("back to list")).toBeInTheDocument();
+      expect(screen.getByText("back to tracking setup")).toBeInTheDocument();
     });
     expect(mockedSetDoc).toHaveBeenCalledTimes(1);
     expect(mockedSetDoc).toHaveBeenCalledWith(
@@ -152,7 +152,10 @@ describe("CustomMetricForm (edit confirmation)", () => {
               path="/add-metric/:type/:metricId"
               element={<CustomMetricForm />}
             />
-            <Route path="/add-metric/:type" element={<div>back to list</div>} />
+            <Route
+              path="/setup/tracking"
+              element={<div>back to tracking setup</div>}
+            />
           </Routes>
         </MemoryRouter>
       </CustomMetricsProvider>,
@@ -164,7 +167,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
 
     expect(confirmSpy).toHaveBeenCalledTimes(1);
     expect(confirmSpy.mock.calls[0][0]).toMatch(/unit/i);
-    expect(screen.queryByText("back to list")).toBeNull();
+    expect(screen.queryByText("back to tracking setup")).toBeNull();
 
     confirmSpy.mockRestore();
   });

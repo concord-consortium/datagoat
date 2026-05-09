@@ -130,8 +130,16 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     const yTopRaw = Number(draft.yTopRaw);
     const yBottomRaw = Number(draft.yBottomRaw);
     const avgDecimals = Number(draft.avgDecimals);
-    if ([goalRaw, yTopRaw, yBottomRaw, avgDecimals].some((v) => Number.isNaN(v))) {
-      setError("Goal, y-axis top/bottom, and decimals must be numbers.");
+    // !Number.isFinite rejects NaN, +Infinity, and -Infinity. Plain
+    // Number.isNaN would accept Infinity (e.g. typing 1e500 into the
+    // numeric input parses to Infinity), which would corrupt chart
+    // scaling once persisted.
+    if ([goalRaw, yTopRaw, yBottomRaw, avgDecimals].some((v) => !Number.isFinite(v))) {
+      setError("Goal, y-axis top/bottom, and decimals must be finite numbers.");
+      return;
+    }
+    if (avgDecimals < 0 || !Number.isInteger(avgDecimals)) {
+      setError("Decimals must be a non-negative integer.");
       return;
     }
     if (yBottomRaw >= yTopRaw) {

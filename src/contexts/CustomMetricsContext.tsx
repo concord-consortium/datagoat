@@ -120,7 +120,13 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       (snap) => {
         const next: CustomMetricDef[] = [];
         snap.forEach((d) => {
-          next.push(fromDoc(d.id, d.data()));
+          // serverTimestamps: "estimate" fills in a local-clock estimate
+          // for unresolved server timestamps. Without it, a freshly
+          // created doc surfaces createdAt=null on the first local
+          // snapshot, which fromDoc maps to 0 and would briefly sort the
+          // new metric to the top of the list before flicking back into
+          // place once the server value lands.
+          next.push(fromDoc(d.id, d.data({ serverTimestamps: "estimate" })));
         });
         next.sort((a, b) => a.createdAt - b.createdAt);
         setMetrics(next);

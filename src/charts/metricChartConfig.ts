@@ -10,7 +10,7 @@
 // Content can revise these values freely; the chart engine reads only
 // the resolved fields below and does not assume any metric is special.
 
-import { randomInt, randomFloat } from "./randomValues";
+import { randomFloat, randomInt } from "./randomValues";
 import type { CustomMetricDef } from "../types/customMetrics";
 
 export interface MetricChartConfig {
@@ -219,9 +219,15 @@ export function customDefToChartConfig(
       : (v) => v.toFixed(decimals),
     unit: isPct ? undefined : def.unit || undefined,
     avgDecimals: decimals,
+    // randomFloat (rounded to `decimals`) handles the form's
+    // decimal-allowed y-axis bounds correctly. randomInt would
+    // mis-bin non-integer ranges (e.g. min=0.2, max=0.8 could yield
+    // 1.2). The radio branch keeps randomInt(0, 1) since values are
+    // strictly 0/1.
     random:
       def.inputType === "radio"
         ? (rng) => randomInt(rng, 0, 1)
-        : (rng) => randomInt(rng, def.yBottomRaw, def.yTopRaw),
+        : (rng) =>
+            randomFloat(rng, def.yBottomRaw, def.yTopRaw, decimals),
   };
 }

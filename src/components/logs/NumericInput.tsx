@@ -8,10 +8,23 @@ export interface NumericInputProps {
   value: string;
   onChange: (next: string) => void;
   labelledBy: string;
+  // Forwarded to useNumericLocalString. Set when the metric's y-axis
+  // range goes below 0 (custom metrics with `yBottomRaw < 0`).
+  allowNegative?: boolean;
 }
 
-export function NumericInput({ metric, value, onChange, labelledBy }: NumericInputProps) {
-  const { local, handleChange, handleCompositionEnd } = useNumericLocalString(value, onChange);
+export function NumericInput({
+  metric,
+  value,
+  onChange,
+  labelledBy,
+  allowNegative,
+}: NumericInputProps) {
+  const { local, handleChange, handleCompositionEnd } = useNumericLocalString(
+    value,
+    onChange,
+    allowNegative,
+  );
   const filled = local !== "";
   // Prefer the short-form displayUnit ("hr", "g") in the log column;
   // metric.unit's long form ("hr/night", "g/kg/day") is reserved for

@@ -75,6 +75,15 @@ export function PerformanceLog() {
       (m) => m.metricType === "performance" && trackedIds.includes(m.id),
     ),
   ];
+  // Set of metric ids whose y-range goes below 0 — used to open the
+  // numeric input filter to a leading `-`. Built-in performance
+  // metrics are all non-negative, so this set only contains customs
+  // whose author chose `yBottomRaw < 0`.
+  const allowNegativeIds = new Set(
+    allCustom
+      .filter((m) => m.metricType === "performance" && m.yBottomRaw < 0)
+      .map((m) => m.id),
+  );
 
   // Welcome shown only during onboarding (matches prototype's
   // .profile-welcome.show gate keyed on window.isNewUser).
@@ -153,6 +162,7 @@ export function PerformanceLog() {
                       value={stringValue}
                       filled={filled}
                       onChange={(raw) => setMetricValue(metric.id, raw)}
+                      allowNegative={allowNegativeIds.has(metric.id)}
                     />
                   </td>
                 </tr>

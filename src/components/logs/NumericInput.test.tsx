@@ -148,4 +148,44 @@ describe("NumericInput", () => {
     );
     expect(container.textContent).toContain("Entered 2-3x/yr");
   });
+
+  it("accepts a leading minus when allowNegative is set", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <NumericInput
+        metric={METRIC}
+        value=""
+        onChange={onChange}
+        labelledBy="lbl"
+        allowNegative
+      />,
+    );
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "-5" } });
+    expect(input.value).toBe("-5");
+    expect(onChange).toHaveBeenCalledWith("-5");
+  });
+
+  it("keeps a bare minus mid-typing when allowNegative is set", () => {
+    // "-" alone parses to NaN, but the user is still typing — accept
+    // it so they can finish the keystroke chain into "-5".
+    const onChange = vi.fn();
+    const { container } = render(
+      <NumericInput
+        metric={METRIC}
+        value=""
+        onChange={onChange}
+        labelledBy="lbl"
+        allowNegative
+      />,
+    );
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "-" } });
+    expect(input.value).toBe("-");
+    expect(onChange).toHaveBeenCalledWith("-");
+  });
 });

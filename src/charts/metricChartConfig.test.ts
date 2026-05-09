@@ -122,6 +122,32 @@ describe("customDefToChartConfig", () => {
     expect(c.avgDecimals).toBe(1);
   });
 
+  it("falls back to a safe range when yTopRaw / yBottomRaw are non-finite", () => {
+    // Form validates on write, but legacy / externally-written
+    // Firestore docs could surface NaN; downstream chart math
+    // (linearScale, SVG attrs, randomFloat) must not propagate NaN.
+    const c = customDefToChartConfig(
+      customDef({ yTopRaw: NaN, yBottomRaw: NaN }),
+    );
+    expect(Number.isFinite(c.yTopRaw)).toBe(true);
+    expect(Number.isFinite(c.yBottomRaw)).toBe(true);
+    expect(c.yBottomRaw).toBeLessThan(c.yTopRaw);
+  });
+
+  it("falls back to a safe range when yBottomRaw >= yTopRaw (inverted)", () => {
+    // Same defense for "finite but inverted" pairs that the form
+    // would reject on write but a malformed doc could carry.
+    const c = customDefToChartConfig(
+      customDef({ yTopRaw: 5, yBottomRaw: 10 }),
+    );
+    expect(c.yBottomRaw).toBeLessThan(c.yTopRaw);
+  });
+
+  it("drops goalRaw to undefined when non-finite", () => {
+    const c = customDefToChartConfig(customDef({ goalRaw: NaN }));
+    expect(c.goalRaw).toBeUndefined();
+  });
+
   it("returns a numeric random generator that respects user bounds", () => {
     const def = customDef({ yBottomRaw: 0.2, yTopRaw: 0.8, avgDecimals: 1 });
     const c = customDefToChartConfig(def);

@@ -218,6 +218,11 @@ export function WellnessLog() {
                   inputType="numeric"
                   value={stringValue}
                   onChange={(raw) => setCustomMetric(def.id, raw)}
+                  // Open the keystroke filter to a leading `-` only
+                  // when the metric's range goes below 0; otherwise
+                  // typing minus stays blocked, matching built-in
+                  // behavior.
+                  allowNegative={def.yBottomRaw < 0}
                 />
               );
             })}

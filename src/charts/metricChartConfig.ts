@@ -235,6 +235,14 @@ export function getMetricChartConfig(metricId: string): MetricChartConfig {
 // `unit` field. avgDecimals controls toFixed rounding. Random
 // generators span the user's y-range for numeric metrics; radio
 // metrics random in {0, 1} regardless of y-range.
+// Default y-range used when a custom def's bounds are non-finite or
+// inverted. The form rejects malformed inputs on write, but legacy /
+// externally-written Firestore docs could still arrive with NaN or
+// reversed bounds — falling back to a safe range keeps linearScale,
+// SVG attributes, and randomFloat from producing NaN downstream.
+const FALLBACK_Y_TOP = 10;
+const FALLBACK_Y_BOTTOM = 0;
+
 export function customDefToChartConfig(
   def: CustomMetricDef,
 ): MetricChartConfig {
@@ -246,11 +254,25 @@ export function customDefToChartConfig(
   const decimals = Number.isFinite(def.avgDecimals)
     ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals)))
     : 1;
+  // Defense-in-depth: finite-check the axis bounds and goal. If
+  // either bound is non-finite or the pair is inverted (yBottom >=
+  // yTop), fall back to the safe default range. goalRaw drops to
+  // undefined when non-finite — chartSeries.lookupGoalLine handles
+  // undefined as "no goal line for this metric".
+  let yTopRaw = Number.isFinite(def.yTopRaw) ? def.yTopRaw : FALLBACK_Y_TOP;
+  let yBottomRaw = Number.isFinite(def.yBottomRaw)
+    ? def.yBottomRaw
+    : FALLBACK_Y_BOTTOM;
+  if (yBottomRaw >= yTopRaw) {
+    yTopRaw = FALLBACK_Y_TOP;
+    yBottomRaw = FALLBACK_Y_BOTTOM;
+  }
+  const goalRaw = Number.isFinite(def.goalRaw) ? def.goalRaw : undefined;
   return {
     chartType: "bar",
-    yTopRaw: def.yTopRaw,
-    yBottomRaw: def.yBottomRaw,
-    goalRaw: def.goalRaw,
+    yTopRaw,
+    yBottomRaw,
+    goalRaw,
     formatValue: isPct
       ? (v) => `${v.toFixed(decimals)}%`
       : (v) => v.toFixed(decimals),
@@ -264,7 +286,6 @@ export function customDefToChartConfig(
     random:
       def.inputType === "radio"
         ? (rng) => randomInt(rng, 0, 1)
-        : (rng) =>
-            randomFloat(rng, def.yBottomRaw, def.yTopRaw, decimals),
+        : (rng) => randomFloat(rng, yBottomRaw, yTopRaw, decimals),
   };
 }

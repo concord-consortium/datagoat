@@ -13,7 +13,7 @@ import {
   buildAlignedSeries,
   type BuildSeriesArgs,
 } from "./chartSeries";
-import { getMetricChartConfig } from "./metricChartConfig";
+import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { hashSeed, seededRng } from "./randomValues";
 import { isoAtDaysAgo } from "../utils/dates";
 
@@ -56,6 +56,12 @@ export function useChartSeries(
     rangeDays,
     demoMode,
   } = args;
+  // Subscribe to overlay changes AND include the snapshot reference in
+  // the memo dep array. In demo mode, generateDemoSeries reads the
+  // metric's `random` generator from the overlay; without this dep,
+  // the memoized series would stick with DEFAULT_CONFIG random when
+  // the custom config arrives after first render.
+  const customChartConfigs = useChartConfigSync();
   return useMemo(() => {
     if (demoMode) {
       return generateDemoSeries(metricId, rangeDays);
@@ -74,5 +80,6 @@ export function useChartSeries(
     performanceEntries,
     rangeDays,
     demoMode,
+    customChartConfigs,
   ]);
 }

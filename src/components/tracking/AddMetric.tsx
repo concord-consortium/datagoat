@@ -19,7 +19,7 @@ export function AddMetric() {
 }
 
 function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
-  const { metrics: allCustom } = useCustomMetrics();
+  const { metrics: allCustom, loading } = useCustomMetrics();
   const customForType = allCustom.filter((m) => m.metricType === type);
 
   return (
@@ -30,7 +30,9 @@ function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
 
       <h2 className={css.sectionHead}>Your custom {type} metrics</h2>
 
-      {customForType.length === 0 ? (
+      {loading ? (
+        <p className={css.emptyHint}>Loading…</p>
+      ) : customForType.length === 0 ? (
         <p className={css.emptyHint}>None yet. Create one above to get started.</p>
       ) : (
         <ul className={css.addMetricList}>

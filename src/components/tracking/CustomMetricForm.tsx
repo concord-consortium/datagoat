@@ -112,19 +112,30 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   const performanceEntries =
     performance.status === "loaded" ? performance.entries : [];
 
-  const [draft, setDraft] = useState<DraftState>(() =>
-    editing
-      ? {
-          name: editing.name,
-          inputType: editing.inputType,
-          unit: editing.unit,
-          goalRaw: String(editing.goalRaw),
-          yTopRaw: String(editing.yTopRaw),
-          yBottomRaw: String(editing.yBottomRaw),
-          avgDecimals: String(editing.avgDecimals),
-        }
-      : EMPTY_DRAFT,
-  );
+  const [draft, setDraft] = useState<DraftState>(() => {
+    if (!editing) return EMPTY_DRAFT;
+    // INPUT_TYPE_OPTIONS currently lists only "numeric"; if a stored
+    // metric carries an inputType the form doesn't support (e.g. a
+    // legacy "radio" doc written before the option was hidden, or via
+    // an external Firestore tool), the <select> would render with no
+    // matching <option>. Default the draft to "numeric" in that case
+    // so the UI is usable; saving silently migrates the stored value
+    // to numeric.
+    const supportedInputType = INPUT_TYPE_OPTIONS.some(
+      (o) => o.value === editing.inputType,
+    )
+      ? editing.inputType
+      : "numeric";
+    return {
+      name: editing.name,
+      inputType: supportedInputType,
+      unit: editing.unit,
+      goalRaw: String(editing.goalRaw),
+      yTopRaw: String(editing.yTopRaw),
+      yBottomRaw: String(editing.yBottomRaw),
+      avgDecimals: String(editing.avgDecimals),
+    };
+  });
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
@@ -150,8 +161,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       setError("Goal, y-axis top/bottom, and decimals must be finite numbers.");
       return;
     }
-    if (avgDecimals < 0 || !Number.isInteger(avgDecimals)) {
-      setError("Decimals must be a non-negative integer.");
+    if (
+      !Number.isInteger(avgDecimals) ||
+      avgDecimals < 0 ||
+      avgDecimals > 100
+    ) {
+      // 100 is the upper bound `Number.prototype.toFixed` accepts —
+      // beyond that it throws RangeError, which would crash chart
+      // formatting for the metric.
+      setError("Decimals must be an integer between 0 and 100.");
       return;
     }
     if (yBottomRaw >= yTopRaw) {

@@ -131,7 +131,13 @@ export function PerformanceLog() {
               return (
                 <tr key={metric.id}>
                   <td className={css.colTotal}>
-                    {total > 0 ? String(total) : ""}
+                    {/* total !== 0 (rather than > 0) so custom
+                        performance metrics with negative ranges can
+                        render legitimate negative totals — aligns
+                        with the stringValue check above. Built-in
+                        counter metrics never go negative, so the
+                        change is a no-op for them. */}
+                    {total !== 0 ? String(total) : ""}
                   </td>
                   <td id={nameCellId} className={css.colMetric}>
                     <Link

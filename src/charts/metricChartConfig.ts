@@ -213,9 +213,12 @@ function getCustomChartConfigsSnapshot(): Record<string, MetricChartConfig> {
 // Subscribe a component to overlay changes so subsequent
 // getMetricChartConfig reads pick up newly-arrived custom-metric
 // configs. Components that render charts (or otherwise read
-// getMetricChartConfig in their render) should call this once.
-export function useChartConfigSync(): void {
-  useSyncExternalStore(
+// getMetricChartConfig in their render) should call this once. Returns
+// the current snapshot reference so consumers can include it in
+// useMemo dep arrays — when the overlay is replaced, the reference
+// changes and dependent memoized values invalidate.
+export function useChartConfigSync(): Record<string, MetricChartConfig> {
+  return useSyncExternalStore(
     subscribeCustomChartConfigs,
     getCustomChartConfigsSnapshot,
     getCustomChartConfigsSnapshot,
@@ -236,8 +239,12 @@ export function customDefToChartConfig(
   def: CustomMetricDef,
 ): MetricChartConfig {
   const isPct = def.unit === "%";
+  // Clamp to [0, 100]: Number.prototype.toFixed throws RangeError
+  // outside that range. The form already validates this on write, but
+  // Firestore could surface legacy/externally-written values, so the
+  // clamp is defense-in-depth.
   const decimals = Number.isFinite(def.avgDecimals)
-    ? Math.max(0, Math.floor(def.avgDecimals))
+    ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals)))
     : 1;
   return {
     chartType: "bar",

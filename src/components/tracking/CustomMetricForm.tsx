@@ -2,7 +2,10 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { useData } from "../../contexts/DataContext";
+import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
+import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
+import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import { TextField } from "../form/TextField";
 import { SelectField } from "../form/SelectField";
 import type {
@@ -107,6 +110,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   const navigate = useNavigate();
   const { addMetric, updateMetric, deleteMetric } = useCustomMetrics();
   const { wellness, performance } = useData();
+  const { loadState, updateProfile, setTrackedMetrics } = useUser();
   const wellnessEntries =
     wellness.status === "loaded" ? wellness.entries : [];
   const performanceEntries =
@@ -210,7 +214,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           avgDecimals,
         });
       } else {
-        await addMetric({
+        const def = await addMetric({
           name: trimmed,
           metricType: type,
           inputType: draft.inputType,
@@ -220,6 +224,33 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           yBottomRaw,
           avgDecimals,
         });
+        // Auto-track the newly created metric. Appending to the existing
+        // tracked-ids list places it right after the user's last
+        // currently-tracked item — Tracked Data Setup renders trackedIds
+        // first in their stored order, so the new metric appears at the
+        // end of the checked group rather than below all the unchecked
+        // built-ins. Fire-and-forget: the metric write already succeeded,
+        // a transient tracked-list update failure shouldn't block the
+        // navigate that follows.
+        const profile =
+          loadState.status === "loaded" ? loadState.profile : null;
+        const builtIns =
+          type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
+        const currentIds =
+          (type === "wellness"
+            ? profile?.trackedWellnessMetrics
+            : profile?.trackedPerformanceMetrics) ??
+          builtIns.map((m) => m.id);
+        const next = [...currentIds, def.id];
+        if (!profile) {
+          void updateProfile({
+            [type === "wellness"
+              ? "trackedWellnessMetrics"
+              : "trackedPerformanceMetrics"]: next,
+          });
+        } else {
+          void setTrackedMetrics(type, next);
+        }
       }
     } catch (err) {
       // eslint-disable-next-line no-console

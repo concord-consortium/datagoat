@@ -28,6 +28,20 @@ vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => stableAuth,
 }));
 
+// Stable mock for useUser. The form auto-tracks newly created metrics
+// via setTrackedMetrics; the test doesn't assert on persistence so a
+// noop is fine. vi.hoisted keeps the same object instance across calls
+// so any in-effect dep on the result doesn't re-fire on every render.
+const userMock = vi.hoisted(() => ({
+  loadState: { status: "missing" as const },
+  updateProfile: vi.fn(async () => {}),
+  setTrackedMetrics: vi.fn(async () => {}),
+}));
+
+vi.mock("../../contexts/UserContext", () => ({
+  useUser: () => userMock,
+}));
+
 vi.mock("../../contexts/DataContext", async () => {
   // Import inside the async factory so we get the real
   // emptyWellnessEntry — vi.mock factories are hoisted above static

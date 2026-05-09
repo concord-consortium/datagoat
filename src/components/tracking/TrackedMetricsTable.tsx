@@ -28,7 +28,13 @@ interface TrackedMetricsTableProps {
   // The full registry for this type. We persist an explicit user-ordered
   // list of ids; metrics not in the user's list still render here when
   // they're in the registry but unchecked, so the user can toggle them.
+  // Caller may include user-defined custom metrics here (alongside
+  // built-ins) and pass their ids in `customIds` so each row's right-edge
+  // affordance switches from info link → edit pencil.
   registry: MetricDefinition[];
+  // Subset of `registry` ids that are user-defined custom metrics. Used
+  // only to flag the rendered row's right-edge affordance.
+  customIds?: ReadonlySet<string>;
   // The user's tracked-metric ordering for this type.
   trackedIds: string[];
   onChangeOrder: (ids: string[]) => void;
@@ -41,6 +47,7 @@ export function TrackedMetricsTable({
   type,
   heading,
   registry,
+  customIds,
   trackedIds,
   onChangeOrder,
   onToggleCheck,
@@ -154,6 +161,7 @@ export function TrackedMetricsTable({
                     onToggleCheck(m.id, !trackedIds.includes(m.id))
                   }
                   reorderHintId={reorderHintId}
+                  isCustom={customIds?.has(m.id)}
                 />
               ))}
             </tbody>

@@ -17,6 +17,10 @@ interface SortableMetricRowProps {
   // table; the drag handle aria-describedby's it so SR users hear the
   // keyboard shortcut summary on focus.
   reorderHintId: string;
+  // True for user-defined custom metrics. The rightmost cell becomes
+  // an edit pencil linking to the create/edit form rather than the
+  // built-in metric's info link.
+  isCustom?: boolean;
 }
 
 export function SortableMetricRow({
@@ -27,6 +31,7 @@ export function SortableMetricRow({
   Icon,
   onToggleCheck,
   reorderHintId,
+  isCustom = false,
 }: SortableMetricRowProps) {
   const {
     attributes,
@@ -80,13 +85,23 @@ export function SortableMetricRow({
       </td>
       <td className={css.metricName}>{name}</td>
       <td>
-        <Link
-          to={`/${type}/${id}`}
-          className={css.metricInfoBtn}
-          aria-label={`${name} info`}
-        >
-          <MetricIcon />
-        </Link>
+        {isCustom ? (
+          <Link
+            to={`/add-metric/${type}/${id}`}
+            className={css.metricInfoBtn}
+            aria-label={`Edit ${name}`}
+          >
+            ✏︎
+          </Link>
+        ) : (
+          <Link
+            to={`/${type}/${id}`}
+            className={css.metricInfoBtn}
+            aria-label={`${name} info`}
+          >
+            <MetricIcon />
+          </Link>
+        )}
       </td>
     </tr>
   );

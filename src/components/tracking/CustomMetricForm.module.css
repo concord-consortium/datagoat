@@ -6,6 +6,14 @@
      fieldWrap margin-bottom; no flex/gap needed at the form level. */
 }
 
+/* Shown while the Firestore snapshot for /add-metric/:type/:metricId is
+   in flight, so deep-link / refresh on an edit URL doesn't Navigate
+   away before the metric resolves. */
+.loading {
+  padding: 20px 24px;
+  color: var(--subtext);
+}
+
 .row {
   display: flex;
   gap: 12px;

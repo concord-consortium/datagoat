@@ -6,6 +6,7 @@ import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { TextField } from "../form/TextField";
 import { SelectField } from "../form/SelectField";
 import type {
+  CustomMetricDef,
   CustomMetricInputType,
   CustomMetricType,
 } from "../../types/customMetrics";
@@ -42,16 +43,44 @@ const EMPTY_DRAFT: DraftState = {
   avgDecimals: "1",
 };
 
+// Outer gate. Resolves the route's :type and :metricId, waits for the
+// first Firestore snapshot before deciding whether an edit URL points
+// at a real metric, and only then mounts the inner body. The split
+// matters because the body's useState(initialDraft) only fires once
+// per mount — without the gate, deep-link/refresh on
+// /add-metric/:type/:metricId would either Navigate away before
+// metrics load (false negative) or initialize the form with an empty
+// draft that never re-syncs when the metric arrives.
 export function CustomMetricForm() {
   const { type, metricId } = useParams<{ type: string; metricId?: string }>();
+  const { getMetric, loading } = useCustomMetrics();
+
+  if (!isValidType(type)) {
+    return <Navigate to="/setup/tracking" replace />;
+  }
+
+  if (metricId) {
+    if (loading) {
+      return <p className={css.loading}>Loading…</p>;
+    }
+    const editing = getMetric(metricId);
+    if (!editing) {
+      return <Navigate to={`/add-metric/${type}`} replace />;
+    }
+    return <CustomMetricFormBody type={type} editing={editing} />;
+  }
+
+  return <CustomMetricFormBody type={type} editing={undefined} />;
+}
+
+interface BodyProps {
+  type: CustomMetricType;
+  editing: CustomMetricDef | undefined;
+}
+
+function CustomMetricFormBody({ type, editing }: BodyProps) {
   const navigate = useNavigate();
-  const { addMetric, updateMetric, deleteMetric, getMetric } = useCustomMetrics();
-
-  // Hooks must run unconditionally — compute editing in render, but do
-  // NOT early-return before useState. React's Rules of Hooks require
-  // the same hook calls every render.
-  const editing = metricId ? getMetric(metricId) : undefined;
-
+  const { addMetric, updateMetric, deleteMetric } = useCustomMetrics();
   const { wellness, performance } = useData();
   const wellnessEntries =
     wellness.status === "loaded" ? wellness.entries : [];
@@ -72,19 +101,6 @@ export function CustomMetricForm() {
       : EMPTY_DRAFT,
   );
   const [error, setError] = useState<string | null>(null);
-
-  // Conditional returns are safe AFTER all hooks are declared.
-  if (!isValidType(type)) {
-    return <Navigate to="/setup/tracking" replace />;
-  }
-  if (metricId && !editing) {
-    return <Navigate to={`/add-metric/${type}`} replace />;
-  }
-
-  // Capture the narrowed value so the closures below see CustomMetricType
-  // rather than `string | undefined` — TypeScript does not propagate the
-  // isValidType narrowing into nested function declarations.
-  const metricType: CustomMetricType = type;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -145,7 +161,7 @@ export function CustomMetricForm() {
       } else {
         await addMetric({
           name: trimmed,
-          metricType,
+          metricType: type,
           inputType: draft.inputType,
           unit: draft.unit.trim(),
           goalRaw,
@@ -160,7 +176,7 @@ export function CustomMetricForm() {
       setError("Couldn't save your metric. Please try again.");
       return;
     }
-    navigate(`/add-metric/${metricType}`);
+    navigate(`/add-metric/${type}`);
   }
 
   async function handleDelete() {
@@ -176,7 +192,7 @@ export function CustomMetricForm() {
       setError("Couldn't delete your metric. Please try again.");
       return;
     }
-    navigate(`/add-metric/${metricType}`);
+    navigate(`/add-metric/${type}`);
   }
 
   function update<K extends keyof DraftState>(key: K, value: DraftState[K]) {
@@ -248,7 +264,7 @@ export function CustomMetricForm() {
       {error && <p className={css.error}>{error}</p>}
 
       <div className={css.actions}>
-        <button type="button" className={css.secondary} onClick={() => navigate(`/add-metric/${metricType}`)}>
+        <button type="button" className={css.secondary} onClick={() => navigate(`/add-metric/${type}`)}>
           Cancel
         </button>
         {editing && (

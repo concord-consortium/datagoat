@@ -31,6 +31,12 @@ import {
 
 interface CustomMetricsValue {
   metrics: CustomMetricDef[];
+  // True until either the first Firestore snapshot has been received,
+  // initialMetrics was supplied (test seam), or there is no signed-in
+  // user. Consumers can use it to gate "metric not found" decisions on
+  // the snapshot having actually arrived — e.g., the edit form should
+  // not Navigate away until it knows whether the metricId resolves.
+  loading: boolean;
   addMetric: (
     input: Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">,
   ) => Promise<CustomMetricDef>;
@@ -85,15 +91,24 @@ function fromDoc(id: string, data: Record<string, unknown>): CustomMetricDef {
 export function CustomMetricsProvider({ children, initialMetrics }: ProviderProps) {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<CustomMetricDef[]>(initialMetrics ?? []);
+  // initialMetrics short-circuits the subscription, so loading starts
+  // false in tests. In production, we start in loading state until the
+  // first onSnapshot emission lands (or until we know there's no user).
+  const [loading, setLoading] = useState<boolean>(initialMetrics === undefined);
 
   // Subscribe to the current user's metric definitions. Skipped when
   // initialMetrics is provided (test seam) or when no user is signed in.
   useEffect(() => {
-    if (initialMetrics) return;
-    if (!user) {
-      setMetrics([]);
+    if (initialMetrics) {
+      setLoading(false);
       return;
     }
+    if (!user) {
+      setMetrics([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const q = query(
       collection(db, COLLECTION),
       where("ownerId", "==", user.uid),
@@ -107,12 +122,16 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
         });
         next.sort((a, b) => a.createdAt - b.createdAt);
         setMetrics(next);
+        setLoading(false);
       },
       (err) => {
         // Surface in console; the demo can keep running with whatever
-        // local state we already have.
+        // local state we already have. Clear the loading flag so the
+        // form's edit-route gate can fall through to its
+        // "not-found → Navigate" branch instead of spinning forever.
         // eslint-disable-next-line no-console
         console.error("CustomMetrics onSnapshot error", err);
+        setLoading(false);
       },
     );
     return unsubscribe;
@@ -207,12 +226,13 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
   const value = useMemo<CustomMetricsValue>(
     () => ({
       metrics,
+      loading,
       addMetric,
       updateMetric,
       deleteMetric,
       getMetric: (id) => metrics.find((m) => m.id === id),
     }),
-    [metrics, addMetric, updateMetric, deleteMetric],
+    [metrics, loading, addMetric, updateMetric, deleteMetric],
   );
 
   return (
@@ -228,6 +248,10 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
 // the real provider.
 const NOOP_VALUE: CustomMetricsValue = {
   metrics: [],
+  // Without a provider there is nothing to load — match what an
+  // unauthenticated production tree would settle to so consumers gating
+  // on `loading` don't spin forever.
+  loading: false,
   addMetric: async () => {
     throw new Error("addMetric called without CustomMetricsProvider");
   },

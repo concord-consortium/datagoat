@@ -107,6 +107,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
         yTopRaw: 40,
         yBottomRaw: 15,
         avgDecimals: 1,
+        referenceUrl: "",
       });
     });
     await waitFor(() => {
@@ -129,6 +130,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
         yTopRaw: 10,
         yBottomRaw: 0,
         avgDecimals: 1,
+        referenceUrl: "",
       });
       id = def.id;
     });
@@ -153,6 +155,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
         yTopRaw: 10,
         yBottomRaw: 0,
         avgDecimals: 1,
+        referenceUrl: "",
       });
       id = def.id;
     });
@@ -177,6 +180,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
         yTopRaw: 10,
         yBottomRaw: 0,
         avgDecimals: 1,
+        referenceUrl: "",
         createdAt: 0,
         updatedAt: 0,
       },

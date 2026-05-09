@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DragDots from "@/icons/drag-dots.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
+import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./TrackedMetricsTable.module.css";
 
 interface SortableMetricRowProps {
@@ -85,7 +86,10 @@ export function SortableMetricRow({
       </td>
       <td className={css.metricName}>{name}</td>
       <td>
-        {isCustom ? (
+        {/* Edit-pencil cell: only populated for custom metrics so
+            authors can jump back to the create/edit form. Built-in
+            rows render an empty cell so the column lines up. */}
+        {isCustom && (
           <Link
             to={`/add-metric/${type}/${id}`}
             className={css.metricInfoBtn}
@@ -93,15 +97,20 @@ export function SortableMetricRow({
           >
             ✏︎
           </Link>
-        ) : (
-          <Link
-            to={`/${type}/${id}`}
-            className={css.metricInfoBtn}
-            aria-label={`${name} info`}
-          >
-            <MetricIcon />
-          </Link>
         )}
+      </td>
+      <td>
+        {/* Info link: same destination (MetricDetail) for both
+            built-ins and customs. Customs use the custom-metric icon
+            here so the row carries a visible "this is a custom" cue
+            in addition to functioning as the chart-detail link. */}
+        <Link
+          to={`/${type}/${id}`}
+          className={css.metricInfoBtn}
+          aria-label={`${name} info`}
+        >
+          {isCustom ? <CustomMetricIcon /> : <MetricIcon />}
+        </Link>
       </td>
     </tr>
   );

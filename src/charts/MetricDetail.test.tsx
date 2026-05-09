@@ -106,6 +106,7 @@ function customDef(
     yTopRaw: 10,
     yBottomRaw: 0,
     avgDecimals: 1,
+    referenceUrl: "",
     createdAt: 0,
     updatedAt: 0,
   };
@@ -170,5 +171,30 @@ describe("MetricDetail — custom-metric handling", () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
     // Critical: did NOT navigate away.
     expect(screen.getByTestId("loc").textContent).toBe("/wellness/c_xyz");
+  });
+
+  it("renders the user's referenceUrl as a 'Learn more' link", () => {
+    const def = customDef("c_w", "Stretch Time", "wellness");
+    def.referenceUrl = "https://example.com/stretch";
+    customMetricsMock.metrics = [def];
+    customMetricsMock.loading = false;
+    renderAt("/wellness/c_w", "wellness");
+
+    const link = screen.getByRole("link", { name: /learn more about stretch time/i });
+    expect(link).toHaveAttribute("href", "https://example.com/stretch");
+    // Per the existing built-in pattern, learn-more links open in a
+    // new tab with safe rel attributes.
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.getAttribute("rel")).toMatch(/noopener/);
+  });
+
+  it("omits the 'Learn more' link when referenceUrl is empty", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+    customMetricsMock.loading = false;
+    renderAt("/wellness/c_w", "wellness");
+
+    expect(
+      screen.queryByRole("link", { name: /learn more about stretch time/i }),
+    ).toBeNull();
   });
 });

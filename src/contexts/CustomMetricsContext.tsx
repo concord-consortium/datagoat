@@ -83,6 +83,7 @@ function fromDoc(id: string, data: Record<string, unknown>): CustomMetricDef {
     yTopRaw: Number(data.yTopRaw ?? 10),
     yBottomRaw: Number(data.yBottomRaw ?? 0),
     avgDecimals: Number(data.avgDecimals ?? 1),
+    referenceUrl: String(data.referenceUrl ?? ""),
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
   };
@@ -199,6 +200,7 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
         yTopRaw: def.yTopRaw,
         yBottomRaw: def.yBottomRaw,
         avgDecimals: def.avgDecimals,
+        referenceUrl: def.referenceUrl,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

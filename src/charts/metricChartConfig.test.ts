@@ -17,6 +17,7 @@ function customDef(overrides: Partial<CustomMetricDef> = {}): CustomMetricDef {
     yTopRaw: 10,
     yBottomRaw: 0,
     avgDecimals: 1,
+    referenceUrl: "",
     createdAt: 0,
     updatedAt: 0,
     ...overrides,

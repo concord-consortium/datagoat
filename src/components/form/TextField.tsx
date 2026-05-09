@@ -6,7 +6,7 @@ import common from "../common.module.css";
 export interface TextFieldProps {
   id?: string;
   label: string;
-  type?: "text" | "email" | "tel" | "number";
+  type?: "text" | "email" | "tel" | "number" | "url";
   required?: boolean;
   error?: string;
   hint?: string;

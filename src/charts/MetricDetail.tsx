@@ -367,9 +367,12 @@ function renderMultiline(text: string) {
 
 // Adapt a CustomMetricDef into the MetricDefinition shape MetricDetail
 // renders. The empty whoCollects/howCollected/description strings flow
-// through renderMultiline's "Coming soon" fallback. references and
-// learnMoreUrl are intentionally absent — those sections won't render
-// for custom metrics, which is the correct fall-through.
+// through renderMultiline's "Coming soon" fallback. `references` is
+// intentionally absent — built-ins use it for an editorial reading
+// list, which doesn't have a custom-authored equivalent. The user-
+// supplied `referenceUrl` maps onto `learnMoreUrl`, which the existing
+// "Learn more about <name>" link already gates on (so an empty string
+// doesn't render the link).
 function customAsMetricDefinition(
   def: CustomMetricDef | undefined,
   type: "wellness" | "performance",
@@ -385,6 +388,7 @@ function customAsMetricDefinition(
     howCollected: "",
     description: "",
     inputType: def.inputType,
+    learnMoreUrl: def.referenceUrl || undefined,
   };
 }
 

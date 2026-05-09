@@ -21,6 +21,7 @@ import { SortableMetricRow } from "./SortableMetricRow";
 import { makeAnnouncements } from "./announcements";
 import type { MetricDefinition } from "../../metrics/types";
 import css from "./TrackedMetricsTable.module.css";
+import common from "../common.module.css";
 
 interface TrackedMetricsTableProps {
   type: "wellness" | "performance";
@@ -145,6 +146,12 @@ export function TrackedMetricsTable({
                   <span className={css.trackLabel}>Track</span>
                 </th>
                 <th>Metric</th>
+                <th>
+                  {/* Edit cell only renders for custom rows; the
+                      visually-hidden text gives SR users a column
+                      name without adding chrome for sighted users. */}
+                  <span className={common.visuallyHidden}>Edit</span>
+                </th>
                 <th>Info</th>
               </tr>
             </thead>

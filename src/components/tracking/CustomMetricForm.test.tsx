@@ -34,8 +34,12 @@ vi.mock("../../contexts/AuthContext", () => ({
 // so any in-effect dep on the result doesn't re-fire on every render.
 const userMock = vi.hoisted(() => ({
   loadState: { status: "missing" as const },
-  updateProfile: vi.fn(async () => {}),
-  setTrackedMetrics: vi.fn(async () => {}),
+  updateProfile: vi.fn<(patch: Record<string, unknown>) => Promise<void>>(
+    async () => {},
+  ),
+  setTrackedMetrics: vi.fn<
+    (type: "wellness" | "performance", ids: string[]) => Promise<void>
+  >(async () => {}),
 }));
 
 vi.mock("../../contexts/UserContext", () => ({
@@ -130,8 +134,49 @@ describe("CustomMetricForm (create)", () => {
         metricType: "wellness",
         unit: "min",
         goalRaw: 15,
+        referenceUrl: "",
       }),
     );
+  });
+
+  it("persists a valid Reference URL when provided", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/wellness/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
+    await user.type(
+      screen.getByLabelText(/reference url/i),
+      "https://example.com/stretch",
+    );
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("back to tracking setup")).toBeInTheDocument();
+    });
+    expect(mockedSetDoc).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        referenceUrl: "https://example.com/stretch",
+      }),
+    );
+  });
+
+  it("rejects an invalid Reference URL with a clear error", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/wellness/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
+    await user.type(
+      screen.getByLabelText(/reference url/i),
+      "not a url",
+    );
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(
+      screen.getByText(/reference url must be a valid url/i),
+    ).toBeInTheDocument();
+    // The form must NOT navigate away when validation fails.
+    expect(screen.queryByText("back to tracking setup")).toBeNull();
   });
 });
 
@@ -151,6 +196,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
         yTopRaw: 60,
         yBottomRaw: 0,
         avgDecimals: 1,
+        referenceUrl: "",
         createdAt: 0,
         updatedAt: 0,
       },
@@ -236,6 +282,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
         yTopRaw: 40,
         yBottomRaw: 15,
         avgDecimals: 1,
+        referenceUrl: "",
         createdAt: 0,
         updatedAt: 0,
       },
@@ -280,11 +327,11 @@ describe("CustomMetricForm (auto-track on create)", () => {
     await waitFor(() => {
       expect(userMock.updateProfile).toHaveBeenCalled();
     });
-    const call = userMock.updateProfile.mock.calls.at(-1)?.[0] as {
-      trackedWellnessMetrics?: string[];
-    };
+    const call = userMock.updateProfile.mock.calls.at(-1)?.[0] as
+      | { trackedWellnessMetrics?: string[] }
+      | undefined;
     // Built-in defaults plus the freshly minted custom-metric id.
-    expect(call.trackedWellnessMetrics).toEqual(
+    expect(call?.trackedWellnessMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
   });

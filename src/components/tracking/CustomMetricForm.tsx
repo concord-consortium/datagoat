@@ -38,6 +38,7 @@ interface DraftState {
   yTopRaw: string;
   yBottomRaw: string;
   avgDecimals: string;
+  referenceUrl: string;
 }
 
 const EMPTY_DRAFT: DraftState = {
@@ -48,6 +49,7 @@ const EMPTY_DRAFT: DraftState = {
   yTopRaw: "10",
   yBottomRaw: "0",
   avgDecimals: "1",
+  referenceUrl: "",
 };
 
 // Outer gate. Resolves the route's :type and :metricId, waits for the
@@ -138,6 +140,10 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       yTopRaw: String(editing.yTopRaw),
       yBottomRaw: String(editing.yBottomRaw),
       avgDecimals: String(editing.avgDecimals),
+      // ?? "" so docs written before referenceUrl was added (or by an
+      // external tool that omitted the field) don't crash the controlled
+      // input on undefined.
+      referenceUrl: editing.referenceUrl ?? "",
     };
   });
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +186,19 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       setError("Y-axis top must be greater than y-axis bottom.");
       return;
     }
+    const referenceUrl = draft.referenceUrl.trim();
+    if (referenceUrl) {
+      // type="url" gives the input a phone keyboard hint and surfaces
+      // the browser's native invalid-pattern feedback, but jsdom and
+      // some browsers accept malformed strings silently. A WHATWG URL
+      // parse is the cheapest robust check we can do client-side.
+      try {
+        new URL(referenceUrl);
+      } catch {
+        setError("Reference URL must be a valid URL (including http/https).");
+        return;
+      }
+    }
 
     try {
       if (editing) {
@@ -212,6 +231,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           yTopRaw,
           yBottomRaw,
           avgDecimals,
+          referenceUrl,
         });
       } else {
         const def = await addMetric({
@@ -223,6 +243,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           yTopRaw,
           yBottomRaw,
           avgDecimals,
+          referenceUrl,
         });
         // Auto-track the newly created metric. Appending to the existing
         // tracked-ids list places it right after the user's last
@@ -341,6 +362,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         inputMode="numeric"
         value={draft.avgDecimals}
         onChange={(e) => update("avgDecimals", e.target.value)}
+      />
+
+      <TextField
+        id="cm-ref"
+        label="Reference URL (optional)"
+        type="url"
+        inputMode="url"
+        value={draft.referenceUrl}
+        onChange={(e) => update("referenceUrl", e.target.value)}
       />
 
       {error && <p className={css.error}>{error}</p>}

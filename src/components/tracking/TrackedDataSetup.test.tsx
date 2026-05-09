@@ -50,6 +50,7 @@ function customDef(
     yTopRaw: 10,
     yBottomRaw: 0,
     avgDecimals: 1,
+    referenceUrl: "",
     createdAt: 0,
     updatedAt: 0,
   };
@@ -98,22 +99,23 @@ describe("TrackedDataSetup — custom-metric integration", () => {
     expect(screen.getAllByText("5K Time")).toHaveLength(1);
   });
 
-  it("gives custom rows an edit-pencil affordance instead of an info link", () => {
+  it("gives custom rows an edit-pencil link to the create/edit form", () => {
     renderWith([customDef("c_w", "Stretch Time", "wellness")]);
-    // Customs: aria-label is `Edit ${name}` (the edit pencil), and
-    // the link points at the create/edit form route — not /wellness/:id.
     const editLink = screen.getByRole("link", { name: /edit stretch time/i });
     expect(editLink).toHaveAttribute("href", "/add-metric/wellness/c_w");
-    // No info link with this name should exist (built-ins use `${name} info`).
-    expect(
-      screen.queryByRole("link", { name: /^stretch time info$/i }),
-    ).toBeNull();
+  });
+
+  it("renders an info link to MetricDetail for custom rows (parallel to built-ins)", () => {
+    renderWith([customDef("c_w", "Stretch Time", "wellness")]);
+    // Custom rows now keep the Info column as a chart-detail link;
+    // the visual difference from a built-in is the icon (custom-metric
+    // glyph rather than the metric's own Icon).
+    const infoLink = screen.getByRole("link", { name: /^stretch time info$/i });
+    expect(infoLink).toHaveAttribute("href", "/wellness/c_w");
   });
 
   it("preserves the info-link affordance for built-in metrics", () => {
     renderWith();
-    // Hydration is a built-in wellness metric; its row should show an
-    // info link, not an edit pencil. Aria label format is `${name} info`.
     expect(
       screen.getByRole("link", { name: /^hydration info$/i }),
     ).toBeInTheDocument();

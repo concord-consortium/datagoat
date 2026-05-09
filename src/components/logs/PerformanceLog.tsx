@@ -113,8 +113,14 @@ export function PerformanceLog() {
           <tbody>
             {displayedMetrics.map((metric) => {
               const live = currentEntry.metrics?.[metric.id];
+              // !== 0 (rather than > 0) so custom metrics with a
+              // negative yBottomRaw can render legitimate negative
+              // values. 0 stays the "blank input" sentinel since 0 is
+              // what the writer stores for an empty entry. Built-in
+              // performance metrics are always non-negative, so this
+              // check change is a no-op for them.
               const stringValue =
-                typeof live === "number" && live > 0
+                typeof live === "number" && live !== 0
                   ? String(live)
                   : typeof live === "string" && live !== ""
                     ? live

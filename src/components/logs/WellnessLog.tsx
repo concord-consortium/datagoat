@@ -198,8 +198,12 @@ export function WellnessLog() {
             )}
             {customWellness.map((def) => {
               const live = currentEntry.customMetrics?.[def.id];
+              // !== 0 (rather than > 0) so custom metrics with a
+              // negative yBottomRaw can render legitimate negative
+              // values. 0 stays the "blank input" sentinel since 0 is
+              // what the writer stores for an empty entry.
               const stringValue =
-                typeof live === "number" && live > 0
+                typeof live === "number" && live !== 0
                   ? String(live)
                   : typeof live === "string"
                     ? live

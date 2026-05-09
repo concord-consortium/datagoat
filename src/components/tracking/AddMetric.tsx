@@ -3,13 +3,14 @@ import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./AddMetric.module.css";
 
-// AddMetric (rewritten for DGT-36 demo slice). Lists the user's
-// custom metrics for the current type ("wellness" | "performance"),
-// with a "+ Create custom metric" CTA at the top. Each row links to
-// the edit form. Built-in metric browsing and the per-row tracking
-// toggle are intentionally removed for the demo slice — built-in
-// tracking is managed from /setup/tracking; custom-metric tracking
-// integration is deferred to the next plan.
+// AddMetric: a list + edit-entry-point page for the user's custom
+// metrics, scoped by the route's :type ("wellness" | "performance").
+// The "+ Create custom metric" CTA at the top routes to
+// /add-metric/:type/new; each existing row links to the edit form.
+// Tracking is managed elsewhere — both built-in and custom rows live
+// in the /setup/tracking table with per-row checkboxes; this page
+// stays focused on authoring (create / edit / delete) rather than
+// re-implementing the tracking UI.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
   if (type !== "wellness" && type !== "performance") {

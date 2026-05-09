@@ -188,14 +188,27 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     }
     const referenceUrl = draft.referenceUrl.trim();
     if (referenceUrl) {
-      // type="url" gives the input a phone keyboard hint and surfaces
-      // the browser's native invalid-pattern feedback, but jsdom and
-      // some browsers accept malformed strings silently. A WHATWG URL
-      // parse is the cheapest robust check we can do client-side.
+      // Two-step validation:
+      //   1. WHATWG URL parse — the browser's native input-type=url
+      //      feedback is permissive, and jsdom is more so. The parse
+      //      catches truly malformed strings.
+      //   2. Protocol check — `new URL()` accepts `javascript:`,
+      //      `data:`, `file:`, etc. The value is rendered into an
+      //      `<a href>` on MetricDetail, so a `javascript:` URL would
+      //      execute arbitrary code on click. Restrict to http/https.
+      let parsed: URL;
       try {
-        new URL(referenceUrl);
+        parsed = new URL(referenceUrl);
       } catch {
-        setError("Reference URL must be a valid URL (including http/https).");
+        setError(
+          "Reference URL must be a valid http:// or https:// URL.",
+        );
+        return;
+      }
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        setError(
+          "Reference URL must use http:// or https://.",
+        );
         return;
       }
     }

@@ -173,9 +173,29 @@ describe("CustomMetricForm (create)", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(
-      screen.getByText(/reference url must be a valid url/i),
+      screen.getByText(/reference url must be a valid/i),
     ).toBeInTheDocument();
     // The form must NOT navigate away when validation fails.
+    expect(screen.queryByText("back to tracking setup")).toBeNull();
+  });
+
+  it("rejects javascript: and other non-http(s) protocols on the Reference URL", async () => {
+    // `new URL("javascript:alert(1)")` parses successfully, but
+    // rendering that into <a href> would execute arbitrary code on
+    // click. The protocol guard restricts to http(s).
+    const user = userEvent.setup();
+    renderAt("/add-metric/wellness/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
+    await user.type(
+      screen.getByLabelText(/reference url/i),
+      "javascript:alert(1)",
+    );
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(
+      screen.getByText(/http:\/\/ or https:\/\//i),
+    ).toBeInTheDocument();
     expect(screen.queryByText("back to tracking setup")).toBeNull();
   });
 });

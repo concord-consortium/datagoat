@@ -30,11 +30,14 @@ interface TrackedMetricsTableProps {
   // list of ids; metrics not in the user's list still render here when
   // they're in the registry but unchecked, so the user can toggle them.
   // Caller may include user-defined custom metrics here (alongside
-  // built-ins) and pass their ids in `customIds` so each row's right-edge
-  // affordance switches from info link → edit pencil.
+  // built-ins) and pass their ids in `customIds` so each custom row
+  // gains an Edit-pencil cell linking to the create/edit form. The
+  // Info cell remains in place for both built-ins and customs (custom
+  // rows render the custom-metric icon as the Info-cell glyph).
   registry: MetricDefinition[];
-  // Subset of `registry` ids that are user-defined custom metrics. Used
-  // only to flag the rendered row's right-edge affordance.
+  // Subset of `registry` ids that are user-defined custom metrics.
+  // Drives the per-row Edit-pencil cell + custom-metric icon in the
+  // Info cell; the Info-cell link target is the same as for built-ins.
   customIds?: ReadonlySet<string>;
   // The user's tracked-metric ordering for this type.
   trackedIds: string[];

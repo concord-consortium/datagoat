@@ -62,23 +62,29 @@ export function DashboardChartCard({
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
     : DEFAULT_PROFILE_KEY;
   // Both built-ins and customs respect the user's tracked-IDs
-  // preference. TrackedDataSetup's per-custom checkbox toggles whether
-  // a custom appears in this picker.
-  const trackedBuiltIns = useMemo(
-    () => allMetrics.filter((m) => trackedMetricIds.includes(m.id)),
-    [allMetrics, trackedMetricIds],
-  );
-  const customsForType = useMemo(
-    () =>
-      allCustom.filter(
-        (m) => m.metricType === type && trackedMetricIds.includes(m.id),
-      ),
-    [allCustom, type, trackedMetricIds],
-  );
-  const tracked = useMemo<Array<{ id: string; name: string }>>(
-    () => [...trackedBuiltIns, ...customsForType],
-    [trackedBuiltIns, customsForType],
-  );
+  // preference, including ordering: the user can drag-reorder a
+  // custom among built-ins on /setup/tracking, and the picker
+  // dropdown should reflect that order. Iterate trackedMetricIds and
+  // dispatch to whichever map (built-in or custom) carries the id.
+  const tracked = useMemo<Array<{ id: string; name: string }>>(() => {
+    const builtInById = new Map(allMetrics.map((m) => [m.id, m]));
+    const customById = new Map<string, (typeof allCustom)[number]>();
+    for (const def of allCustom) {
+      if (def.metricType === type) customById.set(def.id, def);
+    }
+    const out: Array<{ id: string; name: string }> = [];
+    for (const id of trackedMetricIds) {
+      const builtIn = builtInById.get(id);
+      if (builtIn) {
+        out.push(builtIn);
+        continue;
+      }
+      const custom = customById.get(id);
+      if (custom) out.push(custom);
+      // Stale id that resolves to neither — silently skip.
+    }
+    return out;
+  }, [allMetrics, allCustom, type, trackedMetricIds]);
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(
     tracked[0]?.id ?? "",

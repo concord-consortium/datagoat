@@ -236,4 +236,60 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
     );
     expect(selectOptions(container)).toContain("c_w");
   });
+
+  it("renders dropdown options in trackedMetricIds order, not registry order", () => {
+    // Drag-reorder on /setup/tracking persists `trackedMetricIds`;
+    // a custom dragged BETWEEN two built-ins should appear in that
+    // slot in the picker, not be appended at the bottom.
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+    const { container } = render(
+      <DashboardChartCard
+        type="wellness"
+        // Built-in → custom → built-in. Note c_w sits between two
+        // built-ins; the prior bug appended customs after all
+        // built-ins regardless of trackedMetricIds order.
+        trackedMetricIds={["hydration", "c_w", "sleepTime"]}
+        wellnessEntries={[]}
+      />,
+    );
+    // The first option is the disabled "Select …" placeholder, so
+    // option-values [1..] are the metrics.
+    expect(selectOptions(container).slice(1)).toEqual([
+      "hydration",
+      "c_w",
+      "sleepTime",
+    ]);
+  });
+});
+
+describe("WellnessLog — drag-reorder is respected in row order", () => {
+  it("renders rows in trackedWellnessMetrics order with customs interleaved", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+    userMock.loadState = {
+      status: "loaded",
+      profile: {
+        ...(userMock.loadState as { profile: UserProfile }).profile,
+        // Custom slotted between two built-ins (mirrors a user
+        // dragging it there on /setup/tracking).
+        trackedWellnessMetrics: ["hydration", "c_w", "sleepTime"],
+      },
+    };
+    const { container } = render(
+      <MemoryRouter>
+        <WellnessLog />
+      </MemoryRouter>,
+    );
+    // Read the rendered metric-name column in order. Each MetricInputRow
+    // renders the name as a Link inside a `td.metricName` cell.
+    const names = Array.from(
+      container.querySelectorAll("td.metricName, td[class*='metricName']"),
+    ).map((el) => el.textContent?.trim() ?? "");
+    // Names are SR-formatted by MetricInputRow (built-ins use their
+    // registry name); we only need their relative order.
+    const idx = (needle: string) =>
+      names.findIndex((n) => n.toLowerCase().includes(needle.toLowerCase()));
+    expect(idx("hydration")).toBeGreaterThanOrEqual(0);
+    expect(idx("stretch time")).toBeGreaterThan(idx("hydration"));
+    expect(idx("sleep time")).toBeGreaterThan(idx("stretch time"));
+  });
 });

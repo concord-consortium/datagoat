@@ -67,21 +67,34 @@ export function PerformanceLog() {
   }
 
   // Both built-ins and customs respect the user's tracked-IDs
-  // preference. TrackedDataSetup's per-custom checkbox toggles whether
-  // a custom appears here.
-  const displayedMetrics: Array<{ id: string; name: string }> = [
-    ...PERFORMANCE_METRICS.filter((m) => trackedIds.includes(m.id)),
-    ...allCustom.filter(
-      (m) => m.metricType === "performance" && trackedIds.includes(m.id),
-    ),
-  ];
+  // preference. The user can drag-reorder a custom metric among
+  // built-ins on /setup/tracking; iterating trackedIds (rather than
+  // appending customs after built-ins) honors that ordering here.
+  const builtInById = new Map(PERFORMANCE_METRICS.map((m) => [m.id, m]));
+  const customById = new Map<string, (typeof allCustom)[number]>();
+  for (const def of allCustom) {
+    if (def.metricType === "performance") customById.set(def.id, def);
+  }
+  const displayedMetrics: Array<{ id: string; name: string }> = [];
+  for (const id of trackedIds) {
+    const builtIn = builtInById.get(id);
+    if (builtIn) {
+      displayedMetrics.push(builtIn);
+      continue;
+    }
+    const custom = customById.get(id);
+    if (custom) {
+      displayedMetrics.push(custom);
+    }
+    // Stale id that resolves to neither — silently skip.
+  }
   // Set of metric ids whose y-range goes below 0 — used to open the
   // numeric input filter to a leading `-`. Built-in performance
   // metrics are all non-negative, so this set only contains customs
   // whose author chose `yBottomRaw < 0`.
   const allowNegativeIds = new Set(
-    allCustom
-      .filter((m) => m.metricType === "performance" && m.yBottomRaw < 0)
+    Array.from(customById.values())
+      .filter((m) => m.yBottomRaw < 0)
       .map((m) => m.id),
   );
 

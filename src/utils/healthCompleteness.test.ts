@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { getChipState } from "./wellnessCompleteness";
-import type { WellnessEntry } from "../types/data";
+import { getChipState } from "./healthCompleteness";
+import type { HealthEntry } from "../types/data";
 
 const TRACKED_DEFAULT = [
   "hydration",
@@ -11,7 +11,7 @@ const TRACKED_DEFAULT = [
   "availability",
 ];
 
-function emptyEntry(): WellnessEntry {
+function emptyEntry(): HealthEntry {
   return {
     version: 1,
     date: "2026-04-28",

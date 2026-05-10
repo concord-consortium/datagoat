@@ -36,13 +36,13 @@
   margin-bottom: 16px;
 }
 
-.dashWellnessSection {
-  /* prototype #dash-wellness-section anchor; reserved for future
-     wellness-only color rules. */
+.dashHealthSection {
+  /* prototype #dash-health-section anchor; reserved for future
+     health-only color rules. */
 }
 
-.dashPerformanceSection {
-  /* prototype #dash-performance-section anchor. */
+.dashCompetitionSection {
+  /* prototype #dash-competition-section anchor. */
 }
 
 .dashLogLabelRow {

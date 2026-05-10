@@ -2,7 +2,7 @@
 //
 // Cross-surface verification that custom metrics respect the user's
 // tracked-IDs preference the same way built-in metrics do — i.e.,
-// untracked customs disappear from the wellness log, the performance
+// untracked customs disappear from the health log, the competition
 // log, and the dashboard chart picker, mirroring the behavior of
 // untracked built-ins. Until the variant cherry-pick (commit 4e4b6a9
 // + the wiring follow-up c4ee0aa), customs always appeared regardless
@@ -20,8 +20,8 @@ import type { CustomMetricDef } from "../types/customMetrics";
 import type { ProfileLoadState, UserProfile } from "../types/profile";
 import type {
   DataLoadState,
-  PerformanceEntry,
-  WellnessEntry,
+  CompetitionEntry,
+  HealthEntry,
 } from "../types/data";
 
 // Hoisted mock state — each test mutates `customMetricsMock.metrics`
@@ -52,9 +52,9 @@ vi.mock("../contexts/AuthContext", () => ({
   useAuth: () => ({ user: { uid: "u1" } }),
 }));
 
-// UserContext is mutated per test to swap profile.trackedWellnessMetrics
-// / trackedPerformanceMetrics. The shape mirrors the lightweight ctx
-// pattern WellnessLog.test.tsx already uses.
+// UserContext is mutated per test to swap profile.trackedHealthMetrics
+// / trackedCompetitionMetrics. The shape mirrors the lightweight ctx
+// pattern HealthLog.test.tsx already uses.
 const userMock = vi.hoisted(() => ({
   loadState: {
     status: "loaded",
@@ -70,8 +70,8 @@ const userMock = vi.hoisted(() => ({
       gender: "male" as const,
       athleteType: "endurance" as const,
       competitionTerm: "game",
-      trackedWellnessMetrics: [] as string[],
-      trackedPerformanceMetrics: [] as string[],
+      trackedHealthMetrics: [] as string[],
+      trackedCompetitionMetrics: [] as string[],
       profileComplete: true,
       trackingSetupComplete: true,
     } as UserProfile,
@@ -81,24 +81,24 @@ vi.mock("../contexts/UserContext", () => ({
   useUser: () => userMock,
 }));
 
-// DataContext: stubbed wellness/performance load state. setX handlers
+// DataContext: stubbed health/competition load state. setX handlers
 // are noops; tests don't exercise the write path.
 const dataMock = vi.hoisted(() => ({
-  wellness: {
+  health: {
     status: "loaded",
-    entries: [] as WellnessEntry[],
-  } as DataLoadState<WellnessEntry>,
-  performance: {
+    entries: [] as HealthEntry[],
+  } as DataLoadState<HealthEntry>,
+  competition: {
     status: "loaded",
-    entries: [] as PerformanceEntry[],
-  } as DataLoadState<PerformanceEntry>,
-  setWellnessEntry: vi.fn(),
-  setPerformanceEntry: vi.fn(),
+    entries: [] as CompetitionEntry[],
+  } as DataLoadState<CompetitionEntry>,
+  setHealthEntry: vi.fn(),
+  setCompetitionEntry: vi.fn(),
 }));
 vi.mock("../contexts/DataContext", () => ({
   useData: () => dataMock,
-  useWellnessData: () => dataMock.wellness,
-  usePerformanceData: () => dataMock.performance,
+  useHealthData: () => dataMock.health,
+  useCompetitionData: () => dataMock.competition,
 }));
 
 // DemoMode: dashboard-only dep; default false so no random data is
@@ -107,14 +107,14 @@ vi.mock("../contexts/DemoModeContext", () => ({
   useDemoMode: () => false,
 }));
 
-import { WellnessLog } from "./logs/WellnessLog";
-import { PerformanceLog } from "./logs/PerformanceLog";
+import { HealthLog } from "./logs/HealthLog";
+import { CompetitionLog } from "./logs/CompetitionLog";
 import { DashboardChartCard } from "./dashboard/DashboardChartCard";
 
 function customDef(
   id: string,
   name: string,
-  metricType: "wellness" | "performance",
+  metricType: "health" | "competition",
 ): CustomMetricDef {
   return {
     id,
@@ -133,72 +133,72 @@ function customDef(
   };
 }
 
-describe("WellnessLog — customs respect tracked-IDs filter", () => {
-  it("hides a custom whose id is NOT in trackedWellnessMetrics", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+describe("HealthLog — customs respect tracked-IDs filter", () => {
+  it("hides a custom whose id is NOT in trackedHealthMetrics", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     userMock.loadState = {
       status: "loaded",
       profile: {
         ...(userMock.loadState as { profile: UserProfile }).profile,
-        trackedWellnessMetrics: ["hydration", "sleepTime"], // no c_w
+        trackedHealthMetrics: ["hydration", "sleepTime"], // no c_w
       },
     };
     render(
       <MemoryRouter>
-        <WellnessLog />
+        <HealthLog />
       </MemoryRouter>,
     );
     expect(screen.queryByText("Stretch Time")).toBeNull();
   });
 
-  it("renders a custom whose id IS in trackedWellnessMetrics", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+  it("renders a custom whose id IS in trackedHealthMetrics", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     userMock.loadState = {
       status: "loaded",
       profile: {
         ...(userMock.loadState as { profile: UserProfile }).profile,
-        trackedWellnessMetrics: ["hydration", "c_w"],
+        trackedHealthMetrics: ["hydration", "c_w"],
       },
     };
     render(
       <MemoryRouter>
-        <WellnessLog />
+        <HealthLog />
       </MemoryRouter>,
     );
     expect(screen.getByText("Stretch Time")).toBeInTheDocument();
   });
 });
 
-describe("PerformanceLog — customs respect tracked-IDs filter", () => {
-  it("hides a custom whose id is NOT in trackedPerformanceMetrics", () => {
-    customMetricsMock.metrics = [customDef("c_p", "5K Time", "performance")];
+describe("CompetitionLog — customs respect tracked-IDs filter", () => {
+  it("hides a custom whose id is NOT in trackedCompetitionMetrics", () => {
+    customMetricsMock.metrics = [customDef("c_p", "5K Time", "competition")];
     userMock.loadState = {
       status: "loaded",
       profile: {
         ...(userMock.loadState as { profile: UserProfile }).profile,
-        trackedPerformanceMetrics: ["wins", "goals"], // no c_p
+        trackedCompetitionMetrics: ["wins", "goals"], // no c_p
       },
     };
     render(
       <MemoryRouter>
-        <PerformanceLog />
+        <CompetitionLog />
       </MemoryRouter>,
     );
     expect(screen.queryByText("5K Time")).toBeNull();
   });
 
-  it("renders a custom whose id IS in trackedPerformanceMetrics", () => {
-    customMetricsMock.metrics = [customDef("c_p", "5K Time", "performance")];
+  it("renders a custom whose id IS in trackedCompetitionMetrics", () => {
+    customMetricsMock.metrics = [customDef("c_p", "5K Time", "competition")];
     userMock.loadState = {
       status: "loaded",
       profile: {
         ...(userMock.loadState as { profile: UserProfile }).profile,
-        trackedPerformanceMetrics: ["wins", "c_p"],
+        trackedCompetitionMetrics: ["wins", "c_p"],
       },
     };
     render(
       <MemoryRouter>
-        <PerformanceLog />
+        <CompetitionLog />
       </MemoryRouter>,
     );
     expect(screen.getByText("5K Time")).toBeInTheDocument();
@@ -212,26 +212,26 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
     );
   }
 
-  it("omits an untracked wellness custom from the dropdown", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+  it("omits an untracked health custom from the dropdown", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration"]} // c_w omitted
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
     expect(selectOptions(container)).toContain("hydration");
     expect(selectOptions(container)).not.toContain("c_w");
   });
 
-  it("includes a tracked wellness custom in the dropdown", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+  it("includes a tracked health custom in the dropdown", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration", "c_w"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
     expect(selectOptions(container)).toContain("c_w");
@@ -241,15 +241,15 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
     // Drag-reorder on /setup/tracking persists `trackedMetricIds`;
     // a custom dragged BETWEEN two built-ins should appear in that
     // slot in the picker, not be appended at the bottom.
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         // Built-in → custom → built-in. Note c_w sits between two
         // built-ins; the prior bug appended customs after all
         // built-ins regardless of trackedMetricIds order.
         trackedMetricIds={["hydration", "c_w", "sleepTime"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
     // The first option is the disabled "Select …" placeholder, so
@@ -262,21 +262,21 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
   });
 });
 
-describe("WellnessLog — drag-reorder is respected in row order", () => {
-  it("renders rows in trackedWellnessMetrics order with customs interleaved", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+describe("HealthLog — drag-reorder is respected in row order", () => {
+  it("renders rows in trackedHealthMetrics order with customs interleaved", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     userMock.loadState = {
       status: "loaded",
       profile: {
         ...(userMock.loadState as { profile: UserProfile }).profile,
         // Custom slotted between two built-ins (mirrors a user
         // dragging it there on /setup/tracking).
-        trackedWellnessMetrics: ["hydration", "c_w", "sleepTime"],
+        trackedHealthMetrics: ["hydration", "c_w", "sleepTime"],
       },
     };
     const { container } = render(
       <MemoryRouter>
-        <WellnessLog />
+        <HealthLog />
       </MemoryRouter>,
     );
     // Read the rendered metric-name column in order. Each MetricInputRow

@@ -20,14 +20,14 @@ export type CodapStatus = "disconnected" | "connecting" | "connected";
 
 export interface DatasetRow {
   // Free-form bag matching CODAP's CodapItemValues shape - one key per
-  // attribute. Wellness rows have date + the metric values; performance
+  // attribute. Health rows have date + the metric values; competition
   // rows have date + a metrics-bag flattened to per-attribute keys.
   [key: string]: string | number | null;
 }
 
 export interface SendDatasetArgs {
   // Resource-safe identifier for the data context (e.g.
-  // "DataGOAT-Wellness"). Used in CODAP's bracket-notation resource
+  // "DataGOAT-Health"). Used in CODAP's bracket-notation resource
   // paths, so it must avoid spaces and `&`.
   name: string;
   // Display label CODAP shows on the table tab. Set on the data

@@ -1,13 +1,13 @@
-import type { PerformanceEntry, WellnessEntry } from "../types/data";
+import type { CompetitionEntry, HealthEntry } from "../types/data";
 
-// Returns true when at least one wellness or performance entry has a
+// Returns true when at least one health or competition entry has a
 // non-zero numeric value (or non-empty string value) for the given
-// metric ID. Custom wellness metric values live in
-// WellnessEntry.customMetrics; custom performance metric values share
-// the existing PerformanceEntry.metrics map alongside built-in IDs.
+// metric ID. Custom health metric values live in
+// HealthEntry.customMetrics; custom competition metric values share
+// the existing CompetitionEntry.metrics map alongside built-in IDs.
 //
 // "0 is the sentinel for blank input" is the existing convention in
-// WellnessLog / PerformanceLog — both write 0 to the map when the user
+// HealthLog / CompetitionLog — both write 0 to the map when the user
 // leaves the input empty. Treating 0 as "logged" would cause the
 // confirmation dialog to fire for every metric the user ever touched.
 //
@@ -19,14 +19,14 @@ import type { PerformanceEntry, WellnessEntry } from "../types/data";
 // detection (`metricId in entry.customMetrics`) instead.
 export function hasEntriesForMetric(
   metricId: string,
-  wellnessEntries: WellnessEntry[],
-  performanceEntries: PerformanceEntry[],
+  healthEntries: HealthEntry[],
+  competitionEntries: CompetitionEntry[],
 ): boolean {
-  for (const entry of wellnessEntries) {
+  for (const entry of healthEntries) {
     const v = entry.customMetrics?.[metricId];
     if (isMeaningful(v)) return true;
   }
-  for (const entry of performanceEntries) {
+  for (const entry of competitionEntries) {
     const v = entry.metrics?.[metricId];
     if (isMeaningful(v)) return true;
   }

@@ -18,8 +18,8 @@ import type { CustomMetricDef } from "../types/customMetrics";
 import type { ProfileLoadState, UserProfile } from "../types/profile";
 import type {
   DataLoadState,
-  PerformanceEntry,
-  WellnessEntry,
+  CompetitionEntry,
+  HealthEntry,
 } from "../types/data";
 
 const customMetricsMock = vi.hoisted(() => ({
@@ -55,8 +55,8 @@ const userMock = vi.hoisted(() => ({
       gender: "male" as const,
       athleteType: "endurance" as const,
       competitionTerm: "game",
-      trackedWellnessMetrics: [],
-      trackedPerformanceMetrics: [],
+      trackedHealthMetrics: [],
+      trackedCompetitionMetrics: [],
       profileComplete: true,
       trackingSetupComplete: true,
     } as UserProfile,
@@ -67,21 +67,21 @@ vi.mock("../contexts/UserContext", () => ({
 }));
 
 const dataMock = vi.hoisted(() => ({
-  wellness: {
+  health: {
     status: "loaded",
-    entries: [] as WellnessEntry[],
-  } as DataLoadState<WellnessEntry>,
-  performance: {
+    entries: [] as HealthEntry[],
+  } as DataLoadState<HealthEntry>,
+  competition: {
     status: "loaded",
-    entries: [] as PerformanceEntry[],
-  } as DataLoadState<PerformanceEntry>,
-  setWellnessEntry: vi.fn(),
-  setPerformanceEntry: vi.fn(),
+    entries: [] as CompetitionEntry[],
+  } as DataLoadState<CompetitionEntry>,
+  setHealthEntry: vi.fn(),
+  setCompetitionEntry: vi.fn(),
 }));
 vi.mock("../contexts/DataContext", () => ({
   useData: () => dataMock,
-  useWellnessData: () => dataMock.wellness,
-  usePerformanceData: () => dataMock.performance,
+  useHealthData: () => dataMock.health,
+  useCompetitionData: () => dataMock.competition,
 }));
 
 vi.mock("../contexts/DemoModeContext", () => ({
@@ -93,7 +93,7 @@ import { MetricDetail } from "./MetricDetail";
 function customDef(
   id: string,
   name: string,
-  metricType: "wellness" | "performance",
+  metricType: "health" | "competition",
 ): CustomMetricDef {
   return {
     id,
@@ -121,7 +121,7 @@ function LocationProbe() {
 
 function renderAt(
   path: string,
-  type: "wellness" | "performance",
+  type: "health" | "competition",
 ): ReturnType<typeof render> {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -138,10 +138,10 @@ function renderAt(
 }
 
 describe("MetricDetail — custom-metric handling", () => {
-  it("renders a wellness custom metric's name as the chart title", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+  it("renders a health custom metric's name as the chart title", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     customMetricsMock.loading = false;
-    renderAt("/wellness/c_w", "wellness");
+    renderAt("/health/c_w", "health");
     // "Your <name>" is the chart-section title; rendered twice (visible
     // and SR <title>), so getAllByText.
     expect(
@@ -149,36 +149,36 @@ describe("MetricDetail — custom-metric handling", () => {
     ).toBeGreaterThanOrEqual(1);
   });
 
-  it("redirects when a wellness URL targets a performance-typed custom", () => {
-    customMetricsMock.metrics = [customDef("c_p", "5K Time", "performance")];
+  it("redirects when a health URL targets a competition-typed custom", () => {
+    customMetricsMock.metrics = [customDef("c_p", "5K Time", "competition")];
     customMetricsMock.loading = false;
-    renderAt("/wellness/c_p", "wellness");
+    renderAt("/health/c_p", "health");
     // Cross-type access falls through to the not-found Navigate that
-    // bounces to /wellness. Without the metricType filter, MetricDetail
+    // bounces to /health. Without the metricType filter, MetricDetail
     // would render but read from the wrong entry map.
-    expect(screen.getByTestId("loc").textContent).toBe("/wellness");
+    expect(screen.getByTestId("loc").textContent).toBe("/health");
     expect(screen.getByTestId("log-fallback")).toBeInTheDocument();
   });
 
   it("waits for the customs snapshot before deciding 'not found'", () => {
     // customs are still loading and the id isn't a built-in → render
     // a Loading… placeholder rather than Navigate'ing away. Without
-    // this gate, a deep-link/refresh on /wellness/c_xyz would bounce
+    // this gate, a deep-link/refresh on /health/c_xyz would bounce
     // before the metric resolves.
     customMetricsMock.metrics = [];
     customMetricsMock.loading = true;
-    renderAt("/wellness/c_xyz", "wellness");
+    renderAt("/health/c_xyz", "health");
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
     // Critical: did NOT navigate away.
-    expect(screen.getByTestId("loc").textContent).toBe("/wellness/c_xyz");
+    expect(screen.getByTestId("loc").textContent).toBe("/health/c_xyz");
   });
 
   it("renders the user's referenceUrl as a 'Learn more' link", () => {
-    const def = customDef("c_w", "Stretch Time", "wellness");
+    const def = customDef("c_w", "Stretch Time", "health");
     def.referenceUrl = "https://example.com/stretch";
     customMetricsMock.metrics = [def];
     customMetricsMock.loading = false;
-    renderAt("/wellness/c_w", "wellness");
+    renderAt("/health/c_w", "health");
 
     const link = screen.getByRole("link", { name: /learn more about stretch time/i });
     expect(link).toHaveAttribute("href", "https://example.com/stretch");
@@ -189,9 +189,9 @@ describe("MetricDetail — custom-metric handling", () => {
   });
 
   it("omits the 'Learn more' link when referenceUrl is empty", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "wellness")];
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     customMetricsMock.loading = false;
-    renderAt("/wellness/c_w", "wellness");
+    renderAt("/health/c_w", "health");
 
     expect(
       screen.queryByRole("link", { name: /learn more about stretch time/i }),

@@ -1,4 +1,4 @@
-import type { WellnessEntry } from "../types/data";
+import type { HealthEntry } from "../types/data";
 
 export type ChipState = "all" | "some" | "none";
 
@@ -9,11 +9,11 @@ export type ChipState = "all" | "some" | "none";
 // === false || practiceParticipation !== null) - the tree must be answered
 // to its leaves to count. Same rule for game.
 //
-// trackedMetricIds is the user's currently-tracked wellness metric ids
+// trackedMetricIds is the user's currently-tracked health metric ids
 // (e.g., ["hydration", "sleepTime", ...]). Metrics not in the user's
 // tracked list are skipped entirely from completeness.
 export function getChipState(
-  entry: WellnessEntry | null,
+  entry: HealthEntry | null,
   trackedMetricIds: string[],
 ): ChipState {
   if (trackedMetricIds.length === 0) return "none";
@@ -26,7 +26,7 @@ export function getChipState(
   return "some";
 }
 
-function isFieldFilled(entry: WellnessEntry | null, id: string): boolean {
+function isFieldFilled(entry: HealthEntry | null, id: string): boolean {
   if (!entry) return false;
   switch (id) {
     case "hydration":
@@ -50,7 +50,7 @@ function isFieldFilled(entry: WellnessEntry | null, id: string): boolean {
   }
 }
 
-function availabilityFilled(entry: WellnessEntry): boolean {
+function availabilityFilled(entry: HealthEntry): boolean {
   const a = entry.availability;
   if (!a) return false;
   const practiceFilled =

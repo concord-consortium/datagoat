@@ -14,7 +14,7 @@
 
 /* Inline metric picker - the prototype uses .field-select with inline
    sizing overrides (HTML line 4200). The SelectField's <label> stays
-   in the a11y tree (SR users hear "Health & Wellness metric") but is
+   in the a11y tree (SR users hear "Health & Performance metric") but is
    visually hidden via the SelectField's labelVisuallyHidden prop -
    the chart card itself is the visible label for sighted users. */
 .metricSelectWrap {

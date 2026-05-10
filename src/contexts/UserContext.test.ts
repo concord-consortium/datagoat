@@ -234,8 +234,8 @@ describe("UserContext loadState transitions", () => {
           gender: "male",
           athleteType: "endurance",
           competitionTerm: "game",
-          trackedWellnessMetrics: [],
-          trackedPerformanceMetrics: [],
+          trackedHealthMetrics: [],
+          trackedCompetitionMetrics: [],
           profileComplete: true,
           trackingSetupComplete: false,
         }),
@@ -260,8 +260,8 @@ describe("UserContext loadState transitions", () => {
           exists: () => true,
           data: () => ({
             version: 1,
-            trackedWellnessMetrics: ["a", "b"],
-            trackedPerformanceMetrics: [],
+            trackedHealthMetrics: ["a", "b"],
+            trackedCompetitionMetrics: [],
           }),
         });
         return () => undefined;
@@ -281,7 +281,7 @@ describe("UserContext loadState transitions", () => {
     );
 
     await act(async () => {
-      await result.current.setTrackedMetrics("wellness", ["b", "a"]);
+      await result.current.setTrackedMetrics("health", ["b", "a"]);
     });
 
     expect(updateDocMock).toHaveBeenCalledTimes(1);
@@ -292,7 +292,7 @@ describe("UserContext loadState transitions", () => {
       { merge: boolean },
     ];
     expect(payload).toEqual({
-      trackedWellnessMetrics: ["b", "a"],
+      trackedHealthMetrics: ["b", "a"],
       version: 1,
     });
     expect(options).toEqual({ merge: true });
@@ -306,8 +306,8 @@ describe("UserContext loadState transitions", () => {
           exists: () => true,
           data: () => ({
             version: 1,
-            trackedWellnessMetrics: [],
-            trackedPerformanceMetrics: [],
+            trackedHealthMetrics: [],
+            trackedCompetitionMetrics: [],
           }),
         });
         return () => undefined;
@@ -325,7 +325,7 @@ describe("UserContext loadState transitions", () => {
     );
 
     await expect(
-      result.current.setTrackedMetrics("wellness", ["x"]),
+      result.current.setTrackedMetrics("health", ["x"]),
     ).rejects.toMatchObject({ code: "permission-denied" });
     expect(setDocMock).not.toHaveBeenCalled();
   });

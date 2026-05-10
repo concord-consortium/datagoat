@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User-scoped data (profile, wellness/performance entries, future
+    // User-scoped data (profile, health/competition entries, future
     // user-rooted subcollections). Verification is non-blocking by spec.
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

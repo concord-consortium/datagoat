@@ -5,9 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 
 import { ActivityCalendar } from "./ActivityCalendar";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
-import type { WellnessEntry } from "../../types/data";
+import type { HealthEntry } from "../../types/data";
 
-const TRACKED_WELLNESS = [
+const TRACKED_HEALTH = [
   "hydration",
   "sleepTime",
   "sleepEfficiency",
@@ -16,7 +16,7 @@ const TRACKED_WELLNESS = [
   "availability",
 ];
 
-function fullEntry(date: string): WellnessEntry {
+function fullEntry(date: string): HealthEntry {
   return {
     version: 1,
     date,
@@ -43,15 +43,15 @@ function renderCalendar(props: Parameters<typeof ActivityCalendar>[0]) {
 }
 
 describe("ActivityCalendar", () => {
-  it("renders tappable Link cells for wellness with state !== inactive AND offset in [0, HISTORY]", () => {
+  it("renders tappable Link cells for health with state !== inactive AND offset in [0, HISTORY]", () => {
     const todayIso = toISO(dateAtOffset(HISTORY));
     const { container } = renderCalendar({
-      type: "wellness",
-      trackedMetricIds: TRACKED_WELLNESS,
-      wellnessEntries: [fullEntry(todayIso)],
+      type: "health",
+      trackedMetricIds: TRACKED_HEALTH,
+      healthEntries: [fullEntry(todayIso)],
     });
     // Today's cell has state='all', offset=HISTORY - should be a Link.
-    const links = container.querySelectorAll(`a[href*="/wellness?date="]`);
+    const links = container.querySelectorAll(`a[href*="/health?date="]`);
     expect(links.length).toBeGreaterThan(0);
     const todayLink = Array.from(links).find((a) =>
       (a as HTMLAnchorElement).getAttribute("href")?.includes(todayIso),
@@ -66,9 +66,9 @@ describe("ActivityCalendar", () => {
 
   it("renders future-dated cells as <div> (no Link, no role, no tabindex)", () => {
     const { container } = renderCalendar({
-      type: "wellness",
-      trackedMetricIds: TRACKED_WELLNESS,
-      wellnessEntries: [],
+      type: "health",
+      trackedMetricIds: TRACKED_HEALTH,
+      healthEntries: [],
     });
     // Partition real day cells by tag rather than by state class: anchors
     // are tappable, <div>s are non-tappable. Length guards ensure a class
@@ -94,9 +94,9 @@ describe("ActivityCalendar", () => {
   it("emits a visually-hidden label on every non-blank cell", () => {
     const todayIso = toISO(dateAtOffset(HISTORY));
     const { container } = renderCalendar({
-      type: "wellness",
-      trackedMetricIds: TRACKED_WELLNESS,
-      wellnessEntries: [fullEntry(todayIso)],
+      type: "health",
+      trackedMetricIds: TRACKED_HEALTH,
+      healthEntries: [fullEntry(todayIso)],
     });
     const labels = container.querySelectorAll(`[class*='visuallyHidden']`);
     // At minimum every visible day cell has a label.
@@ -111,15 +111,15 @@ describe("ActivityCalendar", () => {
     ).toBe(true);
   });
 
-  it("wellness tappable cell links to /wellness?date=ISO", () => {
+  it("health tappable cell links to /health?date=ISO", () => {
     const todayIso = toISO(dateAtOffset(HISTORY));
     const { container } = renderCalendar({
-      type: "wellness",
-      trackedMetricIds: TRACKED_WELLNESS,
-      wellnessEntries: [fullEntry(todayIso)],
+      type: "health",
+      trackedMetricIds: TRACKED_HEALTH,
+      healthEntries: [fullEntry(todayIso)],
     });
     const link = container.querySelector(
-      `a[href="/wellness?date=${todayIso}"]`,
+      `a[href="/health?date=${todayIso}"]`,
     );
     expect(link).not.toBeNull();
   });
@@ -127,9 +127,9 @@ describe("ActivityCalendar", () => {
   it("the today cell has the today modifier", () => {
     const todayIso = toISO(dateAtOffset(HISTORY));
     const { container } = renderCalendar({
-      type: "wellness",
-      trackedMetricIds: TRACKED_WELLNESS,
-      wellnessEntries: [fullEntry(todayIso)],
+      type: "health",
+      trackedMetricIds: TRACKED_HEALTH,
+      healthEntries: [fullEntry(todayIso)],
     });
     const todayCell = container.querySelector(`[class*='today']`);
     expect(todayCell).not.toBeNull();

@@ -4,22 +4,22 @@ import { DateNav } from "../layout/DateNav";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
-import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import {
   HISTORY,
   dateAtOffset,
   historyOffsetFromISO,
   toISO,
 } from "../../utils/dates";
-import { performanceTotal } from "./PerformanceTotals";
-import { emptyPerformanceEntry } from "../../types/data";
-import { PerformanceMetricInput } from "./PerformanceMetricInput";
-import css from "./PerformanceLog.module.css";
+import { competitionTotal } from "./CompetitionTotals";
+import { emptyCompetitionEntry } from "../../types/data";
+import { CompetitionMetricInput } from "./CompetitionMetricInput";
+import css from "./CompetitionLog.module.css";
 
-export function PerformanceLog() {
+export function CompetitionLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
-  const { performance, setPerformanceEntry } = useData();
+  const { competition, setCompetitionEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
   const nameIdBase = useId();
 
@@ -30,7 +30,7 @@ export function PerformanceLog() {
   }, [dateParam]);
 
   // Malformed or out-of-range ?date= triggers a fallback Navigate. Same
-  // hook-order safety as WellnessLog: compute the redirect flag so all
+  // hook-order safety as HealthLog: compute the redirect flag so all
   // hooks below run unconditionally.
   const shouldRedirect =
     dateParam !== null &&
@@ -50,30 +50,30 @@ export function PerformanceLog() {
   // refresh; ProtectedRoute already gates so this branch is only the
   // mount->loaded transition.
   const trackedIds =
-    profile?.trackedPerformanceMetrics ?? PERFORMANCE_METRICS.map((m) => m.id);
+    profile?.trackedCompetitionMetrics ?? COMPETITION_METRICS.map((m) => m.id);
 
-  const entries = performance.status === "loaded" ? performance.entries : [];
+  const entries = competition.status === "loaded" ? competition.entries : [];
   const currentEntry =
-    entries.find((e) => e.date === dateIso) ?? emptyPerformanceEntry(dateIso);
+    entries.find((e) => e.date === dateIso) ?? emptyCompetitionEntry(dateIso);
 
   if (shouldRedirect) {
-    return <Navigate to="/performance" replace />;
+    return <Navigate to="/competition" replace />;
   }
 
   function setMetricValue(metricId: string, raw: string) {
     const numeric = raw === "" ? 0 : Number(raw);
     if (!Number.isFinite(numeric)) return;
-    setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
+    setCompetitionEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
 
   // Both built-ins and customs respect the user's tracked-IDs
   // preference. The user can drag-reorder a custom metric among
   // built-ins on /setup/tracking; iterating trackedIds (rather than
   // appending customs after built-ins) honors that ordering here.
-  const builtInById = new Map(PERFORMANCE_METRICS.map((m) => [m.id, m]));
+  const builtInById = new Map(COMPETITION_METRICS.map((m) => [m.id, m]));
   const customById = new Map<string, (typeof allCustom)[number]>();
   for (const def of allCustom) {
-    if (def.metricType === "performance") customById.set(def.id, def);
+    if (def.metricType === "competition") customById.set(def.id, def);
   }
   const displayedMetrics: Array<{ id: string; name: string }> = [];
   for (const id of trackedIds) {
@@ -89,7 +89,7 @@ export function PerformanceLog() {
     // Stale id that resolves to neither — silently skip.
   }
   // Set of metric ids whose y-range goes below 0 — used to open the
-  // numeric input filter to a leading `-`. Built-in performance
+  // numeric input filter to a leading `-`. Built-in competition
   // metrics are all non-negative, so this set only contains customs
   // whose author chose `yBottomRaw < 0`.
   const allowNegativeIds = new Set(
@@ -112,16 +112,15 @@ export function PerformanceLog() {
       <div className={css.screenContent}>
         {isOnboarding && (
           <div className={css.profileWelcome}>
-            <h2 className={css.profileWelcomeTitle}>Your Performance Log</h2>
+            <h2 className={css.profileWelcomeTitle}>Your Competition Log</h2>
             <p>
-              Track your sport-specific performance data here. Log your numbers
-              after each practice or competition to build a complete picture of
-              your progress.
+              Track your competition data here. Log your numbers after each
+              competition to build a complete picture of your progress.
             </p>
           </div>
         )}
 
-        <table className={css.performanceLogTable}>
+        <table className={css.competitionLogTable}>
           <thead>
             <tr>
               <th scope="col">Total</th>
@@ -138,7 +137,7 @@ export function PerformanceLog() {
               // negative yBottomRaw can render legitimate negative
               // values. 0 stays the "blank input" sentinel since 0 is
               // what the writer stores for an empty entry. Built-in
-              // performance metrics are always non-negative, so this
+              // competition metrics are always non-negative, so this
               // check change is a no-op for them.
               const stringValue =
                 typeof live === "number" && live !== 0
@@ -147,13 +146,13 @@ export function PerformanceLog() {
                     ? live
                     : "";
               const filled = stringValue !== "";
-              const total = performanceTotal(entries, metric.id);
+              const total = competitionTotal(entries, metric.id);
               const nameCellId = `${nameIdBase}-${metric.id}`;
               return (
                 <tr key={metric.id}>
                   <td className={css.colTotal}>
                     {/* total !== 0 (rather than > 0) so custom
-                        performance metrics with negative ranges can
+                        competition metrics with negative ranges can
                         render legitimate negative totals — aligns
                         with the stringValue check above. Built-in
                         counter metrics never go negative, so the
@@ -162,14 +161,14 @@ export function PerformanceLog() {
                   </td>
                   <td id={nameCellId} className={css.colMetric}>
                     <Link
-                      to={`/performance/${metric.id}`}
+                      to={`/competition/${metric.id}`}
                       className={css.metricLink}
                     >
                       {metric.name}
                     </Link>
                   </td>
                   <td className={css.colRecord}>
-                    <PerformanceMetricInput
+                    <CompetitionMetricInput
                       metricId={metric.id}
                       labelledBy={nameCellId}
                       value={stringValue}

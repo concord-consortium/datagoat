@@ -19,35 +19,35 @@ import {
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 import { migrateDocument } from "../migrations";
-import { CURRENT_WELLNESS_ENTRY_VERSION } from "../migrations/wellnessEntry";
-import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
+import { CURRENT_HEALTH_ENTRY_VERSION } from "../migrations/healthEntry";
+import { CURRENT_COMPETITION_ENTRY_VERSION } from "../migrations/competitionEntry";
 import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { logError } from "../utils/logError";
 import {
-  emptyWellnessEntry,
-  emptyPerformanceEntry,
+  emptyHealthEntry,
+  emptyCompetitionEntry,
   type DataLoadState,
-  type PerformanceEntry,
-  type WellnessEntry,
+  type CompetitionEntry,
+  type HealthEntry,
 } from "../types/data";
 
 export interface DataContextValue {
-  wellness: DataLoadState<WellnessEntry>;
-  performance: DataLoadState<PerformanceEntry>;
+  health: DataLoadState<HealthEntry>;
+  competition: DataLoadState<CompetitionEntry>;
   // Per-date partial-merge writes. Caller passes only the fields to
   // update; the doc is identified by date string ("YYYY-MM-DD"). The
-  // exposed wellness/performance values include an optimistic overlay
+  // exposed health/competition values include an optimistic overlay
   // of the partial so all useData() consumers see the change
   // synchronously - the actual Firestore setDoc is debounced to
   // coalesce write-amp. The version field is stamped only on creation
   // or upgrade; see firestoreSet* below.
-  setWellnessEntry: (
+  setHealthEntry: (
     date: string,
-    partial: Partial<WellnessEntry>,
+    partial: Partial<HealthEntry>,
   ) => void;
-  setPerformanceEntry: (
+  setCompetitionEntry: (
     date: string,
-    partial: Partial<PerformanceEntry>,
+    partial: Partial<CompetitionEntry>,
   ) => void;
 }
 
@@ -74,19 +74,19 @@ type PendingMap<T> = Record<string, PendingEntry<T>>;
 // *ServerVersionsRef caches and read at flush time. Migrations remain
 // required to be idempotent (see migrations/types.ts) - the cache
 // just bounds how often we exercise that contract.
-function firestoreSetWellnessEntry(
+function firestoreSetHealthEntry(
   uid: string,
   date: string,
-  partial: Partial<WellnessEntry>,
+  partial: Partial<HealthEntry>,
   knownServerVersion: number | undefined,
 ): Promise<void> {
-  const ref = doc(db, "users", uid, "wellnessEntries", date);
+  const ref = doc(db, "users", uid, "healthEntries", date);
   const fields: Record<string, unknown> = { ...partial, date };
   if (
     knownServerVersion === undefined ||
-    knownServerVersion < CURRENT_WELLNESS_ENTRY_VERSION
+    knownServerVersion < CURRENT_HEALTH_ENTRY_VERSION
   ) {
-    fields.version = CURRENT_WELLNESS_ENTRY_VERSION;
+    fields.version = CURRENT_HEALTH_ENTRY_VERSION;
   }
   // Creation path only: expand a partial availability payload so all
   // four sub-keys are written with explicit null defaults. Without
@@ -94,16 +94,16 @@ function firestoreSetWellnessEntry(
   // on a brand-new doc leaves the other sub-fields absent on disk and
   // read back as `undefined`, which silently violates the typed-null
   // contract that availabilityFilled (`!== null` checks) depends on -
-  // and flips the wellness chip to "all" prematurely. Skipped on the
+  // and flips the health chip to "all" prematurely. Skipped on the
   // upgrade path because the existing doc may already have non-null
   // sub-key values that merge:true would overwrite with null.
   if (
     knownServerVersion === undefined &&
     partial.availability !== undefined
   ) {
-    // Spread is cast to a deeply-partial because reduceWellnessPartial
+    // Spread is cast to a deeply-partial because reduceHealthPartial
     // can produce one at runtime (it returns a `Record<string, unknown>`
-    // cast back to the strict type). The TS Partial<WellnessEntry> is
+    // cast back to the strict type). The TS Partial<HealthEntry> is
     // shallow, so partial.availability's static type still has all four
     // keys - widening here is what lets the null defaults survive.
     fields.availability = {
@@ -111,32 +111,32 @@ function firestoreSetWellnessEntry(
       practiceParticipation: null,
       gameHeld: null,
       gameParticipation: null,
-      ...(partial.availability as Partial<WellnessEntry["availability"]>),
+      ...(partial.availability as Partial<HealthEntry["availability"]>),
     };
   }
   return setDoc(ref, fields, { merge: true });
 }
 
-function firestoreSetPerformanceEntry(
+function firestoreSetCompetitionEntry(
   uid: string,
   date: string,
-  partial: Partial<PerformanceEntry>,
+  partial: Partial<CompetitionEntry>,
   knownServerVersion: number | undefined,
 ): Promise<void> {
-  const ref = doc(db, "users", uid, "performanceEntries", date);
+  const ref = doc(db, "users", uid, "competitionEntries", date);
   const fields: Record<string, unknown> = { ...partial, date };
   if (
     knownServerVersion === undefined ||
-    knownServerVersion < CURRENT_PERFORMANCE_ENTRY_VERSION
+    knownServerVersion < CURRENT_COMPETITION_ENTRY_VERSION
   ) {
-    fields.version = CURRENT_PERFORMANCE_ENTRY_VERSION;
+    fields.version = CURRENT_COMPETITION_ENTRY_VERSION;
   }
   return setDoc(ref, fields, { merge: true });
 }
 
 // One-level-deep equality. Reconciliation only needs to compare
 // primitives and flat objects whose keys we already enumerate
-// per-sub-key in the reducers (availability, performance.metrics).
+// per-sub-key in the reducers (availability, competition.metrics).
 // `{ x: undefined }` vs `{}` is intentionally NOT equal here.
 function deepEqual(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
@@ -157,12 +157,12 @@ function deepEqual(a: unknown, b: unknown): boolean {
   return true;
 }
 
-function reduceWellnessPartial(
-  partial: Partial<WellnessEntry>,
-  server: WellnessEntry,
-): Partial<WellnessEntry> | null {
-  const remaining: Partial<WellnessEntry> = {};
-  for (const key of Object.keys(partial) as (keyof WellnessEntry)[]) {
+function reduceHealthPartial(
+  partial: Partial<HealthEntry>,
+  server: HealthEntry,
+): Partial<HealthEntry> | null {
+  const remaining: Partial<HealthEntry> = {};
+  for (const key of Object.keys(partial) as (keyof HealthEntry)[]) {
     if (key === "availability") {
       // Reduce per sub-key so a partial availability payload (e.g. just
       // { practiceHeld: true }) reconciles correctly against the full
@@ -180,10 +180,10 @@ function reduceWellnessPartial(
       }
       if (Object.keys(remainingAvail).length > 0) {
         remaining.availability =
-          remainingAvail as WellnessEntry["availability"];
+          remainingAvail as HealthEntry["availability"];
       }
     } else if (key === "customMetrics") {
-      // Same shape as the performance.metrics reducer: iterate pending
+      // Same shape as the competition.metrics reducer: iterate pending
       // keys only and drop ones the server has confirmed. Without this
       // special case the one-level deepEqual would short-circuit on
       // the mismatched key count whenever the server entry already has
@@ -209,12 +209,12 @@ function reduceWellnessPartial(
   return Object.keys(remaining).length > 0 ? remaining : null;
 }
 
-function reducePerformancePartial(
-  partial: Partial<PerformanceEntry>,
-  server: PerformanceEntry,
-): Partial<PerformanceEntry> | null {
-  const remaining: Partial<PerformanceEntry> = {};
-  for (const key of Object.keys(partial) as (keyof PerformanceEntry)[]) {
+function reduceCompetitionPartial(
+  partial: Partial<CompetitionEntry>,
+  server: CompetitionEntry,
+): Partial<CompetitionEntry> | null {
+  const remaining: Partial<CompetitionEntry> = {};
+  for (const key of Object.keys(partial) as (keyof CompetitionEntry)[]) {
     if (key === "metrics") {
       const pendingMetrics = partial.metrics ?? {};
       const serverMetrics = server.metrics ?? {};
@@ -238,18 +238,18 @@ function reducePerformancePartial(
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [wellnessServer, setWellnessServer] = useState<
-    DataLoadState<WellnessEntry>
+  const [healthServer, setHealthServer] = useState<
+    DataLoadState<HealthEntry>
   >({ status: "loading" });
-  const [performanceServer, setPerformanceServer] = useState<
-    DataLoadState<PerformanceEntry>
+  const [competitionServer, setCompetitionServer] = useState<
+    DataLoadState<CompetitionEntry>
   >({ status: "loading" });
 
-  const [wellnessPending, setWellnessPending] = useState<
-    PendingMap<WellnessEntry>
+  const [healthPending, setHealthPending] = useState<
+    PendingMap<HealthEntry>
   >({});
-  const [performancePending, setPerformancePending] = useState<
-    PendingMap<PerformanceEntry>
+  const [competitionPending, setCompetitionPending] = useState<
+    PendingMap<CompetitionEntry>
   >({});
 
   // The lower bound (inclusive) for date-string filtering on both
@@ -268,68 +268,68 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // INLINE inside every setState updater that touches pending. The
   // ref write is idempotent (same `next` value as the return), so it
   // is safe under Strict Mode / concurrent re-invocation.
-  const wellnessPendingRef = useRef<PendingMap<WellnessEntry>>({});
-  const performancePendingRef = useRef<PendingMap<PerformanceEntry>>({});
+  const healthPendingRef = useRef<PendingMap<HealthEntry>>({});
+  const competitionPendingRef = useRef<PendingMap<CompetitionEntry>>({});
 
   // Per-date debounce timers. One timer per date so navigating dates
   // mid-typing flushes each date independently.
-  const wellnessTimersRef = useRef<Map<string, number>>(new Map());
-  const performanceTimersRef = useRef<Map<string, number>>(new Map());
+  const healthTimersRef = useRef<Map<string, number>>(new Map());
+  const competitionTimersRef = useRef<Map<string, number>>(new Map());
 
   // Pre-migration `version` per date, captured from each onSnapshot
   // tick. Read at flush time so we can skip the version stamp when the
   // server is already at or ahead of ours (see firestoreSet* above).
   // Cleared on user change.
-  const wellnessServerVersionsRef = useRef<Map<string, number>>(new Map());
-  const performanceServerVersionsRef = useRef<Map<string, number>>(
+  const healthServerVersionsRef = useRef<Map<string, number>>(new Map());
+  const competitionServerVersionsRef = useRef<Map<string, number>>(
     new Map(),
   );
 
-  const flushWellnessDate = useCallback((date: string) => {
-    const entry = wellnessPendingRef.current[date];
-    const t = wellnessTimersRef.current.get(date);
+  const flushHealthDate = useCallback((date: string) => {
+    const entry = healthPendingRef.current[date];
+    const t = healthTimersRef.current.get(date);
     if (t !== undefined) {
       window.clearTimeout(t);
-      wellnessTimersRef.current.delete(date);
+      healthTimersRef.current.delete(date);
     }
     if (!entry || Object.keys(entry.partial).length === 0) return;
-    const knownServerVersion = wellnessServerVersionsRef.current.get(date);
+    const knownServerVersion = healthServerVersionsRef.current.get(date);
     // Pending is NOT dropped here. Reconciliation (driven by
     // onSnapshot) is the sole authority that removes pending entries
     // once the server confirms them. This preserves optimistic state
     // across the round-trip, and across transient setDoc failures.
-    firestoreSetWellnessEntry(
+    firestoreSetHealthEntry(
       entry.uid,
       date,
       entry.partial,
       knownServerVersion,
     ).catch((err) => {
       logError(err, {
-        stage: "dataContext.wellness.flush",
+        stage: "dataContext.health.flush",
         uid: entry.uid,
         date,
       });
     });
   }, []);
 
-  const flushPerformanceDate = useCallback((date: string) => {
-    const entry = performancePendingRef.current[date];
-    const t = performanceTimersRef.current.get(date);
+  const flushCompetitionDate = useCallback((date: string) => {
+    const entry = competitionPendingRef.current[date];
+    const t = competitionTimersRef.current.get(date);
     if (t !== undefined) {
       window.clearTimeout(t);
-      performanceTimersRef.current.delete(date);
+      competitionTimersRef.current.delete(date);
     }
     if (!entry || Object.keys(entry.partial).length === 0) return;
     const knownServerVersion =
-      performanceServerVersionsRef.current.get(date);
-    firestoreSetPerformanceEntry(
+      competitionServerVersionsRef.current.get(date);
+    firestoreSetCompetitionEntry(
       entry.uid,
       date,
       entry.partial,
       knownServerVersion,
     ).catch((err) => {
       logError(err, {
-        stage: "dataContext.performance.flush",
+        stage: "dataContext.competition.flush",
         uid: entry.uid,
         date,
       });
@@ -344,18 +344,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // see nothing to discard.
   useEffect(() => {
     return () => {
-      for (const date of Array.from(wellnessTimersRef.current.keys())) {
-        flushWellnessDate(date);
+      for (const date of Array.from(healthTimersRef.current.keys())) {
+        flushHealthDate(date);
       }
-      for (const date of Array.from(performanceTimersRef.current.keys())) {
-        flushPerformanceDate(date);
+      for (const date of Array.from(competitionTimersRef.current.keys())) {
+        flushCompetitionDate(date);
       }
-      wellnessTimersRef.current.clear();
-      performanceTimersRef.current.clear();
-      wellnessPendingRef.current = {};
-      performancePendingRef.current = {};
+      healthTimersRef.current.clear();
+      competitionTimersRef.current.clear();
+      healthPendingRef.current = {};
+      competitionPendingRef.current = {};
     };
-  }, [flushWellnessDate, flushPerformanceDate]);
+  }, [flushHealthDate, flushCompetitionDate]);
 
   // Clear the pre-migration version cache when the signed-in user
   // changes (the next user's docs are unrelated). Declared AFTER the
@@ -366,12 +366,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // uid don't wipe the cache and force re-stamping.
   useEffect(() => {
     return () => {
-      wellnessServerVersionsRef.current.clear();
-      performanceServerVersionsRef.current.clear();
+      healthServerVersionsRef.current.clear();
+      competitionServerVersionsRef.current.clear();
     };
   }, [user?.uid]);
 
-  // Wellness collection subscription. Cleanup discards pending state
+  // Health collection subscription. Cleanup discards pending state
   // - sign-out / user-switch must NOT flush (prior session is gone,
   // writes would be rejected by rules; optimistic state is
   // intentionally lost). On provider unmount, the unmount-flush
@@ -382,11 +382,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // this effect re-runs only on user change.
   useEffect(() => {
     if (!user) {
-      setWellnessServer({ status: "loading" });
+      setHealthServer({ status: "loading" });
       return;
     }
-    setWellnessServer({ status: "loading" });
-    const ref = collection(db, "users", user.uid, "wellnessEntries");
+    setHealthServer({ status: "loading" });
+    const ref = collection(db, "users", user.uid, "healthEntries");
     const q = query(ref, where("date", ">=", floorISO));
     const unsubscribe = onSnapshot(
       q,
@@ -403,7 +403,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // the rare offline-first-snapshot case where no server
         // snapshot has landed yet.
         if (snap.metadata?.hasPendingWrites) return;
-        const entries: WellnessEntry[] = [];
+        const entries: HealthEntry[] = [];
         snap.forEach((docSnap) => {
           const raw = docSnap.data() as Record<string, unknown>;
           // Cache pre-migration version BEFORE attempting migration so
@@ -417,13 +417,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
               ? (raw.version as number)
               : null;
           if (rawDate !== null && rawVersion !== null) {
-            wellnessServerVersionsRef.current.set(rawDate, rawVersion);
+            healthServerVersionsRef.current.set(rawDate, rawVersion);
           }
           try {
             const migrated = migrateDocument(
-              "wellnessEntry",
+              "healthEntry",
               raw,
-            ) as unknown as WellnessEntry;
+            ) as unknown as HealthEntry;
             entries.push(migrated);
           } catch (err) {
             logError(err, {
@@ -432,21 +432,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
             });
           }
         });
-        setWellnessServer({ status: "loaded", entries });
+        setHealthServer({ status: "loaded", entries });
         // Field-level reconciliation against the snapshot. Build the
         // date->server map ONCE, outside the setState updater.
-        const serverByDate = new Map<string, WellnessEntry>();
+        const serverByDate = new Map<string, HealthEntry>();
         for (const e of entries) serverByDate.set(e.date, e);
-        setWellnessPending((prev) => {
+        setHealthPending((prev) => {
           let changed = false;
-          const next: PendingMap<WellnessEntry> = {};
+          const next: PendingMap<HealthEntry> = {};
           for (const [date, entry] of Object.entries(prev)) {
             const server = serverByDate.get(date);
             if (!server) {
               next[date] = entry;
               continue;
             }
-            const reduced = reduceWellnessPartial(entry.partial, server);
+            const reduced = reduceHealthPartial(entry.partial, server);
             if (reduced === null) {
               changed = true;
               continue;
@@ -458,16 +458,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
               next[date] = entry;
             }
           }
-          if (changed) wellnessPendingRef.current = next;
+          if (changed) healthPendingRef.current = next;
           return changed ? next : prev;
         });
       },
       (err) => {
         logError(err, {
-          stage: "dataContext.wellness.onSnapshot",
+          stage: "dataContext.health.onSnapshot",
           uid: user.uid,
         });
-        setWellnessServer({ status: "loaded", entries: [] });
+        setHealthServer({ status: "loaded", entries: [] });
       },
     );
     return () => {
@@ -475,30 +475,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Clear pending+timers on user change. On unmount this is a
       // no-op because the unmount effect (declared first) runs its
       // cleanup first, flushes, and leaves these empty.
-      for (const t of wellnessTimersRef.current.values()) {
+      for (const t of healthTimersRef.current.values()) {
         window.clearTimeout(t);
       }
-      wellnessTimersRef.current.clear();
-      wellnessPendingRef.current = {};
-      setWellnessPending({});
+      healthTimersRef.current.clear();
+      healthPendingRef.current = {};
+      setHealthPending({});
     };
   }, [user, floorISO]);
 
-  // Performance collection subscription. Same shape as wellness.
+  // Competition collection subscription. Same shape as health.
   useEffect(() => {
     if (!user) {
-      setPerformanceServer({ status: "loading" });
+      setCompetitionServer({ status: "loading" });
       return;
     }
-    setPerformanceServer({ status: "loading" });
-    const ref = collection(db, "users", user.uid, "performanceEntries");
+    setCompetitionServer({ status: "loading" });
+    const ref = collection(db, "users", user.uid, "competitionEntries");
     const q = query(ref, where("date", ">=", floorISO));
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
-        // See wellness onSnapshot for the hasPendingWrites rationale.
+        // See health onSnapshot for the hasPendingWrites rationale.
         if (snap.metadata?.hasPendingWrites) return;
-        const entries: PerformanceEntry[] = [];
+        const entries: CompetitionEntry[] = [];
         snap.forEach((docSnap) => {
           const raw = docSnap.data() as Record<string, unknown>;
           const rawDate =
@@ -508,16 +508,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
               ? (raw.version as number)
               : null;
           if (rawDate !== null && rawVersion !== null) {
-            performanceServerVersionsRef.current.set(
+            competitionServerVersionsRef.current.set(
               rawDate,
               rawVersion,
             );
           }
           try {
             const migrated = migrateDocument(
-              "performanceEntry",
+              "competitionEntry",
               raw,
-            ) as unknown as PerformanceEntry;
+            ) as unknown as CompetitionEntry;
             entries.push(migrated);
           } catch (err) {
             logError(err, {
@@ -526,19 +526,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
             });
           }
         });
-        setPerformanceServer({ status: "loaded", entries });
-        const serverByDate = new Map<string, PerformanceEntry>();
+        setCompetitionServer({ status: "loaded", entries });
+        const serverByDate = new Map<string, CompetitionEntry>();
         for (const e of entries) serverByDate.set(e.date, e);
-        setPerformancePending((prev) => {
+        setCompetitionPending((prev) => {
           let changed = false;
-          const next: PendingMap<PerformanceEntry> = {};
+          const next: PendingMap<CompetitionEntry> = {};
           for (const [date, entry] of Object.entries(prev)) {
             const server = serverByDate.get(date);
             if (!server) {
               next[date] = entry;
               continue;
             }
-            const reduced = reducePerformancePartial(
+            const reduced = reduceCompetitionPartial(
               entry.partial,
               server,
             );
@@ -553,31 +553,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
               next[date] = entry;
             }
           }
-          if (changed) performancePendingRef.current = next;
+          if (changed) competitionPendingRef.current = next;
           return changed ? next : prev;
         });
       },
       (err) => {
         logError(err, {
-          stage: "dataContext.performance.onSnapshot",
+          stage: "dataContext.competition.onSnapshot",
           uid: user.uid,
         });
-        setPerformanceServer({ status: "loaded", entries: [] });
+        setCompetitionServer({ status: "loaded", entries: [] });
       },
     );
     return () => {
       unsubscribe();
-      for (const t of performanceTimersRef.current.values()) {
+      for (const t of competitionTimersRef.current.values()) {
         window.clearTimeout(t);
       }
-      performanceTimersRef.current.clear();
-      performancePendingRef.current = {};
-      setPerformancePending({});
+      competitionTimersRef.current.clear();
+      competitionPendingRef.current = {};
+      setCompetitionPending({});
     };
   }, [user, floorISO]);
 
-  const setWellnessEntry = useCallback(
-    (date: string, partial: Partial<WellnessEntry>) => {
+  const setHealthEntry = useCallback(
+    (date: string, partial: Partial<HealthEntry>) => {
       if (!user) return;
       // Reject malformed, future, or out-of-window dates. The listener's
       // floorISO filter (see useEffect above) means a write below the
@@ -585,8 +585,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // come back via onSnapshot - reconciliation would never drop it.
       // daysAgoFromISO returns NaN for bad format and future dates.
       if (Number.isNaN(daysAgoFromISO(date)) || date < floorISO) {
-        logError(new Error("setWellnessEntry: date out of window"), {
-          stage: "dataContext.wellness.setEntry",
+        logError(new Error("setHealthEntry: date out of window"), {
+          stage: "dataContext.health.setEntry",
           uid: user.uid,
           date,
           floorISO,
@@ -594,16 +594,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return;
       }
       const uid = user.uid;
-      setWellnessPending((prev) => {
+      setHealthPending((prev) => {
         const existingPartial = prev[date]?.partial ?? {};
-        const merged: Partial<WellnessEntry> = {
+        const merged: Partial<HealthEntry> = {
           ...existingPartial,
           ...partial,
         };
         // Deep-merge availability sub-keys so accumulating partial
         // availability writes within the debounce window preserve
         // earlier sub-keys instead of clobbering them. Mirrors the
-        // metrics merge in setPerformanceEntry.
+        // metrics merge in setCompetitionEntry.
         if (
           existingPartial.availability !== undefined ||
           partial.availability !== undefined
@@ -611,7 +611,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           merged.availability = {
             ...(existingPartial.availability ?? {}),
             ...(partial.availability ?? {}),
-          } as WellnessEntry["availability"];
+          } as HealthEntry["availability"];
         }
         // Deep-merge customMetrics for the same reason as availability —
         // accumulating writes across different custom-metric inputs
@@ -625,31 +625,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...(partial.customMetrics ?? {}),
           };
         }
-        const next: PendingMap<WellnessEntry> = {
+        const next: PendingMap<HealthEntry> = {
           ...prev,
           [date]: { uid, partial: merged },
         };
-        wellnessPendingRef.current = next;
+        healthPendingRef.current = next;
         return next;
       });
-      const existing = wellnessTimersRef.current.get(date);
+      const existing = healthTimersRef.current.get(date);
       if (existing !== undefined) window.clearTimeout(existing);
       const t = window.setTimeout(
-        () => flushWellnessDate(date),
+        () => flushHealthDate(date),
         DEBOUNCE_MS,
       );
-      wellnessTimersRef.current.set(date, t);
+      healthTimersRef.current.set(date, t);
     },
-    [user, floorISO, flushWellnessDate],
+    [user, floorISO, flushHealthDate],
   );
 
-  const setPerformanceEntry = useCallback(
-    (date: string, partial: Partial<PerformanceEntry>) => {
+  const setCompetitionEntry = useCallback(
+    (date: string, partial: Partial<CompetitionEntry>) => {
       if (!user) return;
-      // See setWellnessEntry for rationale.
+      // See setHealthEntry for rationale.
       if (Number.isNaN(daysAgoFromISO(date)) || date < floorISO) {
-        logError(new Error("setPerformanceEntry: date out of window"), {
-          stage: "dataContext.performance.setEntry",
+        logError(new Error("setCompetitionEntry: date out of window"), {
+          stage: "dataContext.competition.setEntry",
           uid: user.uid,
           date,
           floorISO,
@@ -657,9 +657,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return;
       }
       const uid = user.uid;
-      setPerformancePending((prev) => {
+      setCompetitionPending((prev) => {
         const existingPartial = prev[date]?.partial ?? {};
-        const merged: Partial<PerformanceEntry> = {
+        const merged: Partial<CompetitionEntry> = {
           ...existingPartial,
           ...partial,
         };
@@ -675,35 +675,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...(partial.metrics ?? {}),
           };
         }
-        const next: PendingMap<PerformanceEntry> = {
+        const next: PendingMap<CompetitionEntry> = {
           ...prev,
           [date]: { uid, partial: merged },
         };
-        performancePendingRef.current = next;
+        competitionPendingRef.current = next;
         return next;
       });
-      const existing = performanceTimersRef.current.get(date);
+      const existing = competitionTimersRef.current.get(date);
       if (existing !== undefined) window.clearTimeout(existing);
       const t = window.setTimeout(
-        () => flushPerformanceDate(date),
+        () => flushCompetitionDate(date),
         DEBOUNCE_MS,
       );
-      performanceTimersRef.current.set(date, t);
+      competitionTimersRef.current.set(date, t);
     },
-    [user, floorISO, flushPerformanceDate],
+    [user, floorISO, flushCompetitionDate],
   );
 
-  const wellness = useMemo<DataLoadState<WellnessEntry>>(() => {
-    const byDate = new Map<string, WellnessEntry>();
-    if (wellnessServer.status === "loaded") {
-      for (const e of wellnessServer.entries) byDate.set(e.date, e);
+  const health = useMemo<DataLoadState<HealthEntry>>(() => {
+    const byDate = new Map<string, HealthEntry>();
+    if (healthServer.status === "loaded") {
+      for (const e of healthServer.entries) byDate.set(e.date, e);
     }
-    for (const [date, entry] of Object.entries(wellnessPending)) {
-      const base = byDate.get(date) ?? emptyWellnessEntry(date);
+    for (const [date, entry] of Object.entries(healthPending)) {
+      const base = byDate.get(date) ?? emptyHealthEntry(date);
       // Deep-merge availability sub-keys: a naive {...base, ...partial}
       // would clobber base.availability with a sparse partial (e.g. a
       // pending { practiceHeld: true } would wipe gameHeld/gameParticipation
-      // off the rendered entry). Same shape as the performance.metrics
+      // off the rendered entry). Same shape as the competition.metrics
       // merge below.
       byDate.set(date, {
         ...base,
@@ -714,19 +714,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         },
       });
     }
-    if (wellnessServer.status !== "loaded" && byDate.size === 0) {
-      return wellnessServer;
+    if (healthServer.status !== "loaded" && byDate.size === 0) {
+      return healthServer;
     }
     return { status: "loaded", entries: Array.from(byDate.values()) };
-  }, [wellnessServer, wellnessPending]);
+  }, [healthServer, healthPending]);
 
-  const performance = useMemo<DataLoadState<PerformanceEntry>>(() => {
-    const byDate = new Map<string, PerformanceEntry>();
-    if (performanceServer.status === "loaded") {
-      for (const e of performanceServer.entries) byDate.set(e.date, e);
+  const competition = useMemo<DataLoadState<CompetitionEntry>>(() => {
+    const byDate = new Map<string, CompetitionEntry>();
+    if (competitionServer.status === "loaded") {
+      for (const e of competitionServer.entries) byDate.set(e.date, e);
     }
-    for (const [date, entry] of Object.entries(performancePending)) {
-      const base = byDate.get(date) ?? emptyPerformanceEntry(date);
+    for (const [date, entry] of Object.entries(competitionPending)) {
+      const base = byDate.get(date) ?? emptyCompetitionEntry(date);
       // Deep-merge metrics: a naive {...base, ...partial} would
       // clobber base.metrics with the sparse partial.metrics, wiping
       // out established metrics for adjacent fields the user is not
@@ -740,20 +740,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
         },
       });
     }
-    if (performanceServer.status !== "loaded" && byDate.size === 0) {
-      return performanceServer;
+    if (competitionServer.status !== "loaded" && byDate.size === 0) {
+      return competitionServer;
     }
     return { status: "loaded", entries: Array.from(byDate.values()) };
-  }, [performanceServer, performancePending]);
+  }, [competitionServer, competitionPending]);
 
   const value = useMemo<DataContextValue>(
     () => ({
-      wellness,
-      performance,
-      setWellnessEntry,
-      setPerformanceEntry,
+      health,
+      competition,
+      setHealthEntry,
+      setCompetitionEntry,
     }),
-    [wellness, performance, setWellnessEntry, setPerformanceEntry],
+    [health, competition, setHealthEntry, setCompetitionEntry],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
@@ -765,10 +765,10 @@ export function useData(): DataContextValue {
   return ctx;
 }
 
-export function useWellnessData(): DataLoadState<WellnessEntry> {
-  return useData().wellness;
+export function useHealthData(): DataLoadState<HealthEntry> {
+  return useData().health;
 }
 
-export function usePerformanceData(): DataLoadState<PerformanceEntry> {
-  return useData().performance;
+export function useCompetitionData(): DataLoadState<CompetitionEntry> {
+  return useData().competition;
 }

@@ -4,7 +4,7 @@ import { render, fireEvent, act, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
-import type { DataLoadState, WellnessEntry } from "../../types/data";
+import type { DataLoadState, HealthEntry } from "../../types/data";
 import {
   firestoreMockFactory,
   latestSub,
@@ -24,7 +24,7 @@ const PROFILE: UserProfile = {
   gender: "male",
   athleteType: "endurance",
   competitionTerm: "game",
-  trackedWellnessMetrics: [
+  trackedHealthMetrics: [
     "hydration",
     "sleepTime",
     "sleepEfficiency",
@@ -32,7 +32,7 @@ const PROFILE: UserProfile = {
     "leanMass",
     "availability",
   ],
-  trackedPerformanceMetrics: [],
+  trackedCompetitionMetrics: [],
   profileComplete: true,
   trackingSetupComplete: true,
 };
@@ -46,8 +46,8 @@ const PROFILE: UserProfile = {
 const ctx = vi.hoisted(() => ({
   user: { uid: "u1" } as { uid: string } | null,
   loadState: { status: "loaded" } as ProfileLoadState,
-  wellness: { status: "loaded", entries: [] } as DataLoadState<WellnessEntry>,
-  setWellnessEntryMock: vi.fn() as (...args: unknown[]) => void,
+  health: { status: "loaded", entries: [] } as DataLoadState<HealthEntry>,
+  setHealthEntryMock: vi.fn() as (...args: unknown[]) => void,
   useLightweightMocks: true,
 }));
 
@@ -55,8 +55,8 @@ const ctx = vi.hoisted(() => ({
 // DataContext.test.tsx.
 const state = vi.hoisted<FirestoreMockState>(() => ({
   setDoc: vi.fn(async () => undefined),
-  wellnessSubs: [],
-  performanceSubs: [],
+  healthSubs: [],
+  competitionSubs: [],
   user: { current: null },
 }));
 
@@ -83,8 +83,8 @@ vi.mock("../../contexts/DataContext", async () => {
     useData: () => {
       if (ctx.useLightweightMocks) {
         return {
-          wellness: ctx.wellness,
-          setWellnessEntry: ctx.setWellnessEntryMock,
+          health: ctx.health,
+          setHealthEntry: ctx.setHealthEntryMock,
         } as unknown as ReturnType<typeof actual.useData>;
       }
       return actual.useData();
@@ -96,7 +96,7 @@ vi.mock("firebase/firestore", () => firestoreMockFactory(state));
 vi.mock("../../firebase", () => ({ db: {} }));
 vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
-import { WellnessLog } from "./WellnessLog";
+import { HealthLog } from "./HealthLog";
 import { DataProvider } from "../../contexts/DataContext";
 import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 
@@ -118,7 +118,7 @@ function renderAt(initialPath: string) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route path="/wellness" element={<WellnessLog />} />
+        <Route path="/health" element={<HealthLog />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -129,7 +129,7 @@ function renderWithProvider(initialPath: string) {
     <DataProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/wellness" element={<WellnessLog />} />
+          <Route path="/health" element={<HealthLog />} />
         </Routes>
       </MemoryRouter>
     </DataProvider>,
@@ -141,7 +141,7 @@ beforeEach(() => {
   ctx.useLightweightMocks = true;
   ctx.user = { uid: "u1" };
   ctx.loadState = { status: "loaded", profile: PROFILE };
-  ctx.wellness = { status: "loaded", entries: [] };
+  ctx.health = { status: "loaded", entries: [] };
   resetFirestoreState(state);
 });
 
@@ -149,54 +149,54 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("WellnessLog route + redirect", () => {
-  it("malformed ?date= falls back to /wellness", () => {
+describe("HealthLog route + redirect", () => {
+  it("malformed ?date= falls back to /health", () => {
     render(
-      <MemoryRouter initialEntries={["/wellness?date=NOT-A-DATE"]}>
+      <MemoryRouter initialEntries={["/health?date=NOT-A-DATE"]}>
         <Routes>
-          <Route path="/wellness" element={<WellnessLog />} />
+          <Route path="/health" element={<HealthLog />} />
         </Routes>
       </MemoryRouter>,
     );
     expect(document.querySelectorAll("table").length).toBeGreaterThan(0);
   });
 
-  it("?date= outside [0, HISTORY] falls back to /wellness", () => {
+  it("?date= outside [0, HISTORY] falls back to /health", () => {
     render(
-      <MemoryRouter initialEntries={["/wellness?date=2099-01-01"]}>
+      <MemoryRouter initialEntries={["/health?date=2099-01-01"]}>
         <Routes>
-          <Route path="/wellness" element={<WellnessLog />} />
+          <Route path="/health" element={<HealthLog />} />
         </Routes>
       </MemoryRouter>,
     );
     expect(document.querySelectorAll("table").length).toBeGreaterThan(0);
   });
 
-  it("typing into a numeric metric calls setWellnessEntry per keystroke", () => {
-    renderAt("/wellness");
+  it("typing into a numeric metric calls setHealthEntry per keystroke", () => {
+    renderAt("/health");
     setSleepTime("8");
-    expect(ctx.setWellnessEntryMock).toHaveBeenCalledWith(
+    expect(ctx.setHealthEntryMock).toHaveBeenCalledWith(
       TODAY_ISO,
       expect.objectContaining({ sleepTime: 8 }),
     );
     setProtein("1.5");
-    expect(ctx.setWellnessEntryMock).toHaveBeenCalledWith(
+    expect(ctx.setHealthEntryMock).toHaveBeenCalledWith(
       TODAY_ISO,
       expect.objectContaining({ protein: 1.5 }),
     );
     // The component no longer debounces; debounce lives in DataContext.
-    expect(ctx.setWellnessEntryMock).toHaveBeenCalledTimes(2);
+    expect(ctx.setHealthEntryMock).toHaveBeenCalledTimes(2);
   });
 });
 
-describe("WellnessLog chip reactivity to tracked-metric changes", () => {
-  it("chip recomputes when trackedWellnessMetrics changes via UserContext", () => {
+describe("HealthLog chip reactivity to tracked-metric changes", () => {
+  it("chip recomputes when trackedHealthMetrics changes via UserContext", () => {
     // Tracking only hydration, with hydration filled in the entry -> "all".
     ctx.loadState = {
       status: "loaded",
-      profile: { ...PROFILE, trackedWellnessMetrics: ["hydration"] },
+      profile: { ...PROFILE, trackedHealthMetrics: ["hydration"] },
     };
-    ctx.wellness = {
+    ctx.health = {
       status: "loaded",
       entries: [
         {
@@ -216,7 +216,7 @@ describe("WellnessLog chip reactivity to tracked-metric changes", () => {
         },
       ],
     };
-    const { rerender } = renderAt("/wellness");
+    const { rerender } = renderAt("/health");
     expect(
       document
         .querySelector("[data-chip-state]")
@@ -229,13 +229,13 @@ describe("WellnessLog chip reactivity to tracked-metric changes", () => {
       status: "loaded",
       profile: {
         ...PROFILE,
-        trackedWellnessMetrics: ["hydration", "sleepTime"],
+        trackedHealthMetrics: ["hydration", "sleepTime"],
       },
     };
     rerender(
-      <MemoryRouter initialEntries={["/wellness"]}>
+      <MemoryRouter initialEntries={["/health"]}>
         <Routes>
-          <Route path="/wellness" element={<WellnessLog />} />
+          <Route path="/health" element={<HealthLog />} />
         </Routes>
       </MemoryRouter>,
     );
@@ -247,7 +247,7 @@ describe("WellnessLog chip reactivity to tracked-metric changes", () => {
   });
 });
 
-describe("WellnessLog optimistic state via real DataContext", () => {
+describe("HealthLog optimistic state via real DataContext", () => {
   beforeEach(() => {
     ctx.useLightweightMocks = false;
     state.user.current = { uid: "u1" };
@@ -255,11 +255,11 @@ describe("WellnessLog optimistic state via real DataContext", () => {
 
   it("chip updates per keystroke (no 500ms lag)", async () => {
     vi.useFakeTimers();
-    renderWithProvider("/wellness");
-    // Drive the initial wellness snapshot to "loaded" with no entries.
+    renderWithProvider("/health");
+    // Drive the initial health snapshot to "loaded" with no entries.
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([]);
-      latestSub(state.performanceSubs)?.emit([]);
+      latestSub(state.healthSubs)?.emit([]);
+      latestSub(state.competitionSubs)?.emit([]);
     });
     // Initial chip is `none` (no metrics filled).
     const dateNavBefore = document.querySelector("[data-chip-state]");
@@ -278,10 +278,10 @@ describe("WellnessLog optimistic state via real DataContext", () => {
   });
 
   it("MetricInputRow numeric input keeps trailing decimal", () => {
-    renderWithProvider("/wellness");
+    renderWithProvider("/health");
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([]);
-      latestSub(state.performanceSubs)?.emit([]);
+      latestSub(state.healthSubs)?.emit([]);
+      latestSub(state.competitionSubs)?.emit([]);
     });
     const sleep = inputForMetric("Total Sleep Time");
     fireEvent.change(sleep, { target: { value: "1." } });
@@ -289,10 +289,10 @@ describe("WellnessLog optimistic state via real DataContext", () => {
   });
 
   it("MetricInputRow numeric input keeps bare zero", () => {
-    renderWithProvider("/wellness");
+    renderWithProvider("/health");
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([]);
-      latestSub(state.performanceSubs)?.emit([]);
+      latestSub(state.healthSubs)?.emit([]);
+      latestSub(state.competitionSubs)?.emit([]);
     });
     const sleep = inputForMetric("Total Sleep Time");
     fireEvent.change(sleep, { target: { value: "0" } });
@@ -300,10 +300,10 @@ describe("WellnessLog optimistic state via real DataContext", () => {
   });
 
   it("MetricInputRow numeric input keeps leading zero", () => {
-    renderWithProvider("/wellness");
+    renderWithProvider("/health");
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([]);
-      latestSub(state.performanceSubs)?.emit([]);
+      latestSub(state.healthSubs)?.emit([]);
+      latestSub(state.competitionSubs)?.emit([]);
     });
     const sleep = inputForMetric("Total Sleep Time");
     fireEvent.change(sleep, { target: { value: "07" } });
@@ -311,18 +311,18 @@ describe("WellnessLog optimistic state via real DataContext", () => {
   });
 
   it("snapshot updates input value when parent prop changes (not mid-typing)", () => {
-    renderWithProvider("/wellness");
+    renderWithProvider("/health");
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([]);
-      latestSub(state.performanceSubs)?.emit([]);
+      latestSub(state.healthSubs)?.emit([]);
+      latestSub(state.competitionSubs)?.emit([]);
     });
     const sleep = inputForMetric("Total Sleep Time");
     expect(sleep.value).toBe("");
     // External edit (e.g., another tab) lands via the snapshot listener.
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([
+      latestSub(state.healthSubs)?.emit([
         {
-          path: `users/u1/wellnessEntries/${TODAY_ISO}`,
+          path: `users/u1/healthEntries/${TODAY_ISO}`,
           data: {
             version: 1,
             date: TODAY_ISO,

@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import { useNumericLocalString } from "./useNumericLocalString";
-import css from "./PerformanceMetricInput.module.css";
+import css from "./CompetitionMetricInput.module.css";
 
-export interface PerformanceMetricInputProps {
+export interface CompetitionMetricInputProps {
   metricId: string;
   labelledBy: string;
   value: string;
@@ -13,14 +13,14 @@ export interface PerformanceMetricInputProps {
   allowNegative?: boolean;
 }
 
-export function PerformanceMetricInput({
+export function CompetitionMetricInput({
   metricId,
   labelledBy,
   value,
   filled,
   onChange,
   allowNegative,
-}: PerformanceMetricInputProps) {
+}: CompetitionMetricInputProps) {
   const { local, handleChange, handleCompositionEnd } = useNumericLocalString(
     value,
     onChange,

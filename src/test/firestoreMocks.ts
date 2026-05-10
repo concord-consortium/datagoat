@@ -39,8 +39,8 @@ export interface MockUserHandle {
 
 export interface FirestoreMockState {
   setDoc: ReturnType<typeof vi.fn>;
-  wellnessSubs: MockSubscriptionHandle[];
-  performanceSubs: MockSubscriptionHandle[];
+  healthSubs: MockSubscriptionHandle[];
+  competitionSubs: MockSubscriptionHandle[];
   user: MockUserHandle;
 }
 
@@ -94,10 +94,10 @@ export function firestoreMockFactory(state: FirestoreMockState) {
         },
       };
       const segments = ref.path.split("/");
-      if (segments.includes("wellnessEntries")) {
-        state.wellnessSubs.push(handle);
-      } else if (segments.includes("performanceEntries")) {
-        state.performanceSubs.push(handle);
+      if (segments.includes("healthEntries")) {
+        state.healthSubs.push(handle);
+      } else if (segments.includes("competitionEntries")) {
+        state.competitionSubs.push(handle);
       }
       return () => {
         handle.active = false;
@@ -128,7 +128,7 @@ export function latestSub(
 // remain valid.
 export function resetFirestoreState(state: FirestoreMockState) {
   state.setDoc.mockClear();
-  state.wellnessSubs.length = 0;
-  state.performanceSubs.length = 0;
+  state.healthSubs.length = 0;
+  state.competitionSubs.length = 0;
   state.user.current = null;
 }

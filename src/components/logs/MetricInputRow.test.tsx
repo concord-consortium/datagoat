@@ -9,7 +9,7 @@ const HYDRATION: MetricDefinition = {
   id: "hydration",
   name: "Hydration",
   unit: "level",
-  type: "wellness",
+  type: "health",
   whoCollects: "",
   howCollected: "",
   description: "",

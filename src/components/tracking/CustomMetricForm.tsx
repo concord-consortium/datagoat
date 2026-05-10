@@ -4,8 +4,8 @@ import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { useData } from "../../contexts/DataContext";
 import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
-import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
-import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import { HEALTH_METRICS } from "../../metrics/healthMetrics";
+import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { TextField } from "../form/TextField";
 import { SelectField } from "../form/SelectField";
 import type {
@@ -18,7 +18,7 @@ import css from "./CustomMetricForm.module.css";
 const NAME_MAX = 128;
 
 // `radio` (Yes/No) input is reserved in the type system but not yet
-// wired through the wellness/performance log render + storage paths.
+// wired through the health/competition log render + storage paths.
 // Surfacing it in the form would let users create metrics that can't
 // actually be logged, so the option is hidden until the end-to-end
 // path lands. Re-add `{ value: "radio", label: "Yes / No" }` then.
@@ -27,7 +27,7 @@ const INPUT_TYPE_OPTIONS = [
 ];
 
 function isValidType(t: string | undefined): t is CustomMetricType {
-  return t === "wellness" || t === "performance";
+  return t === "health" || t === "competition";
 }
 
 interface DraftState {
@@ -63,7 +63,7 @@ const EMPTY_DRAFT: DraftState = {
 export function CustomMetricForm() {
   const { type, metricId } = useParams<{ type: string; metricId?: string }>();
   const { getMetric, loading } = useCustomMetrics();
-  const { wellness, performance } = useData();
+  const { health, competition } = useData();
 
   if (!isValidType(type)) {
     return <Navigate to="/setup/tracking" replace />;
@@ -89,12 +89,12 @@ export function CustomMetricForm() {
         />
       );
     }
-    // The body's edit-confirmation guard reads wellness/performance
+    // The body's edit-confirmation guard reads health/competition
     // entries to decide whether changing input type or unit needs user
     // confirmation. While those logs are still loading, the body would
     // fall back to empty arrays and silently skip the prompt — wait for
     // both to land so the prompt fires reliably.
-    if (wellness.status !== "loaded" || performance.status !== "loaded") {
+    if (health.status !== "loaded" || competition.status !== "loaded") {
       return <p className={css.loading}>Loading…</p>;
     }
     return <CustomMetricFormBody type={type} editing={editing} />;
@@ -111,12 +111,12 @@ interface BodyProps {
 function CustomMetricFormBody({ type, editing }: BodyProps) {
   const navigate = useNavigate();
   const { addMetric, updateMetric, deleteMetric } = useCustomMetrics();
-  const { wellness, performance } = useData();
+  const { health, competition } = useData();
   const { loadState, updateProfile, setTrackedMetrics } = useUser();
-  const wellnessEntries =
-    wellness.status === "loaded" ? wellness.entries : [];
-  const performanceEntries =
-    performance.status === "loaded" ? performance.entries : [];
+  const healthEntries =
+    health.status === "loaded" ? health.entries : [];
+  const competitionEntries =
+    competition.status === "loaded" ? competition.entries : [];
 
   const [draft, setDraft] = useState<DraftState>(() => {
     if (!editing) return EMPTY_DRAFT;
@@ -220,7 +220,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         const dataShapingChanged = inputTypeChanged || unitChanged;
         if (
           dataShapingChanged &&
-          hasEntriesForMetric(editing.id, wellnessEntries, performanceEntries)
+          hasEntriesForMetric(editing.id, healthEntries, competitionEntries)
         ) {
           const fields = [
             inputTypeChanged ? "input type" : null,
@@ -269,18 +269,18 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         const profile =
           loadState.status === "loaded" ? loadState.profile : null;
         const builtIns =
-          type === "wellness" ? WELLNESS_METRICS : PERFORMANCE_METRICS;
+          type === "health" ? HEALTH_METRICS : COMPETITION_METRICS;
         const currentIds =
-          (type === "wellness"
-            ? profile?.trackedWellnessMetrics
-            : profile?.trackedPerformanceMetrics) ??
+          (type === "health"
+            ? profile?.trackedHealthMetrics
+            : profile?.trackedCompetitionMetrics) ??
           builtIns.map((m) => m.id);
         const next = [...currentIds, def.id];
         if (!profile) {
           void updateProfile({
-            [type === "wellness"
-              ? "trackedWellnessMetrics"
-              : "trackedPerformanceMetrics"]: next,
+            [type === "health"
+              ? "trackedHealthMetrics"
+              : "trackedCompetitionMetrics"]: next,
           });
         } else {
           void setTrackedMetrics(type, next);

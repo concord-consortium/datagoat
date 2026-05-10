@@ -2,12 +2,12 @@ import { useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUser } from "../contexts/UserContext";
 import {
-  useWellnessData,
-  usePerformanceData,
+  useHealthData,
+  useCompetitionData,
 } from "../contexts/DataContext";
-import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
-import type { WellnessEntry, PerformanceEntry } from "../types/data";
+import { HEALTH_METRICS } from "../metrics/healthMetrics";
+import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
+import type { HealthEntry, CompetitionEntry } from "../types/data";
 import { logError } from "../utils/logError";
 import { useCodapApi, type DatasetRow } from "./codapApi";
 import { CodapPluginSignIn } from "./CodapPluginSignIn";
@@ -156,12 +156,12 @@ function CodapPluginNoProfile() {
 function CodapPluginAuthed() {
   const { status, error, sendDataset } = useCodapApi();
   const { loadState, retry } = useUser();
-  const wellness = useWellnessData();
-  const performance = usePerformanceData();
+  const health = useHealthData();
+  const competition = useCompetitionData();
 
   // Three "no usable profile" branches. Without these, the plugin
-  // would fall back to the registry default for trackedWellness /
-  // trackedPerformance and silently push wrong-by-default columns
+  // would fall back to the registry default for trackedHealth /
+  // trackedCompetition and silently push wrong-by-default columns
   // into CODAP - invisible to upstream observers.
   if (loadState.status === "error") {
     return <CodapPluginProfileError kind={loadState.kind} onRetry={retry} />;
@@ -175,11 +175,11 @@ function CodapPluginAuthed() {
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const [selected, setSelected] = useState<{
-    wellness: boolean;
-    performance: boolean;
+    health: boolean;
+    competition: boolean;
   }>({
-    wellness: true,
-    performance: true,
+    health: true,
+    competition: true,
   });
   const [sending, setSending] = useState(false);
   const [lastSent, setLastSent] = useState<string | undefined>(undefined);
@@ -190,16 +190,16 @@ function CodapPluginAuthed() {
   // defeating the upsert-by-date dedupe.
   const sendingRef = useRef(false);
 
-  const wellnessEntries =
-    wellness.status === "loaded" ? wellness.entries : [];
-  const performanceEntries =
-    performance.status === "loaded" ? performance.entries : [];
+  const healthEntries =
+    health.status === "loaded" ? health.entries : [];
+  const competitionEntries =
+    competition.status === "loaded" ? competition.entries : [];
 
-  const trackedWellness =
-    profile?.trackedWellnessMetrics ?? WELLNESS_METRICS.map((m) => m.id);
-  const trackedPerformance =
-    profile?.trackedPerformanceMetrics ??
-    PERFORMANCE_METRICS.map((m) => m.id);
+  const trackedHealth =
+    profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
+  const trackedCompetition =
+    profile?.trackedCompetitionMetrics ??
+    COMPETITION_METRICS.map((m) => m.id);
 
   async function handleSend() {
     if (sendingRef.current) return;
@@ -211,29 +211,29 @@ function CodapPluginAuthed() {
       // entries yet - CODAP needs the create-context + create-collection
       // + create-table calls to surface the table at all. Skipping on
       // empty data hides the table from the user.
-      if (selected.wellness) {
-        const attrs = ["date", ...trackedWellness];
-        const rows = wellnessEntries.map((e) =>
-          wellnessEntryToRow(e, trackedWellness),
+      if (selected.health) {
+        const attrs = ["date", ...trackedHealth];
+        const rows = healthEntries.map((e) =>
+          healthEntryToRow(e, trackedHealth),
         );
         await sendDataset({
-          name: "DataGOAT-Wellness",
-          title: "Health & Wellness",
-          collectionName: "Health-and-Wellness",
-          tableName: "Health-and-Wellness",
+          name: "DataGOAT-Health",
+          title: "Health & Performance",
+          collectionName: "Health",
+          tableName: "Health",
           attributes: attrs,
           rows,
         });
       }
-      if (selected.performance) {
-        const attrs = ["date", ...trackedPerformance];
-        const rows = performanceEntries.map((e) =>
-          performanceEntryToRow(e, trackedPerformance),
+      if (selected.competition) {
+        const attrs = ["date", ...trackedCompetition];
+        const rows = competitionEntries.map((e) =>
+          competitionEntryToRow(e, trackedCompetition),
         );
         await sendDataset({
-          name: "DataGOAT-Performance",
-          title: "Performance",
-          collectionName: "Performance",
+          name: "DataGOAT-Competition",
+          title: "Competition",
+          collectionName: "Competition",
           attributes: attrs,
           rows,
         });
@@ -249,14 +249,14 @@ function CodapPluginAuthed() {
 
   const dataLoading =
     loadState.status === "loading" ||
-    (selected.wellness && wellness.status === "loading") ||
-    (selected.performance && performance.status === "loading");
+    (selected.health && health.status === "loading") ||
+    (selected.competition && competition.status === "loading");
 
   const canSend =
     status === "connected" &&
     !dataLoading &&
     !sending &&
-    (selected.wellness || selected.performance);
+    (selected.health || selected.competition);
 
   return (
     <div className={css.pluginShell}>
@@ -277,27 +277,27 @@ function CodapPluginAuthed() {
         <label className={css.checkRow}>
           <input
             type="checkbox"
-            checked={selected.wellness}
+            checked={selected.health}
             onChange={(e) =>
-              setSelected((s) => ({ ...s, wellness: e.target.checked }))
+              setSelected((s) => ({ ...s, health: e.target.checked }))
             }
           />
           <span>
-            Health &amp; Wellness ({wellnessEntries.length}{" "}
-            {wellnessEntries.length === 1 ? "entry" : "entries"})
+            Health &amp; Health ({healthEntries.length}{" "}
+            {healthEntries.length === 1 ? "entry" : "entries"})
           </span>
         </label>
         <label className={css.checkRow}>
           <input
             type="checkbox"
-            checked={selected.performance}
+            checked={selected.competition}
             onChange={(e) =>
-              setSelected((s) => ({ ...s, performance: e.target.checked }))
+              setSelected((s) => ({ ...s, competition: e.target.checked }))
             }
           />
           <span>
-            Performance ({performanceEntries.length}{" "}
-            {performanceEntries.length === 1 ? "entry" : "entries"})
+            Competition ({competitionEntries.length}{" "}
+            {competitionEntries.length === 1 ? "entry" : "entries"})
           </span>
         </label>
       </fieldset>
@@ -320,19 +320,19 @@ function CodapPluginAuthed() {
   );
 }
 
-function wellnessEntryToRow(
-  e: WellnessEntry,
+function healthEntryToRow(
+  e: HealthEntry,
   trackedIds: string[],
 ): DatasetRow {
   const row: DatasetRow = { date: e.date };
   for (const id of trackedIds) {
-    row[id] = readWellnessField(e, id);
+    row[id] = readHealthField(e, id);
   }
   return row;
 }
 
-function readWellnessField(
-  e: WellnessEntry,
+function readHealthField(
+  e: HealthEntry,
   id: string,
 ): string | number | null {
   switch (id) {
@@ -367,8 +367,8 @@ function readWellnessField(
   }
 }
 
-function performanceEntryToRow(
-  e: PerformanceEntry,
+function competitionEntryToRow(
+  e: CompetitionEntry,
   trackedIds: string[],
 ): DatasetRow {
   const row: DatasetRow = { date: e.date };

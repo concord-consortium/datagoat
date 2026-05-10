@@ -8,11 +8,11 @@ import {
   rangeDescriptionPhrase,
   type TimeRangeKey,
 } from "../components/dashboard/TimeRangePicker";
-import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import { HEALTH_METRICS } from "../metrics/healthMetrics";
+import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import {
-  ADDABLE_WELLNESS,
-  ADDABLE_PERFORMANCE,
+  ADDABLE_HEALTH,
+  ADDABLE_COMPETITION,
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
@@ -23,8 +23,8 @@ import { getCompTermPlural } from "../data/competitionTerms";
 import { HYDRATION_HEXES } from "../data/hydrationColors";
 import { useUser } from "../contexts/UserContext";
 import {
-  useWellnessData,
-  usePerformanceData,
+  useHealthData,
+  useCompetitionData,
 } from "../contexts/DataContext";
 import {
   capitalizeAthleteType,
@@ -40,7 +40,7 @@ import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
 interface MetricDetailProps {
-  type: "wellness" | "performance";
+  type: "health" | "competition";
 }
 
 // Hydration bracket labels (verbatim port of the prototype's label runs
@@ -62,12 +62,12 @@ export function MetricDetail({ type }: MetricDetailProps) {
   // info button (which links into the addable space) doesn't
   // dead-end. Tracked metrics shadow addable ones with the same id.
   const allMetrics =
-    type === "wellness"
-      ? [...WELLNESS_METRICS, ...ADDABLE_WELLNESS]
-      : [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE];
+    type === "health"
+      ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
+      : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
   const { metrics: allCustom, loading: customsLoading } = useCustomMetrics();
-  // Match the route's :type so a wellness URL doesn't resolve a
-  // performance-typed custom metric (and vice versa) — without the
+  // Match the route's :type so a health URL doesn't resolve a
+  // competition-typed custom metric (and vice versa) — without the
   // metricType filter, MetricDetail would render but read from the
   // wrong entry map, producing an empty/misleading chart instead of
   // the "not found → Navigate back" branch below.
@@ -79,7 +79,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
     );
   // Wait for the custom-metrics snapshot before deciding an unknown id
   // should redirect — otherwise a deep-link or refresh on
-  // /wellness/c_xyz bounces back to the log before the snapshot
+  // /health/c_xyz bounces back to the log before the snapshot
   // resolves the metric. Built-in ids resolve synchronously above, so
   // the gate only fires when neither a built-in nor an already-loaded
   // custom matches.
@@ -91,16 +91,16 @@ export function MetricDetail({ type }: MetricDetailProps) {
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
     : DEFAULT_PROFILE_KEY;
 
-  const wellness = useWellnessData();
-  const performance = usePerformanceData();
+  const health = useHealthData();
+  const competition = useCompetitionData();
   const dataLoading =
-    type === "wellness"
-      ? wellness.status === "loading"
-      : performance.status === "loading";
-  const wellnessEntries =
-    wellness.status === "loaded" ? wellness.entries : [];
-  const performanceEntries =
-    performance.status === "loaded" ? performance.entries : [];
+    type === "health"
+      ? health.status === "loading"
+      : competition.status === "loading";
+  const healthEntries =
+    health.status === "loaded" ? health.entries : [];
+  const competitionEntries =
+    competition.status === "loaded" ? competition.entries : [];
 
   const [range, setRange] = useState<TimeRangeKey>("7d");
   const demoMode = useDemoMode();
@@ -108,8 +108,8 @@ export function MetricDetail({ type }: MetricDetailProps) {
   const series = useChartSeries({
     type,
     metricId: metric?.id ?? "",
-    wellnessEntries,
-    performanceEntries,
+    healthEntries,
+    competitionEntries,
     rangeDays: TIME_RANGE_DAYS[range],
     demoMode,
   });
@@ -120,7 +120,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
   if (!metric) {
     return (
       <Navigate
-        to={type === "wellness" ? "/wellness" : "/performance"}
+        to={type === "health" ? "/health" : "/competition"}
         replace
       />
     );
@@ -375,7 +375,7 @@ function renderMultiline(text: string) {
 // doesn't render the link).
 function customAsMetricDefinition(
   def: CustomMetricDef | undefined,
-  type: "wellness" | "performance",
+  type: "health" | "competition",
 ): MetricDefinition | undefined {
   if (!def) return undefined;
   return {

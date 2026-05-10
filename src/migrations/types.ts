@@ -40,4 +40,4 @@ export type MigrationFn = (
   data: Record<string, unknown>,
 ) => Record<string, unknown>;
 
-export type DocType = "userProfile" | "wellnessEntry" | "performanceEntry";
+export type DocType = "userProfile" | "healthEntry" | "competitionEntry";

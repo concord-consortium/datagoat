@@ -4,7 +4,7 @@ import {
   buildAlignedSeries,
   computeAverage,
 } from "./chartSeries";
-import { emptyWellnessEntry, type WellnessEntry } from "../types/data";
+import { emptyHealthEntry, type HealthEntry } from "../types/data";
 import { isoAtDaysAgo } from "../utils/dates";
 
 describe("lookupGoalLine", () => {
@@ -21,33 +21,33 @@ describe("lookupGoalLine", () => {
     expect(lookupGoalLine("hydration", "Female/Endurance")).toBe(3);
   });
 
-  it("returns the per-profile goal for performance metrics that have one", () => {
+  it("returns the per-profile goal for competition metrics that have one", () => {
     expect(lookupGoalLine("goals", "Male/Strength and Power")).toBe(1);
     expect(lookupGoalLine("assists", "Female/Endurance")).toBe(2);
     expect(lookupGoalLine("yards", "Male/Endurance")).toBe(50);
     expect(lookupGoalLine("tackles", "Female/Strength and Power")).toBe(5);
   });
 
-  it("returns undefined for performance metrics intentionally without a goal", () => {
+  it("returns undefined for competition metrics intentionally without a goal", () => {
     expect(lookupGoalLine("wins", "Male/Strength and Power")).toBeUndefined();
     expect(lookupGoalLine("losses", "Female/Endurance")).toBeUndefined();
   });
 });
 
 describe("buildAlignedSeries", () => {
-  function makeWellnessEntry(daysAgo: number, hydration: number): WellnessEntry {
+  function makeHealthEntry(daysAgo: number, hydration: number): HealthEntry {
     return {
-      ...emptyWellnessEntry(isoAtDaysAgo(daysAgo)),
+      ...emptyHealthEntry(isoAtDaysAgo(daysAgo)),
       hydration,
     };
   }
 
   it("emits one entry per day in the range, oldest first, today last", () => {
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "hydration",
-      wellnessEntries: [],
-      performanceEntries: [],
+      healthEntries: [],
+      competitionEntries: [],
       rangeDays: 7,
     });
     expect(out).toHaveLength(7);
@@ -57,21 +57,21 @@ describe("buildAlignedSeries", () => {
 
   it("returns null for days without an entry", () => {
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "hydration",
-      wellnessEntries: [],
-      performanceEntries: [],
+      healthEntries: [],
+      competitionEntries: [],
       rangeDays: 7,
     });
     expect(out.every((d) => d.value === null)).toBe(true);
   });
 
-  it("populates values from wellness entries and leaves other days null", () => {
+  it("populates values from health entries and leaves other days null", () => {
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "hydration",
-      wellnessEntries: [makeWellnessEntry(2, 3), makeWellnessEntry(0, 5)],
-      performanceEntries: [],
+      healthEntries: [makeHealthEntry(2, 3), makeHealthEntry(0, 5)],
+      competitionEntries: [],
       rangeDays: 7,
     });
     expect(out[4].value).toBe(3); // 2 days ago at index (rangeDays - 1) - 2 = 4
@@ -82,22 +82,22 @@ describe("buildAlignedSeries", () => {
 
   it("treats hydration value 0 as 'not logged' (consistent with buildSeries semantics)", () => {
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "hydration",
-      wellnessEntries: [makeWellnessEntry(1, 0), makeWellnessEntry(0, 4)],
-      performanceEntries: [],
+      healthEntries: [makeHealthEntry(1, 0), makeHealthEntry(0, 4)],
+      competitionEntries: [],
       rangeDays: 3,
     });
     expect(out[1].value).toBeNull(); // 0 → "not logged" → null
     expect(out[2].value).toBe(4);
   });
 
-  it("preserves zero values for performance metrics (0 is a valid score)", () => {
+  it("preserves zero values for competition metrics (0 is a valid score)", () => {
     const out = buildAlignedSeries({
-      type: "performance",
+      type: "competition",
       metricId: "goals",
-      wellnessEntries: [],
-      performanceEntries: [
+      healthEntries: [],
+      competitionEntries: [
         { date: isoAtDaysAgo(1), metrics: { goals: 0 } },
         { date: isoAtDaysAgo(0), metrics: { goals: 2 } },
       ] as any,
@@ -107,58 +107,58 @@ describe("buildAlignedSeries", () => {
     expect(out[2].value).toBe(2);
   });
 
-  it("reads wellness custom-metric values from entry.customMetrics", () => {
-    // Custom wellness ids fall through readWellnessMetric's switch to
+  it("reads health custom-metric values from entry.customMetrics", () => {
+    // Custom health ids fall through readHealthMetric's switch to
     // a customMetrics lookup. Without that branch (the bug Copilot
-    // flagged), the chart series would be all-null for any wellness
+    // flagged), the chart series would be all-null for any health
     // custom metric.
     const e0 = {
-      ...emptyWellnessEntry(isoAtDaysAgo(1)),
+      ...emptyHealthEntry(isoAtDaysAgo(1)),
       customMetrics: { c_stretch: 30 },
     };
     const e1 = {
-      ...emptyWellnessEntry(isoAtDaysAgo(0)),
+      ...emptyHealthEntry(isoAtDaysAgo(0)),
       customMetrics: { c_stretch: 45 },
     };
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "c_stretch",
-      wellnessEntries: [e0, e1],
-      performanceEntries: [],
+      healthEntries: [e0, e1],
+      competitionEntries: [],
       rangeDays: 3,
     });
     expect(out[1].value).toBe(30);
     expect(out[2].value).toBe(45);
   });
 
-  it("treats wellness custom value 0 as 'not logged' (matches the blank-input convention)", () => {
+  it("treats health custom value 0 as 'not logged' (matches the blank-input convention)", () => {
     const entry = {
-      ...emptyWellnessEntry(isoAtDaysAgo(0)),
+      ...emptyHealthEntry(isoAtDaysAgo(0)),
       customMetrics: { c_stretch: 0 },
     };
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "c_stretch",
-      wellnessEntries: [entry],
-      performanceEntries: [],
+      healthEntries: [entry],
+      competitionEntries: [],
       rangeDays: 1,
     });
     expect(out[0].value).toBeNull();
   });
 
-  it("flows negative wellness custom values through unchanged", () => {
+  it("flows negative health custom values through unchanged", () => {
     // Customs with `yBottomRaw < 0` (e.g. a score-differential
     // metric) need negative values to reach the chart. The
-    // readWellnessMetric branch uses `!== 0` rather than `> 0`.
+    // readHealthMetric branch uses `!== 0` rather than `> 0`.
     const entry = {
-      ...emptyWellnessEntry(isoAtDaysAgo(0)),
+      ...emptyHealthEntry(isoAtDaysAgo(0)),
       customMetrics: { c_diff: -3 },
     };
     const out = buildAlignedSeries({
-      type: "wellness",
+      type: "health",
       metricId: "c_diff",
-      wellnessEntries: [entry],
-      performanceEntries: [],
+      healthEntries: [entry],
+      competitionEntries: [],
       rangeDays: 1,
     });
     expect(out[0].value).toBe(-3);

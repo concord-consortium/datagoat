@@ -1,4 +1,4 @@
-import type { PerformanceEntry, WellnessEntry } from "../types/data";
+import type { CompetitionEntry, HealthEntry } from "../types/data";
 import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
 import { getMetricChartConfig } from "./metricChartConfig";
@@ -72,36 +72,36 @@ export function capitalizeAthleteType(t: string): string {
 }
 
 export interface BuildSeriesArgs {
-  type: "wellness" | "performance";
+  type: "health" | "competition";
   metricId: string;
-  wellnessEntries: WellnessEntry[];
-  performanceEntries: PerformanceEntry[];
+  healthEntries: HealthEntry[];
+  competitionEntries: CompetitionEntry[];
   rangeDays: number;
 }
 
 // Build a date/value series for the selected metric over the given window.
-// Skips entries outside [today - rangeDays + 1, today]. Wellness reads
-// the metric off the flat WellnessEntry shape; performance reads off the
+// Skips entries outside [today - rangeDays + 1, today]. Health reads
+// the metric off the flat HealthEntry shape; competition reads off the
 // metrics map. Non-numeric values are skipped entirely.
 export function buildSeries({
   type,
   metricId,
-  wellnessEntries,
-  performanceEntries,
+  healthEntries,
+  competitionEntries,
   rangeDays,
 }: BuildSeriesArgs): Array<{ date: string; value: number }> {
   const out: Array<{ date: string; value: number }> = [];
 
-  if (type === "wellness") {
-    for (const e of wellnessEntries) {
+  if (type === "health") {
+    for (const e of healthEntries) {
       const days = daysAgoFromISO(e.date);
       if (Number.isNaN(days) || days >= rangeDays) continue;
-      const value = readWellnessMetric(e, metricId);
+      const value = readHealthMetric(e, metricId);
       if (value === undefined) continue;
       out.push({ date: e.date, value });
     }
   } else {
-    for (const e of performanceEntries) {
+    for (const e of competitionEntries) {
       const days = daysAgoFromISO(e.date);
       if (Number.isNaN(days) || days >= rangeDays) continue;
       const raw = e.metrics?.[metricId];
@@ -117,8 +117,8 @@ export function buildSeries({
   return out;
 }
 
-export function readWellnessMetric(
-  e: WellnessEntry,
+export function readHealthMetric(
+  e: HealthEntry,
   metricId: string,
 ): number | undefined {
   switch (metricId) {
@@ -142,7 +142,7 @@ export function readWellnessMetric(
         ? 1
         : undefined;
     default: {
-      // Custom wellness metric ids fall here — values live in
+      // Custom health metric ids fall here — values live in
       // entry.customMetrics rather than as typed fields. 0 stays the
       // "blank input" sentinel (matches the FUTURE WORK note in
       // customMetricEntries.ts). Non-zero values — including negatives
@@ -161,24 +161,24 @@ export function readWellnessMetric(
 // bar chart consumes this so it can render today-ghost when today is
 // null and leave empty slots for missing past days.
 //
-// Performance metrics: 0 is preserved (valid score). Wellness metrics:
-// 0 is treated as "not logged" (matches buildSeries / readWellnessMetric).
+// Competition metrics: 0 is preserved (valid score). Health metrics:
+// 0 is treated as "not logged" (matches buildSeries / readHealthMetric).
 export function buildAlignedSeries({
   type,
   metricId,
-  wellnessEntries,
-  performanceEntries,
+  healthEntries,
+  competitionEntries,
   rangeDays,
 }: BuildSeriesArgs): Array<{ date: string; value: number | null }> {
   const valueByDate = new Map<string, number>();
 
-  if (type === "wellness") {
-    for (const e of wellnessEntries) {
-      const v = readWellnessMetric(e, metricId);
+  if (type === "health") {
+    for (const e of healthEntries) {
+      const v = readHealthMetric(e, metricId);
       if (v !== undefined) valueByDate.set(e.date, v);
     }
   } else {
-    for (const e of performanceEntries) {
+    for (const e of competitionEntries) {
       const raw = e.metrics?.[metricId];
       if (typeof raw === "number" && Number.isFinite(raw)) {
         valueByDate.set(e.date, raw);

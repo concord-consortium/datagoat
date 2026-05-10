@@ -25,7 +25,7 @@ export interface UserContextValue {
   // single field to the existing profile doc; throws if no profile exists
   // (caller is expected to gate on loadState).
   setTrackedMetrics: (
-    type: "wellness" | "performance",
+    type: "health" | "competition",
     ids: string[],
   ) => Promise<void>;
   // Re-subscribe to the profile snapshot. Used by the retry UI rendered
@@ -111,16 +111,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
         await setDoc(ref, next, { merge: true });
       },
       async setTrackedMetrics(
-        type: "wellness" | "performance",
+        type: "health" | "competition",
         ids: string[],
       ) {
         if (!user)
           throw new Error("setTrackedMetrics called without auth user");
         const ref = doc(db, "users", user.uid, "profile", "main");
         const field =
-          type === "wellness"
-            ? "trackedWellnessMetrics"
-            : "trackedPerformanceMetrics";
+          type === "health"
+            ? "trackedHealthMetrics"
+            : "trackedCompetitionMetrics";
         try {
           await updateDoc(ref, { [field]: ids });
         } catch (err) {

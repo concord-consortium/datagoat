@@ -10,7 +10,7 @@ const METRIC: MetricDefinition = {
   name: "Protein",
   unit: "g/kg/day",
   displayUnit: "g",
-  type: "wellness",
+  type: "health",
   whoCollects: "",
   howCollected: "",
   description: "",
@@ -79,7 +79,7 @@ describe("NumericInput", () => {
   });
 
   it("does not revert local state when parent re-renders with round-trip-equivalent value", () => {
-    // Parent keeps its own state, mimics WellnessLog/PerformanceLog: when
+    // Parent keeps its own state, mimics HealthLog/CompetitionLog: when
     // the user types "1.", the parent stores Number("1.") === 1 and
     // re-renders with value="1". Local state must hold "1." so the
     // trailing decimal survives until the user types another digit.

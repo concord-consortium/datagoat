@@ -16,30 +16,30 @@ function renderHeader(props: Parameters<typeof DashLogHeader>[0]) {
 }
 
 describe("DashLogHeader", () => {
-  it("renders an anchor with href /wellness for type=wellness, /performance for type=performance", () => {
-    const wellness = renderHeader({
-      type: "wellness",
+  it("renders an anchor with href /health for type=health, /competition for type=competition", () => {
+    const health = renderHeader({
+      type: "health",
       status: "Log your 5 metrics for today.",
     });
-    const wLink = wellness.container.querySelector("a")!;
-    expect(wLink.getAttribute("href")).toBe("/wellness");
+    const wLink = health.container.querySelector("a")!;
+    expect(wLink.getAttribute("href")).toBe("/health");
 
     const perf = renderHeader({
-      type: "performance",
+      type: "competition",
       status: "No perf. data logged today.",
     });
     const pLink = perf.container.querySelector("a")!;
-    expect(pLink.getAttribute("href")).toBe("/performance");
+    expect(pLink.getAttribute("href")).toBe("/competition");
   });
 
   it("aria-label leads with the visible status (WCAG 2.5.3 Label in Name)", () => {
     const { container } = renderHeader({
-      type: "wellness",
+      type: "health",
       status: "Log your 5 metrics for today.",
     });
     const link = container.querySelector("a")!;
     expect(link.getAttribute("aria-label")).toBe(
-      "Log your 5 metrics for today. Go to Health & Wellness Log.",
+      "Log your 5 metrics for today. Go to Health & Performance Log.",
     );
     // Visible <p> shows just the status, no SR suffix bleed-through.
     const p = container.querySelector("p")!;
@@ -48,7 +48,7 @@ describe("DashLogHeader", () => {
 
   it("renders pre/highlight/post in document order with the highlight wrapped in .statusHighlight", () => {
     const { container } = renderHeader({
-      type: "wellness",
+      type: "health",
       status: "Log your 3 remaining metrics.",
       pre: "Log your ",
       highlight: "3 remaining metrics",
@@ -67,7 +67,7 @@ describe("DashLogHeader", () => {
 
   it("inserts NBSP between pre and highlight when pre has trailing whitespace", () => {
     const { container } = renderHeader({
-      type: "wellness",
+      type: "health",
       status: "x",
       pre: "Log your ",
       highlight: "3 metrics",
@@ -83,7 +83,7 @@ describe("DashLogHeader", () => {
 
   it("inserts NBSP between highlight and post when post has leading whitespace", () => {
     const { container } = renderHeader({
-      type: "performance",
+      type: "competition",
       status: "x",
       pre: "Currently",
       highlight: "tracking 3",
@@ -97,7 +97,7 @@ describe("DashLogHeader", () => {
 
   it("does NOT insert NBSPs when pre/post don't have inner whitespace adjacent to highlight", () => {
     const { container } = renderHeader({
-      type: "wellness",
+      type: "health",
       status: "x",
       pre: "[",
       highlight: "BANG",
@@ -113,7 +113,7 @@ describe("DashLogHeader", () => {
 
   it("falls back to plain status text when no highlight is provided", () => {
     const { container } = renderHeader({
-      type: "performance",
+      type: "competition",
       status: "No perf. data logged today.",
     });
     const p = container.querySelector("p")!;
@@ -122,7 +122,7 @@ describe("DashLogHeader", () => {
   });
 
   it("marks the link with data-skip-link-exclude so the global skip-link picker ignores it", () => {
-    const { container } = renderHeader({ type: "wellness", status: "x" });
+    const { container } = renderHeader({ type: "health", status: "x" });
     expect(
       container.querySelector("a")!.getAttribute("data-skip-link-exclude"),
     ).not.toBeNull();

@@ -4,7 +4,7 @@ import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./AddMetric.module.css";
 
 // AddMetric: a list + edit-entry-point page for the user's custom
-// metrics, scoped by the route's :type ("wellness" | "performance").
+// metrics, scoped by the route's :type ("health" | "competition").
 // The "+ Create custom metric" CTA at the top routes to
 // /add-metric/:type/new; each existing row links to the edit form.
 // Tracking is managed elsewhere — both built-in and custom rows live
@@ -13,13 +13,13 @@ import css from "./AddMetric.module.css";
 // re-implementing the tracking UI.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
-  if (type !== "wellness" && type !== "performance") {
+  if (type !== "health" && type !== "competition") {
     return <Navigate to="/setup/tracking" replace />;
   }
   return <AddMetricInner type={type} />;
 }
 
-function AddMetricInner({ type }: { type: "wellness" | "performance" }) {
+function AddMetricInner({ type }: { type: "health" | "competition" }) {
   const { metrics: allCustom, loading } = useCustomMetrics();
   const customForType = allCustom.filter((m) => m.metricType === type);
 

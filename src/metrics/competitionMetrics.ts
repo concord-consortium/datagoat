@@ -5,22 +5,22 @@ import AssistsIcon from "@/icons/metric-assists.svg?react";
 import YardsIcon from "@/icons/metric-yards.svg?react";
 import TacklesIcon from "@/icons/metric-tackles.svg?react";
 
-// Placeholder set per RESOLVED Open Question (Performance Log metric set).
+// Placeholder set per RESOLVED Open Question (Competition Log metric set).
 // The designer-final per-athlete-type sets land in a follow-up; consumers
 // must read from this registry, not hardcode the names.
 // TODO: athlete-type-specific metric sets when designer commits.
 //
 // Wins and Losses ship as separate metrics here even though the prototype
 // keyed them off a single 'Wins/Losses' entry - pinned by the resolved
-// "Performance Log metric set" Open Question (requirements.md "Deferred
+// "Competition Log metric set" Open Question (requirements.md "Deferred
 // Work"). They share TrophyIcon because the prototype defined only the
 // combined glyph; the per-athlete-type real sets are the deferred follow-up.
-export const PERFORMANCE_METRICS: MetricDefinition[] = [
+export const COMPETITION_METRICS: MetricDefinition[] = [
   {
     id: "wins",
     name: "Wins",
     unit: "",
-    type: "performance",
+    type: "competition",
     whoCollects: "Self",
     howCollected: "Log per game",
     description: "Number of wins in the period.",
@@ -31,7 +31,7 @@ export const PERFORMANCE_METRICS: MetricDefinition[] = [
     id: "losses",
     name: "Losses",
     unit: "",
-    type: "performance",
+    type: "competition",
     whoCollects: "Self",
     howCollected: "Log per game",
     description: "Number of losses in the period.",
@@ -42,7 +42,7 @@ export const PERFORMANCE_METRICS: MetricDefinition[] = [
     id: "goals",
     name: "Goals",
     unit: "",
-    type: "performance",
+    type: "competition",
     whoCollects: "Self",
     howCollected: "Log per game",
     description: "Goals scored.",
@@ -53,7 +53,7 @@ export const PERFORMANCE_METRICS: MetricDefinition[] = [
     id: "assists",
     name: "Assists",
     unit: "",
-    type: "performance",
+    type: "competition",
     whoCollects: "Self",
     howCollected: "Log per game",
     description: "Assists recorded.",
@@ -64,7 +64,7 @@ export const PERFORMANCE_METRICS: MetricDefinition[] = [
     id: "yards",
     name: "Yards",
     unit: "yd",
-    type: "performance",
+    type: "competition",
     whoCollects: "Self",
     howCollected: "Log per game",
     description: "Total yards.",
@@ -75,7 +75,7 @@ export const PERFORMANCE_METRICS: MetricDefinition[] = [
     id: "tackles",
     name: "Tackles",
     unit: "",
-    type: "performance",
+    type: "competition",
     whoCollects: "Self",
     howCollected: "Log per game",
     description: "Tackles made.",

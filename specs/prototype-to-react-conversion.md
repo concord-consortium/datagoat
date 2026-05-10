@@ -2,6 +2,22 @@
 
 **Status**: **Closed**
 
+## Preface
+
+This document describes the original prototype-to-React conversion as it shipped. It is preserved as a historical record of the decisions, scope, and trade-offs made during that conversion. Subsequent work has changed parts of the app the conversion delivered; rather than rewriting this document in place, the major divergences are listed below so readers can map old terminology onto the current codebase.
+
+**Changes since the conversion**
+
+- **User-defined custom metrics** (DGT-36) — users can add their own metrics alongside the built-in registries. The `HEALTH_METRICS` / `COMPETITION_METRICS` registries described below are now augmented at runtime by entries from the `customMetrics` Firestore collection; the dashboard, log, and tracked-setup screens all merge built-ins with customs.
+- **Metric-category rename** (DGT-37) — the two categories were rebranded:
+  - "Health & Wellness" → "Health & Performance" (visible label); `wellness` → `health` (identifier).
+  - "Performance" → "Competition" (visible label); `performance` → `competition` (identifier).
+  - Routes `/wellness` → `/health` and `/performance` → `/competition` (and their `:metricId` and `/add-metric/...` variants).
+  - File renames: `WellnessLog.tsx` → `HealthLog.tsx`, `PerformanceLog.tsx` → `CompetitionLog.tsx`, `wellnessMetrics.ts` → `healthMetrics.ts`, `performanceMetrics.ts` → `competitionMetrics.ts`, plus the `migrations/` and `utils/` siblings.
+  - Firestore collections `wellnessEntries` / `performanceEntries` → `healthEntries` / `competitionEntries`; profile fields `trackedWellnessMetrics` / `trackedPerformanceMetrics` → `trackedHealthMetrics` / `trackedCompetitionMetrics`.
+
+When in doubt, the codebase is the source of truth; this document is the source of truth for *why* the original shape was chosen.
+
 ## Overview
 
 Convert the DataGOAT designer prototype (a single-page HTML / vanilla-JS mockup) into the production React 19 + Vite + Firebase app, replacing the current wireframed auth shell with the full 11-screen flow — auth, profile, tracked-data setup, dashboard, daily wellness/performance logs, metric detail, add-metric, info modals, and a CODAP plugin view. Ships in one atomic PR alongside three React contexts (Auth / User / Data), a lazy-on-read Firestore migration layer, a Cloud Function that blocks Facebook signups missing an email, the prototype's dark-theme design system, and the routing + onboarding flow. Real chart rendering and per-athlete-type Performance Log metrics are deferred to tracked follow-ups; this PR ships placeholders that pin the API and accessibility contracts so the swap is purely visual.

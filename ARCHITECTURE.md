@@ -25,7 +25,7 @@ No linter is configured. No CSS framework — vanilla CSS Modules per component,
 BrowserRouter
   └─ AuthProvider     ── onAuthStateChanged → { user, loading, signOut }
        └─ UserProvider     ── /users/{uid}/profile/main snapshot → loadState
-            └─ DataProvider    ── wellnessEntries + performanceEntries snapshots
+            └─ DataProvider    ── healthEntries + competitionEntries snapshots
                  └─ AppRoutes
 ```
 
@@ -47,8 +47,8 @@ Each provider subscribes to Firestore via `onSnapshot` and exposes a discriminat
       /profile, /setup/tracking, /info/:topic
     </Route>
     <Route element={<ProtectedRoute/>}>
-      /dashboard, /wellness, /wellness/:metricId, /performance,
-      /performance/:metricId, /add-metric/:type, /about
+      /dashboard, /health, /health/:metricId, /competition,
+      /competition/:metricId, /add-metric/:type, /about
     </Route>
   </Route>
 </Routes>
@@ -95,10 +95,10 @@ All app data lives under `/users/{uid}/` in Firestore:
 | Path | Shape |
 | --- | --- |
 | `/users/{uid}/profile/main` | Singleton [`UserProfile`](src/types/profile.ts) — name, email, age, height, weight, gender, athlete type, competition term, tracked metric ID lists, completion flags |
-| `/users/{uid}/wellnessEntries/{YYYY-MM-DD}` | One [`WellnessEntry`](src/types/data.ts) per day — hydration, sleepTime, sleepEfficiency, protein, leanMass, availability tree |
-| `/users/{uid}/performanceEntries/{YYYY-MM-DD}` | One [`PerformanceEntry`](src/types/data.ts) per day — `metrics: Record<string, number \| string>` keyed by metric id |
+| `/users/{uid}/healthEntries/{YYYY-MM-DD}` | One [`HealthEntry`](src/types/data.ts) per day — hydration, sleepTime, sleepEfficiency, protein, leanMass, availability tree |
+| `/users/{uid}/competitionEntries/{YYYY-MM-DD}` | One [`CompetitionEntry`](src/types/data.ts) per day — `metrics: Record<string, number \| string>` keyed by metric id |
 
-The doc id IS the date string, which is what makes the per-date upsert trivially correct (no separate query for "today's row"). One entry per metric per day is intentional — see PERFORMANCE LOG UI for the daily TOTAL column users log against (two-a-day training, prelim+final track days, AM/PM splits all collapse into the day's total). The wellness side is the same shape for the same reason.
+The doc id IS the date string, which is what makes the per-date upsert trivially correct (no separate query for "today's row"). One entry per metric per day is intentional — see COMPETITION LOG UI for the daily TOTAL column users log against (two-a-day training, prelim+final track days, AM/PM splits all collapse into the day's total). The health side is the same shape for the same reason.
 
 [firestore.rules](firestore.rules) is one match block: `allow read, write: if request.auth != null && request.auth.uid == userId` over `/users/{userId}/{document=**}`. Every user-scoped subcollection inherits owner-only access automatically; anything outside that path is default-denied.
 
@@ -111,16 +111,16 @@ Two contracts that are easy to break:
 1. **Migrations must be idempotent.** `DataContext` stamps `version: CURRENT_*_VERSION` on every partial-merge write, so a stale tab can write a downgraded version onto a doc that already has newer-shape fields. The next reader re-runs the migration on a doc that already has the new shape — non-idempotent migrations corrupt data.
 2. **Every registered migration needs a fixture in [migrations/index.test.ts](src/migrations/index.test.ts).** A coverage meta-test fails the suite if a registered migration is missing its fixture. See the long comment in [migrations/types.ts](src/migrations/types.ts) for the full protocol when v1 → v2 actually lands.
 
-The version-stamp itself is gated to avoid version churn: `firestoreSetWellnessEntry` / `firestoreSetPerformanceEntry` in [DataContext.tsx](src/contexts/DataContext.tsx) only stamp `version` when the server doc is unknown to us (creation) or known to be older (upgrade). The "known server version" cache is populated pre-migration off each `onSnapshot` tick.
+The version-stamp itself is gated to avoid version churn: `firestoreSetHealthEntry` / `firestoreSetCompetitionEntry` in [DataContext.tsx](src/contexts/DataContext.tsx) only stamp `version` when the server doc is unknown to us (creation) or known to be older (upgrade). The "known server version" cache is populated pre-migration off each `onSnapshot` tick.
 
 ## Optimistic writes
 
-`DataContext` is the most subtle part of the app. Reads are straightforward (one `onSnapshot` per collection, filtered to the last 365 days), but writes are debounced + optimistic + reconciled. The wellness and performance paths are **structurally identical** — same pending map, same per-date debounce timers, same reconciliation logic, same version-stamp gating. The only difference is which sub-tree gets deep-merged on partial accumulation (`availability` for wellness, `metrics` for performance):
+`DataContext` is the most subtle part of the app. Reads are straightforward (one `onSnapshot` per collection, filtered to the last 365 days), but writes are debounced + optimistic + reconciled. The health and competition paths are **structurally identical** — same pending map, same per-date debounce timers, same reconciliation logic, same version-stamp gating. The only difference is which sub-tree gets deep-merged on partial accumulation (`availability` for health, `metrics` for competition):
 
-1. `setWellnessEntry(date, partial)` / `setPerformanceEntry(date, partial)` immediately update a per-collection pending map keyed by date, then schedule a 500 ms timer to flush. All consumers see the optimistic merge synchronously via the `wellness` / `performance` `useMemo` (server snapshot ⊕ pending overlay).
-2. The flush calls `setDoc(..., { merge: true })` against the date's doc in the appropriate subcollection (`wellnessEntries` or `performanceEntries`).
+1. `setHealthEntry(date, partial)` / `setCompetitionEntry(date, partial)` immediately update a per-collection pending map keyed by date, then schedule a 500 ms timer to flush. All consumers see the optimistic merge synchronously via the `health` / `competition` `useMemo` (server snapshot ⊕ pending overlay).
+2. The flush calls `setDoc(..., { merge: true })` against the date's doc in the appropriate subcollection (`healthEntries` or `competitionEntries`).
 3. The next server-acked `onSnapshot` (filtered with `metadata.hasPendingWrites === false`) drives **reconciliation**: each pending field that now matches the server is dropped; mismatches stay pending. Pending entries are NEVER dropped at flush time — reconciliation against authoritative state is the only source of truth for "this write landed."
-4. Multiple writes within the debounce window deep-merge per-sub-key — `availability` sub-fields for wellness (so a pending `{ practiceHeld: true }` doesn't wipe `gameHeld`), and the `metrics` bag for performance (so typing into one performance metric input doesn't clobber the values for adjacent inputs).
+4. Multiple writes within the debounce window deep-merge per-sub-key — `availability` sub-fields for health (so a pending `{ practiceHeld: true }` doesn't wipe `gameHeld`), and the `metrics` bag for competition (so typing into one competition metric input doesn't clobber the values for adjacent inputs).
 
 A few load-bearing details:
 
@@ -150,7 +150,7 @@ The plugin renders one of three branches off the `useAuth()` state ([CodapPlugin
 
 - **No user** → `<CodapPluginSignIn>`
 - **User with `emailVerified === false`** → `<CodapPluginUnverified>`. The user must verify in the main app at `/verify-email` and reload the plugin. This gate is UI-only — the security boundary is still the Firestore rule, which doesn't gate on email_verified.
-- **Verified user** → `<CodapPluginAuthed>`, which reads `useUser()` and `useWellnessData() / usePerformanceData()` and renders the dataset-selection panel.
+- **Verified user** → `<CodapPluginAuthed>`, which reads `useUser()` and `useHealthData() / useCompetitionData()` and renders the dataset-selection panel.
 
 ### `useCodapApi` and `sendDataset`
 
@@ -161,7 +161,7 @@ The plugin renders one of three branches off the `useAuth()` state ([CodapPlugin
    - **First send for a name** — `getDataContext(name)` returns `success: false`, so we call the lower-level `codapInterface.sendRequest({ action: 'create', resource: 'dataContext', ... })` to create the data context with name + title + a single collection containing the typed attributes. (The library's `createDataContext` helper only accepts a name and can't set the `title`, which is what CODAP uses as the visible table-tab label.) Then `createTable(name)` opens a case-table component so the rows are actually visible.
    - **Re-send with a populated rows array** — the data context exists, so we reconcile attribute types in case the first send was empty (e.g., a column was inferred `categorical` for lack of samples and we can now infer `numeric`). We don't downgrade types on empty re-sends.
    - **Upsert by `date`** — `getAllItems(name)` builds a `date → itemId` map; rows whose date matches an existing item are sent through `updateItemByID`, the rest are appended via `createItems`. This is what makes the CODAP table stay in sync with the user's daily logs across re-sends. If the user has manually duplicated rows in CODAP, only the first match per key is updated and a console warning surfaces the divergence.
-3. `wellnessEntryToRow` / `performanceEntryToRow` in [CodapPlugin.tsx](src/codap/CodapPlugin.tsx) do the entry → flat-row conversion. The wellness `availability` sub-tree is flattened to a single string (e.g., `"practice:played / no-game"`) so the CODAP cell is human-readable at a glance.
+3. `healthEntryToRow` / `competitionEntryToRow` in [CodapPlugin.tsx](src/codap/CodapPlugin.tsx) do the entry → flat-row conversion. The health `availability` sub-tree is flattened to a single string (e.g., `"practice:played / no-game"`) so the CODAP cell is human-readable at a glance.
 
 ## Charts
 
@@ -173,8 +173,8 @@ The chart engine lives in [src/charts/](src/charts/). [MetricChart](src/charts/M
 
 Three files, in order:
 
-1. Add the metric to [src/metrics/wellnessMetrics.ts](src/metrics/wellnessMetrics.ts) or [performanceMetrics.ts](src/metrics/performanceMetrics.ts) with name, icon, descriptions.
-2. Add an entry to `CONFIG` in [metricChartConfig.ts](src/charts/metricChartConfig.ts) — for performance metrics, `performanceConfig(yBottomRaw, yTopRaw)` is the factory; for wellness metrics define the config object explicitly.
+1. Add the metric to [src/metrics/healthMetrics.ts](src/metrics/healthMetrics.ts) or [competitionMetrics.ts](src/metrics/competitionMetrics.ts) with name, icon, descriptions.
+2. Add an entry to `CONFIG` in [metricChartConfig.ts](src/charts/metricChartConfig.ts) — for competition metrics, `competitionConfig(yBottomRaw, yTopRaw)` is the factory; for health metrics define the config object explicitly.
 3. If the metric needs a profile-keyed goal (different goal per Gender × AthleteType), add a field to [`ChartGoals`](src/data/profileVariants.ts), populate the four canonical profile entries, and add a switch case to `lookupGoalLine` in [chartSeries.ts](src/charts/chartSeries.ts). Otherwise set `goalRaw` directly on the chart config and the static-fallback path in `lookupGoalLine` picks it up.
 
 ### Goal resolution

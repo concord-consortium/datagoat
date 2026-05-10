@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 
-export type MetricType = "wellness" | "performance";
+export type MetricType = "health" | "competition";
 export type MetricInputType = "numeric" | "radio" | "tree" | "colorScale";
 
 export interface MetricDefinition {

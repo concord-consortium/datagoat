@@ -1,4 +1,4 @@
-import type { PerformanceEntry } from "../../types/data";
+import type { CompetitionEntry } from "../../types/data";
 import { HISTORY, historyOffsetFromISO } from "../../utils/dates";
 
 // Per-metric sum over the visible HISTORY window. Skips entries whose
@@ -10,8 +10,8 @@ import { HISTORY, historyOffsetFromISO } from "../../utils/dates";
 //
 // User-configurable totals window (per-season / all-time / monthly) is
 // filed as deferred work in requirements.md.
-export function performanceTotal(
-  entries: PerformanceEntry[],
+export function competitionTotal(
+  entries: CompetitionEntry[],
   metricId: string,
 ): number {
   let total = 0;

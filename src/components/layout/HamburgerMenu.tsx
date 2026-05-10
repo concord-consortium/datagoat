@@ -26,8 +26,8 @@ interface MenuItem {
 
 const ITEMS: MenuItem[] = [
   { label: "Dashboard", to: "/dashboard", Icon: HomeIcon },
-  { label: "Health & Wellness Log", to: "/wellness", Icon: CalendarIcon },
-  { label: "Performance Log", to: "/performance", Icon: StopwatchIcon },
+  { label: "Health & Performance Log", to: "/health", Icon: CalendarIcon },
+  { label: "Competition Log", to: "/competition", Icon: StopwatchIcon },
   { label: "Profile", to: "/profile", Icon: ProfilePersonIcon },
   { label: "Tracked Data Setup", to: "/setup/tracking", Icon: GearIcon },
   { label: "About", to: "/about", Icon: InfoCircleIcon },

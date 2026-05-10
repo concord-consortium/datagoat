@@ -100,7 +100,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     await act(async () => {
       await result.current.addMetric({
         name: "5K Time",
-        metricType: "performance",
+        metricType: "competition",
         inputType: "numeric",
         unit: "min",
         goalRaw: 25,
@@ -123,7 +123,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     await act(async () => {
       const def = await result.current.addMetric({
         name: "x",
-        metricType: "wellness",
+        metricType: "health",
         inputType: "numeric",
         unit: "",
         goalRaw: 0,
@@ -148,7 +148,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     await act(async () => {
       const def = await result.current.addMetric({
         name: "x",
-        metricType: "wellness",
+        metricType: "health",
         inputType: "numeric",
         unit: "",
         goalRaw: 0,
@@ -173,7 +173,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
         id: "c_seed",
         ownerId: "u1",
         name: "seeded",
-        metricType: "wellness" as const,
+        metricType: "health" as const,
         inputType: "numeric" as const,
         unit: "",
         goalRaw: 0,

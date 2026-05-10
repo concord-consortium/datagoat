@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import common from "../common.module.css";
 import css from "./ActivityCalendar.module.css";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
-import { getChipState } from "../../utils/wellnessCompleteness";
-import type { PerformanceEntry, WellnessEntry } from "../../types/data";
+import { getChipState } from "../../utils/healthCompleteness";
+import type { CompetitionEntry, HealthEntry } from "../../types/data";
 
 // Cell state per requirements:
 //   all      - every tracked metric logged
-//   some     - at least one metric logged (wellness only)
+//   some     - at least one metric logged (health only)
 //   none     - tracked window, no data
 //   inactive - outside [0, HISTORY] tracking window (future or before
 //              first tracked day)
@@ -53,16 +53,16 @@ interface CellInfo {
 }
 
 export interface ActivityCalendarProps {
-  type: "wellness" | "performance";
-  // Tracked metric IDs - used for wellness completeness derivation. For
-  // type='performance' the prop is ignored (any data => 'all').
+  type: "health" | "competition";
+  // Tracked metric IDs - used for health completeness derivation. For
+  // type='competition' the prop is ignored (any data => 'all').
   trackedMetricIds: string[];
-  wellnessEntries?: WellnessEntry[];
-  performanceEntries?: PerformanceEntry[];
+  healthEntries?: HealthEntry[];
+  competitionEntries?: CompetitionEntry[];
 }
 
-// Per-cell label phrase per spec acceptance criteria. Wellness has 4
-// states; performance is binary (all/none) in this story per the
+// Per-cell label phrase per spec acceptance criteria. Health has 4
+// states; competition is binary (all/none) in this story per the
 // prototype's 2-state coloring for the perf calendar.
 function stateLabel(state: CellState): string {
   switch (state) {
@@ -85,10 +85,10 @@ function stateLabel(state: CellState): string {
 // align Sun-Sat are 'blank'.
 function buildWeeks(
   todayIso: string,
-  wellnessByDate: Map<string, WellnessEntry>,
-  performanceByDate: Map<string, PerformanceEntry>,
+  healthByDate: Map<string, HealthEntry>,
+  competitionByDate: Map<string, CompetitionEntry>,
   trackedMetricIds: string[],
-  type: "wellness" | "performance",
+  type: "health" | "competition",
 ): { weeks: CellInfo[][]; starWeek: number; starDay: number } {
   const today = dateAtOffset(HISTORY);
   const todayDow = today.getDay();
@@ -113,11 +113,11 @@ function buildWeeks(
     const d = dateAtOffset(offset);
     const iso = toISO(d);
     let state: CellState = "none";
-    if (type === "wellness") {
-      const entry = wellnessByDate.get(iso) ?? null;
+    if (type === "health") {
+      const entry = healthByDate.get(iso) ?? null;
       state = getChipState(entry, trackedMetricIds);
     } else {
-      const entry = performanceByDate.get(iso) ?? null;
+      const entry = competitionByDate.get(iso) ?? null;
       const hasAny =
         !!entry &&
         Object.values(entry.metrics ?? {}).some((v) => {
@@ -154,36 +154,36 @@ function buildWeeks(
 
 function ActivityCalendarImpl(props: ActivityCalendarProps) {
   const { type, trackedMetricIds } = props;
-  const wellnessEntries = props.wellnessEntries ?? [];
-  const performanceEntries = props.performanceEntries ?? [];
+  const healthEntries = props.healthEntries ?? [];
+  const competitionEntries = props.competitionEntries ?? [];
 
   // Memoize the per-day completeness derivation. The dashboard re-renders
   // on every Firestore snapshot; without memo, all 30 cells re-derive on
   // every keystroke that triggers a debounced commit.
   const todayIso = toISO(dateAtOffset(HISTORY));
 
-  const wellnessByDate = useMemo(() => {
-    const m = new Map<string, WellnessEntry>();
-    for (const e of wellnessEntries) m.set(e.date, e);
+  const healthByDate = useMemo(() => {
+    const m = new Map<string, HealthEntry>();
+    for (const e of healthEntries) m.set(e.date, e);
     return m;
-  }, [wellnessEntries]);
+  }, [healthEntries]);
 
-  const performanceByDate = useMemo(() => {
-    const m = new Map<string, PerformanceEntry>();
-    for (const e of performanceEntries) m.set(e.date, e);
+  const competitionByDate = useMemo(() => {
+    const m = new Map<string, CompetitionEntry>();
+    for (const e of competitionEntries) m.set(e.date, e);
     return m;
-  }, [performanceEntries]);
+  }, [competitionEntries]);
 
   const { weeks, starWeek, starDay } = useMemo(
     () =>
       buildWeeks(
         todayIso,
-        wellnessByDate,
-        performanceByDate,
+        healthByDate,
+        competitionByDate,
         trackedMetricIds,
         type,
       ),
-    [todayIso, wellnessByDate, performanceByDate, trackedMetricIds, type],
+    [todayIso, healthByDate, competitionByDate, trackedMetricIds, type],
   );
 
   const totalWeeks = weeks.length;
@@ -198,12 +198,12 @@ function ActivityCalendarImpl(props: ActivityCalendarProps) {
   const yearLabel = today.getFullYear();
 
   const colorClass =
-    type === "wellness" ? css.calWellness : css.calPerformance;
+    type === "health" ? css.calHealth : css.calCompetition;
 
   const calLabel =
-    type === "wellness"
-      ? "Health & Wellness Log calendar"
-      : "Performance Log calendar";
+    type === "health"
+      ? "Health & Performance Log calendar"
+      : "Competition Log calendar";
 
   const upDisabled = startIdx <= 0;
   const downDisabled = endIdx >= totalWeeks;
@@ -329,7 +329,7 @@ function ActivityCalendarImpl(props: ActivityCalendarProps) {
           legend stays for sighted users (matches prototype). */}
       <div className={css.sectionCalLegend} aria-hidden="true">
         <span className={css.sectionCalLegendLabel}>Data entered:</span>
-        {type === "wellness" ? (
+        {type === "health" ? (
           <>
             <span className={css.heatmapLegendItem}>
               <span
@@ -354,7 +354,7 @@ function ActivityCalendarImpl(props: ActivityCalendarProps) {
           <>
             <span className={css.heatmapLegendItem}>
               <span
-                className={`${css.heatmapLegendSwatch} ${css.swatchAllPerformance}`}
+                className={`${css.heatmapLegendSwatch} ${css.swatchAllCompetition}`}
               />{" "}
               Yes
             </span>
@@ -377,7 +377,7 @@ interface CellNodeProps {
   dayIdx: number;
   starWeek: number;
   starDay: number;
-  type: "wellness" | "performance";
+  type: "health" | "competition";
 }
 
 function CellNode({
@@ -408,14 +408,14 @@ function CellNode({
   // Tappable filter (load-bearing - both rules required):
   //   1. state !== 'inactive'
   //   2. offset is in [0, HISTORY] (i.e., not NaN, not future-dated)
-  // AND only wellness cells are interactive in this story (performance
+  // AND only health cells are interactive in this story (competition
   // cells are non-interactive per requirements).
   const inWindow =
     !Number.isNaN(cell.offset) &&
     cell.offset >= 0 &&
     cell.offset <= HISTORY;
   const tappable =
-    type === "wellness" && cell.state !== "inactive" && inWindow;
+    type === "health" && cell.state !== "inactive" && inWindow;
 
   const stateClass =
     cell.state === "all"
@@ -432,14 +432,14 @@ function CellNode({
   if (tappable && cell.date) {
     const iso = toISO(cell.date);
     return (
-      <Link to={`/wellness?date=${iso}`} className={className}>
+      <Link to={`/health?date=${iso}`} className={className}>
         <span aria-hidden="true">{dayNum}</span>
         <span className={common.visuallyHidden}>{visuallyHiddenLabel}</span>
       </Link>
     );
   }
 
-  // Inactive or performance cells: render as <div>. No role, no
+  // Inactive or competition cells: render as <div>. No role, no
   // tabindex. Still emit the visually-hidden label so screen-reader
   // traversal announces each day's date and state.
   return (

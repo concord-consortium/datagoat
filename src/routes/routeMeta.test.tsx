@@ -6,7 +6,7 @@ import type { CustomMetricDef } from "../types/customMetrics";
 function customDef(
   id: string,
   name: string,
-  metricType: "wellness" | "performance",
+  metricType: "health" | "competition",
 ): CustomMetricDef {
   return {
     id,
@@ -26,41 +26,41 @@ function customDef(
 }
 
 describe("resolveRouteMeta — custom metric routing", () => {
-  it("resolves a custom wellness metric title at /wellness/:metricId", () => {
-    const customs = [customDef("c_stretch", "Stretch Time", "wellness")];
-    const meta = resolveRouteMeta("/wellness/c_stretch", customs);
+  it("resolves a custom health metric title at /health/:metricId", () => {
+    const customs = [customDef("c_stretch", "Stretch Time", "health")];
+    const meta = resolveRouteMeta("/health/c_stretch", customs);
     expect(meta?.title).toBe("Stretch Time");
-    expect(meta?.backTo).toBe("/wellness");
+    expect(meta?.backTo).toBe("/health");
   });
 
-  it("resolves a custom performance metric title at /performance/:metricId", () => {
-    const customs = [customDef("c_5k", "5K Time", "performance")];
-    const meta = resolveRouteMeta("/performance/c_5k", customs);
+  it("resolves a custom competition metric title at /competition/:metricId", () => {
+    const customs = [customDef("c_5k", "5K Time", "competition")];
+    const meta = resolveRouteMeta("/competition/c_5k", customs);
     expect(meta?.title).toBe("5K Time");
-    expect(meta?.backTo).toBe("/performance");
+    expect(meta?.backTo).toBe("/competition");
   });
 
-  it("does NOT resolve a wellness URL to a performance custom (and vice versa)", () => {
+  it("does NOT resolve a health URL to a competition custom (and vice versa)", () => {
     // Cross-type access by id should fall through to null so MetricDetail
     // bounces back to the right log instead of rendering with the wrong
     // entry map.
-    const wellnessCustom = [customDef("c_w", "Stretch Time", "wellness")];
-    const performanceCustom = [customDef("c_p", "5K Time", "performance")];
-    expect(resolveRouteMeta("/performance/c_w", wellnessCustom)).toBeNull();
-    expect(resolveRouteMeta("/wellness/c_p", performanceCustom)).toBeNull();
+    const healthCustom = [customDef("c_w", "Stretch Time", "health")];
+    const competitionCustom = [customDef("c_p", "5K Time", "competition")];
+    expect(resolveRouteMeta("/competition/c_w", healthCustom)).toBeNull();
+    expect(resolveRouteMeta("/health/c_p", competitionCustom)).toBeNull();
   });
 
   it("returns null for an unknown id when customs are empty", () => {
-    expect(resolveRouteMeta("/wellness/c_unknown", [])).toBeNull();
-    expect(resolveRouteMeta("/performance/c_unknown", [])).toBeNull();
+    expect(resolveRouteMeta("/health/c_unknown", [])).toBeNull();
+    expect(resolveRouteMeta("/competition/c_unknown", [])).toBeNull();
   });
 
   it("prefers a built-in metric over a custom with the same id", () => {
     // Built-in ids never collide with c_-prefixed customs in practice,
     // but the resolver checks built-ins first regardless. This guards
     // the lookup order from regressing.
-    const customs = [customDef("hydration", "Override", "wellness")];
-    const meta = resolveRouteMeta("/wellness/hydration", customs);
+    const customs = [customDef("hydration", "Override", "health")];
+    const meta = resolveRouteMeta("/health/hydration", customs);
     expect(meta?.title).toBe("Hydration");
   });
 });

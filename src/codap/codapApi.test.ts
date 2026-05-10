@@ -110,9 +110,9 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        title: "Health & Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        title: "Health & Performance",
+        collectionName: "Health",
         attributes: ["date", "hydration"],
         rows: [{ date: "2026-04-01", hydration: 64 }],
       });
@@ -123,11 +123,11 @@ describe("useCodapApi sendDataset", () => {
         action: "create",
         resource: "dataContext",
         values: expect.objectContaining({
-          name: "DataGOAT-Wellness",
-          title: "Health & Wellness",
+          name: "DataGOAT-Health",
+          title: "Health & Performance",
           collections: [
             expect.objectContaining({
-              name: "Health-and-Wellness",
+              name: "Health",
               attrs: [
                 { name: "date", type: "date" },
                 { name: "hydration", type: "numeric" },
@@ -138,11 +138,11 @@ describe("useCodapApi sendDataset", () => {
       }),
     );
     expect(codapMocks.createTable).toHaveBeenCalledWith(
-      "DataGOAT-Wellness",
+      "DataGOAT-Health",
       undefined,
     );
     expect(codapMocks.createItems).toHaveBeenCalledWith(
-      "DataGOAT-Wellness",
+      "DataGOAT-Health",
       expect.arrayContaining([
         expect.objectContaining({ date: "2026-04-01", hydration: 64 }),
       ]),
@@ -161,14 +161,14 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        collectionName: "Health",
         attributes: ["date", "hydration"],
         rows: [{ date: "2026-04-01", hydration: 64 }],
       });
     });
     expect(codapMocks.updateItemByID).toHaveBeenCalledWith(
-      "DataGOAT-Wellness",
+      "DataGOAT-Health",
       11,
       expect.objectContaining({ hydration: 64 }),
     );
@@ -187,15 +187,15 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        collectionName: "Health",
         attributes: ["date", "hydration"],
         rows: [{ date: "2026-04-02", hydration: 65 }],
       });
     });
     expect(codapMocks.updateItemByID).not.toHaveBeenCalled();
     expect(codapMocks.createItems).toHaveBeenCalledWith(
-      "DataGOAT-Wellness",
+      "DataGOAT-Health",
       expect.arrayContaining([
         expect.objectContaining({ date: "2026-04-02" }),
       ]),
@@ -218,15 +218,15 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        collectionName: "Health",
         attributes: ["date", "hydration"],
         rows: [{ date: "2026-04-01", hydration: 80 }],
       });
     });
     expect(codapMocks.updateItemByID).toHaveBeenCalledTimes(1);
     expect(codapMocks.updateItemByID).toHaveBeenCalledWith(
-      "DataGOAT-Wellness",
+      "DataGOAT-Health",
       1,
       expect.objectContaining({ hydration: 80 }),
     );
@@ -243,7 +243,7 @@ describe("useCodapApi sendDataset", () => {
       values: {
         collections: [
           {
-            name: "Health-and-Wellness",
+            name: "Health",
             attrs: [
               { name: "date", type: "date" },
               { name: "hydration", type: "categorical" },
@@ -255,15 +255,15 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        collectionName: "Health",
         attributes: ["date", "hydration"],
         rows: [{ date: "2026-04-01", hydration: 64 }],
       });
     });
     expect(codapMocks.updateAttribute).toHaveBeenCalledWith(
-      "DataGOAT-Wellness",
-      "Health-and-Wellness",
+      "DataGOAT-Health",
+      "Health",
       "hydration",
       { name: "hydration" },
       { type: "numeric" },
@@ -276,7 +276,7 @@ describe("useCodapApi sendDataset", () => {
       values: {
         collections: [
           {
-            name: "Health-and-Wellness",
+            name: "Health",
             attrs: [
               { name: "date", type: "date" },
               { name: "hydration", type: "numeric" },
@@ -288,8 +288,8 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        collectionName: "Health",
         attributes: ["date", "hydration"],
         rows: [],
       });
@@ -305,8 +305,8 @@ describe("useCodapApi sendDataset", () => {
     const result = await renderApi();
     await act(async () => {
       await result.current.sendDataset({
-        name: "DataGOAT-Wellness",
-        collectionName: "Health-and-Wellness",
+        name: "DataGOAT-Health",
+        collectionName: "Health",
         attributes: ["date"],
         rows: [],
       });

@@ -121,10 +121,10 @@ function buildWeeks(
       const hasAny =
         !!entry &&
         Object.values(entry.metrics ?? {}).some((v) => {
-          // Match Dashboard.competitionLoggedAny and CompetitionLog
-          // stringValue: a non-zero number (incl. negatives for customs
-          // with yBottomRaw < 0) counts as logged data.
-          if (typeof v === "number") return v !== 0;
+          // A finite number (including 0 and negatives) or a non-empty
+          // string counts as logged. Matches Dashboard.competitionLoggedAny
+          // and CompetitionLog stringValue.
+          if (typeof v === "number") return Number.isFinite(v);
           if (typeof v === "string") return v.trim() !== "";
           return false;
         });

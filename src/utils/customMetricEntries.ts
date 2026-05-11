@@ -1,22 +1,11 @@
 import type { CompetitionEntry, HealthEntry } from "../types/data";
 
-// Returns true when at least one health or competition entry has a
-// non-zero numeric value (or non-empty string value) for the given
-// metric ID. Custom health metric values live in
-// HealthEntry.customMetrics; custom competition metric values share
-// the existing CompetitionEntry.metrics map alongside built-in IDs.
+// Returns true when at least one health or competition entry has a finite
+// numeric value (including 0 and negatives) or a non-empty string value
+// for the given metric ID. A missing / undefined key means "not logged."
 //
-// "0 is the sentinel for blank input" is the existing convention in
-// HealthLog / CompetitionLog — both write 0 to the map when the user
-// leaves the input empty. Treating 0 as "logged" would cause the
-// confirmation dialog to fire for every metric the user ever touched.
-//
-// FUTURE WORK: This convention is brittle. A real "0 alcoholic drinks"
-// or "0 minutes stretched" entry is currently indistinguishable from
-// "user never typed anything." When the log screens are updated to
-// store `undefined` (or omit the key) for blank inputs and reserve `0`
-// for genuine zero values, this helper should switch to key-presence
-// detection (`metricId in entry.customMetrics`) instead.
+// Backs the "you have entries - really untrack this metric?" confirmation
+// dialog.
 export function hasEntriesForMetric(
   metricId: string,
   healthEntries: HealthEntry[],
@@ -34,7 +23,7 @@ export function hasEntriesForMetric(
 }
 
 function isMeaningful(v: number | string | undefined): boolean {
-  if (typeof v === "number") return v !== 0;
+  if (typeof v === "number") return Number.isFinite(v);
   if (typeof v === "string") return v.trim() !== "";
   return false;
 }

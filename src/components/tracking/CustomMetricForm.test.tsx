@@ -38,7 +38,7 @@ const userMock = vi.hoisted(() => ({
     async () => {},
   ),
   setTrackedMetrics: vi.fn<
-    (type: "wellness" | "performance", ids: string[]) => Promise<void>
+    (type: "health" | "competition", ids: string[]) => Promise<void>
   >(async () => {}),
 }));
 
@@ -48,23 +48,23 @@ vi.mock("../../contexts/UserContext", () => ({
 
 vi.mock("../../contexts/DataContext", async () => {
   // Import inside the async factory so we get the real
-  // emptyWellnessEntry — vi.mock factories are hoisted above static
+  // emptyHealthEntry — vi.mock factories are hoisted above static
   // imports, so we cannot reach top-level imports from here.
-  const { emptyWellnessEntry } = await import("../../types/data");
+  const { emptyHealthEntry } = await import("../../types/data");
   return {
     useData: () => ({
-      wellness: {
+      health: {
         status: "loaded",
         entries: [
           {
-            ...emptyWellnessEntry("2026-05-01"),
+            ...emptyHealthEntry("2026-05-01"),
             customMetrics: { c_x: 30 },
           },
         ],
       },
-      performance: { status: "loaded", entries: [] },
-      setWellnessEntry: vi.fn(),
-      setPerformanceEntry: vi.fn(),
+      competition: { status: "loaded", entries: [] },
+      setHealthEntry: vi.fn(),
+      setCompetitionEntry: vi.fn(),
     }),
   };
 });
@@ -106,14 +106,14 @@ function renderAt(path: string) {
 describe("CustomMetricForm (create)", () => {
   it("requires a name", async () => {
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(screen.getByText(/name is required/i)).toBeInTheDocument();
   });
 
   it("saves a numeric metric on submit and navigates back", async () => {
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
     await user.type(screen.getByLabelText(/unit/i), "min");
@@ -131,7 +131,7 @@ describe("CustomMetricForm (create)", () => {
       expect.anything(),
       expect.objectContaining({
         name: "Stretch Minutes",
-        metricType: "wellness",
+        metricType: "health",
         unit: "min",
         goalRaw: 15,
         referenceUrl: "",
@@ -141,7 +141,7 @@ describe("CustomMetricForm (create)", () => {
 
   it("persists a valid Reference URL when provided", async () => {
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
     await user.type(
@@ -163,7 +163,7 @@ describe("CustomMetricForm (create)", () => {
 
   it("rejects an invalid Reference URL with a clear error", async () => {
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
     await user.type(
@@ -184,7 +184,7 @@ describe("CustomMetricForm (create)", () => {
     // rendering that into <a href> would execute arbitrary code on
     // click. The protocol guard restricts to http(s).
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Stretch Minutes");
     await user.type(
@@ -209,7 +209,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
         id: "c_x",
         ownerId: "u1",
         name: "Stretch Minutes",
-        metricType: "wellness",
+        metricType: "health",
         inputType: "numeric",
         unit: "min",
         goalRaw: 15,
@@ -224,7 +224,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
 
     render(
       <CustomMetricsProvider initialMetrics={seed}>
-        <MemoryRouter initialEntries={["/add-metric/wellness/c_x"]}>
+        <MemoryRouter initialEntries={["/add-metric/health/c_x"]}>
           <Routes>
             <Route
               path="/add-metric/:type/:metricId"
@@ -261,7 +261,7 @@ describe("CustomMetricForm (validation)", () => {
 
   it("rejects decimals above 100 (toFixed RangeError boundary)", async () => {
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Bad");
     await user.clear(screen.getByLabelText(/decimals/i));
@@ -275,7 +275,7 @@ describe("CustomMetricForm (validation)", () => {
 
   it("rejects non-integer decimals", async () => {
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Bad");
     await user.clear(screen.getByLabelText(/decimals/i));
@@ -295,7 +295,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
         id: "c_p",
         ownerId: "u1",
         name: "5K Time",
-        metricType: "performance",
+        metricType: "competition",
         inputType: "numeric",
         unit: "min",
         goalRaw: 25,
@@ -309,7 +309,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
     ];
     render(
       <CustomMetricsProvider initialMetrics={seed}>
-        <MemoryRouter initialEntries={["/add-metric/wellness/c_p"]}>
+        <MemoryRouter initialEntries={["/add-metric/health/c_p"]}>
           <Routes>
             <Route
               path="/add-metric/:type/:metricId"
@@ -320,18 +320,18 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
         </MemoryRouter>
       </CustomMetricsProvider>,
     );
-    // Without the redirect, the form would render at the wellness URL
-    // for a performance-typed metric — Cancel/Save/Delete would then
+    // Without the redirect, the form would render at the health URL
+    // for a competition-typed metric — Cancel/Save/Delete would then
     // push the wrong navigation. The outer gate must rewrite the URL
     // to the metric's actual metricType.
     expect(screen.getByTestId("loc").textContent).toBe(
-      "/add-metric/performance/c_p",
+      "/add-metric/competition/c_p",
     );
   });
 });
 
 describe("CustomMetricForm (auto-track on create)", () => {
-  it("appends the new metric id to trackedWellnessMetrics on the first profile create", async () => {
+  it("appends the new metric id to trackedHealthMetrics on the first profile create", async () => {
     // userMock starts with loadState.status === "missing" (no profile
     // doc yet), so the auto-track flows through updateProfile rather
     // than setTrackedMetrics. Reset the mock so we see only this test's
@@ -339,7 +339,7 @@ describe("CustomMetricForm (auto-track on create)", () => {
     userMock.updateProfile.mockClear();
 
     const user = userEvent.setup();
-    renderAt("/add-metric/wellness/new");
+    renderAt("/add-metric/health/new");
 
     await user.type(screen.getByLabelText(/name/i), "Stretch Time");
     await user.click(screen.getByRole("button", { name: /save/i }));
@@ -348,10 +348,10 @@ describe("CustomMetricForm (auto-track on create)", () => {
       expect(userMock.updateProfile).toHaveBeenCalled();
     });
     const call = userMock.updateProfile.mock.calls.at(-1)?.[0] as
-      | { trackedWellnessMetrics?: string[] }
+      | { trackedHealthMetrics?: string[] }
       | undefined;
     // Built-in defaults plus the freshly minted custom-metric id.
-    expect(call?.trackedWellnessMetrics).toEqual(
+    expect(call?.trackedHealthMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
   });

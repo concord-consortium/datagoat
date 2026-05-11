@@ -153,7 +153,7 @@ export function ProfileForm() {
           <h2 className={css.profileWelcomeTitle}>Welcome to DataGOAT</h2>
           <p>
             First, complete your profile. Then you&rsquo;ll choose what training
-            and performance data to track.
+            and competition data to track.
           </p>
         </div>
       )}

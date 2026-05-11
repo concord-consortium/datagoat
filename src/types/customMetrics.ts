@@ -1,4 +1,4 @@
-export type CustomMetricType = "wellness" | "performance";
+export type CustomMetricType = "health" | "competition";
 export type CustomMetricInputType = "numeric" | "radio";
 
 export interface CustomMetricDef {

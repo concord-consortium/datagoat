@@ -1,9 +1,9 @@
 import { useId } from "react";
 import { getCompTermLabel, getCompTermLowerLabel } from "../../data/competitionTerms";
 import css from "./AvailabilityTree.module.css";
-import type { WellnessEntry } from "../../types/data";
+import type { HealthEntry } from "../../types/data";
 
-type AvailabilityValue = WellnessEntry["availability"];
+type AvailabilityValue = HealthEntry["availability"];
 
 export interface AvailabilityTreeProps {
   competitionTerm: string;

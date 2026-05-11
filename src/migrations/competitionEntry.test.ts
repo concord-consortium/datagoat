@@ -1,22 +1,22 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { migrateDocument } from "./index";
 import { resetRegistryForTests } from "./testing";
-import { wellnessEntryFixtures } from "./wellnessEntry.fixtures";
+import { competitionEntryFixtures } from "./competitionEntry.fixtures";
 
 // See migrations/types.ts for the rationale and v1 -> v2 refactor
 // playbook ("Per-doc-type fixture tests").
-describe("wellnessEntry migrations", () => {
+describe("competitionEntry migrations", () => {
   beforeEach(() => {
     resetRegistryForTests();
   });
 
-  it.each(Object.keys(wellnessEntryFixtures))(
+  it.each(Object.keys(competitionEntryFixtures))(
     "fixture '%s' migrates without data loss",
     (key) => {
       const fixture =
-        wellnessEntryFixtures[key as keyof typeof wellnessEntryFixtures];
+        competitionEntryFixtures[key as keyof typeof competitionEntryFixtures];
       const migrated = migrateDocument(
-        "wellnessEntry",
+        "competitionEntry",
         fixture as unknown as Record<string, unknown>,
       );
       expect(migrated).toEqual(fixture);

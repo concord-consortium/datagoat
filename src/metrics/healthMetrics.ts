@@ -9,12 +9,12 @@ import AvailabilityIcon from "@/icons/metric-availability.svg?react";
 // Strings ported verbatim from the 2026-04-27 prototype's metricDetails
 // table (whoCollects, howCollected, desc). Do not paraphrase - the prototype
 // HTML at /home/doug/docs/datagoat-2026-04-27.html is the source of truth.
-export const WELLNESS_METRICS: MetricDefinition[] = [
+export const HEALTH_METRICS: MetricDefinition[] = [
   {
     id: "hydration",
     name: "Hydration",
     unit: "level",
-    type: "wellness",
+    type: "health",
     whoCollects: "Self",
     howCollected: "Morning urine color",
     Icon: HydrationIcon,
@@ -38,7 +38,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     name: "Total Sleep Time",
     unit: "hr/night",
     displayUnit: "hr",
-    type: "wellness",
+    type: "health",
     whoCollects: "Self",
     howCollected:
       "Oura Ring, PSQI, ASSQ\nYou can monitor your sleep using a wearable device like an Oura Ring, Fitbit, or Whoop strap, or you can fill out a questionnaire like the Pittsburgh Sleep Quality Index (PSQI) or the Athlete Sleep Screening Questionnaire (ASSQ). Both are great options to track your sleep duration and efficiency.",
@@ -68,7 +68,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     id: "sleepEfficiency",
     name: "Sleep Efficiency",
     unit: "%",
-    type: "wellness",
+    type: "health",
     whoCollects: "Self",
     howCollected:
       "Oura Ring, PSQI, ASSQ\nYou can monitor your sleep using a wearable device like an Oura Ring, Fitbit, or Whoop strap, or you can fill out a questionnaire like the Pittsburgh Sleep Quality Index (PSQI) or the Athlete Sleep Screening Questionnaire (ASSQ). Both are great options to track your sleep duration and efficiency.",
@@ -101,7 +101,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     name: "Protein Intake",
     unit: "g/kg/day",
     displayUnit: "g",
-    type: "wellness",
+    type: "health",
     whoCollects: "Self",
     howCollected:
       "Log protein intake (g)\nIn order to estimate protein intake, you may want to track your dietary intake for a “typical” weekday and weekend day with an app like Cronometer or MyFitnessPal. This way, you can better understand how much protein is in the foods you usually eat. Don’t forget to include supplements and/or shakes!",
@@ -128,7 +128,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     name: "Lean Mass",
     unit: "kg",
     hint: "Entered 2-3×/yr",
-    type: "wellness",
+    type: "health",
     whoCollects:
       "SC (Strength and Conditioning Coach), AT (Athletic Trainer), Nutrition",
     howCollected:
@@ -145,7 +145,7 @@ export const WELLNESS_METRICS: MetricDefinition[] = [
     id: "availability",
     name: "Availability",
     unit: "%",
-    type: "wellness",
+    type: "health",
     whoCollects: "AT (Athletic Trainer), Self",
     howCollected:
       "Each day, you’ll log whether you had a practice and/or a game and whether you participated. Your availability percentage — your unrestricted ability to participate in training and/or competition — will be calculated for the week.",

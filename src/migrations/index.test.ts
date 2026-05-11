@@ -9,8 +9,8 @@ import type { DocType } from "./types";
 // coverage meta-test below relies on this to enforce that every
 // registered migration has an idempotencyFixtures entry.
 import "./userProfile";
-import "./performanceEntry";
-import "./wellnessEntry";
+import "./competitionEntry";
+import "./healthEntry";
 
 // Snapshot before any test setup runs. The migrateDocument suite calls
 // resetRegistryForTests() in beforeEach, which would otherwise clear

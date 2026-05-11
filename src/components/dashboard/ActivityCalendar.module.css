@@ -226,67 +226,67 @@
   border-radius: 50%;
 }
 
-/* Wellness (teal) coloring */
-.calWellness .heatmapCell.all {
+/* Health (teal) coloring */
+.calHealth .heatmapCell.all {
   background: var(--accent);
   border-color: var(--accent);
   color: #080A0E;
 }
-.calWellness .heatmapCell.partial {
+.calHealth .heatmapCell.partial {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
   color: #E8EDF5;
 }
-.calWellness .heatmapCell.none {
+.calHealth .heatmapCell.none {
   background: var(--surface2);
 }
-.calWellness .heatmapCell.inactive {
+.calHealth .heatmapCell.inactive {
   background: var(--surface);
   border-color: var(--border);
   color: var(--subtext);
   opacity: 0.45;
 }
-.calWellness .heatmapCell.today.none {
+.calHealth .heatmapCell.today.none {
   background: var(--surface2);
   border-color: var(--border);
   color: var(--text);
 }
-.calWellness .heatmapCell.today.none:hover {
+.calHealth .heatmapCell.today.none:hover {
   border-color: var(--surface2);
   box-shadow: 0 0 0 1px var(--accent), 0 0 0 2px var(--border);
 }
-.calWellness .heatmapCell.today.all {
+.calHealth .heatmapCell.today.all {
   background: var(--accent);
   border-color: var(--accent);
   color: #080A0E;
 }
-.calWellness .heatmapCell.today.partial {
+.calHealth .heatmapCell.today.partial {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
   color: #E8EDF5;
 }
 
-/* Performance (coral) coloring - 2 states only (Yes / No / inactive) */
-.calPerformance .heatmapCell.all {
+/* Competition (coral) coloring - 2 states only (Yes / No / inactive) */
+.calCompetition .heatmapCell.all {
   background: #FF6B6B;
   border-color: #FF6B6B;
   color: #080A0E;
 }
-.calPerformance .heatmapCell.none {
+.calCompetition .heatmapCell.none {
   background: var(--surface2);
 }
-.calPerformance .heatmapCell.inactive {
+.calCompetition .heatmapCell.inactive {
   background: var(--surface);
   border-color: var(--border);
   color: var(--subtext);
   opacity: 0.45;
 }
-.calPerformance .heatmapCell.today.none {
+.calCompetition .heatmapCell.today.none {
   background: var(--surface2);
   border-color: var(--border);
   color: var(--text);
 }
-.calPerformance .heatmapCell.today.all {
+.calCompetition .heatmapCell.today.all {
   background: #FF6B6B;
   border-color: #FF6B6B;
   color: #080A0E;
@@ -343,7 +343,7 @@
   border: 1.5px solid var(--border);
 }
 
-.swatchAllPerformance {
+.swatchAllCompetition {
   background: #FF6B6B;
 }
 

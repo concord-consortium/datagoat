@@ -1,7 +1,7 @@
-import { CURRENT_WELLNESS_ENTRY_VERSION } from "../migrations/wellnessEntry";
-import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
+import { CURRENT_HEALTH_ENTRY_VERSION } from "../migrations/healthEntry";
+import { CURRENT_COMPETITION_ENTRY_VERSION } from "../migrations/competitionEntry";
 
-export interface WellnessEntry {
+export interface HealthEntry {
   version: number;
   date: string;
   hydration: number;
@@ -15,13 +15,13 @@ export interface WellnessEntry {
     gameHeld: boolean | null;
     gameParticipation: "played" | "dnp" | null;
   };
-  // User-defined custom wellness metric values, keyed by CustomMetricDef.id.
+  // User-defined custom health metric values, keyed by CustomMetricDef.id.
   // Optional so existing entries without the field read fine. Matches the
-  // PerformanceEntry.metrics pattern for non-typed values.
+  // CompetitionEntry.metrics pattern for non-typed values.
   customMetrics?: Record<string, number | string>;
 }
 
-export interface PerformanceEntry {
+export interface CompetitionEntry {
   version: number;
   date: string;
   metrics: Record<string, number | string>;
@@ -31,9 +31,9 @@ export type DataLoadState<T> =
   | { status: "loading" }
   | { status: "loaded"; entries: T[] };
 
-export function emptyWellnessEntry(date: string): WellnessEntry {
+export function emptyHealthEntry(date: string): HealthEntry {
   return {
-    version: CURRENT_WELLNESS_ENTRY_VERSION,
+    version: CURRENT_HEALTH_ENTRY_VERSION,
     date,
     hydration: 0,
     sleepTime: 0,
@@ -49,9 +49,9 @@ export function emptyWellnessEntry(date: string): WellnessEntry {
   };
 }
 
-export function emptyPerformanceEntry(date: string): PerformanceEntry {
+export function emptyCompetitionEntry(date: string): CompetitionEntry {
   return {
-    version: CURRENT_PERFORMANCE_ENTRY_VERSION,
+    version: CURRENT_COMPETITION_ENTRY_VERSION,
     date,
     metrics: {},
   };

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { WellnessEntry, PerformanceEntry } from "../types/data";
+import type { HealthEntry, CompetitionEntry } from "../types/data";
 import type { ProfileLoadState } from "../types/profile";
 import type { DataLoadState } from "../types/data";
 import type { CodapStatus } from "./codapApi";
@@ -108,8 +108,8 @@ vi.mock("../contexts/UserContext", () => ({
 
 function makeCompleteProfile(
   overrides: Partial<{
-    trackedWellnessMetrics: string[];
-    trackedPerformanceMetrics: string[];
+    trackedHealthMetrics: string[];
+    trackedCompetitionMetrics: string[];
   }> = {},
 ) {
   return {
@@ -126,8 +126,8 @@ function makeCompleteProfile(
       gender: "unspecified" as const,
       athleteType: "endurance" as const,
       competitionTerm: "season",
-      trackedWellnessMetrics: ["hydration"],
-      trackedPerformanceMetrics: ["fortyYardDash"],
+      trackedHealthMetrics: ["hydration"],
+      trackedCompetitionMetrics: ["fortyYardDash"],
       profileComplete: true,
       trackingSetupComplete: true,
       ...overrides,
@@ -136,16 +136,16 @@ function makeCompleteProfile(
 }
 
 const dataState: {
-  wellness: DataLoadState<WellnessEntry>;
-  performance: DataLoadState<PerformanceEntry>;
+  health: DataLoadState<HealthEntry>;
+  competition: DataLoadState<CompetitionEntry>;
 } = {
-  wellness: { status: "loading" },
-  performance: { status: "loading" },
+  health: { status: "loading" },
+  competition: { status: "loading" },
 };
 
 vi.mock("../contexts/DataContext", () => ({
-  useWellnessData: () => dataState.wellness,
-  usePerformanceData: () => dataState.performance,
+  useHealthData: () => dataState.health,
+  useCompetitionData: () => dataState.competition,
 }));
 
 import CodapPlugin from "./CodapPlugin";
@@ -157,8 +157,8 @@ describe("CodapPlugin", () => {
     codapState.status = "connected";
     codapState.error = undefined;
     userState.loadState = { status: "loading" };
-    dataState.wellness = { status: "loading" };
-    dataState.performance = { status: "loading" };
+    dataState.health = { status: "loading" };
+    dataState.competition = { status: "loading" };
   });
 
   it("loading state renders the loading text", () => {
@@ -204,8 +204,8 @@ describe("CodapPlugin", () => {
       loading: false,
     };
     userState.loadState = makeCompleteProfile();
-    dataState.wellness = { status: "loaded", entries: [] };
-    dataState.performance = { status: "loaded", entries: [] };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loaded", entries: [] };
     codapState.status = "connected";
     render(<CodapPlugin />);
     expect(
@@ -233,13 +233,13 @@ describe("CodapPlugin", () => {
         gender: "unspecified",
         athleteType: "endurance",
         competitionTerm: "season",
-        trackedWellnessMetrics: ["hydration", "sleepTime"],
-        trackedPerformanceMetrics: ["fortyYardDash"],
+        trackedHealthMetrics: ["hydration", "sleepTime"],
+        trackedCompetitionMetrics: ["fortyYardDash"],
         profileComplete: true,
         trackingSetupComplete: true,
       },
     };
-    dataState.wellness = {
+    dataState.health = {
       status: "loaded",
       entries: [
         {
@@ -259,7 +259,7 @@ describe("CodapPlugin", () => {
         },
       ],
     };
-    dataState.performance = {
+    dataState.competition = {
       status: "loaded",
       entries: [
         {
@@ -276,30 +276,30 @@ describe("CodapPlugin", () => {
     const sendBtn = screen.getByRole("button", { name: /send to codap/i });
     expect(sendBtn).toBeEnabled();
 
-    const [wellnessBox, performanceBox] = screen.getAllByRole("checkbox");
-    await user.click(wellnessBox);
-    await user.click(performanceBox);
+    const [healthBox, competitionBox] = screen.getAllByRole("checkbox");
+    await user.click(healthBox);
+    await user.click(competitionBox);
     expect(sendBtn).toBeDisabled();
 
-    await user.click(wellnessBox);
+    await user.click(healthBox);
     expect(sendBtn).toBeEnabled();
 
-    await user.click(performanceBox);
+    await user.click(competitionBox);
     await user.click(sendBtn);
 
     expect(sendDatasetMock).toHaveBeenCalledTimes(2);
     expect(sendDatasetMock).toHaveBeenNthCalledWith(1, {
-      name: "DataGOAT-Wellness",
-      title: "Health & Wellness",
-      collectionName: "Health-and-Wellness",
-      tableName: "Health-and-Wellness",
+      name: "DataGOAT-Health",
+      title: "Health & Performance",
+      collectionName: "Health",
+      tableName: "Health",
       attributes: ["date", "hydration", "sleepTime"],
       rows: [{ date: "2026-04-01", hydration: 64, sleepTime: 7 }],
     });
     expect(sendDatasetMock).toHaveBeenNthCalledWith(2, {
-      name: "DataGOAT-Performance",
-      title: "Performance",
-      collectionName: "Performance",
+      name: "DataGOAT-Competition",
+      title: "Competition",
+      collectionName: "Competition",
       attributes: ["date", "fortyYardDash"],
       rows: [{ date: "2026-04-01", fortyYardDash: 4.5 }],
     });
@@ -311,8 +311,8 @@ describe("CodapPlugin", () => {
       loading: false,
     };
     userState.loadState = { status: "loading" };
-    dataState.wellness = { status: "loading" };
-    dataState.performance = { status: "loading" };
+    dataState.health = { status: "loading" };
+    dataState.competition = { status: "loading" };
     codapState.status = "connected";
 
     render(<CodapPlugin />);
@@ -342,14 +342,14 @@ describe("CodapPlugin", () => {
         gender: "unspecified",
         athleteType: "endurance",
         competitionTerm: "season",
-        trackedWellnessMetrics: ["hydration"],
-        trackedPerformanceMetrics: ["fortyYardDash"],
+        trackedHealthMetrics: ["hydration"],
+        trackedCompetitionMetrics: ["fortyYardDash"],
         profileComplete: true,
         trackingSetupComplete: true,
       },
     };
-    dataState.wellness = { status: "loaded", entries: [] };
-    dataState.performance = { status: "loading" };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loading" };
     codapState.status = "connected";
 
     const user = userEvent.setup();
@@ -359,8 +359,8 @@ describe("CodapPlugin", () => {
     expect(sendBtn).toBeDisabled();
     expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
 
-    const [, performanceBox] = screen.getAllByRole("checkbox");
-    await user.click(performanceBox);
+    const [, competitionBox] = screen.getAllByRole("checkbox");
+    await user.click(competitionBox);
 
     expect(sendBtn).toBeEnabled();
     expect(
@@ -374,8 +374,8 @@ describe("CodapPlugin", () => {
       loading: false,
     };
     userState.loadState = makeCompleteProfile();
-    dataState.wellness = { status: "loaded", entries: [] };
-    dataState.performance = { status: "loaded", entries: [] };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loaded", entries: [] };
     codapState.status = "connecting";
 
     render(<CodapPlugin />);

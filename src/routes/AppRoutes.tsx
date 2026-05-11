@@ -12,8 +12,8 @@ import { ForgotPassword } from "../components/auth/ForgotPassword";
 import { EmailVerification } from "../components/auth/EmailVerification";
 import { ProfileForm } from "../components/profile/ProfileForm";
 import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
-import { WellnessLog } from "../components/logs/WellnessLog";
-import { PerformanceLog } from "../components/logs/PerformanceLog";
+import { HealthLog } from "../components/logs/HealthLog";
+import { CompetitionLog } from "../components/logs/CompetitionLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { MetricDetail } from "../charts/MetricDetail";
 import { AddMetric } from "../components/tracking/AddMetric";
@@ -79,15 +79,15 @@ export function AppRoutes() {
             /profile (onboarding entry point). */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/wellness" element={<WellnessLog />} />
+          <Route path="/health" element={<HealthLog />} />
           <Route
-            path="/wellness/:metricId"
-            element={<MetricDetail type="wellness" />}
+            path="/health/:metricId"
+            element={<MetricDetail type="health" />}
           />
-          <Route path="/performance" element={<PerformanceLog />} />
+          <Route path="/competition" element={<CompetitionLog />} />
           <Route
-            path="/performance/:metricId"
-            element={<MetricDetail type="performance" />}
+            path="/competition/:metricId"
+            element={<MetricDetail type="competition" />}
           />
           <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
           <Route

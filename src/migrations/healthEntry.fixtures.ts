@@ -1,4 +1,4 @@
-export const wellnessEntryFixtures = {
+export const healthEntryFixtures = {
   1: {
     version: 1,
     date: "2026-04-15",

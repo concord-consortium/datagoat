@@ -60,7 +60,7 @@ export interface MetricChartConfig {
 const fmtRaw = (v: number) => `${v}`;
 const fmtPct = (v: number) => `${v}%`;
 
-// Wellness metrics
+// Health metrics
 const HYDRATION: MetricChartConfig = {
   chartType: "bar",
   yTopRaw: 1,
@@ -117,7 +117,7 @@ const LEAN_MASS: MetricChartConfig = {
 };
 
 // Availability is currently a tree (practice + game yes/no) reduced to a
-// single 0/1 sentinel by readWellnessMetric, so a 0..100% axis with a goal
+// single 0/1 sentinel by readHealthMetric, so a 0..100% axis with a goal
 // line at 80 is aspirational — the bar will appear as a 1-unit sliver
 // against this scale. Content-team work to define a real availability
 // percentage (e.g., participation rate over a week) is a follow-up.
@@ -132,13 +132,13 @@ const AVAILABILITY: MetricChartConfig = {
   random: () => 100,
 };
 
-// Performance metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
+// Competition metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
 // All numeric, all sport-counter-shaped. Demo random values span the
 // metric's full [yBottomRaw, yTopRaw] range so bars exercise the full
 // chart height. The bottom is parameterized so a future metric with
 // negative values (e.g., a score differential ranging -5..5) gets
 // correct random data without code changes here.
-function performanceConfig(
+function competitionConfig(
   yBottomRaw: number,
   yTopRaw: number,
 ): MetricChartConfig {
@@ -146,7 +146,7 @@ function performanceConfig(
     chartType: "bar",
     yTopRaw,
     yBottomRaw,
-    // No goalRaw — performance goals haven't been content-defined.
+    // No goalRaw — competition goals haven't been content-defined.
     formatValue: fmtRaw,
     random: (rng) => randomInt(rng, yBottomRaw, yTopRaw),
   };
@@ -159,12 +159,12 @@ const CONFIG: Record<string, MetricChartConfig> = {
   protein: PROTEIN,
   leanMass: LEAN_MASS,
   availability: AVAILABILITY,
-  goals: performanceConfig(0, 10),
-  assists: performanceConfig(0, 10),
-  yards: performanceConfig(0, 200),
-  tackles: performanceConfig(0, 10),
-  wins: performanceConfig(0, 5),
-  losses: performanceConfig(0, 5),
+  goals: competitionConfig(0, 10),
+  assists: competitionConfig(0, 10),
+  yards: competitionConfig(0, 200),
+  tackles: competitionConfig(0, 10),
+  wins: competitionConfig(0, 5),
+  losses: competitionConfig(0, 5),
 };
 
 const DEFAULT_CONFIG: MetricChartConfig = {

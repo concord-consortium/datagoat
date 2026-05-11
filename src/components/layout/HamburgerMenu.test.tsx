@@ -33,8 +33,8 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     gender: "unspecified",
     athleteType: "endurance",
     competitionTerm: "game",
-    trackedWellnessMetrics: [],
-    trackedPerformanceMetrics: [],
+    trackedHealthMetrics: [],
+    trackedCompetitionMetrics: [],
     profileComplete: true,
     trackingSetupComplete: true,
     ...overrides,
@@ -158,7 +158,7 @@ describe("HamburgerMenu narrowed isOnboarding derivation", () => {
     renderMenu();
     const link = screen.getByRole("link", { name: /tracked data setup/i });
     expect(link).not.toHaveAttribute("aria-disabled");
-    // Other routes (Dashboard, Wellness, etc.) stay gated.
+    // Other routes (Dashboard, Health, etc.) stay gated.
     const dashLink = screen.getByRole("link", { name: /dashboard/i });
     expect(dashLink).toHaveAttribute("aria-disabled", "true");
   });

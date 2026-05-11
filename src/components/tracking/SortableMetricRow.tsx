@@ -10,7 +10,7 @@ import css from "./TrackedMetricsTable.module.css";
 interface SortableMetricRowProps {
   id: string;
   name: string;
-  type: "wellness" | "performance";
+  type: "health" | "competition";
   checked: boolean;
   Icon?: ComponentType<SVGProps<SVGSVGElement>>;
   onToggleCheck: () => void;

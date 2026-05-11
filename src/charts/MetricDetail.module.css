@@ -14,7 +14,7 @@
 }
 
 /* Shown while the CustomMetrics Firestore snapshot is in flight on a
-   /wellness/:metricId or /performance/:metricId deep-link, so an
+   /health/:metricId or /competition/:metricId deep-link, so an
    unresolved id doesn't Navigate away before the snapshot lands. */
 .loading {
   padding: 20px 24px;

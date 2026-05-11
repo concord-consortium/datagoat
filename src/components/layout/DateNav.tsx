@@ -8,23 +8,23 @@ import {
   fmtDate,
   toISO,
 } from "../../utils/dates";
-import type { ChipState } from "../../utils/wellnessCompleteness";
+import type { ChipState } from "../../utils/healthCompleteness";
 import common from "../common.module.css";
 import css from "./DateNav.module.css";
 
 export interface DateNavProps {
-  // The current date offset in [0, HISTORY] - parent (WellnessLog,
-  // PerformanceLog) typically derives this from useSearchParams.
+  // The current date offset in [0, HISTORY] - parent (HealthLog,
+  // CompetitionLog) typically derives this from useSearchParams.
   offset: number;
   // When true, render the completeness chip + legend below the prev/next row.
-  // Used by Health & Wellness Log; Performance Log omits.
+  // Used by Health & Performance Log; Competition Log omits.
   withChip?: boolean;
   chipState?: ChipState;
 }
 
 // Date navigator with prev/next buttons. Reads + writes the ?date=
 // search param so browser back/forward, refresh, and shareable links
-// just work. Direct navigation to /wellness with no ?date= falls back
+// just work. Direct navigation to /health with no ?date= falls back
 // to today (offset HISTORY).
 export function DateNav({ offset, withChip, chipState }: DateNavProps) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -130,11 +130,13 @@ function chipClass(state: ChipState): string {
 }
 
 function chipStatusText(state: ChipState): string {
-  if (state === "all") return "All wellness metrics entered for this day.";
-  if (state === "some") return "Some wellness metrics entered for this day.";
-  return "No wellness metrics entered for this day.";
+  // Category is contextually obvious — the chip lives on the Health &
+  // Performance Log, so no need to repeat the category descriptor here.
+  if (state === "all") return "All metrics entered for this day.";
+  if (state === "some") return "Some metrics entered for this day.";
+  return "No metrics entered for this day.";
 }
 
-// Re-export so callers in WellnessLog / PerformanceLog can convert their
+// Re-export so callers in HealthLog / CompetitionLog can convert their
 // `?date=` search param to an offset without re-importing historyOffsetFromISO.
 export { historyOffsetFromISO };

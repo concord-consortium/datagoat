@@ -44,11 +44,11 @@ describe("DemoModeContext", () => {
               element={
                 <>
                   <ModeReadout />
-                  <Link to="/wellness">go</Link>
+                  <Link to="/health">go</Link>
                 </>
               }
             />
-            <Route path="/wellness" element={<ModeReadout />} />
+            <Route path="/health" element={<ModeReadout />} />
           </Routes>
         </DemoModeProvider>
       </MemoryRouter>,

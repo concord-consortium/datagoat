@@ -88,7 +88,7 @@ function AppShellInner() {
   const isDashboard = pathname === "/dashboard";
   // Custom-metric titles live in CustomMetricsContext rather than the
   // static metric registries; thread the array into resolveRouteMeta so
-  // /wellness/:metricId and /performance/:metricId can resolve a custom
+  // /health/:metricId and /competition/:metricId can resolve a custom
   // metric's name + back-target.
   const { metrics: customs } = useCustomMetrics();
   const routeMeta = resolveRouteMeta(pathname, customs);

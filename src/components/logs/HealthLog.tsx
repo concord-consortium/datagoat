@@ -8,7 +8,7 @@ import { MetricInputRow } from "./MetricInputRow";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
-import { WELLNESS_METRICS } from "../../metrics/wellnessMetrics";
+import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import {
@@ -17,22 +17,22 @@ import {
   historyOffsetFromISO,
   toISO,
 } from "../../utils/dates";
-import { getChipState } from "../../utils/wellnessCompleteness";
-import { emptyWellnessEntry, type WellnessEntry } from "../../types/data";
-import css from "./WellnessLog.module.css";
+import { getChipState } from "../../utils/healthCompleteness";
+import { emptyHealthEntry, type HealthEntry } from "../../types/data";
+import css from "./HealthLog.module.css";
 
-// Built-in wellness metrics indexed by id. Hoisted to module scope so
+// Built-in health metrics indexed by id. Hoisted to module scope so
 // the lookup map is constant across renders without needing a hook —
 // the component early-returns on bad ?date= params, and a useMemo
 // declared after that return would violate the Rules of Hooks.
 const BUILT_IN_BY_ID = new Map<string, MetricDefinition>(
-  WELLNESS_METRICS.map((m) => [m.id, m]),
+  HEALTH_METRICS.map((m) => [m.id, m]),
 );
 
-export function WellnessLog() {
+export function HealthLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
-  const { wellness, setWellnessEntry } = useData();
+  const { health, setHealthEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
 
   const dateParam = searchParams.get("date");
@@ -60,49 +60,49 @@ export function WellnessLog() {
     loadState.status === "loaded" ? loadState.profile : null;
   const competitionTerm = profile?.competitionTerm ?? "game";
   const trackedIds =
-    profile?.trackedWellnessMetrics ?? WELLNESS_METRICS.map((m) => m.id);
+    profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
 
   const entries =
-    wellness.status === "loaded" ? wellness.entries : [];
-  // Merge over emptyWellnessEntry defaults so partially-saved docs
+    health.status === "loaded" ? health.entries : [];
+  // Merge over emptyHealthEntry defaults so partially-saved docs
   // (e.g. saved before a metric was tracked) still expose every field
   // the UI reads. Without this, toggling availability on after logging
   // other metrics hands AvailabilityTree an undefined value and crashes.
   const foundEntry = entries.find((e) => e.date === dateIso);
-  const currentEntry: WellnessEntry = foundEntry
-    ? { ...emptyWellnessEntry(dateIso), ...foundEntry }
-    : emptyWellnessEntry(dateIso);
+  const currentEntry: HealthEntry = foundEntry
+    ? { ...emptyHealthEntry(dateIso), ...foundEntry }
+    : emptyHealthEntry(dateIso);
 
   const chipState = getChipState(currentEntry, trackedIds);
 
   if (shouldRedirect) {
-    return <Navigate to="/wellness" replace />;
+    return <Navigate to="/health" replace />;
   }
 
-  function setNumericField<K extends keyof WellnessEntry>(
+  function setNumericField<K extends keyof HealthEntry>(
     field: K,
     raw: string,
   ) {
     const numeric = raw === "" ? 0 : Number(raw);
     if (!Number.isFinite(numeric)) return;
-    setWellnessEntry(dateIso, { [field]: numeric } as Partial<WellnessEntry>);
+    setHealthEntry(dateIso, { [field]: numeric } as Partial<HealthEntry>);
   }
 
   function setHydration(level: number) {
-    setWellnessEntry(dateIso, { hydration: level });
+    setHealthEntry(dateIso, { hydration: level });
   }
 
-  function setAvailability(next: WellnessEntry["availability"]) {
-    setWellnessEntry(dateIso, { availability: next });
+  function setAvailability(next: HealthEntry["availability"]) {
+    setHealthEntry(dateIso, { availability: next });
   }
 
   function setCustomMetric(metricId: string, raw: string) {
     const numeric = raw === "" ? 0 : Number(raw);
     if (!Number.isFinite(numeric)) return;
-    setWellnessEntry(dateIso, { customMetrics: { [metricId]: numeric } });
+    setHealthEntry(dateIso, { customMetrics: { [metricId]: numeric } });
   }
 
-  // Custom wellness metrics indexed by id. Built-in lookup uses the
+  // Custom health metrics indexed by id. Built-in lookup uses the
   // module-scope BUILT_IN_BY_ID; both feed the unified iteration in
   // the JSX below, which walks `trackedIds` and dispatches to
   // whichever map carries the id. Iterating trackedIds (rather than
@@ -111,14 +111,14 @@ export function WellnessLog() {
   // built-ins ends up in the right slot here.
   const customById = new Map<string, CustomMetricDef>();
   for (const def of allCustom) {
-    if (def.metricType === "wellness") customById.set(def.id, def);
+    if (def.metricType === "health") customById.set(def.id, def);
   }
   const adaptCustom = (def: CustomMetricDef): MetricDefinition => ({
     id: def.id,
     name: def.name,
     unit: def.unit,
     displayUnit: def.unit,
-    type: "wellness",
+    type: "health",
     whoCollects: "",
     howCollected: "",
     description: "",
@@ -142,10 +142,10 @@ export function WellnessLog() {
         {isOnboarding && (
           <div className={css.profileWelcome}>
             <h2 className={css.profileWelcomeTitle}>
-              Your Health & Wellness Log
+              Your Health & Performance Log
             </h2>
             <p>
-              Record your health & wellness metrics here. Logging consistently
+              Record your health & performance metrics here. Logging consistently
               - even on rest days - helps you and your team spot patterns
               over time.
             </p>
@@ -176,7 +176,7 @@ export function WellnessLog() {
                       inputType="colorScale"
                       value={currentEntry.hydration}
                       onChange={setHydration}
-                      detailHref={`/wellness/${id}`}
+                      detailHref={`/health/${id}`}
                     />
                   );
                 }
@@ -189,12 +189,12 @@ export function WellnessLog() {
                       competitionTerm={competitionTerm}
                       value={currentEntry.availability}
                       onChange={setAvailability}
-                      detailHref={`/wellness/${id}`}
+                      detailHref={`/health/${id}`}
                     />
                   );
                 }
                 const fieldKey = id as keyof Pick<
-                  WellnessEntry,
+                  HealthEntry,
                   "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
                 >;
                 const live = currentEntry[fieldKey];
@@ -207,7 +207,7 @@ export function WellnessLog() {
                     inputType="numeric"
                     value={stringValue}
                     onChange={(raw) => setNumericField(fieldKey, raw)}
-                    detailHref={`/wellness/${id}`}
+                    detailHref={`/health/${id}`}
                   />
                 );
               }
@@ -231,7 +231,7 @@ export function WellnessLog() {
                     inputType="numeric"
                     value={stringValue}
                     onChange={(raw) => setCustomMetric(id, raw)}
-                    detailHref={`/wellness/${id}`}
+                    detailHref={`/health/${id}`}
                     // Open the keystroke filter to a leading `-`
                     // only when the metric's range goes below 0;
                     // otherwise typing minus stays blocked, matching
@@ -243,7 +243,7 @@ export function WellnessLog() {
               // Tracked id resolves to neither a built-in nor a
               // current custom — could be a stale id from a deleted
               // custom that hasn't yet been pruned from
-              // trackedWellnessMetrics. Skip silently.
+              // trackedHealthMetrics. Skip silently.
               return null;
             })}
           </tbody>

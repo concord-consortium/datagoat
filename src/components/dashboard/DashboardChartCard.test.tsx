@@ -20,8 +20,8 @@ const ctx = vi.hoisted(() => ({
       gender: "male" as const,
       athleteType: "endurance" as const,
       competitionTerm: "game",
-      trackedWellnessMetrics: [],
-      trackedPerformanceMetrics: [],
+      trackedHealthMetrics: [],
+      trackedCompetitionMetrics: [],
       profileComplete: true,
       trackingSetupComplete: true,
     } as UserProfile,
@@ -62,9 +62,9 @@ describe("DashboardChartCard", () => {
   it("seeds the dropdown to the first tracked metric and reflects its name in the chart <title>", () => {
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration", "sleepTime"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
     expect(getSelect(container).value).toBe("hydration");
@@ -80,9 +80,9 @@ describe("DashboardChartCard", () => {
     const user = userEvent.setup();
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration", "sleepTime"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
     await user.selectOptions(getSelect(container), "sleepTime");
@@ -102,9 +102,9 @@ describe("DashboardChartCard", () => {
     const user = userEvent.setup();
     const { container, rerender } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration", "sleepTime"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
 
@@ -118,9 +118,9 @@ describe("DashboardChartCard", () => {
     // list).
     rerender(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
 
@@ -145,9 +145,9 @@ describe("DashboardChartCard", () => {
   it("renders the loading skeleton variant when loading=true (does not flash zero-axes)", () => {
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
         loading
       />,
     );
@@ -158,12 +158,12 @@ describe("DashboardChartCard", () => {
     expect(getSvgDesc(container)).toBe("Hydration chart is loading.");
   });
 
-  it("works with performance metric definitions and renders an empty state when nothing is tracked", () => {
+  it("works with competition metric definitions and renders an empty state when nothing is tracked", () => {
     const { container, rerender } = render(
       <DashboardChartCard
-        type="performance"
+        type="competition"
         trackedMetricIds={["goals"]}
-        performanceEntries={[]}
+        competitionEntries={[]}
       />,
     );
     const initialName = getSvgTitle(container);
@@ -175,22 +175,22 @@ describe("DashboardChartCard", () => {
     // to avoid.
     rerender(
       <DashboardChartCard
-        type="performance"
+        type="competition"
         trackedMetricIds={[]}
-        performanceEntries={[]}
+        competitionEntries={[]}
       />,
     );
     expect(container.querySelector("svg")).toBeNull();
     expect(container.querySelector("select")).toBeNull();
-    expect(container.textContent).toContain("No tracked performance metrics");
+    expect(container.textContent).toContain("No tracked competition metrics");
   });
 
   it("dropdown lists exactly the tracked metrics by name (catches label/value mismatches)", () => {
     const { container } = render(
       <DashboardChartCard
-        type="wellness"
+        type="health"
         trackedMetricIds={["hydration", "protein"]}
-        wellnessEntries={[]}
+        healthEntries={[]}
       />,
     );
     const select = getSelect(container);
@@ -201,17 +201,17 @@ describe("DashboardChartCard", () => {
       (o) => o.value !== "",
     );
     const labels = realOptions.map((o) => o.textContent);
-    // Order matches the canonical WELLNESS_METRICS order, not the
+    // Order matches the canonical HEALTH_METRICS order, not the
     // input array order (filter-by-includes preserves the metric
     // catalog's order). Both names should be present.
     expect(labels).toContain("Hydration");
     expect(labels).toContain("Protein Intake");
     expect(labels.length).toBe(2);
-    // And the visible <label> for the field is the wellness variant
-    // (not the performance one), confirming the type prop is wired
+    // And the visible <label> for the field is the health variant
+    // (not the competition one), confirming the type prop is wired
     // through to the SelectField label.
     const label = within(container as HTMLElement).getByText(
-      "Health & Wellness metric",
+      "Health & Performance metric",
     );
     expect(label).toBeTruthy();
   });

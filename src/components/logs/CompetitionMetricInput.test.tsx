@@ -2,12 +2,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { useState } from "react";
-import { PerformanceMetricInput } from "./PerformanceMetricInput";
+import { CompetitionMetricInput } from "./CompetitionMetricInput";
 
 function renderInput(initial = "", filled = false) {
   const onChange = vi.fn();
   const utils = render(
-    <PerformanceMetricInput
+    <CompetitionMetricInput
       metricId="goals"
       labelledBy="lbl"
       value={initial}
@@ -21,7 +21,7 @@ function renderInput(initial = "", filled = false) {
   return { input, onChange, ...utils };
 }
 
-describe("PerformanceMetricInput", () => {
+describe("CompetitionMetricInput", () => {
   it("keeps trailing decimal", () => {
     const { input, onChange } = renderInput();
     fireEvent.change(input, { target: { value: "1." } });
@@ -68,7 +68,7 @@ describe("PerformanceMetricInput", () => {
     function Harness() {
       const [parentValue, setParentValue] = useState("");
       return (
-        <PerformanceMetricInput
+        <CompetitionMetricInput
           metricId="goals"
           labelledBy="lbl"
           value={parentValue}
@@ -90,7 +90,7 @@ describe("PerformanceMetricInput", () => {
 
   it("reconciles local state when parent prop changes to a non-round-trip value", () => {
     const { rerender, container } = render(
-      <PerformanceMetricInput
+      <CompetitionMetricInput
         metricId="goals"
         labelledBy="lbl"
         value=""
@@ -103,7 +103,7 @@ describe("PerformanceMetricInput", () => {
     ) as HTMLInputElement;
     expect(input.value).toBe("");
     rerender(
-      <PerformanceMetricInput
+      <CompetitionMetricInput
         metricId="goals"
         labelledBy="lbl"
         value="5"

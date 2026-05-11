@@ -8,11 +8,11 @@ import GearIcon from "@/icons/gear.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import PlusCircleIcon from "@/icons/plus-circle.svg?react";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
-import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import { HEALTH_METRICS } from "../metrics/healthMetrics";
+import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import {
-  ADDABLE_WELLNESS,
-  ADDABLE_PERFORMANCE,
+  ADDABLE_HEALTH,
+  ADDABLE_COMPETITION,
 } from "../metrics/addableMetrics";
 import type { CustomMetricDef } from "../types/customMetrics";
 
@@ -39,12 +39,12 @@ const STATIC: Record<string, RouteMeta> = {
     icon: <HomeIcon />,
     showHome: false,
   },
-  "/wellness": {
-    title: "Health & Wellness Log",
+  "/health": {
+    title: "Health & Performance Log",
     icon: <CalendarIcon />,
   },
-  "/performance": {
-    title: "Performance Log",
+  "/competition": {
+    title: "Competition Log",
     icon: <StopwatchIcon />,
   },
   "/profile": {
@@ -75,12 +75,6 @@ const STATIC: Record<string, RouteMeta> = {
 // rather than a static registry, so resolvers that need them accept the
 // `customs` array threaded through resolveRouteMeta. AppShell reads it
 // from useCustomMetrics() and passes it in unchanged.
-//
-// TODO: /add-metric/:type/new and /add-metric/:type/:metricId currently
-// have no routeMeta entry, so the create/edit form pages render with no
-// section heading. The form is tentative UI and may be replaced; revisit
-// once the design settles, then add resolvers (the edit one needs to
-// look up customs to render the metric name as the title).
 type DynamicResolver = (
   params: Record<string, string | undefined>,
   customs: readonly CustomMetricDef[],
@@ -92,76 +86,108 @@ const PATTERNS: Array<{
   resolve?: DynamicResolver;
 }> = [
   {
-    pattern: "/wellness/:metricId",
+    pattern: "/health/:metricId",
     resolve: (params, customs) => {
       // Tracked + addable registries both feed MetricDetail's title
       // since AddMetric's info button links into the addable space.
       const m =
-        WELLNESS_METRICS.find((x) => x.id === params.metricId) ??
-        ADDABLE_WELLNESS.find((x) => x.id === params.metricId);
+        HEALTH_METRICS.find((x) => x.id === params.metricId) ??
+        ADDABLE_HEALTH.find((x) => x.id === params.metricId);
       if (m) {
         return {
           title: m.name,
           icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
-          backTo: "/wellness",
+          backTo: "/health",
         };
       }
-      // Custom wellness metric fallthrough — match the route's :type so
-      // a wellness URL doesn't title a performance custom metric.
+      // Custom health metric fallthrough — match the route's :type so
+      // a health URL doesn't title a competition custom metric.
       const c = customs.find(
-        (x) => x.id === params.metricId && x.metricType === "wellness",
+        (x) => x.id === params.metricId && x.metricType === "health",
       );
       if (c) {
         return {
           title: c.name,
           icon: <CustomMetricIcon />,
-          backTo: "/wellness",
+          backTo: "/health",
         };
       }
       return null;
     },
   },
   {
-    pattern: "/performance/:metricId",
+    pattern: "/competition/:metricId",
     resolve: (params, customs) => {
       const m =
-        PERFORMANCE_METRICS.find((x) => x.id === params.metricId) ??
-        ADDABLE_PERFORMANCE.find((x) => x.id === params.metricId);
+        COMPETITION_METRICS.find((x) => x.id === params.metricId) ??
+        ADDABLE_COMPETITION.find((x) => x.id === params.metricId);
       if (m) {
         return {
           title: m.name,
           icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
-          backTo: "/performance",
+          backTo: "/competition",
         };
       }
       const c = customs.find(
-        (x) => x.id === params.metricId && x.metricType === "performance",
+        (x) => x.id === params.metricId && x.metricType === "competition",
       );
       if (c) {
         return {
           title: c.name,
           icon: <CustomMetricIcon />,
-          backTo: "/performance",
+          backTo: "/competition",
         };
       }
       return null;
+    },
+  },
+  {
+    // /add-metric/:type/new must come BEFORE /add-metric/:type/:metricId,
+    // otherwise matchPath would capture "new" as :metricId on the more
+    // permissive pattern and the create form would render with no title.
+    pattern: "/add-metric/:type/new",
+    resolve: (params) => {
+      const t = params.type;
+      if (t !== "health" && t !== "competition") return null;
+      return {
+        title:
+          t === "health"
+            ? "New Health & Performance Metric"
+            : "New Competition Metric",
+        icon: <PlusCircleIcon />,
+        backTo: "/setup/tracking",
+      };
+    },
+  },
+  {
+    pattern: "/add-metric/:type/:metricId",
+    resolve: (params, customs) => {
+      const t = params.type;
+      if (t !== "health" && t !== "competition") return null;
+      // Cross-type access (e.g. health URL on a competition metric) returns
+      // null so the form's <Navigate replace /> redirect to the canonical
+      // route happens without rendering a misleading title for one frame.
+      const c = customs.find(
+        (x) => x.id === params.metricId && x.metricType === t,
+      );
+      if (!c) return null;
+      return {
+        title: c.name,
+        icon: <CustomMetricIcon />,
+        backTo: "/setup/tracking",
+      };
     },
   },
   {
     pattern: "/add-metric/:type",
     resolve: (params) => {
-      // The page lists user-defined custom metrics for the chosen type
-      // and offers a "+ Create custom metric" CTA. Title was previously
-      // "Add ..." (matching the prototype) but the action is now
-      // navigating to a create page rather than directly adding, so
-      // the label reads as "Custom ..." per DGT-36.
       const t = params.type;
-      if (t !== "wellness" && t !== "performance") return null;
+      if (t !== "health" && t !== "competition") return null;
       return {
         title:
-          t === "wellness"
-            ? "Custom Health & Wellness Metrics"
-            : "Custom Performance Metrics",
+          t === "health"
+            ? "Health & Performance Metrics"
+            : "Competition Metrics",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };

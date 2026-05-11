@@ -2,9 +2,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { AvailabilityTree } from "./AvailabilityTree";
-import type { WellnessEntry } from "../../types/data";
+import type { HealthEntry } from "../../types/data";
 
-type Avail = WellnessEntry["availability"];
+type Avail = HealthEntry["availability"];
 
 const EMPTY: Avail = {
   practiceHeld: null,

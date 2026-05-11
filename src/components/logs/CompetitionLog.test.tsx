@@ -4,7 +4,7 @@ import { render, fireEvent, act, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
-import type { DataLoadState, PerformanceEntry } from "../../types/data";
+import type { DataLoadState, CompetitionEntry } from "../../types/data";
 import {
   firestoreMockFactory,
   latestSub,
@@ -24,8 +24,8 @@ const PROFILE: UserProfile = {
   gender: "male",
   athleteType: "endurance",
   competitionTerm: "game",
-  trackedWellnessMetrics: [],
-  trackedPerformanceMetrics: [
+  trackedHealthMetrics: [],
+  trackedCompetitionMetrics: [
     "wins",
     "losses",
     "goals",
@@ -40,18 +40,18 @@ const PROFILE: UserProfile = {
 const ctx = vi.hoisted(() => ({
   user: { uid: "u1" } as { uid: string } | null,
   loadState: { status: "loaded" } as ProfileLoadState,
-  performance: {
+  competition: {
     status: "loaded",
     entries: [],
-  } as DataLoadState<PerformanceEntry>,
-  setPerformanceEntryMock: vi.fn() as (...args: unknown[]) => void,
+  } as DataLoadState<CompetitionEntry>,
+  setCompetitionEntryMock: vi.fn() as (...args: unknown[]) => void,
   useLightweightMocks: true,
 }));
 
 const state = vi.hoisted<FirestoreMockState>(() => ({
   setDoc: vi.fn(async () => undefined),
-  wellnessSubs: [],
-  performanceSubs: [],
+  healthSubs: [],
+  competitionSubs: [],
   user: { current: null },
 }));
 
@@ -75,8 +75,8 @@ vi.mock("../../contexts/DataContext", async () => {
     useData: () => {
       if (ctx.useLightweightMocks) {
         return {
-          performance: ctx.performance,
-          setPerformanceEntry: ctx.setPerformanceEntryMock,
+          competition: ctx.competition,
+          setCompetitionEntry: ctx.setCompetitionEntryMock,
         } as unknown as ReturnType<typeof actual.useData>;
       }
       return actual.useData();
@@ -88,7 +88,7 @@ vi.mock("firebase/firestore", () => firestoreMockFactory(state));
 vi.mock("../../firebase", () => ({ db: {} }));
 vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
-import { PerformanceLog } from "./PerformanceLog";
+import { CompetitionLog } from "./CompetitionLog";
 import { DataProvider } from "../../contexts/DataContext";
 import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 
@@ -110,7 +110,7 @@ function renderAt(initialPath: string) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route path="/performance" element={<PerformanceLog />} />
+        <Route path="/competition" element={<CompetitionLog />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -121,7 +121,7 @@ function renderWithProvider(initialPath: string) {
     <DataProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/performance" element={<PerformanceLog />} />
+          <Route path="/competition" element={<CompetitionLog />} />
         </Routes>
       </MemoryRouter>
     </DataProvider>,
@@ -133,7 +133,7 @@ beforeEach(() => {
   ctx.useLightweightMocks = true;
   ctx.user = { uid: "u1" };
   ctx.loadState = { status: "loaded", profile: PROFILE };
-  ctx.performance = { status: "loaded", entries: [] };
+  ctx.competition = { status: "loaded", entries: [] };
   resetFirestoreState(state);
 });
 
@@ -141,45 +141,45 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("PerformanceLog route + redirect", () => {
-  it("malformed ?date= falls back to /performance", () => {
+describe("CompetitionLog route + redirect", () => {
+  it("malformed ?date= falls back to /competition", () => {
     render(
-      <MemoryRouter initialEntries={["/performance?date=NOT-A-DATE"]}>
+      <MemoryRouter initialEntries={["/competition?date=NOT-A-DATE"]}>
         <Routes>
-          <Route path="/performance" element={<PerformanceLog />} />
+          <Route path="/competition" element={<CompetitionLog />} />
         </Routes>
       </MemoryRouter>,
     );
     expect(document.querySelectorAll("table").length).toBeGreaterThan(0);
   });
 
-  it("typing into a metric calls setPerformanceEntry per keystroke", () => {
-    renderAt("/performance");
+  it("typing into a metric calls setCompetitionEntry per keystroke", () => {
+    renderAt("/competition");
     setGoals("3");
-    expect(ctx.setPerformanceEntryMock).toHaveBeenCalledWith(
+    expect(ctx.setCompetitionEntryMock).toHaveBeenCalledWith(
       TODAY_ISO,
       { metrics: { goals: 3 } },
     );
     setAssists("2");
-    expect(ctx.setPerformanceEntryMock).toHaveBeenCalledWith(
+    expect(ctx.setCompetitionEntryMock).toHaveBeenCalledWith(
       TODAY_ISO,
       { metrics: { assists: 2 } },
     );
-    expect(ctx.setPerformanceEntryMock).toHaveBeenCalledTimes(2);
+    expect(ctx.setCompetitionEntryMock).toHaveBeenCalledTimes(2);
   });
 });
 
-describe("PerformanceLog optimistic state via real DataContext", () => {
+describe("CompetitionLog optimistic state via real DataContext", () => {
   beforeEach(() => {
     ctx.useLightweightMocks = false;
     state.user.current = { uid: "u1" };
   });
 
   it("Total column updates per keystroke", () => {
-    renderWithProvider("/performance");
+    renderWithProvider("/competition");
     act(() => {
-      latestSub(state.wellnessSubs)?.emit([]);
-      latestSub(state.performanceSubs)?.emit([]);
+      latestSub(state.healthSubs)?.emit([]);
+      latestSub(state.competitionSubs)?.emit([]);
     });
     const goalsRow = Array.from(document.querySelectorAll("tr")).find((r) =>
       r.textContent?.includes("Goals"),

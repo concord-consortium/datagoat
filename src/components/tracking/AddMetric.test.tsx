@@ -22,7 +22,7 @@ import { AddMetric } from "./AddMetric";
 
 function makeMetric(
   name: string,
-  metricType: "wellness" | "performance",
+  metricType: "health" | "competition",
 ): CustomMetricDef {
   return {
     id: `c_test_${name.replace(/\s/g, "_")}`,
@@ -55,21 +55,21 @@ function harness(path: string, seed: CustomMetricDef[] = []) {
 
 describe("AddMetric (demo)", () => {
   it("shows the empty-state hint when no customs exist", () => {
-    harness("/add-metric/wellness");
+    harness("/add-metric/health");
     expect(screen.getByText(/none yet/i)).toBeInTheDocument();
   });
 
   it("renders user customs of the current type only", () => {
-    harness("/add-metric/wellness", [
-      makeMetric("Stretch Time", "wellness"),
-      makeMetric("5K Time", "performance"),
+    harness("/add-metric/health", [
+      makeMetric("Stretch Time", "health"),
+      makeMetric("5K Time", "competition"),
     ]);
     expect(screen.getByText("Stretch Time")).toBeInTheDocument();
     expect(screen.queryByText("5K Time")).toBeNull();
   });
 
   it("always shows the + Create CTA", () => {
-    harness("/add-metric/performance");
+    harness("/add-metric/competition");
     expect(
       screen.getByRole("link", { name: /create custom metric/i }),
     ).toBeInTheDocument();

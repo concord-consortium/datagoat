@@ -14,7 +14,7 @@ describe("linearScale", () => {
   });
 
   it("supports inverted SVG-y ranges (high domain → top of plot)", () => {
-    // Standard wellness % chart: 0% at the bottom (y = 140), 100% at the top (y = 0)
+    // Standard health % chart: 0% at the bottom (y = 140), 100% at the top (y = 0)
     const s = linearScale([0, 100], [140, 0]);
     expect(s(0)).toBe(140);
     expect(s(100)).toBe(0);

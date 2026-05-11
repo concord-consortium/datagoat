@@ -9,7 +9,7 @@ import clsx from "clsx";
 import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
-import type { WellnessEntry } from "../../types/data";
+import type { HealthEntry } from "../../types/data";
 import css from "./MetricInputRow.module.css";
 
 import { HYDRATION_HEXES } from "../../data/hydrationColors";
@@ -19,7 +19,7 @@ interface BaseProps {
   // Average label rendered in the leftmost cell. Optional - the parent
   // computes this from history; absence renders an em-dash.
   avgLabel?: string;
-  // Detail link target (e.g., "/wellness/hydration").
+  // Detail link target (e.g., "/health/hydration").
   detailHref?: string;
 }
 
@@ -41,8 +41,8 @@ export interface ColorScaleMetricInputRowProps extends BaseProps {
 export interface TreeMetricInputRowProps extends BaseProps {
   inputType: "tree";
   competitionTerm: string;
-  value: WellnessEntry["availability"];
-  onChange: (next: WellnessEntry["availability"]) => void;
+  value: HealthEntry["availability"];
+  onChange: (next: HealthEntry["availability"]) => void;
 }
 
 export type MetricInputRowProps =
@@ -50,7 +50,7 @@ export type MetricInputRowProps =
   | ColorScaleMetricInputRowProps
   | TreeMetricInputRowProps;
 
-// Single row for a tracked wellness metric. Switches on metric.inputType.
+// Single row for a tracked health metric. Switches on metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
   const { metric, avgLabel, detailHref } = props;
   const nameId = useId();

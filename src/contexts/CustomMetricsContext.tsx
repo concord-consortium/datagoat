@@ -82,7 +82,7 @@ function fromDoc(id: string, data: Record<string, unknown>): CustomMetricDef {
     id,
     ownerId: String(data.ownerId ?? ""),
     name: String(data.name ?? ""),
-    metricType: data.metricType === "performance" ? "performance" : "wellness",
+    metricType: data.metricType === "competition" ? "competition" : "health",
     inputType: data.inputType === "radio" ? "radio" : "numeric",
     unit: String(data.unit ?? ""),
     goalRaw: Number(data.goalRaw ?? 0),

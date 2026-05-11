@@ -51,8 +51,8 @@ export function useChartSeries(
   const {
     type,
     metricId,
-    wellnessEntries,
-    performanceEntries,
+    healthEntries,
+    competitionEntries,
     rangeDays,
     demoMode,
   } = args;
@@ -69,15 +69,15 @@ export function useChartSeries(
     return buildAlignedSeries({
       type,
       metricId,
-      wellnessEntries,
-      performanceEntries,
+      healthEntries,
+      competitionEntries,
       rangeDays,
     });
   }, [
     type,
     metricId,
-    wellnessEntries,
-    performanceEntries,
+    healthEntries,
+    competitionEntries,
     rangeDays,
     demoMode,
     customChartConfigs,

@@ -13,8 +13,8 @@ export interface UserProfile {
   gender: Gender;
   athleteType: AthleteType;
   competitionTerm: string;
-  trackedWellnessMetrics: string[];
-  trackedPerformanceMetrics: string[];
+  trackedHealthMetrics: string[];
+  trackedCompetitionMetrics: string[];
   profileComplete: boolean;
   trackingSetupComplete: boolean;
 }

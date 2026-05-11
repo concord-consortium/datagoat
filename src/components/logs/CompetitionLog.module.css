@@ -8,7 +8,7 @@
   padding-top: 10px;
 }
 
-/* .profile-welcome shared with wellness log + #performance-log-welcome anchor. */
+/* .profile-welcome shared with health log + #competition-log-welcome anchor. */
 .profileWelcome {
   font-size: 16px;
   color: var(--subtext);
@@ -30,8 +30,8 @@
   margin: 0;
 }
 
-/* .performance-log-table - prototype lines 2631-2705 (verbatim). */
-.performanceLogTable {
+/* .competition-log-table - prototype lines 2631-2705 (verbatim). */
+.competitionLogTable {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-body);
@@ -39,7 +39,7 @@
   margin-bottom: 16px;
 }
 
-.performanceLogTable thead th {
+.competitionLogTable thead th {
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
@@ -51,14 +51,14 @@
   border-bottom: 1.5px solid var(--border);
 }
 
-.performanceLogTable tbody td {
+.competitionLogTable tbody td {
   padding: 12px 8px;
   border-bottom: 1px solid var(--border);
   color: var(--text);
   vertical-align: middle;
 }
 
-.performanceLogTable tbody tr:last-child td {
+.competitionLogTable tbody tr:last-child td {
   border-bottom: none;
 }
 

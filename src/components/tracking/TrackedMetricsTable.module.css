@@ -279,8 +279,8 @@
   background: var(--surface2);
 }
 
-/* chart-divider - prototype lines 2529-2541. Sits between the wellness +
-   performance tables on Tracked Data Setup. */
+/* chart-divider - prototype lines 2529-2541. Sits between the health +
+   competition tables on Tracked Data Setup. */
 .chartDivider {
   width: 60px;
   height: 3px;

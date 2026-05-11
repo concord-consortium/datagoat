@@ -1,4 +1,4 @@
-export const performanceEntryFixtures = {
+export const competitionEntryFixtures = {
   1: {
     version: 1,
     date: "2026-04-15",

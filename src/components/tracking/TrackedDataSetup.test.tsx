@@ -37,7 +37,7 @@ import { TrackedDataSetup } from "./TrackedDataSetup";
 function customDef(
   id: string,
   name: string,
-  metricType: "wellness" | "performance",
+  metricType: "health" | "competition",
 ): CustomMetricDef {
   return {
     id,
@@ -67,31 +67,31 @@ function renderWith(seed: CustomMetricDef[] = []) {
 }
 
 describe("TrackedDataSetup — custom-metric integration", () => {
-  it("renders the wellness CTA at /add-metric/wellness/new with the create-form label", () => {
+  it("renders the health CTA at /add-metric/health/new with the create-form label", () => {
     renderWith();
     const cta = screen.getByRole("link", {
-      name: /add custom health & wellness metric/i,
+      name: /add health & performance metric/i,
     });
-    expect(cta).toHaveAttribute("href", "/add-metric/wellness/new");
+    expect(cta).toHaveAttribute("href", "/add-metric/health/new");
   });
 
-  it("renders the performance CTA at /add-metric/performance/new", () => {
+  it("renders the competition CTA at /add-metric/competition/new", () => {
     renderWith();
     const cta = screen.getByRole("link", {
-      name: /add custom performance metric/i,
+      name: /add competition metric/i,
     });
-    expect(cta).toHaveAttribute("href", "/add-metric/performance/new");
+    expect(cta).toHaveAttribute("href", "/add-metric/competition/new");
   });
 
-  it("renders seeded wellness customs in the wellness table", () => {
-    renderWith([customDef("c_w", "Stretch Time", "wellness")]);
+  it("renders seeded health customs in the health table", () => {
+    renderWith([customDef("c_w", "Stretch Time", "health")]);
     expect(screen.getByText("Stretch Time")).toBeInTheDocument();
   });
 
-  it("does NOT render performance customs in the wellness section (and vice versa)", () => {
+  it("does NOT render competition customs in the health section (and vice versa)", () => {
     renderWith([
-      customDef("c_w", "Stretch Time", "wellness"),
-      customDef("c_p", "5K Time", "performance"),
+      customDef("c_w", "Stretch Time", "health"),
+      customDef("c_p", "5K Time", "competition"),
     ]);
     // Both names render somewhere on the page (each in its own table),
     // but the per-table check is implicit: each metric appears once.
@@ -100,18 +100,18 @@ describe("TrackedDataSetup — custom-metric integration", () => {
   });
 
   it("gives custom rows an edit-pencil link to the create/edit form", () => {
-    renderWith([customDef("c_w", "Stretch Time", "wellness")]);
+    renderWith([customDef("c_w", "Stretch Time", "health")]);
     const editLink = screen.getByRole("link", { name: /edit stretch time/i });
-    expect(editLink).toHaveAttribute("href", "/add-metric/wellness/c_w");
+    expect(editLink).toHaveAttribute("href", "/add-metric/health/c_w");
   });
 
   it("renders an info link to MetricDetail for custom rows (parallel to built-ins)", () => {
-    renderWith([customDef("c_w", "Stretch Time", "wellness")]);
+    renderWith([customDef("c_w", "Stretch Time", "health")]);
     // Custom rows now keep the Info column as a chart-detail link;
     // the visual difference from a built-in is the icon (custom-metric
     // glyph rather than the metric's own Icon).
     const infoLink = screen.getByRole("link", { name: /^stretch time info$/i });
-    expect(infoLink).toHaveAttribute("href", "/wellness/c_w");
+    expect(infoLink).toHaveAttribute("href", "/health/c_w");
   });
 
   it("preserves the info-link affordance for built-in metrics", () => {

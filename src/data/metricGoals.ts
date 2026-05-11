@@ -10,7 +10,7 @@
 // prototype when a profile-keyed metric is missing a known mapping;
 // MetricDetail renders the placeholder verbatim.
 
-import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
+import { HEALTH_METRICS } from "../metrics/healthMetrics";
 
 // metric.id -> static goal text (no profile dependency)
 const STATIC_GOALS: Record<string, string> = {
@@ -56,7 +56,7 @@ const PROFILE_GOALS: Record<string, Record<string, string>> = {
 
 // Resolve the goal sentence for a given metric + profile context.
 // Returns null if the metric has no known goal mapping (e.g., the
-// performance placeholder set, or a tracking-only metric).
+// competition placeholder set, or a tracking-only metric).
 //
 // `compTermPlural` substitutes into the Availability template - e.g.,
 // "games" / "matches" / "meets" - so the wording matches the user's
@@ -78,7 +78,7 @@ export function resolveGoalText(
   return null;
 }
 
-// Reference WELLNESS_METRICS so a future "every wellness metric must
+// Reference HEALTH_METRICS so a future "every health metric must
 // have a goal mapping" assertion has a target. Currently used by
-// MetricDetail only - perf metrics return null intentionally.
-void WELLNESS_METRICS;
+// MetricDetail only - competition metrics return null intentionally.
+void HEALTH_METRICS;

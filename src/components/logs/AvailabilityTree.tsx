@@ -130,7 +130,7 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={practiceParticipationName}
-                value="played"
+                value="true"
                 checked={value.practiceParticipation === true}
                 onChange={() => setPracticeParticipation(true)}
               />{" "}
@@ -141,7 +141,7 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={practiceParticipationName}
-                value="dnp"
+                value="false"
                 checked={value.practiceParticipation === false}
                 onChange={() => setPracticeParticipation(false)}
               />{" "}
@@ -200,7 +200,7 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={gameParticipationName}
-                value="played"
+                value="true"
                 checked={value.gameParticipation === true}
                 onChange={() => setGameParticipation(true)}
               />{" "}
@@ -211,7 +211,7 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={gameParticipationName}
-                value="dnp"
+                value="false"
                 checked={value.gameParticipation === false}
                 onChange={() => setGameParticipation(false)}
               />{" "}

@@ -990,6 +990,11 @@ describe("DataContext reconciliation against onSnapshot", () => {
 });
 
 describe("DataContext deleteField sentinels (DGT-53)", () => {
+  beforeEach(() => {
+    state.user.current = { uid: "u1" };
+    vi.useFakeTimers();
+  });
+
   it("clears practiceParticipation via deleteField when practiceHeld flips to false [DGT-53]", () => {
     // AvailabilityTree sets practiceParticipation: undefined when held=false.
     // The Firestore boundary must translate that undefined to deleteField()
@@ -1033,12 +1038,6 @@ describe("DataContext deleteField sentinels (DGT-53)", () => {
     const avail = payload.availability as Record<string, unknown>;
     expect(avail.practiceHeld).toBe(false);
     expect(avail.practiceParticipation).toBeInstanceOf(DeleteFieldSentinel);
-  });
-
-
-  beforeEach(() => {
-    state.user.current = { uid: "u1" };
-    vi.useFakeTimers();
   });
 
   it("clears a built-in numeric field when setHealthEntry receives undefined (DGT-53)", () => {

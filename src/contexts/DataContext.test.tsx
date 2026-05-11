@@ -1114,6 +1114,101 @@ describe("DataContext deleteField sentinels (DGT-53)", () => {
   });
 });
 
+describe("DataContext optimistic overlay clearing (DGT-53)", () => {
+  beforeEach(() => {
+    state.user.current = { uid: "u1" };
+    vi.useFakeTimers();
+  });
+
+  it("clears built-in numeric field in optimistic overlay", () => {
+    // Write { hydration: 5 }, read it from useData(), then write
+    // { hydration: undefined } and assert it's undefined pre-flush.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, { hydration: 5 });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    let entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.hydration).toBe(5);
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, { hydration: undefined } as Parameters<typeof result.current.setHealthEntry>[1]);
+    });
+    entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.hydration).toBe(undefined);
+    // Verify no timer-advancing; check state pre-flush
+    expect(state.setDoc).not.toHaveBeenCalled();
+  });
+
+  it("clears customMetrics key in optimistic overlay", () => {
+    // Write { customMetrics: { c_stretch: 30 } }, read it, then write
+    // { customMetrics: { c_stretch: undefined } } and assert undefined pre-flush.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: 30 },
+      });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    let entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.customMetrics?.c_stretch).toBe(30);
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: undefined },
+      });
+    });
+    entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.customMetrics?.c_stretch).toBe(undefined);
+    // Verify no timer-advancing; check state pre-flush
+    expect(state.setDoc).not.toHaveBeenCalled();
+  });
+
+  it("clears availability sub-key in optimistic overlay", () => {
+    // Write { availability: { practiceHeld: true, practiceParticipation: true } },
+    // read it, then write { availability: { practiceHeld: false, practiceParticipation: undefined } }
+    // and assert the overlay reflects both changes pre-flush.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        availability: {
+          practiceHeld: true,
+          practiceParticipation: true,
+        } as Parameters<typeof result.current.setHealthEntry>[1]["availability"],
+      });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    let entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.availability.practiceParticipation).toBe(true);
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        availability: {
+          practiceHeld: false,
+          practiceParticipation: undefined,
+        } as Parameters<typeof result.current.setHealthEntry>[1]["availability"],
+      });
+    });
+    entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.availability.practiceHeld).toBe(false);
+    expect(entry?.availability.practiceParticipation).toBe(undefined);
+    // Verify no timer-advancing; check state pre-flush
+    expect(state.setDoc).not.toHaveBeenCalled();
+  });
+});
+
 describe("DataProvider component", () => {
   it("renders children", () => {
     state.user.current = { uid: "u1" };

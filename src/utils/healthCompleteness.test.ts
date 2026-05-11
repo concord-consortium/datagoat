@@ -15,11 +15,6 @@ function emptyEntry(): HealthEntry {
   return {
     version: 1,
     date: "2026-04-28",
-    hydration: 0,
-    sleepTime: 0,
-    sleepEfficiency: 0,
-    protein: 0,
-    leanMass: 0,
     availability: {},
   };
 }
@@ -117,17 +112,38 @@ describe("getChipState", () => {
     expect(getChipState(entry, ["c_weight_change"])).toBe("all");
   });
 
-  it("counts a tracked custom metric with a zero value as NOT filled", () => {
-    // Zero remains the "not entered" sentinel for customs, matching
+  it("counts a tracked custom metric with a zero value as filled", () => {
+    // Zero now counts as a valid logged value (DGT-53), matching
     // the built-in metrics behavior.
     const entry = emptyEntry();
     entry.customMetrics = { c_caffeine: 0 };
-    expect(getChipState(entry, ["c_caffeine"])).toBe("none");
+    expect(getChipState(entry, ["c_caffeine"])).toBe("all");
   });
 
   it("counts a tracked custom metric absent from customMetrics as NOT filled", () => {
     const entry = emptyEntry();
     // customMetrics undefined; tracked id has no entry yet.
     expect(getChipState(entry, ["c_caffeine"])).toBe("none");
+  });
+
+  it("counts a built-in field of 0 as filled (DGT-53)", () => {
+    const entry = emptyEntry();
+    entry.sleepTime = 0;
+    expect(getChipState(entry, ["sleepTime"])).toBe("all");
+  });
+
+  it("counts a custom metric of 0 as filled (DGT-53)", () => {
+    const entry = emptyEntry();
+    entry.customMetrics = { c_stretch: 0 };
+    expect(getChipState(entry, ["c_stretch"])).toBe("all");
+  });
+
+  it("treats an undefined built-in field as 'not logged' (DGT-53)", () => {
+    const entry: HealthEntry = {
+      version: 1,
+      date: "2026-04-28",
+      availability: {},
+    };
+    expect(getChipState(entry, ["sleepTime"])).toBe("none");
   });
 });

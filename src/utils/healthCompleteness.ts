@@ -32,26 +32,26 @@ function isFieldFilled(entry: HealthEntry | null, id: string): boolean {
   if (!entry) return false;
   switch (id) {
     case "hydration":
-      return typeof entry.hydration === "number" && entry.hydration > 0;
+      return typeof entry.hydration === "number" && Number.isFinite(entry.hydration);
     case "sleepTime":
-      return typeof entry.sleepTime === "number" && entry.sleepTime > 0;
+      return typeof entry.sleepTime === "number" && Number.isFinite(entry.sleepTime);
     case "sleepEfficiency":
       return (
-        typeof entry.sleepEfficiency === "number" && entry.sleepEfficiency > 0
+        typeof entry.sleepEfficiency === "number" &&
+        Number.isFinite(entry.sleepEfficiency)
       );
     case "protein":
-      return typeof entry.protein === "number" && entry.protein > 0;
+      return typeof entry.protein === "number" && Number.isFinite(entry.protein);
     case "leanMass":
-      return typeof entry.leanMass === "number" && entry.leanMass > 0;
+      return typeof entry.leanMass === "number" && Number.isFinite(entry.leanMass);
     case "availability":
       return availabilityFilled(entry);
     default: {
-      // Custom metric: read from entry.customMetrics. A non-zero number
-      // (incl. negatives for customs with yBottomRaw < 0) or a non-empty
-      // string counts as filled — matches the !== 0 sentinel rule used
-      // by Dashboard.competitionLoggedAny and CompetitionLog stringValue.
+      // Custom metric: a finite number (including 0 and negatives)
+      // or a non-empty string counts as filled. A missing / undefined
+      // key means "not logged."
       const v = entry.customMetrics?.[id];
-      if (typeof v === "number") return v !== 0;
+      if (typeof v === "number") return Number.isFinite(v);
       if (typeof v === "string") return v.trim() !== "";
       return false;
     }

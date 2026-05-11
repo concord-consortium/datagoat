@@ -12,7 +12,7 @@ const NBSP = "\u00A0";
 interface DashLogHeaderProps {
   type: "health" | "competition";
   // Free text status: e.g. "Log your 5 metrics for today." for health
-  // or "No perf. data logged today." for competition.
+  // or "No competition data logged today." for competition.
   status: string;
   // Optional highlight phrase rendered with the .statusHighlight bold
   // accent color. Inserted via {pre}{highlight}{post} so the parent can

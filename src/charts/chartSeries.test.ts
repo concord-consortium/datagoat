@@ -35,10 +35,10 @@ describe("lookupGoalLine", () => {
 });
 
 describe("buildAlignedSeries", () => {
-  function makeHealthEntry(daysAgo: number, hydration: number): HealthEntry {
+  function makeHealthEntry(daysAgo: number, hydration?: number): HealthEntry {
     return {
       ...emptyHealthEntry(isoAtDaysAgo(daysAgo)),
-      hydration,
+      ...(hydration !== undefined ? { hydration } : {}),
     };
   }
 
@@ -84,7 +84,7 @@ describe("buildAlignedSeries", () => {
     const out = buildAlignedSeries({
       type: "health",
       metricId: "hydration",
-      healthEntries: [makeHealthEntry(1, undefined as any), makeHealthEntry(0, 4)],
+      healthEntries: [makeHealthEntry(1), makeHealthEntry(0, 4)],
       competitionEntries: [],
       rangeDays: 3,
     });

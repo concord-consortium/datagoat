@@ -75,12 +75,6 @@ const STATIC: Record<string, RouteMeta> = {
 // rather than a static registry, so resolvers that need them accept the
 // `customs` array threaded through resolveRouteMeta. AppShell reads it
 // from useCustomMetrics() and passes it in unchanged.
-//
-// TODO: /add-metric/:type/new and /add-metric/:type/:metricId currently
-// have no routeMeta entry, so the create/edit form pages render with no
-// section heading. The form is tentative UI and may be replaced; revisit
-// once the design settles, then add resolvers (the edit one needs to
-// look up customs to render the metric name as the title).
 type DynamicResolver = (
   params: Record<string, string | undefined>,
   customs: readonly CustomMetricDef[],
@@ -145,6 +139,43 @@ const PATTERNS: Array<{
         };
       }
       return null;
+    },
+  },
+  {
+    // /add-metric/:type/new must come BEFORE /add-metric/:type/:metricId,
+    // otherwise matchPath would capture "new" as :metricId on the more
+    // permissive pattern and the create form would render with no title.
+    pattern: "/add-metric/:type/new",
+    resolve: (params) => {
+      const t = params.type;
+      if (t !== "health" && t !== "competition") return null;
+      return {
+        title:
+          t === "health"
+            ? "New Health & Performance Metric"
+            : "New Competition Metric",
+        icon: <PlusCircleIcon />,
+        backTo: "/setup/tracking",
+      };
+    },
+  },
+  {
+    pattern: "/add-metric/:type/:metricId",
+    resolve: (params, customs) => {
+      const t = params.type;
+      if (t !== "health" && t !== "competition") return null;
+      // Cross-type access (e.g. health URL on a competition metric) returns
+      // null so the form's <Navigate replace /> redirect to the canonical
+      // route happens without rendering a misleading title for one frame.
+      const c = customs.find(
+        (x) => x.id === params.metricId && x.metricType === t,
+      );
+      if (!c) return null;
+      return {
+        title: c.name,
+        icon: <CustomMetricIcon />,
+        backTo: "/setup/tracking",
+      };
     },
   },
   {

@@ -283,7 +283,7 @@ function CodapPluginAuthed() {
             }
           />
           <span>
-            Health &amp; Health ({healthEntries.length}{" "}
+            Health &amp; Performance ({healthEntries.length}{" "}
             {healthEntries.length === 1 ? "entry" : "entries"})
           </span>
         </label>
@@ -362,8 +362,10 @@ function readHealthField(
             ? `game:${e.availability.gameParticipation ?? "?"}`
             : "no-game",
       ].join(" / ");
-    default:
-      return null;
+    default: {
+      const v = e.customMetrics?.[id];
+      return typeof v === "number" || typeof v === "string" ? v : null;
+    }
   }
 }
 

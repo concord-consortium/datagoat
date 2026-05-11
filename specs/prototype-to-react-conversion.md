@@ -8,7 +8,7 @@ This document describes the original prototype-to-React conversion as it shipped
 
 **Changes since the conversion**
 
-- **User-defined custom metrics** (DGT-36) — users can add their own metrics alongside the built-in registries. The `HEALTH_METRICS` / `COMPETITION_METRICS` registries described below are now augmented at runtime by entries from the `customMetrics` Firestore collection; the dashboard, log, and tracked-setup screens all merge built-ins with customs.
+- **User-defined custom metrics** (DGT-36) — users can add their own metrics alongside the built-in registries. The `HEALTH_METRICS` / `COMPETITION_METRICS` registries described below are now augmented at runtime by entries from a top-level `metricDefinitions` Firestore collection scoped per-user by `ownerId`; the dashboard, log, and tracked-setup screens all merge built-ins with customs.
 - **Metric-category rename** (DGT-37) — the two categories were rebranded:
   - "Health & Wellness" → "Health & Performance" (visible label); `wellness` → `health` (identifier).
   - "Performance" → "Competition" (visible label); `performance` → `competition` (identifier).

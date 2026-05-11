@@ -63,4 +63,43 @@ describe("resolveRouteMeta — custom metric routing", () => {
     const meta = resolveRouteMeta("/health/hydration", customs);
     expect(meta?.title).toBe("Hydration");
   });
+
+  it("titles the create form at /add-metric/:type/new", () => {
+    expect(resolveRouteMeta("/add-metric/health/new")?.title).toBe(
+      "New Health & Performance Metric",
+    );
+    expect(resolveRouteMeta("/add-metric/competition/new")?.title).toBe(
+      "New Competition Metric",
+    );
+  });
+
+  it("titles the edit form at /add-metric/:type/:metricId with the metric name", () => {
+    const customs = [
+      customDef("c_stretch", "Stretch Time", "health"),
+      customDef("c_5k", "5K Time", "competition"),
+    ];
+    expect(
+      resolveRouteMeta("/add-metric/health/c_stretch", customs)?.title,
+    ).toBe("Stretch Time");
+    expect(
+      resolveRouteMeta("/add-metric/competition/c_5k", customs)?.title,
+    ).toBe("5K Time");
+  });
+
+  it("does NOT title an /add-metric/:type/:metricId URL whose :type mismatches the metric", () => {
+    // The form's <Navigate replace /> will redirect to the canonical
+    // route; returning null here avoids briefly rendering the wrong title.
+    const customs = [customDef("c_5k", "5K Time", "competition")];
+    expect(resolveRouteMeta("/add-metric/health/c_5k", customs)).toBeNull();
+  });
+
+  it("matches /add-metric/:type/new before /add-metric/:type/:metricId", () => {
+    // Regression guard: if pattern order is wrong, "new" gets captured as
+    // :metricId and falls through to a null lookup. The title should always
+    // be the create-form title, never null, for the literal /new URL.
+    const customs = [customDef("new", "Decoy", "health")];
+    expect(resolveRouteMeta("/add-metric/health/new", customs)?.title).toBe(
+      "New Health & Performance Metric",
+    );
+  });
 });

@@ -100,7 +100,7 @@ All app data lives under `/users/{uid}/` in Firestore:
 
 The doc id IS the date string, which is what makes the per-date upsert trivially correct (no separate query for "today's row"). One entry per metric per day is intentional — see COMPETITION LOG UI for the daily TOTAL column users log against (two-a-day training, prelim+final track days, AM/PM splits all collapse into the day's total). The health side is the same shape for the same reason.
 
-[firestore.rules](firestore.rules) is one match block: `allow read, write: if request.auth != null && request.auth.uid == userId` over `/users/{userId}/{document=**}`. Every user-scoped subcollection inherits owner-only access automatically; anything outside that path is default-denied.
+[firestore.rules](firestore.rules) has two match blocks. The user-scoped block — `allow read, write: if request.auth != null && request.auth.uid == userId` over `/users/{userId}/{document=**}` — covers everything under a user's tree; subcollections inherit owner-only access automatically. The top-level `/metricDefinitions/{metricId}` block scopes custom-metric definitions per-user via `ownerId == request.auth.uid` (and pins `ownerId` on create/update so a doc can't be transferred to another account). Anything outside these paths is default-denied.
 
 ### Schema migrations
 

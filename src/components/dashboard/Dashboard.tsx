@@ -44,7 +44,10 @@ export function Dashboard() {
   const competitionLoggedAny = !!(
     todayCompetition &&
     Object.values(todayCompetition.metrics ?? {}).some((v) => {
-      if (typeof v === "number") return v > 0;
+      // Match CompetitionLog's stringValue check (!== 0, not > 0) so a
+      // custom metric whose range includes negatives counts as "logged"
+      // when the user enters a non-zero negative value.
+      if (typeof v === "number") return v !== 0;
       if (typeof v === "string") return v.trim() !== "";
       return false;
     })

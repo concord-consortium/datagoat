@@ -349,9 +349,11 @@ function readHealthField(
     case "availability": {
       // Flatten the tree for CODAP - a single string captures the
       // four-cell state at a glance. An absent / undefined parent
-      // means "not answered" and is rendered as "-". Participation
-      // booleans are mapped to "played" / "dnp" strings here so the
-      // export format matches the prototype convention.
+      // means "not answered" and is rendered as the em dash sentinel
+      // "—" that the prototype's CODAP export used (matched by
+      // downstream workbooks). Participation booleans are mapped to
+      // "played" / "dnp" strings here so the export format matches
+      // the prototype convention.
       if (!e.availability) return null;
       const practicePart =
         typeof e.availability.practiceParticipation === "boolean"
@@ -363,12 +365,12 @@ function readHealthField(
           : "?";
       return [
         e.availability.practiceHeld === undefined
-          ? "-"
+          ? "—"
           : e.availability.practiceHeld
             ? `practice:${practicePart}`
             : "no-practice",
         e.availability.gameHeld === undefined
-          ? "-"
+          ? "—"
           : e.availability.gameHeld
             ? `game:${gamePart}`
             : "no-game",

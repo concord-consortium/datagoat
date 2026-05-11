@@ -17,6 +17,7 @@
 - We do NOT bump entry versions or add migration code. The migration registry stays at v1 for both entries.
 - `migrations/healthEntry.fixtures.ts` is updated so the `legacy` fixture's `null` sub-keys become absent. Migration tests still exercise the migrator code path; they just operate on the new shape.
 - `AvailabilityTree` is the one component that actively writes a clearing value (sets `practiceParticipation` back to "missing" when `practiceHeld` flips from true to false). It currently writes `null`; we switch it to `undefined` so the boundary translation actually removes the stored value.
+- **Participation sub-keys flip from `"played" | "dnp"` to `boolean`** (in addition to becoming optional). Today `practiceHeld` / `gameHeld` are booleans but `practiceParticipation` / `gameParticipation` are a string union — an asymmetry future readers have to learn. With booleans, the radio buttons bind `value === true` / `value === false` for both rows in `AvailabilityTree`, matching the held radios above them. The CODAP export's `practice:played` / `practice:dnp` string format is preserved at the formatting boundary in `CodapPlugin.tsx` (one-line map `participation ? "played" : "dnp"`). "DNP" loses its in-data domain term but stays in comments and the export string.
 
 ---
 
@@ -367,12 +368,12 @@ it("clears practiceParticipation on disk when held flips true→false (DGT-53)",
   const { result } = renderHook(() => useData(), { wrapper });
   act(() => {
     result.current.setHealthEntry(HEALTH_DATE, {
-      availability: { practiceHeld: true, practiceParticipation: "played" },
+      availability: { practiceHeld: true, practiceParticipation: true },
     } as Partial<HealthEntry>);
   });
   await flushAndSettle();
   let server = serverHealthByDate.get(HEALTH_DATE);
-  expect(server?.availability?.practiceParticipation).toBe("played");
+  expect(server?.availability?.practiceParticipation).toBe(true);
 
   act(() => {
     result.current.setHealthEntry(HEALTH_DATE, {
@@ -402,14 +403,17 @@ In `src/types/data.ts`, replace lines 12-17:
   // Availability is a tree, not a scalar. Each sub-key is optional;
   // a missing key means "not answered." `practiceHeld` / `gameHeld`
   // can be `true` or `false`; both are valid answered states.
-  // Participation sub-keys are only meaningful when their `*Held`
-  // parent is `true` — AvailabilityTree clears them via undefined
-  // when the parent flips to false.
+  // Participation sub-keys mirror that shape: `true` = participated
+  // ("played"), `false` = did not ("dnp"). The CODAP export maps
+  // those booleans back to the prototype's "played"/"dnp" strings at
+  // the formatting boundary. Participation is only meaningful when
+  // its `*Held` parent is `true` — AvailabilityTree clears it via
+  // undefined when the parent flips to false.
   availability: {
     practiceHeld?: boolean;
-    practiceParticipation?: "played" | "dnp";
+    practiceParticipation?: boolean;
     gameHeld?: boolean;
-    gameParticipation?: "played" | "dnp";
+    gameParticipation?: boolean;
   };
 ```
 
@@ -451,10 +455,10 @@ Replace `src/utils/healthCompleteness.ts:7-10` (the doc comment) and lines 59-69
 
 ```ts
 // Availability counts as filled iff practiceHeld is answered AND
-// (practiceHeld === false OR practiceParticipation is answered) — the
+// (practiceHeld === false OR practiceParticipation is answered) - the
 // tree must be answered to its leaves to count. Same rule for game.
-// "Answered" means typeof === "boolean" / typeof === "string"; absent
-// / undefined means "not answered."
+// "Answered" means typeof === "boolean"; absent / undefined means
+// "not answered."
 ```
 
 ```ts
@@ -463,10 +467,10 @@ function availabilityFilled(entry: HealthEntry): boolean {
   if (!a) return false;
   const practiceFilled =
     typeof a.practiceHeld === "boolean" &&
-    (a.practiceHeld === false || typeof a.practiceParticipation === "string");
+    (a.practiceHeld === false || typeof a.practiceParticipation === "boolean");
   const gameFilled =
     typeof a.gameHeld === "boolean" &&
-    (a.gameHeld === false || typeof a.gameParticipation === "string");
+    (a.gameHeld === false || typeof a.gameParticipation === "boolean");
   return practiceFilled && gameFilled;
 }
 ```
@@ -484,27 +488,39 @@ In `src/charts/chartSeries.ts`, replace lines 140-143:
 
 - [ ] **Step 9: Update the CODAP plugin's availability flattening**
 
-In `src/codap/CodapPlugin.tsx`, replace lines 353-364:
+In `src/codap/CodapPlugin.tsx`, replace lines 353-364. The participation boolean is mapped to "played" / "dnp" strings at this boundary so the existing CODAP export format is preserved:
 
 ```tsx
     case "availability":
       // Flatten the tree for CODAP - a single string captures the
       // four-cell state at a glance. An absent / undefined parent
-      // means "not answered" and is rendered as "—".
+      // means "not answered" and is rendered as "-". Participation
+      // booleans are mapped to "played" / "dnp" strings here so the
+      // export format matches the prototype convention.
       if (!e.availability) return null;
+      const practicePart =
+        typeof e.availability.practiceParticipation === "boolean"
+          ? (e.availability.practiceParticipation ? "played" : "dnp")
+          : "?";
+      const gamePart =
+        typeof e.availability.gameParticipation === "boolean"
+          ? (e.availability.gameParticipation ? "played" : "dnp")
+          : "?";
       return [
         e.availability.practiceHeld === undefined
-          ? "—"
+          ? "-"
           : e.availability.practiceHeld
-            ? `practice:${e.availability.practiceParticipation ?? "?"}`
+            ? `practice:${practicePart}`
             : "no-practice",
         e.availability.gameHeld === undefined
-          ? "—"
+          ? "-"
           : e.availability.gameHeld
-            ? `game:${e.availability.gameParticipation ?? "?"}`
+            ? `game:${gamePart}`
             : "no-game",
       ].join(" / ");
 ```
+
+Note: a `case` body that declares `const` needs a block scope. If the existing `switch` body uses bare `case` labels without braces, wrap the `case "availability":` body in `{ }` braces to give the new `const` declarations a scope.
 
 - [ ] **Step 10: Update `AvailabilityTree` to clear with `undefined`**
 
@@ -534,7 +550,13 @@ In `src/components/logs/AvailabilityTree.tsx`, replace lines 49-57 and 61-67:
   }
 ```
 
-The radio `checked` props at lines 93, 104, 128, 139, 163, 174, 198, 209 use `value.X === true` / `=== false` / `=== "played"` etc. These continue to work — checking `undefined === true` is `false`, which correctly leaves both radios unchecked when the field is unanswered.
+The radio `checked` props use `value.X === true` / `=== false` for the held radios — those continue to work unchanged. For the participation radios, the current code compares to `"played"` / `"dnp"` strings — change those to `true` / `false` booleans:
+- Played radios: `checked={value.practiceParticipation === true}` and `checked={value.gameParticipation === true}` (and same in the matching `onChange` calls).
+- DNP radios: `checked={value.practiceParticipation === false}` and `checked={value.gameParticipation === false}` (and same in `onChange`).
+
+Update `setPracticeParticipation` and `setGameParticipation` to take `(p: boolean)` instead of `(p: "played" | "dnp")`. Wire the radio click handlers to pass `true` / `false` accordingly.
+
+`undefined === true` is `false` and `undefined === false` is also `false`, so both radios remain unchecked when the field is unanswered.
 
 - [ ] **Step 11: Update the migration fixtures**
 
@@ -544,14 +566,14 @@ In `src/migrations/healthEntry.fixtures.ts`, replace lines 24-29 (the `legacy.av
     availability: {},
 ```
 
-Keep the `1.availability` block intact (it has real answered values) but check that all four sub-keys are present — if any are `null` (e.g., line 14's `gameParticipation: null`), replace `null` with omission (i.e., remove the key from the object literal):
+Keep the `1.availability` block intact (it has real answered values) but flip the participation values from strings to booleans (`"played"` → `true`, `"dnp"` → `false`), and replace any `null` with omission (e.g., line 14's `gameParticipation: null` should be omitted entirely):
 
 ```ts
     availability: {
       practiceHeld: true,
-      practiceParticipation: "played",
+      practiceParticipation: true, // played
       gameHeld: false,
-      // gameParticipation omitted — gameHeld=false means participation
+      // gameParticipation omitted - gameHeld=false means participation
       // is meaningless and unanswered.
     },
 ```
@@ -656,11 +678,11 @@ it("optimistic overlay reflects a cleared availability sub-key before flush (DGT
   const { result } = renderHook(() => useData(), { wrapper });
   act(() => {
     result.current.setHealthEntry(HEALTH_DATE, {
-      availability: { practiceHeld: true, practiceParticipation: "played" },
+      availability: { practiceHeld: true, practiceParticipation: true },
     } as Partial<HealthEntry>);
   });
   let entry = readHealthByDate(result.current, HEALTH_DATE);
-  expect(entry?.availability.practiceParticipation).toBe("played");
+  expect(entry?.availability.practiceParticipation).toBe(true);
 
   act(() => {
     result.current.setHealthEntry(HEALTH_DATE, {

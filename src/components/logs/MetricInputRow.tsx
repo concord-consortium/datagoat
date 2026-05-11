@@ -116,6 +116,10 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
   const max = metric.max ?? 8;
   const swatchValues = HYDRATION_HEXES.slice(0, max);
 
+  // True when no swatch is selected (fresh entry has undefined hydration;
+  // 0 is the defensive case for external data sources that might write 0).
+  const noSelection = value === undefined || value === 0;
+
   const select = useCallback(
     (next: number) => {
       if (next < 1 || next > max) return;
@@ -177,7 +181,7 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
             style={{ background: bg }}
             aria-label={`${level} of ${max}`}
             aria-pressed={selected}
-            tabIndex={selected || (value === 0 && idx === 0) ? 0 : -1}
+            tabIndex={selected || (noSelection && idx === 0) ? 0 : -1}
             onClick={() => select(level)}
             onKeyDown={(e) => onKeyDown(e, idx)}
           >

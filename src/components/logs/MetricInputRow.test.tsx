@@ -61,6 +61,29 @@ describe("MetricInputRow ColorScale", () => {
     expect(swatches[1].tabIndex).toBe(-1);
   });
 
+  it("when value is undefined (fresh entry), first swatch is the tab stop", () => {
+    const onChange = vi.fn<(next: number) => void>();
+    const utils = render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <MetricInputRow
+              inputType="colorScale"
+              metric={HYDRATION}
+              value={undefined}
+              onChange={onChange}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    const swatches = Array.from(
+      utils.container.querySelectorAll("button[aria-pressed]"),
+    ) as HTMLButtonElement[];
+    expect(swatches[0].tabIndex).toBe(0);
+    expect(swatches[1].tabIndex).toBe(-1);
+  });
+
   it("ArrowRight advances and fires onChange", () => {
     const { swatches, onChange } = renderColorScale(0);
     fireEvent.keyDown(swatches[0], { key: "ArrowRight" });

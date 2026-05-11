@@ -116,9 +116,13 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
   const max = metric.max ?? 8;
   const swatchValues = HYDRATION_HEXES.slice(0, max);
 
-  // True when no swatch is selected (fresh entry has undefined hydration;
-  // 0 is the defensive case for external data sources that might write 0).
-  const noSelection = value === undefined || value === 0;
+  // True when no swatch is selected. A fresh entry has undefined
+  // hydration. Per DGT-53 the model is "undefined === not logged" and
+  // any other finite number is valid data; the hydration UI cannot
+  // produce 0, and value validation for metric-specific ranges
+  // (hydration `min: 1`) is deferred to the upcoming categorical-
+  // metrics work that owns the metric definitions.
+  const noSelection = value === undefined;
 
   const select = useCallback(
     (next: number) => {

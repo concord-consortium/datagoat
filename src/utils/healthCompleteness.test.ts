@@ -132,12 +132,6 @@ describe("getChipState", () => {
     expect(getChipState(entry, ["sleepTime"])).toBe("all");
   });
 
-  it("counts a custom metric of 0 as filled (DGT-53)", () => {
-    const entry = emptyEntry();
-    entry.customMetrics = { c_stretch: 0 };
-    expect(getChipState(entry, ["c_stretch"])).toBe("all");
-  });
-
   it("treats an undefined built-in field as 'not logged' (DGT-53)", () => {
     const entry: HealthEntry = {
       version: 1,

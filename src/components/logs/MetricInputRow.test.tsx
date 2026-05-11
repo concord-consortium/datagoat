@@ -55,12 +55,6 @@ describe("MetricInputRow ColorScale", () => {
     expect(swatches[0].tabIndex).toBe(-1);
   });
 
-  it("when value is 0, first swatch is the tab stop", () => {
-    const { swatches } = renderColorScale(0);
-    expect(swatches[0].tabIndex).toBe(0);
-    expect(swatches[1].tabIndex).toBe(-1);
-  });
-
   it("when value is undefined (fresh entry), first swatch is the tab stop", () => {
     const onChange = vi.fn<(next: number) => void>();
     const utils = render(

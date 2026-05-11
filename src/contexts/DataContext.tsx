@@ -128,6 +128,17 @@ function firestoreSetHealthEntry(
   // under merge:true correctly leaves the other sub-keys absent on disk,
   // and the readers (availabilityFilled etc.) treat absent keys as
   // unanswered.
+  //
+  // But HealthEntry.availability itself is required, so the stored doc
+  // must always have at least an empty object for it. Without this,
+  // a first write of only a numeric field (e.g. { sleepTime: 7 }) would
+  // persist a doc with no `availability` key, violating the type contract
+  // on subsequent reads. Defensive fill only on the creation path - on
+  // updates, the partial may legitimately omit `availability` because the
+  // server already has it.
+  if (knownServerVersion === undefined && fields.availability === undefined) {
+    fields.availability = {};
+  }
   return setDoc(ref, fields, { merge: true });
 }
 
@@ -147,6 +158,13 @@ function firestoreSetCompetitionEntry(
     knownServerVersion < CURRENT_COMPETITION_ENTRY_VERSION
   ) {
     fields.version = CURRENT_COMPETITION_ENTRY_VERSION;
+  }
+  // CompetitionEntry.metrics is required in the type model. Same
+  // creation-path concern as availability in firestoreSetHealthEntry:
+  // ensure the stored doc always has at least an empty metrics object
+  // so subsequent reads satisfy the type contract.
+  if (knownServerVersion === undefined && fields.metrics === undefined) {
+    fields.metrics = {};
   }
   return setDoc(ref, fields, { merge: true });
 }

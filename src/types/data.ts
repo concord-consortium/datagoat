@@ -18,13 +18,16 @@ export interface HealthEntry {
   // User-defined custom health metric values, keyed by CustomMetricDef.id.
   // Optional so existing entries without the field read fine. Matches the
   // CompetitionEntry.metrics pattern for non-typed values.
-  customMetrics?: Record<string, number | string>;
+  // `undefined` means "delete this key" when used in a Partial<HealthEntry>
+  // passed to setHealthEntry. Stored docs never contain undefined values —
+  // the Firestore writer translates undefined to deleteField() before write.
+  customMetrics?: Record<string, number | string | undefined>;
 }
 
 export interface CompetitionEntry {
   version: number;
   date: string;
-  metrics: Record<string, number | string>;
+  metrics: Record<string, number | string | undefined>;
 }
 
 export type DataLoadState<T> =

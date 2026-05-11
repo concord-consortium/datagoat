@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   collection,
+  deleteField,
   doc,
   onSnapshot,
   query,
@@ -64,6 +65,37 @@ const LISTENER_WINDOW_DAYS = 365;
 type PendingEntry<T> = { uid: string; partial: Partial<T> };
 type PendingMap<T> = Record<string, PendingEntry<T>>;
 
+// Walks an object one level deep, replacing top-level `undefined` values
+// with deleteField() sentinels. Recurses one extra level into known
+// nested map fields (availability sub-keys, customMetrics, metrics) since
+// those also support per-key clearing under setDoc(merge:true). Other
+// nested objects pass through as-is.
+function withDeleteSentinels(
+  payload: Record<string, unknown>,
+  deepMapKeys: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (v === undefined) {
+      out[k] = deleteField();
+    } else if (
+      deepMapKeys.includes(k) &&
+      v !== null &&
+      typeof v === "object" &&
+      !Array.isArray(v)
+    ) {
+      const inner: Record<string, unknown> = {};
+      for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) {
+        inner[ik] = iv === undefined ? deleteField() : iv;
+      }
+      out[k] = inner;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 // Partial-merge writes only stamp `version` when the server doc is
 // either unknown to us (creation path) or known to be older than ours
 // (upgrade path). This keeps a stale client - whose CURRENT_*_VERSION
@@ -81,7 +113,10 @@ function firestoreSetHealthEntry(
   knownServerVersion: number | undefined,
 ): Promise<void> {
   const ref = doc(db, "users", uid, "healthEntries", date);
-  const fields: Record<string, unknown> = { ...partial, date };
+  const fields = withDeleteSentinels(
+    { ...(partial as Record<string, unknown>), date },
+    ["availability", "customMetrics"],
+  );
   if (
     knownServerVersion === undefined ||
     knownServerVersion < CURRENT_HEALTH_ENTRY_VERSION
@@ -124,7 +159,10 @@ function firestoreSetCompetitionEntry(
   knownServerVersion: number | undefined,
 ): Promise<void> {
   const ref = doc(db, "users", uid, "competitionEntries", date);
-  const fields: Record<string, unknown> = { ...partial, date };
+  const fields = withDeleteSentinels(
+    { ...(partial as Record<string, unknown>), date },
+    ["metrics"],
+  );
   if (
     knownServerVersion === undefined ||
     knownServerVersion < CURRENT_COMPETITION_ENTRY_VERSION

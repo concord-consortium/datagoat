@@ -1010,6 +1010,95 @@ describe("DataContext reconciliation against onSnapshot", () => {
   });
 });
 
+describe("DataContext deleteField sentinels (DGT-53)", () => {
+  beforeEach(() => {
+    state.user.current = { uid: "u1" };
+    vi.useFakeTimers();
+  });
+
+  it("clears a built-in numeric field when setHealthEntry receives undefined (DGT-53)", () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    // First write: set hydration to 5 and flush to server.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, { hydration: 5 });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    expect(state.setDoc.mock.calls[0][1]).toMatchObject({ hydration: 5 });
+    state.setDoc.mockClear();
+
+    // Second write: clear hydration by passing undefined. The Firestore
+    // payload must use deleteField() — not undefined (rejected by SDK),
+    // not 5 (stale), not 0 (falsy but still a number).
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        hydration: undefined,
+      } as Parameters<typeof result.current.setHealthEntry>[1]);
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    // deleteField() returns a sentinel object; undefined would be rejected
+    // by Firestore SDK and is never a valid payload value.
+    expect(payload.hydration).not.toBeUndefined();
+    expect(payload.hydration).not.toBe(5);
+    expect(payload.hydration).not.toBe(0);
+    // The sentinel must be the deleteField() object (non-null object).
+    expect(typeof payload.hydration).toBe("object");
+    expect(payload.hydration).not.toBeNull();
+  });
+
+  it("removes a customMetrics key when setHealthEntry sets it to undefined (DGT-53)", () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    // First write: log a custom metric value.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: 30 },
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const firstPayload = state.setDoc.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    expect(
+      (firstPayload.customMetrics as Record<string, unknown>).c_stretch,
+    ).toBe(30);
+    state.setDoc.mockClear();
+
+    // Second write: clear the custom metric by passing undefined. The
+    // Firestore payload must nest deleteField() under customMetrics.c_stretch
+    // — not undefined (rejected by SDK), not 30 (stale), not 0.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: undefined },
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    const customs = payload.customMetrics as Record<string, unknown>;
+    expect(customs.c_stretch).not.toBeUndefined();
+    expect(customs.c_stretch).not.toBe(30);
+    expect(customs.c_stretch).not.toBe(0);
+    expect(typeof customs.c_stretch).toBe("object");
+    expect(customs.c_stretch).not.toBeNull();
+  });
+});
+
 describe("DataProvider component", () => {
   it("renders children", () => {
     state.user.current = { uid: "u1" };

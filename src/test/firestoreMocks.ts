@@ -64,8 +64,14 @@ export function makeSnapshot(
 // Build the firebase/firestore mock object from the state. Use inside
 // a vi.mock("firebase/firestore", () => firestoreMockFactory(state))
 // factory.
+// Sentinel class so tests can verify deleteField() was passed.
+class DeleteFieldSentinel {
+  readonly _type = "deleteField" as const;
+}
+
 export function firestoreMockFactory(state: FirestoreMockState) {
   return {
+    deleteField: () => new DeleteFieldSentinel(),
     collection: (..._args: unknown[]) => {
       const parts = _args.slice(1).filter((a) => typeof a === "string");
       return { path: parts.join("/") };

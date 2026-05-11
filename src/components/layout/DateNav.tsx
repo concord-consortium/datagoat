@@ -130,9 +130,11 @@ function chipClass(state: ChipState): string {
 }
 
 function chipStatusText(state: ChipState): string {
-  if (state === "all") return "All health metrics entered for this day.";
-  if (state === "some") return "Some health metrics entered for this day.";
-  return "No health metrics entered for this day.";
+  // Category is contextually obvious — the chip lives on the Health &
+  // Performance Log, so no need to repeat the category descriptor here.
+  if (state === "all") return "All metrics entered for this day.";
+  if (state === "some") return "Some metrics entered for this day.";
+  return "No metrics entered for this day.";
 }
 
 // Re-export so callers in HealthLog / CompetitionLog can convert their

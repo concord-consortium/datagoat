@@ -113,7 +113,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     references: [
       {
         title: "NCAA Nutrition, Hydration & Sleep",
-        url: "https://www.ncaa.org/sports/2016/8/4/nutrition-sleep-and-competition-educational-resources.aspx",
+        url: "https://www.ncaa.org/sports/2016/8/4/nutrition-sleep-and-performance-educational-resources.aspx",
       },
       {
         title: "USOPC Nutrition",

@@ -27,9 +27,8 @@ function fullEntry(date: string): HealthEntry {
     leanMass: 60,
     availability: {
       practiceHeld: true,
-      practiceParticipation: "played",
+      practiceParticipation: true, // played
       gameHeld: false,
-      gameParticipation: null,
     },
   };
 }

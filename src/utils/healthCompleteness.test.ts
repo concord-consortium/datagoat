@@ -20,12 +20,7 @@ function emptyEntry(): HealthEntry {
     sleepEfficiency: 0,
     protein: 0,
     leanMass: 0,
-    availability: {
-      practiceHeld: null,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-    },
+    availability: {},
   };
 }
 
@@ -48,20 +43,20 @@ describe("getChipState", () => {
     expect(getChipState(entry, TRACKED_DEFAULT)).toBe("some");
   });
 
-  it("availability null + one numeric tracked field => 'some'", () => {
+  it("availability unanswered + one numeric tracked field => 'some'", () => {
     const entry = emptyEntry();
     entry.hydration = 4;
     expect(getChipState(entry, ["hydration", "availability"])).toBe("some");
   });
 
-  it("availability null alone (only metric tracked) => 'none'", () => {
+  it("availability unanswered alone (only metric tracked) => 'none'", () => {
     expect(getChipState(emptyEntry(), ["availability"])).toBe("none");
   });
 
   it("availability practiceHeld=true without participation does NOT count as filled", () => {
     const entry = emptyEntry();
     entry.availability.practiceHeld = true;
-    entry.availability.practiceParticipation = null;
+    // practiceParticipation intentionally absent (undefined) - not answered
     entry.availability.gameHeld = false;
     expect(getChipState(entry, ["availability"])).toBe("none");
   });
@@ -76,7 +71,7 @@ describe("getChipState", () => {
   it("availability with held=true + participation set counts as filled", () => {
     const entry = emptyEntry();
     entry.availability.practiceHeld = true;
-    entry.availability.practiceParticipation = "played";
+    entry.availability.practiceParticipation = true; // played
     entry.availability.gameHeld = false;
     expect(getChipState(entry, ["availability"])).toBe("all");
   });
@@ -89,7 +84,7 @@ describe("getChipState", () => {
     entry.protein = 1.5;
     entry.leanMass = 60;
     entry.availability.practiceHeld = true;
-    entry.availability.practiceParticipation = "played";
+    entry.availability.practiceParticipation = true; // played
     entry.availability.gameHeld = false;
     expect(getChipState(entry, TRACKED_DEFAULT)).toBe("all");
   });

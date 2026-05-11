@@ -14,11 +14,20 @@ export interface HealthEntry {
   sleepEfficiency?: number;
   protein?: number;
   leanMass?: number;
+  // Availability is a tree, not a scalar. Each sub-key is optional;
+  // a missing key means "not answered." `practiceHeld` / `gameHeld`
+  // can be `true` or `false`; both are valid answered states.
+  // Participation sub-keys mirror that shape: `true` = participated
+  // ("played"), `false` = did not ("dnp"). The CODAP export maps
+  // those booleans back to the prototype's "played"/"dnp" strings at
+  // the formatting boundary. Participation is only meaningful when
+  // its `*Held` parent is `true` - AvailabilityTree clears it via
+  // undefined when the parent flips to false.
   availability: {
-    practiceHeld: boolean | null;
-    practiceParticipation: "played" | "dnp" | null;
-    gameHeld: boolean | null;
-    gameParticipation: "played" | "dnp" | null;
+    practiceHeld?: boolean;
+    practiceParticipation?: boolean;
+    gameHeld?: boolean;
+    gameParticipation?: boolean;
   };
   // User-defined custom health metric values, keyed by CustomMetricDef.id.
   // A missing key (or `undefined`) means "not logged." Stored docs never
@@ -44,12 +53,9 @@ export function emptyHealthEntry(date: string): HealthEntry {
   return {
     version: CURRENT_HEALTH_ENTRY_VERSION,
     date,
-    availability: {
-      practiceHeld: null,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-    },
+    // availability sub-keys are intentionally omitted - absence is
+    // the canonical "not answered" state.
+    availability: {},
     // Built-in numeric fields and customMetrics are intentionally
     // omitted. Their absence is the canonical "not logged" state.
   };

@@ -346,22 +346,34 @@ function readHealthField(
       return e.protein ?? null;
     case "leanMass":
       return e.leanMass ?? null;
-    case "availability":
+    case "availability": {
       // Flatten the tree for CODAP - a single string captures the
-      // four-cell state at a glance.
+      // four-cell state at a glance. An absent / undefined parent
+      // means "not answered" and is rendered as "-". Participation
+      // booleans are mapped to "played" / "dnp" strings here so the
+      // export format matches the prototype convention.
       if (!e.availability) return null;
+      const practicePart =
+        typeof e.availability.practiceParticipation === "boolean"
+          ? (e.availability.practiceParticipation ? "played" : "dnp")
+          : "?";
+      const gamePart =
+        typeof e.availability.gameParticipation === "boolean"
+          ? (e.availability.gameParticipation ? "played" : "dnp")
+          : "?";
       return [
-        e.availability.practiceHeld === null
-          ? "—"
+        e.availability.practiceHeld === undefined
+          ? "-"
           : e.availability.practiceHeld
-            ? `practice:${e.availability.practiceParticipation ?? "?"}`
+            ? `practice:${practicePart}`
             : "no-practice",
-        e.availability.gameHeld === null
-          ? "—"
+        e.availability.gameHeld === undefined
+          ? "-"
           : e.availability.gameHeld
-            ? `game:${e.availability.gameParticipation ?? "?"}`
+            ? `game:${gamePart}`
             : "no-game",
       ].join(" / ");
+    }
     default: {
       const v = e.customMetrics?.[id];
       return typeof v === "number" || typeof v === "string" ? v : null;

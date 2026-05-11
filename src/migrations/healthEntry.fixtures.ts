@@ -9,9 +9,10 @@ export const healthEntryFixtures = {
     leanMass: 75,
     availability: {
       practiceHeld: true,
-      practiceParticipation: "played",
+      practiceParticipation: true, // played
       gameHeld: false,
-      gameParticipation: null,
+      // gameParticipation omitted - gameHeld=false means participation
+      // is meaningless and unanswered.
     },
   },
   legacy: {
@@ -21,11 +22,6 @@ export const healthEntryFixtures = {
     sleepEfficiency: 82,
     protein: 1.2,
     leanMass: 70,
-    availability: {
-      practiceHeld: null,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-    },
+    availability: {},
   },
 } as const;

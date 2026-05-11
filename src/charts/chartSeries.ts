@@ -137,8 +137,8 @@ export function readHealthMetric(
       // are answered, otherwise undefined. The chart placeholder doesn't
       // render this anyway; keeping it numeric avoids breaking the
       // shape contract.
-      return e.availability?.practiceHeld !== null &&
-        e.availability?.gameHeld !== null
+      return typeof e.availability?.practiceHeld === "boolean" &&
+        typeof e.availability?.gameHeld === "boolean"
         ? 1
         : undefined;
     default: {

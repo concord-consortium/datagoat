@@ -123,32 +123,11 @@ function firestoreSetHealthEntry(
   ) {
     fields.version = CURRENT_HEALTH_ENTRY_VERSION;
   }
-  // Creation path only: expand a partial availability payload so all
-  // four sub-keys are written with explicit null defaults. Without
-  // this, setDoc(merge:true) of `{ availability: { practiceHeld: true } }`
-  // on a brand-new doc leaves the other sub-fields absent on disk and
-  // read back as `undefined`, which silently violates the typed-null
-  // contract that availabilityFilled (`!== null` checks) depends on -
-  // and flips the health chip to "all" prematurely. Skipped on the
-  // upgrade path because the existing doc may already have non-null
-  // sub-key values that merge:true would overwrite with null.
-  if (
-    knownServerVersion === undefined &&
-    partial.availability !== undefined
-  ) {
-    // Spread is cast to a deeply-partial because reduceHealthPartial
-    // can produce one at runtime (it returns a `Record<string, unknown>`
-    // cast back to the strict type). The TS Partial<HealthEntry> is
-    // shallow, so partial.availability's static type still has all four
-    // keys - widening here is what lets the null defaults survive.
-    fields.availability = {
-      practiceHeld: null,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-      ...(partial.availability as Partial<HealthEntry["availability"]>),
-    };
-  }
+  // Availability sub-keys are optional in the type model - an absent
+  // key means "not answered." Writing { availability: { practiceHeld: true } }
+  // under merge:true correctly leaves the other sub-keys absent on disk,
+  // and the readers (availabilityFilled etc.) treat absent keys as
+  // unanswered.
   return setDoc(ref, fields, { merge: true });
 }
 

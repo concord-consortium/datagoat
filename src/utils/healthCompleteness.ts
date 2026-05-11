@@ -5,9 +5,11 @@ export type ChipState = "all" | "some" | "none";
 // Per spec: "All" = every tracked metric has a non-empty value;
 // "Some" = at least one has a value; "None" = all empty.
 //
-// Availability counts as filled iff practiceHeld !== null && (practiceHeld
-// === false || practiceParticipation !== null) - the tree must be answered
-// to its leaves to count. Same rule for game.
+// Availability counts as filled iff practiceHeld is answered AND
+// (practiceHeld === false OR practiceParticipation is answered) - the
+// tree must be answered to its leaves to count. Same rule for game.
+// "Answered" means typeof === "boolean"; absent / undefined means
+// "not answered."
 //
 // trackedMetricIds is the user's currently-tracked health metric ids
 // (e.g., ["hydration", "sleepTime", ...]). Metrics not in the user's
@@ -60,10 +62,10 @@ function availabilityFilled(entry: HealthEntry): boolean {
   const a = entry.availability;
   if (!a) return false;
   const practiceFilled =
-    a.practiceHeld !== null &&
-    (a.practiceHeld === false || a.practiceParticipation !== null);
+    typeof a.practiceHeld === "boolean" &&
+    (a.practiceHeld === false || typeof a.practiceParticipation === "boolean");
   const gameFilled =
-    a.gameHeld !== null &&
-    (a.gameHeld === false || a.gameParticipation !== null);
+    typeof a.gameHeld === "boolean" &&
+    (a.gameHeld === false || typeof a.gameParticipation === "boolean");
   return practiceFilled && gameFilled;
 }

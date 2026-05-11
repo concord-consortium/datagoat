@@ -34,7 +34,7 @@ export interface NumericMetricInputRowProps extends BaseProps {
 
 export interface ColorScaleMetricInputRowProps extends BaseProps {
   inputType: "colorScale";
-  value: number;
+  value: number | undefined;
   onChange: (next: number) => void;
 }
 
@@ -101,7 +101,7 @@ export function MetricInputRow(props: MetricInputRowProps) {
 
 interface ColorScaleProps {
   metric: MetricDefinition;
-  value: number;
+  value: number | undefined;
   onChange: (next: number) => void;
   labelledBy: string;
 }

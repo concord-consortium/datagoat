@@ -184,6 +184,10 @@ export function HealthLog() {
                       key={id}
                       metric={builtIn}
                       inputType="colorScale"
+                      // Hydration is optional (undefined = not entered). The
+                      // ColorScale component renders "no selection" when value
+                      // is 0 or undefined, preserving the undefined semantics
+                      // throughout the data flow.
                       value={currentEntry.hydration}
                       onChange={setHydration}
                       detailHref={`/health/${id}`}

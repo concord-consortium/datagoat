@@ -101,4 +101,38 @@ describe("getChipState", () => {
     // only "hydration" is tracked; sleep is filled but not in the list.
     expect(getChipState(entry, ["hydration"])).toBe("all");
   });
+
+  it("counts a tracked custom metric with a non-zero number as filled", () => {
+    // Regression: isFieldFilled() used to treat unknown ids as
+    // not-filled, which meant tracking any custom health metric blocked
+    // the chip from ever reaching "all". The default branch now reads
+    // from entry.customMetrics.
+    const entry = emptyEntry();
+    entry.hydration = 4;
+    entry.customMetrics = { c_caffeine: 200 };
+    expect(getChipState(entry, ["hydration", "c_caffeine"])).toBe("all");
+  });
+
+  it("counts a tracked custom metric with a non-zero NEGATIVE value as filled", () => {
+    // Custom metrics with yBottomRaw < 0 can legitimately log negative
+    // values (e.g. weight change). The customs fallback uses !== 0 so
+    // those count, matching the Dashboard.competitionLoggedAny rule.
+    const entry = emptyEntry();
+    entry.customMetrics = { c_weight_change: -2 };
+    expect(getChipState(entry, ["c_weight_change"])).toBe("all");
+  });
+
+  it("counts a tracked custom metric with a zero value as NOT filled", () => {
+    // Zero remains the "not entered" sentinel for customs, matching
+    // the built-in metrics behavior.
+    const entry = emptyEntry();
+    entry.customMetrics = { c_caffeine: 0 };
+    expect(getChipState(entry, ["c_caffeine"])).toBe("none");
+  });
+
+  it("counts a tracked custom metric absent from customMetrics as NOT filled", () => {
+    const entry = emptyEntry();
+    // customMetrics undefined; tracked id has no entry yet.
+    expect(getChipState(entry, ["c_caffeine"])).toBe("none");
+  });
 });

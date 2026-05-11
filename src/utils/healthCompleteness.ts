@@ -43,10 +43,16 @@ function isFieldFilled(entry: HealthEntry | null, id: string): boolean {
       return typeof entry.leanMass === "number" && entry.leanMass > 0;
     case "availability":
       return availabilityFilled(entry);
-    default:
-      // Unknown metric id - treat as not filled (caller's tracked list
-      // includes a metric we don't know about).
+    default: {
+      // Custom metric: read from entry.customMetrics. A non-zero number
+      // (incl. negatives for customs with yBottomRaw < 0) or a non-empty
+      // string counts as filled — matches the !== 0 sentinel rule used
+      // by Dashboard.competitionLoggedAny and CompetitionLog stringValue.
+      const v = entry.customMetrics?.[id];
+      if (typeof v === "number") return v !== 0;
+      if (typeof v === "string") return v.trim() !== "";
       return false;
+    }
   }
 }
 

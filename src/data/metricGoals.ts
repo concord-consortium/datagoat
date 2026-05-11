@@ -80,5 +80,5 @@ export function resolveGoalText(
 
 // Reference HEALTH_METRICS so a future "every health metric must
 // have a goal mapping" assertion has a target. Currently used by
-// MetricDetail only - perf metrics return null intentionally.
+// MetricDetail only - competition metrics return null intentionally.
 void HEALTH_METRICS;

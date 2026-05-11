@@ -62,7 +62,13 @@ export function CompetitionLog() {
   }
 
   function setMetricValue(metricId: string, raw: string) {
-    const numeric = raw === "" ? 0 : Number(raw);
+    if (raw === "") {
+      setCompetitionEntry(dateIso, {
+        metrics: { [metricId]: undefined },
+      });
+      return;
+    }
+    const numeric = Number(raw);
     if (!Number.isFinite(numeric)) return;
     setCompetitionEntry(dateIso, { metrics: { [metricId]: numeric } });
   }

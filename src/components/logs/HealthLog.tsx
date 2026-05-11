@@ -83,7 +83,11 @@ export function HealthLog() {
     field: K,
     raw: string,
   ) {
-    const numeric = raw === "" ? 0 : Number(raw);
+    if (raw === "") {
+      setHealthEntry(dateIso, { [field]: undefined } as Partial<HealthEntry>);
+      return;
+    }
+    const numeric = Number(raw);
     if (!Number.isFinite(numeric)) return;
     setHealthEntry(dateIso, { [field]: numeric } as Partial<HealthEntry>);
   }
@@ -97,7 +101,13 @@ export function HealthLog() {
   }
 
   function setCustomMetric(metricId: string, raw: string) {
-    const numeric = raw === "" ? 0 : Number(raw);
+    if (raw === "") {
+      setHealthEntry(dateIso, {
+        customMetrics: { [metricId]: undefined },
+      });
+      return;
+    }
+    const numeric = Number(raw);
     if (!Number.isFinite(numeric)) return;
     setHealthEntry(dateIso, { customMetrics: { [metricId]: numeric } });
   }

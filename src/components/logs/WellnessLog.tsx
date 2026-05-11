@@ -231,6 +231,7 @@ export function WellnessLog() {
                     inputType="numeric"
                     value={stringValue}
                     onChange={(raw) => setCustomMetric(id, raw)}
+                    detailHref={`/wellness/${id}`}
                     // Open the keystroke filter to a leading `-`
                     // only when the metric's range goes below 0;
                     // otherwise typing minus stays blocked, matching

@@ -4,11 +4,16 @@ import { CURRENT_COMPETITION_ENTRY_VERSION } from "../migrations/competitionEntr
 export interface HealthEntry {
   version: number;
   date: string;
-  hydration: number;
-  sleepTime: number;
-  sleepEfficiency: number;
-  protein: number;
-  leanMass: number;
+  // The five built-in numeric metrics. Optional so a freshly-created
+  // entry can omit fields the user has not logged. `0` is a VALID value
+  // (the user genuinely logged zero); `undefined` / absent means
+  // "not logged." Writers translate undefined to deleteField() at the
+  // Firestore boundary so cleared values are removed from the doc.
+  hydration?: number;
+  sleepTime?: number;
+  sleepEfficiency?: number;
+  protein?: number;
+  leanMass?: number;
   availability: {
     practiceHeld: boolean | null;
     practiceParticipation: "played" | "dnp" | null;
@@ -16,11 +21,9 @@ export interface HealthEntry {
     gameParticipation: "played" | "dnp" | null;
   };
   // User-defined custom health metric values, keyed by CustomMetricDef.id.
-  // Optional so existing entries without the field read fine. Matches the
-  // CompetitionEntry.metrics pattern for non-typed values.
-  // `undefined` means "delete this key" when used in a Partial<HealthEntry>
-  // passed to setHealthEntry. Stored docs never contain undefined values -
-  // the Firestore writer translates undefined to deleteField() before write.
+  // A missing key (or `undefined`) means "not logged." Stored docs never
+  // contain undefined values - the Firestore writer translates undefined
+  // to deleteField() before write.
   customMetrics?: Record<string, number | string | undefined>;
 }
 
@@ -41,17 +44,14 @@ export function emptyHealthEntry(date: string): HealthEntry {
   return {
     version: CURRENT_HEALTH_ENTRY_VERSION,
     date,
-    hydration: 0,
-    sleepTime: 0,
-    sleepEfficiency: 0,
-    protein: 0,
-    leanMass: 0,
     availability: {
       practiceHeld: null,
       practiceParticipation: null,
       gameHeld: null,
       gameParticipation: null,
     },
+    // Built-in numeric fields and customMetrics are intentionally
+    // omitted. Their absence is the canonical "not logged" state.
   };
 }
 

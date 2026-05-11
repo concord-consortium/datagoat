@@ -123,15 +123,26 @@ export function readHealthMetric(
 ): number | undefined {
   switch (metricId) {
     case "hydration":
-      return e.hydration > 0 ? e.hydration : undefined;
+      return typeof e.hydration === "number" && Number.isFinite(e.hydration)
+        ? e.hydration
+        : undefined;
     case "sleepTime":
-      return e.sleepTime > 0 ? e.sleepTime : undefined;
+      return typeof e.sleepTime === "number" && Number.isFinite(e.sleepTime)
+        ? e.sleepTime
+        : undefined;
     case "sleepEfficiency":
-      return e.sleepEfficiency > 0 ? e.sleepEfficiency : undefined;
+      return typeof e.sleepEfficiency === "number" &&
+        Number.isFinite(e.sleepEfficiency)
+        ? e.sleepEfficiency
+        : undefined;
     case "protein":
-      return e.protein > 0 ? e.protein : undefined;
+      return typeof e.protein === "number" && Number.isFinite(e.protein)
+        ? e.protein
+        : undefined;
     case "leanMass":
-      return e.leanMass > 0 ? e.leanMass : undefined;
+      return typeof e.leanMass === "number" && Number.isFinite(e.leanMass)
+        ? e.leanMass
+        : undefined;
     case "availability":
       // Availability is a tree, not a scalar. Return 1 if both subtrees
       // are answered, otherwise undefined. The chart placeholder doesn't
@@ -142,13 +153,12 @@ export function readHealthMetric(
         ? 1
         : undefined;
     default: {
-      // Custom health metric ids fall here — values live in
-      // entry.customMetrics rather than as typed fields. 0 stays the
-      // "blank input" sentinel (matches the FUTURE WORK note in
-      // customMetricEntries.ts). Non-zero values — including negatives
-      // for customs whose yBottomRaw < 0 — flow through to the chart.
+      // Custom health metric ids: values live in entry.customMetrics
+      // rather than as typed fields. A stored 0 is valid data and flows
+      // through unchanged; only non-numeric / non-finite / absent values
+      // become undefined (the "not logged" state).
       const raw = e.customMetrics?.[metricId];
-      if (typeof raw === "number" && Number.isFinite(raw) && raw !== 0) {
+      if (typeof raw === "number" && Number.isFinite(raw)) {
         return raw;
       }
       return undefined;
@@ -161,8 +171,9 @@ export function readHealthMetric(
 // bar chart consumes this so it can render today-ghost when today is
 // null and leave empty slots for missing past days.
 //
-// Competition metrics: 0 is preserved (valid score). Health metrics:
-// 0 is treated as "not logged" (matches buildSeries / readHealthMetric).
+// 0 is preserved as valid data for both health and competition metrics.
+// "Not logged" is encoded as undefined / missing key, propagating to
+// null in the aligned output for the chart's empty-slot rendering.
 export function buildAlignedSeries({
   type,
   metricId,

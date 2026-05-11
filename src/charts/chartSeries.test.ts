@@ -80,15 +80,15 @@ describe("buildAlignedSeries", () => {
     expect(out.slice(0, 4).every((d) => d.value === null)).toBe(true);
   });
 
-  it("treats hydration value 0 as 'not logged' (consistent with buildSeries semantics)", () => {
+  it("treats missing hydration value as 'not logged' (consistent with buildSeries semantics)", () => {
     const out = buildAlignedSeries({
       type: "health",
       metricId: "hydration",
-      healthEntries: [makeHealthEntry(1, 0), makeHealthEntry(0, 4)],
+      healthEntries: [makeHealthEntry(1, undefined as any), makeHealthEntry(0, 4)],
       competitionEntries: [],
       rangeDays: 3,
     });
-    expect(out[1].value).toBeNull(); // 0 → "not logged" → null
+    expect(out[1].value).toBeNull(); // undefined → "not logged" → null
     expect(out[2].value).toBe(4);
   });
 
@@ -131,7 +131,7 @@ describe("buildAlignedSeries", () => {
     expect(out[2].value).toBe(45);
   });
 
-  it("treats health custom value 0 as 'not logged' (matches the blank-input convention)", () => {
+  it("preserves a logged zero for a health custom metric (DGT-53)", () => {
     const entry = {
       ...emptyHealthEntry(isoAtDaysAgo(0)),
       customMetrics: { c_stretch: 0 },
@@ -143,7 +143,34 @@ describe("buildAlignedSeries", () => {
       competitionEntries: [],
       rangeDays: 1,
     });
+    expect(out[0].value).toBe(0);
+  });
+
+  it("treats a missing customMetrics key as 'not logged' (DGT-53)", () => {
+    const entry = emptyHealthEntry(isoAtDaysAgo(0));
+    const out = buildAlignedSeries({
+      type: "health",
+      metricId: "c_stretch",
+      healthEntries: [entry],
+      competitionEntries: [],
+      rangeDays: 1,
+    });
     expect(out[0].value).toBeNull();
+  });
+
+  it("preserves a logged zero for a built-in health metric (DGT-53)", () => {
+    const entry = {
+      ...emptyHealthEntry(isoAtDaysAgo(0)),
+      sleepTime: 0,
+    };
+    const out = buildAlignedSeries({
+      type: "health",
+      metricId: "sleepTime",
+      healthEntries: [entry],
+      competitionEntries: [],
+      rangeDays: 1,
+    });
+    expect(out[0].value).toBe(0);
   });
 
   it("flows negative health custom values through unchanged", () => {

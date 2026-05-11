@@ -106,6 +106,63 @@ describe("buildAlignedSeries", () => {
     expect(out[1].value).toBe(0);
     expect(out[2].value).toBe(2);
   });
+
+  it("reads wellness custom-metric values from entry.customMetrics", () => {
+    // Custom wellness ids fall through readWellnessMetric's switch to
+    // a customMetrics lookup. Without that branch (the bug Copilot
+    // flagged), the chart series would be all-null for any wellness
+    // custom metric.
+    const e0 = {
+      ...emptyWellnessEntry(isoAtDaysAgo(1)),
+      customMetrics: { c_stretch: 30 },
+    };
+    const e1 = {
+      ...emptyWellnessEntry(isoAtDaysAgo(0)),
+      customMetrics: { c_stretch: 45 },
+    };
+    const out = buildAlignedSeries({
+      type: "wellness",
+      metricId: "c_stretch",
+      wellnessEntries: [e0, e1],
+      performanceEntries: [],
+      rangeDays: 3,
+    });
+    expect(out[1].value).toBe(30);
+    expect(out[2].value).toBe(45);
+  });
+
+  it("treats wellness custom value 0 as 'not logged' (matches the blank-input convention)", () => {
+    const entry = {
+      ...emptyWellnessEntry(isoAtDaysAgo(0)),
+      customMetrics: { c_stretch: 0 },
+    };
+    const out = buildAlignedSeries({
+      type: "wellness",
+      metricId: "c_stretch",
+      wellnessEntries: [entry],
+      performanceEntries: [],
+      rangeDays: 1,
+    });
+    expect(out[0].value).toBeNull();
+  });
+
+  it("flows negative wellness custom values through unchanged", () => {
+    // Customs with `yBottomRaw < 0` (e.g. a score-differential
+    // metric) need negative values to reach the chart. The
+    // readWellnessMetric branch uses `!== 0` rather than `> 0`.
+    const entry = {
+      ...emptyWellnessEntry(isoAtDaysAgo(0)),
+      customMetrics: { c_diff: -3 },
+    };
+    const out = buildAlignedSeries({
+      type: "wellness",
+      metricId: "c_diff",
+      wellnessEntries: [entry],
+      performanceEntries: [],
+      rangeDays: 1,
+    });
+    expect(out[0].value).toBe(-3);
+  });
 });
 
 describe("computeAverage", () => {

@@ -15,6 +15,8 @@ import {
   ADDABLE_PERFORMANCE,
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
+import { useCustomMetrics } from "../contexts/CustomMetricsContext";
+import type { CustomMetricDef } from "../types/customMetrics";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
 import { getCompTermPlural } from "../data/competitionTerms";
@@ -31,7 +33,7 @@ import {
   formatMetricValue,
   lookupGoalLine,
 } from "./chartSeries";
-import { getMetricChartConfig } from "./metricChartConfig";
+import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { useChartSeries } from "./useChartSeries";
 import { useDemoMode } from "../contexts/DemoModeContext";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
@@ -54,6 +56,7 @@ interface MetricDetailProps {
 // Unknown :metricId falls back via <Navigate replace /> to the parent log.
 // No dedicated 404 view - bouncing back is the right recovery.
 export function MetricDetail({ type }: MetricDetailProps) {
+  useChartConfigSync();
   const { metricId } = useParams<{ metricId: string }>();
   // Tracked + addable registries are both searched so the AddMetric
   // info button (which links into the addable space) doesn't
@@ -62,7 +65,25 @@ export function MetricDetail({ type }: MetricDetailProps) {
     type === "wellness"
       ? [...WELLNESS_METRICS, ...ADDABLE_WELLNESS]
       : [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE];
-  const metric = allMetrics.find((m) => m.id === metricId);
+  const { metrics: allCustom, loading: customsLoading } = useCustomMetrics();
+  // Match the route's :type so a wellness URL doesn't resolve a
+  // performance-typed custom metric (and vice versa) — without the
+  // metricType filter, MetricDetail would render but read from the
+  // wrong entry map, producing an empty/misleading chart instead of
+  // the "not found → Navigate back" branch below.
+  const metric: MetricDefinition | undefined =
+    allMetrics.find((m) => m.id === metricId) ??
+    customAsMetricDefinition(
+      allCustom.find((m) => m.id === metricId && m.metricType === type),
+      type,
+    );
+  // Wait for the custom-metrics snapshot before deciding an unknown id
+  // should redirect — otherwise a deep-link or refresh on
+  // /wellness/c_xyz bounces back to the log before the snapshot
+  // resolves the metric. Built-in ids resolve synchronously above, so
+  // the gate only fires when neither a built-in nor an already-loaded
+  // custom matches.
+  const metricLookupLoading = !metric && customsLoading;
 
   const { loadState } = useUser();
   const profile = loadState.status === "loaded" ? loadState.profile : null;
@@ -93,6 +114,9 @@ export function MetricDetail({ type }: MetricDetailProps) {
     demoMode,
   });
 
+  if (metricLookupLoading) {
+    return <p className={css.loading}>Loading…</p>;
+  }
   if (!metric) {
     return (
       <Navigate
@@ -339,6 +363,33 @@ function renderMultiline(text: string) {
       {p}
     </p>
   ));
+}
+
+// Adapt a CustomMetricDef into the MetricDefinition shape MetricDetail
+// renders. The empty whoCollects/howCollected/description strings flow
+// through renderMultiline's "Coming soon" fallback. `references` is
+// intentionally absent — built-ins use it for an editorial reading
+// list, which doesn't have a custom-authored equivalent. The user-
+// supplied `referenceUrl` maps onto `learnMoreUrl`, which the existing
+// "Learn more about <name>" link already gates on (so an empty string
+// doesn't render the link).
+function customAsMetricDefinition(
+  def: CustomMetricDef | undefined,
+  type: "wellness" | "performance",
+): MetricDefinition | undefined {
+  if (!def) return undefined;
+  return {
+    id: def.id,
+    name: def.name,
+    unit: def.unit,
+    displayUnit: def.unit,
+    type,
+    whoCollects: "",
+    howCollected: "",
+    description: "",
+    inputType: def.inputType,
+    learnMoreUrl: def.referenceUrl || undefined,
+  };
 }
 
 function composeDescription(

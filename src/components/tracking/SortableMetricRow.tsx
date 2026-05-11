@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DragDots from "@/icons/drag-dots.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
+import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./TrackedMetricsTable.module.css";
 
 interface SortableMetricRowProps {
@@ -17,6 +18,12 @@ interface SortableMetricRowProps {
   // table; the drag handle aria-describedby's it so SR users hear the
   // keyboard shortcut summary on focus.
   reorderHintId: string;
+  // True for user-defined custom metrics. Custom rows populate the
+  // Edit-pencil cell (link to the create/edit form) and render the
+  // custom-metric icon in the Info cell instead of the built-in's
+  // Icon. The Info-cell link target stays the same — both built-ins
+  // and customs link to /:type/:id (MetricDetail).
+  isCustom?: boolean;
 }
 
 export function SortableMetricRow({
@@ -27,6 +34,7 @@ export function SortableMetricRow({
   Icon,
   onToggleCheck,
   reorderHintId,
+  isCustom = false,
 }: SortableMetricRowProps) {
   const {
     attributes,
@@ -80,12 +88,30 @@ export function SortableMetricRow({
       </td>
       <td className={css.metricName}>{name}</td>
       <td>
+        {/* Edit-pencil cell: only populated for custom metrics so
+            authors can jump back to the create/edit form. Built-in
+            rows render an empty cell so the column lines up. */}
+        {isCustom && (
+          <Link
+            to={`/add-metric/${type}/${id}`}
+            className={css.metricInfoBtn}
+            aria-label={`Edit ${name}`}
+          >
+            ✏︎
+          </Link>
+        )}
+      </td>
+      <td>
+        {/* Info link: same destination (MetricDetail) for both
+            built-ins and customs. Customs use the custom-metric icon
+            here so the row carries a visible "this is a custom" cue
+            in addition to functioning as the chart-detail link. */}
         <Link
           to={`/${type}/${id}`}
           className={css.metricInfoBtn}
           aria-label={`${name} info`}
         >
-          <MetricIcon />
+          {isCustom ? <CustomMetricIcon /> : <MetricIcon />}
         </Link>
       </td>
     </tr>

@@ -7,12 +7,14 @@ import ProfilePersonIcon from "@/icons/profile-person.svg?react";
 import GearIcon from "@/icons/gear.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import PlusCircleIcon from "@/icons/plus-circle.svg?react";
+import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import { WELLNESS_METRICS } from "../metrics/wellnessMetrics";
 import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import {
   ADDABLE_WELLNESS,
   ADDABLE_PERFORMANCE,
 } from "../metrics/addableMetrics";
+import type { CustomMetricDef } from "../types/customMetrics";
 
 export interface RouteMeta {
   title: string;
@@ -68,8 +70,20 @@ const STATIC: Record<string, RouteMeta> = {
 // the URL, no useEffect coordination required" - keep dynamic resolution
 // synchronous + URL-only. If a route ever needs meta sourced from
 // component state, switch to a useRouteMetaOverride context at that point.
+//
+// Custom metrics are an exception: their names live in CustomMetricsContext
+// rather than a static registry, so resolvers that need them accept the
+// `customs` array threaded through resolveRouteMeta. AppShell reads it
+// from useCustomMetrics() and passes it in unchanged.
+//
+// TODO: /add-metric/:type/new and /add-metric/:type/:metricId currently
+// have no routeMeta entry, so the create/edit form pages render with no
+// section heading. The form is tentative UI and may be replaced; revisit
+// once the design settles, then add resolvers (the edit one needs to
+// look up customs to render the metric name as the title).
 type DynamicResolver = (
   params: Record<string, string | undefined>,
+  customs: readonly CustomMetricDef[],
 ) => RouteMeta | null;
 
 const PATTERNS: Array<{
@@ -79,46 +93,75 @@ const PATTERNS: Array<{
 }> = [
   {
     pattern: "/wellness/:metricId",
-    resolve: (params) => {
+    resolve: (params, customs) => {
       // Tracked + addable registries both feed MetricDetail's title
       // since AddMetric's info button links into the addable space.
       const m =
         WELLNESS_METRICS.find((x) => x.id === params.metricId) ??
         ADDABLE_WELLNESS.find((x) => x.id === params.metricId);
-      if (!m) return null;
-      return {
-        title: m.name,
-        icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
-        backTo: "/wellness",
-      };
+      if (m) {
+        return {
+          title: m.name,
+          icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
+          backTo: "/wellness",
+        };
+      }
+      // Custom wellness metric fallthrough — match the route's :type so
+      // a wellness URL doesn't title a performance custom metric.
+      const c = customs.find(
+        (x) => x.id === params.metricId && x.metricType === "wellness",
+      );
+      if (c) {
+        return {
+          title: c.name,
+          icon: <CustomMetricIcon />,
+          backTo: "/wellness",
+        };
+      }
+      return null;
     },
   },
   {
     pattern: "/performance/:metricId",
-    resolve: (params) => {
+    resolve: (params, customs) => {
       const m =
         PERFORMANCE_METRICS.find((x) => x.id === params.metricId) ??
         ADDABLE_PERFORMANCE.find((x) => x.id === params.metricId);
-      if (!m) return null;
-      return {
-        title: m.name,
-        icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
-        backTo: "/performance",
-      };
+      if (m) {
+        return {
+          title: m.name,
+          icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
+          backTo: "/performance",
+        };
+      }
+      const c = customs.find(
+        (x) => x.id === params.metricId && x.metricType === "performance",
+      );
+      if (c) {
+        return {
+          title: c.name,
+          icon: <CustomMetricIcon />,
+          backTo: "/performance",
+        };
+      }
+      return null;
     },
   },
   {
     pattern: "/add-metric/:type",
     resolve: (params) => {
-      // Match the prototype's #add-metric-title text (HTML around line
-      // 8596: "Add Health & Wellness Metric" / "Add Performance Metric").
+      // The page lists user-defined custom metrics for the chosen type
+      // and offers a "+ Create custom metric" CTA. Title was previously
+      // "Add ..." (matching the prototype) but the action is now
+      // navigating to a create page rather than directly adding, so
+      // the label reads as "Custom ..." per DGT-36.
       const t = params.type;
       if (t !== "wellness" && t !== "performance") return null;
       return {
         title:
           t === "wellness"
-            ? "Add Health & Wellness Metric"
-            : "Add Performance Metric",
+            ? "Custom Health & Wellness Metrics"
+            : "Custom Performance Metrics",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };
@@ -156,13 +199,21 @@ const PATTERNS: Array<{
   },
 ];
 
-export function resolveRouteMeta(pathname: string): RouteMeta | null {
+const NO_CUSTOMS: readonly CustomMetricDef[] = [];
+
+export function resolveRouteMeta(
+  pathname: string,
+  customs: readonly CustomMetricDef[] = NO_CUSTOMS,
+): RouteMeta | null {
   if (STATIC[pathname]) return STATIC[pathname];
   for (const entry of PATTERNS) {
     const match = matchPath({ path: entry.pattern, end: true }, pathname);
     if (!match) continue;
     if (entry.resolve) {
-      return entry.resolve(match.params as Record<string, string | undefined>);
+      return entry.resolve(
+        match.params as Record<string, string | undefined>,
+        customs,
+      );
     }
     return entry.meta ?? null;
   }

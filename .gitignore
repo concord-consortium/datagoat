@@ -5,3 +5,4 @@ dist
 firebase-data
 *.log
 .firebase
+.superpowers/

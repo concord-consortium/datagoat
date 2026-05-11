@@ -10,7 +10,9 @@
 // Content can revise these values freely; the chart engine reads only
 // the resolved fields below and does not assume any metric is special.
 
-import { randomInt, randomFloat } from "./randomValues";
+import { useSyncExternalStore } from "react";
+import { randomFloat, randomInt } from "./randomValues";
+import type { CustomMetricDef } from "../types/customMetrics";
 
 export interface MetricChartConfig {
   chartType: "bar" | "line";
@@ -173,6 +175,117 @@ const DEFAULT_CONFIG: MetricChartConfig = {
   random: (rng) => randomInt(rng, 0, 100),
 };
 
+// Module-level overlay for user-defined custom metrics. The
+// CustomMetricsProvider syncs this on every change via
+// setCustomChartConfigs() below. getMetricChartConfig consults this
+// after the built-in CONFIG and before falling back to DEFAULT_CONFIG.
+//
+// This is a deliberate side-effect channel rather than a parameter
+// thread because getMetricChartConfig is called from many pure
+// functions and components throughout the chart pipeline; threading
+// the customs map through every call site is more invasive than the
+// registry overlay justifies for the DGT-36 demo slice. To keep
+// consumers reactive across overlay changes, components that read
+// getMetricChartConfig in render should call useChartConfigSync(),
+// which subscribes via useSyncExternalStore.
+let _customConfigs: Record<string, MetricChartConfig> = {};
+const _subscribers = new Set<() => void>();
+
+export function setCustomChartConfigs(
+  next: Record<string, MetricChartConfig>,
+): void {
+  if (next === _customConfigs) return;
+  _customConfigs = next;
+  for (const callback of _subscribers) callback();
+}
+
+function subscribeCustomChartConfigs(callback: () => void): () => void {
+  _subscribers.add(callback);
+  return () => {
+    _subscribers.delete(callback);
+  };
+}
+
+function getCustomChartConfigsSnapshot(): Record<string, MetricChartConfig> {
+  return _customConfigs;
+}
+
+// Subscribe a component to overlay changes so subsequent
+// getMetricChartConfig reads pick up newly-arrived custom-metric
+// configs. Components that render charts (or otherwise read
+// getMetricChartConfig in their render) should call this once. Returns
+// the current snapshot reference so consumers can include it in
+// useMemo dep arrays — when the overlay is replaced, the reference
+// changes and dependent memoized values invalidate.
+export function useChartConfigSync(): Record<string, MetricChartConfig> {
+  return useSyncExternalStore(
+    subscribeCustomChartConfigs,
+    getCustomChartConfigsSnapshot,
+    getCustomChartConfigsSnapshot,
+  );
+}
+
 export function getMetricChartConfig(metricId: string): MetricChartConfig {
-  return CONFIG[metricId] ?? DEFAULT_CONFIG;
+  return CONFIG[metricId] ?? _customConfigs[metricId] ?? DEFAULT_CONFIG;
+}
+
+// Build a MetricChartConfig from a user-authored CustomMetricDef.
+// Inseparable percent suffix is folded into formatValue (matching the
+// existing built-in pattern); other units render as the separable
+// `unit` field. avgDecimals controls toFixed rounding. Random
+// generators span the user's y-range for numeric metrics; radio
+// metrics random in {0, 1} regardless of y-range.
+// Default y-range used when a custom def's bounds are non-finite or
+// inverted. The form rejects malformed inputs on write, but legacy /
+// externally-written Firestore docs could still arrive with NaN or
+// reversed bounds — falling back to a safe range keeps linearScale,
+// SVG attributes, and randomFloat from producing NaN downstream.
+const FALLBACK_Y_TOP = 10;
+const FALLBACK_Y_BOTTOM = 0;
+
+export function customDefToChartConfig(
+  def: CustomMetricDef,
+): MetricChartConfig {
+  const isPct = def.unit === "%";
+  // Clamp to [0, 100]: Number.prototype.toFixed throws RangeError
+  // outside that range. The form already validates this on write, but
+  // Firestore could surface legacy/externally-written values, so the
+  // clamp is defense-in-depth.
+  const decimals = Number.isFinite(def.avgDecimals)
+    ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals)))
+    : 1;
+  // Defense-in-depth: finite-check the axis bounds and goal. If
+  // either bound is non-finite or the pair is inverted (yBottom >=
+  // yTop), fall back to the safe default range. goalRaw drops to
+  // undefined when non-finite — chartSeries.lookupGoalLine handles
+  // undefined as "no goal line for this metric".
+  let yTopRaw = Number.isFinite(def.yTopRaw) ? def.yTopRaw : FALLBACK_Y_TOP;
+  let yBottomRaw = Number.isFinite(def.yBottomRaw)
+    ? def.yBottomRaw
+    : FALLBACK_Y_BOTTOM;
+  if (yBottomRaw >= yTopRaw) {
+    yTopRaw = FALLBACK_Y_TOP;
+    yBottomRaw = FALLBACK_Y_BOTTOM;
+  }
+  const goalRaw = Number.isFinite(def.goalRaw) ? def.goalRaw : undefined;
+  return {
+    chartType: "bar",
+    yTopRaw,
+    yBottomRaw,
+    goalRaw,
+    formatValue: isPct
+      ? (v) => `${v.toFixed(decimals)}%`
+      : (v) => v.toFixed(decimals),
+    unit: isPct ? undefined : def.unit || undefined,
+    avgDecimals: decimals,
+    // randomFloat (rounded to `decimals`) handles the form's
+    // decimal-allowed y-axis bounds correctly. randomInt would
+    // mis-bin non-integer ranges (e.g. min=0.2, max=0.8 could yield
+    // 1.2). The radio branch keeps randomInt(0, 1) since values are
+    // strictly 0/1.
+    random:
+      def.inputType === "radio"
+        ? (rng) => randomInt(rng, 0, 1)
+        : (rng) => randomFloat(rng, yBottomRaw, yTopRaw, decimals),
+  };
 }

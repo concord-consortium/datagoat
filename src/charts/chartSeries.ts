@@ -141,8 +141,18 @@ export function readWellnessMetric(
         e.availability?.gameHeld !== null
         ? 1
         : undefined;
-    default:
+    default: {
+      // Custom wellness metric ids fall here — values live in
+      // entry.customMetrics rather than as typed fields. 0 stays the
+      // "blank input" sentinel (matches the FUTURE WORK note in
+      // customMetricEntries.ts). Non-zero values — including negatives
+      // for customs whose yBottomRaw < 0 — flow through to the chart.
+      const raw = e.customMetrics?.[metricId];
+      if (typeof raw === "number" && Number.isFinite(raw) && raw !== 0) {
+        return raw;
+      }
       return undefined;
+    }
   }
 }
 

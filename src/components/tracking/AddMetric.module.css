@@ -191,3 +191,79 @@
     transform: none;
   }
 }
+
+/* ── Custom-metric section header + CTA (DGT-36 demo) ── */
+
+.sectionHead {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  margin: 24px 0 8px;
+}
+
+.createCta {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(0, 179, 192, 0.08);
+  border: 1.5px dashed var(--accent, #0693e3);
+  border-radius: 8px;
+  color: var(--accent, #0693e3);
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.createCta:hover {
+  background: rgba(0, 179, 192, 0.14);
+}
+
+.createCta:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.editBtn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--subtext);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+.editBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.editBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.emptyHint {
+  font-style: italic;
+  color: var(--subtext);
+  padding: 8px;
+}

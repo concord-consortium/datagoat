@@ -1,132 +1,77 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import type { ProfileLoadState, UserProfile } from "../../types/profile";
 
-const PROFILE: UserProfile = {
-  version: 1,
-  fullName: "T",
-  email: "t@e.com",
-  nickname: "",
-  age: 18,
-  heightFt: 5,
-  heightIn: 9,
-  weight: 150,
-  gender: "male",
-  athleteType: "endurance",
-  competitionTerm: "game",
-  trackedWellnessMetrics: ["wellness-custom-1"],
-  trackedPerformanceMetrics: [],
-  profileComplete: true,
-  trackingSetupComplete: true,
-};
-
-const ctx = vi.hoisted(() => ({
-  loadState: { status: "loaded" } as ProfileLoadState,
-  setTrackedMetrics: vi.fn<(type: "wellness" | "performance", ids: string[]) => Promise<void>>(
-    async () => undefined,
-  ),
-  updateProfile: vi.fn<(partial: Partial<UserProfile>) => Promise<void>>(
-    async () => undefined,
-  ),
+// CustomMetricsProvider now reads useAuth() unconditionally. These tests
+// use the initialMetrics test seam (skipping Firestore), but still need
+// a stub auth context for the provider to mount.
+const stableAuth = vi.hoisted(() => ({
+  user: { uid: "u1" } as { uid: string },
+  loading: false,
+  isEmailVerifiedOrTrusted: true,
+  signOut: async () => {},
+}));
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuth: () => stableAuth,
 }));
 
-vi.mock("../../contexts/UserContext", () => ({
-  useUser: () => ({
-    loadState: ctx.loadState,
-    setTrackedMetrics: ctx.setTrackedMetrics,
-    updateProfile: ctx.updateProfile,
-  }),
-}));
-
+import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
+import type { CustomMetricDef } from "../../types/customMetrics";
 import { AddMetric } from "./AddMetric";
 
-function renderAt(path: string) {
+function makeMetric(
+  name: string,
+  metricType: "wellness" | "performance",
+): CustomMetricDef {
+  return {
+    id: `c_test_${name.replace(/\s/g, "_")}`,
+    ownerId: "u1",
+    name,
+    metricType,
+    inputType: "numeric",
+    unit: "",
+    goalRaw: 0,
+    yTopRaw: 10,
+    yBottomRaw: 0,
+    avgDecimals: 1,
+    referenceUrl: "",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+}
+
+function harness(path: string, seed: CustomMetricDef[] = []) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/add-metric/:type" element={<AddMetric />} />
-        <Route path="/setup/tracking" element={<div>tracking setup</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <CustomMetricsProvider initialMetrics={seed}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/add-metric/:type" element={<AddMetric />} />
+        </Routes>
+      </MemoryRouter>
+    </CustomMetricsProvider>,
   );
 }
 
-beforeEach(() => {
-  ctx.loadState = { status: "loaded", profile: PROFILE };
-  ctx.setTrackedMetrics.mockClear();
-  ctx.updateProfile.mockClear();
-});
-
-describe("AddMetric", () => {
-  it("redirects to /setup/tracking when :type is invalid", () => {
-    renderAt("/add-metric/bogus");
-    expect(screen.getByText("tracking setup")).toBeTruthy();
+describe("AddMetric (demo)", () => {
+  it("shows the empty-state hint when no customs exist", () => {
+    harness("/add-metric/wellness");
+    expect(screen.getByText(/none yet/i)).toBeInTheDocument();
   });
 
-  it("clicking + calls setTrackedMetrics with id appended", async () => {
-    renderAt("/add-metric/wellness");
-    const addBtn = screen.getByRole("button", {
-      name: "Add Wellness Metric2",
-    });
-    fireEvent.click(addBtn);
-    await Promise.resolve();
-    expect(ctx.setTrackedMetrics).toHaveBeenCalledWith("wellness", [
-      "wellness-custom-1",
-      "wellness-custom-2",
+  it("renders user customs of the current type only", () => {
+    harness("/add-metric/wellness", [
+      makeMetric("Stretch Time", "wellness"),
+      makeMetric("5K Time", "performance"),
     ]);
+    expect(screen.getByText("Stretch Time")).toBeInTheDocument();
+    expect(screen.queryByText("5K Time")).toBeNull();
   });
 
-  it("clicking + dedupes if id already present", async () => {
-    // Force the addable list's first item ('wellness-custom-1') to appear
-    // tracked. Clicking + on a tracked row would actually render '-', so
-    // verify dedupe via a different code path: load with a profile where
-    // trackedWellnessMetrics contains the 2nd item, then clicking + on
-    // a 3rd item still dedupes via the filter on next.
-    ctx.loadState = {
-      status: "loaded",
-      profile: {
-        ...PROFILE,
-        trackedWellnessMetrics: ["wellness-custom-3", "wellness-custom-3"],
-      },
-    };
-    renderAt("/add-metric/wellness");
-    const addBtn = screen.getByRole("button", {
-      name: "Add Wellness Metric4",
-    });
-    fireEvent.click(addBtn);
-    await Promise.resolve();
-    expect(ctx.setTrackedMetrics).toHaveBeenCalledWith("wellness", [
-      "wellness-custom-3",
-      "wellness-custom-4",
-    ]);
-  });
-
-  it("clicking - calls setTrackedMetrics with id filtered out", async () => {
-    renderAt("/add-metric/wellness");
-    const removeBtn = screen.getByRole("button", {
-      name: "Remove Wellness Metric1",
-    });
-    fireEvent.click(removeBtn);
-    await Promise.resolve();
-    expect(ctx.setTrackedMetrics).toHaveBeenCalledWith("wellness", []);
-  });
-
-  it("falls back to updateProfile when no profile is loaded", async () => {
-    ctx.loadState = { status: "missing" };
-    renderAt("/add-metric/performance");
-    // With no profile, trackedIds defaults to PERFORMANCE_METRICS ids.
-    // Clicking + on a placeholder appends to that default list.
-    const addBtn = screen.getByRole("button", {
-      name: "Add Performance Metric1",
-    });
-    fireEvent.click(addBtn);
-    await Promise.resolve();
-    expect(ctx.updateProfile).toHaveBeenCalledTimes(1);
-    expect(ctx.setTrackedMetrics).not.toHaveBeenCalled();
-    const [arg] = ctx.updateProfile.mock.calls[0];
-    expect(arg).toHaveProperty("trackedPerformanceMetrics");
-    expect(arg.trackedPerformanceMetrics).toContain("performance-custom-1");
+  it("always shows the + Create CTA", () => {
+    harness("/add-metric/performance");
+    expect(
+      screen.getByRole("link", { name: /create custom metric/i }),
+    ).toBeInTheDocument();
   });
 });

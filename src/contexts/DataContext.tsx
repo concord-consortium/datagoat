@@ -182,6 +182,24 @@ function reduceWellnessPartial(
         remaining.availability =
           remainingAvail as WellnessEntry["availability"];
       }
+    } else if (key === "customMetrics") {
+      // Same shape as the performance.metrics reducer: iterate pending
+      // keys only and drop ones the server has confirmed. Without this
+      // special case the one-level deepEqual would short-circuit on
+      // the mismatched key count whenever the server entry already has
+      // values for OTHER custom metrics, leaving the pending entry
+      // stuck and re-flushing the same payload on every debounce.
+      const pendingCustoms = partial.customMetrics ?? {};
+      const serverCustoms = server.customMetrics ?? {};
+      const remainingCustoms: Record<string, number | string> = {};
+      for (const m of Object.keys(pendingCustoms)) {
+        if (!deepEqual(pendingCustoms[m], serverCustoms[m])) {
+          remainingCustoms[m] = pendingCustoms[m];
+        }
+      }
+      if (Object.keys(remainingCustoms).length > 0) {
+        remaining.customMetrics = remainingCustoms;
+      }
     } else if (!deepEqual(partial[key], server[key])) {
       (remaining as Record<string, unknown>)[key] = partial[
         key
@@ -595,6 +613,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...(partial.availability ?? {}),
           } as WellnessEntry["availability"];
         }
+        // Deep-merge customMetrics for the same reason as availability —
+        // accumulating writes across different custom-metric inputs
+        // within the debounce window must not clobber earlier keys.
+        if (
+          existingPartial.customMetrics !== undefined ||
+          partial.customMetrics !== undefined
+        ) {
+          merged.customMetrics = {
+            ...(existingPartial.customMetrics ?? {}),
+            ...(partial.customMetrics ?? {}),
+          };
+        }
         const next: PendingMap<WellnessEntry> = {
           ...prev,
           [date]: { uid, partial: merged },
@@ -681,6 +711,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         availability: {
           ...base.availability,
           ...(entry.partial.availability ?? {}),
+        },
+        customMetrics: {
+          ...(base.customMetrics ?? {}),
+          ...(entry.partial.customMetrics ?? {}),
         },
       });
     }

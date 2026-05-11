@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
+import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import {
   HISTORY,
@@ -19,6 +20,7 @@ export function PerformanceLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
   const { performance, setPerformanceEntry } = useData();
+  const { metrics: allCustom } = useCustomMetrics();
   const nameIdBase = useId();
 
   const dateParam = searchParams.get("date");
@@ -64,8 +66,36 @@ export function PerformanceLog() {
     setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
 
-  const displayedMetrics = PERFORMANCE_METRICS.filter((m) =>
-    trackedIds.includes(m.id),
+  // Both built-ins and customs respect the user's tracked-IDs
+  // preference. The user can drag-reorder a custom metric among
+  // built-ins on /setup/tracking; iterating trackedIds (rather than
+  // appending customs after built-ins) honors that ordering here.
+  const builtInById = new Map(PERFORMANCE_METRICS.map((m) => [m.id, m]));
+  const customById = new Map<string, (typeof allCustom)[number]>();
+  for (const def of allCustom) {
+    if (def.metricType === "performance") customById.set(def.id, def);
+  }
+  const displayedMetrics: Array<{ id: string; name: string }> = [];
+  for (const id of trackedIds) {
+    const builtIn = builtInById.get(id);
+    if (builtIn) {
+      displayedMetrics.push(builtIn);
+      continue;
+    }
+    const custom = customById.get(id);
+    if (custom) {
+      displayedMetrics.push(custom);
+    }
+    // Stale id that resolves to neither — silently skip.
+  }
+  // Set of metric ids whose y-range goes below 0 — used to open the
+  // numeric input filter to a leading `-`. Built-in performance
+  // metrics are all non-negative, so this set only contains customs
+  // whose author chose `yBottomRaw < 0`.
+  const allowNegativeIds = new Set(
+    Array.from(customById.values())
+      .filter((m) => m.yBottomRaw < 0)
+      .map((m) => m.id),
   );
 
   // Welcome shown only during onboarding (matches prototype's
@@ -104,8 +134,14 @@ export function PerformanceLog() {
           <tbody>
             {displayedMetrics.map((metric) => {
               const live = currentEntry.metrics?.[metric.id];
+              // !== 0 (rather than > 0) so custom metrics with a
+              // negative yBottomRaw can render legitimate negative
+              // values. 0 stays the "blank input" sentinel since 0 is
+              // what the writer stores for an empty entry. Built-in
+              // performance metrics are always non-negative, so this
+              // check change is a no-op for them.
               const stringValue =
-                typeof live === "number" && live > 0
+                typeof live === "number" && live !== 0
                   ? String(live)
                   : typeof live === "string" && live !== ""
                     ? live
@@ -116,7 +152,13 @@ export function PerformanceLog() {
               return (
                 <tr key={metric.id}>
                   <td className={css.colTotal}>
-                    {total > 0 ? String(total) : ""}
+                    {/* total !== 0 (rather than > 0) so custom
+                        performance metrics with negative ranges can
+                        render legitimate negative totals — aligns
+                        with the stringValue check above. Built-in
+                        counter metrics never go negative, so the
+                        change is a no-op for them. */}
+                    {total !== 0 ? String(total) : ""}
                   </td>
                   <td id={nameCellId} className={css.colMetric}>
                     <Link
@@ -133,6 +175,7 @@ export function PerformanceLog() {
                       value={stringValue}
                       filled={filled}
                       onChange={(raw) => setMetricValue(metric.id, raw)}
+                      allowNegative={allowNegativeIds.has(metric.id)}
                     />
                   </td>
                 </tr>

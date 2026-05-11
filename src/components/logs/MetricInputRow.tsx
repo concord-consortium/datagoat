@@ -27,6 +27,9 @@ export interface NumericMetricInputRowProps extends BaseProps {
   inputType: "numeric";
   value: string;
   onChange: (next: string) => void;
+  // Forwarded to NumericInput. Set when the metric's y-axis range
+  // goes below 0 (custom metrics with `yBottomRaw < 0`).
+  allowNegative?: boolean;
 }
 
 export interface ColorScaleMetricInputRowProps extends BaseProps {
@@ -72,6 +75,7 @@ export function MetricInputRow(props: MetricInputRowProps) {
             value={props.value}
             onChange={props.onChange}
             labelledBy={nameId}
+            allowNegative={props.allowNegative}
           />
         )}
         {props.inputType === "colorScale" && (

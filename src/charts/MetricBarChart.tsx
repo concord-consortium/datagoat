@@ -1,4 +1,4 @@
-import { getMetricChartConfig } from "./metricChartConfig";
+import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { linearScale } from "./linearScale";
 import type { TimeRangeKey } from "../components/dashboard/TimeRangePicker";
 import type { ChartGeom } from "./chartGeom";
@@ -39,6 +39,7 @@ export function MetricBarChart({
   width,
   height,
 }: MetricBarChartProps) {
+  useChartConfigSync();
   const config = getMetricChartConfig(metricId);
 
   const geom: ChartGeom = {

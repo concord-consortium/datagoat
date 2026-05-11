@@ -8,6 +8,9 @@ export interface PerformanceMetricInputProps {
   value: string;
   filled: boolean;
   onChange: (raw: string) => void;
+  // Forwarded to useNumericLocalString. Set when the metric's y-axis
+  // range goes below 0 (custom metrics with `yBottomRaw < 0`).
+  allowNegative?: boolean;
 }
 
 export function PerformanceMetricInput({
@@ -16,8 +19,13 @@ export function PerformanceMetricInput({
   value,
   filled,
   onChange,
+  allowNegative,
 }: PerformanceMetricInputProps) {
-  const { local, handleChange, handleCompositionEnd } = useNumericLocalString(value, onChange);
+  const { local, handleChange, handleCompositionEnd } = useNumericLocalString(
+    value,
+    onChange,
+    allowNegative,
+  );
   return (
     <input
       type="text"

@@ -21,6 +21,7 @@ import { SortableMetricRow } from "./SortableMetricRow";
 import { makeAnnouncements } from "./announcements";
 import type { MetricDefinition } from "../../metrics/types";
 import css from "./TrackedMetricsTable.module.css";
+import common from "../common.module.css";
 
 interface TrackedMetricsTableProps {
   type: "wellness" | "performance";
@@ -28,7 +29,16 @@ interface TrackedMetricsTableProps {
   // The full registry for this type. We persist an explicit user-ordered
   // list of ids; metrics not in the user's list still render here when
   // they're in the registry but unchecked, so the user can toggle them.
+  // Caller may include user-defined custom metrics here (alongside
+  // built-ins) and pass their ids in `customIds` so each custom row
+  // gains an Edit-pencil cell linking to the create/edit form. The
+  // Info cell remains in place for both built-ins and customs (custom
+  // rows render the custom-metric icon as the Info-cell glyph).
   registry: MetricDefinition[];
+  // Subset of `registry` ids that are user-defined custom metrics.
+  // Drives the per-row Edit-pencil cell + custom-metric icon in the
+  // Info cell; the Info-cell link target is the same as for built-ins.
+  customIds?: ReadonlySet<string>;
   // The user's tracked-metric ordering for this type.
   trackedIds: string[];
   onChangeOrder: (ids: string[]) => void;
@@ -41,6 +51,7 @@ export function TrackedMetricsTable({
   type,
   heading,
   registry,
+  customIds,
   trackedIds,
   onChangeOrder,
   onToggleCheck,
@@ -138,6 +149,12 @@ export function TrackedMetricsTable({
                   <span className={css.trackLabel}>Track</span>
                 </th>
                 <th>Metric</th>
+                <th>
+                  {/* Edit cell only renders for custom rows; the
+                      visually-hidden text gives SR users a column
+                      name without adding chrome for sighted users. */}
+                  <span className={common.visuallyHidden}>Edit</span>
+                </th>
                 <th>Info</th>
               </tr>
             </thead>
@@ -154,6 +171,7 @@ export function TrackedMetricsTable({
                     onToggleCheck(m.id, !trackedIds.includes(m.id))
                   }
                   reorderHintId={reorderHintId}
+                  isCustom={customIds?.has(m.id)}
                 />
               ))}
             </tbody>

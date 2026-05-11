@@ -11,11 +11,16 @@ import {
 // bare "0" survive the parent's Number() round-trip. Reconciles with
 // the parent prop only when it changes to a value that doesn't round-
 // trip to the local string (e.g. cross-tab edit, form reset). Rejects
-// non-numeric keystrokes (letters, multiple dots, negative signs)
-// without firing onChange, leaving the prior local string in place.
+// non-numeric keystrokes without firing onChange, leaving the prior
+// local string in place.
+//
+// `allowNegative` opens the regex up to an optional leading `-` so
+// custom metrics whose y-axis range goes below 0 can be entered.
+// Built-in metrics (always non-negative scales) leave it false.
 export function useNumericLocalString(
   value: string,
   onChange: (raw: string) => void,
+  allowNegative: boolean = false,
 ): {
   local: string;
   handleChange: ChangeEventHandler<HTMLInputElement>;
@@ -33,6 +38,9 @@ export function useNumericLocalString(
     // effect via the parent's controlled re-render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
+  const filter = allowNegative
+    ? /^-?[0-9]*\.?[0-9]*$/
+    : /^[0-9]*\.?[0-9]*$/;
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const raw = e.target.value;
     // Let in-flight IME composition through unfiltered; reconciling the
@@ -42,13 +50,13 @@ export function useNumericLocalString(
       setLocal(raw);
       return;
     }
-    if (!/^[0-9]*\.?[0-9]*$/.test(raw)) return;
+    if (!filter.test(raw)) return;
     setLocal(raw);
     onChange(raw);
   };
   const handleCompositionEnd: CompositionEventHandler<HTMLInputElement> = (e) => {
     const raw = e.currentTarget.value;
-    if (/^[0-9]*\.?[0-9]*$/.test(raw)) {
+    if (filter.test(raw)) {
       setLocal(raw);
       onChange(raw);
     } else {

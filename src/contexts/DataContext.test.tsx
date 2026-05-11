@@ -586,6 +586,46 @@ describe("DataContext optimistic merge memo", () => {
     expect(entry?.metrics).toEqual({ wins: 5, losses: 2, goals: 7 });
   });
 
+  it("6b' wellness optimistic merge preserves established customMetrics", () => {
+    // Mirror of 6b for the wellness customMetrics map. WellnessLog writes
+    // a sparse partial (only the metric being edited); the optimistic
+    // overlay must merge it against the server's other custom-metric
+    // values rather than clobber them, otherwise other custom-metric
+    // rows blink to blank for the debounce + RTT window on every
+    // keystroke.
+    const { result } = renderHook(() => useData(), { wrapper });
+    emit(latestSub(state.wellnessSubs), [
+      {
+        path: `users/u1/wellnessEntries/${WELLNESS_DATE}`,
+        data: {
+          version: 1,
+          date: WELLNESS_DATE,
+          hydration: 0,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: FULL_AVAILABILITY,
+          customMetrics: { c_a: 5, c_b: 3 },
+        },
+      },
+    ]);
+    emit(latestSub(state.performanceSubs), []);
+    expect(result.current.wellness.status).toBe("loaded");
+    act(() => {
+      result.current.setWellnessEntry(WELLNESS_DATE, {
+        customMetrics: { c_a: 7 },
+      });
+    });
+    if (result.current.wellness.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    const entry = result.current.wellness.entries.find(
+      (e) => e.date === WELLNESS_DATE,
+    );
+    expect(entry?.customMetrics).toEqual({ c_a: 7, c_b: 3 });
+  });
+
   it("6c optimistic UI is not gated on initial server load", () => {
     // Server never settles - we never call .emit() on the wellness
     // subscription. The optimistic value must still surface.

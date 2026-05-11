@@ -65,7 +65,7 @@ export function makeSnapshot(
 // a vi.mock("firebase/firestore", () => firestoreMockFactory(state))
 // factory.
 // Sentinel class so tests can verify deleteField() was passed.
-class DeleteFieldSentinel {
+export class DeleteFieldSentinel {
   readonly _type = "deleteField" as const;
 }
 

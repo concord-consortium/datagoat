@@ -15,8 +15,9 @@ import {
   type ReactNode,
 } from "react";
 import {
-  firestoreMockFactory,
+  DeleteFieldSentinel,
   authMockFactory,
+  firestoreMockFactory,
   latestSub,
   resetFirestoreState,
   type FirestoreMockState,
@@ -1046,12 +1047,7 @@ describe("DataContext deleteField sentinels (DGT-53)", () => {
     const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
     // deleteField() returns a sentinel object; undefined would be rejected
     // by Firestore SDK and is never a valid payload value.
-    expect(payload.hydration).not.toBeUndefined();
-    expect(payload.hydration).not.toBe(5);
-    expect(payload.hydration).not.toBe(0);
-    // The sentinel must be the deleteField() object (non-null object).
-    expect(typeof payload.hydration).toBe("object");
-    expect(payload.hydration).not.toBeNull();
+    expect(payload.hydration).toBeInstanceOf(DeleteFieldSentinel);
   });
 
   it("removes a customMetrics key when setHealthEntry sets it to undefined (DGT-53)", () => {
@@ -1091,11 +1087,7 @@ describe("DataContext deleteField sentinels (DGT-53)", () => {
     expect(state.setDoc).toHaveBeenCalledTimes(1);
     const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
     const customs = payload.customMetrics as Record<string, unknown>;
-    expect(customs.c_stretch).not.toBeUndefined();
-    expect(customs.c_stretch).not.toBe(30);
-    expect(customs.c_stretch).not.toBe(0);
-    expect(typeof customs.c_stretch).toBe("object");
-    expect(customs.c_stretch).not.toBeNull();
+    expect(customs.c_stretch).toBeInstanceOf(DeleteFieldSentinel);
   });
 });
 

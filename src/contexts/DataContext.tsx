@@ -229,7 +229,7 @@ function reduceHealthPartial(
       // stuck and re-flushing the same payload on every debounce.
       const pendingCustoms = partial.customMetrics ?? {};
       const serverCustoms = server.customMetrics ?? {};
-      const remainingCustoms: Record<string, number | string> = {};
+      const remainingCustoms: Record<string, number | string | undefined> = {};
       for (const m of Object.keys(pendingCustoms)) {
         if (!deepEqual(pendingCustoms[m], serverCustoms[m])) {
           remainingCustoms[m] = pendingCustoms[m];
@@ -256,7 +256,7 @@ function reduceCompetitionPartial(
     if (key === "metrics") {
       const pendingMetrics = partial.metrics ?? {};
       const serverMetrics = server.metrics ?? {};
-      const remainingMetrics: Record<string, number | string> = {};
+      const remainingMetrics: Record<string, number | string | undefined> = {};
       for (const m of Object.keys(pendingMetrics)) {
         if (!deepEqual(pendingMetrics[m], serverMetrics[m])) {
           remainingMetrics[m] = pendingMetrics[m];

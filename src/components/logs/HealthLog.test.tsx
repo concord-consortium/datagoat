@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
 import type { DataLoadState, HealthEntry } from "../../types/data";
+import type { CustomMetricDef } from "../../types/customMetrics";
 import {
   firestoreMockFactory,
   latestSub,
@@ -48,6 +49,7 @@ const ctx = vi.hoisted(() => ({
   loadState: { status: "loaded" } as ProfileLoadState,
   health: { status: "loaded", entries: [] } as DataLoadState<HealthEntry>,
   setHealthEntryMock: vi.fn() as (...args: unknown[]) => void,
+  customMetrics: [] as CustomMetricDef[],
   useLightweightMocks: true,
 }));
 
@@ -69,6 +71,18 @@ vi.mock("../../contexts/AuthContext", () => ({
 
 vi.mock("../../contexts/UserContext", () => ({
   useUser: () => ({ loadState: ctx.loadState }),
+}));
+
+vi.mock("../../contexts/CustomMetricsContext", () => ({
+  useCustomMetrics: () => ({
+    metrics: ctx.customMetrics,
+    loading: false,
+    addMetric: vi.fn(),
+    updateMetric: vi.fn(),
+    deleteMetric: vi.fn(),
+    getMetric: (id: string) =>
+      ctx.customMetrics.find((m) => m.id === id),
+  }),
 }));
 
 // Pull in the real module so DataProvider is always exported. Override
@@ -142,6 +156,7 @@ beforeEach(() => {
   ctx.user = { uid: "u1" };
   ctx.loadState = { status: "loaded", profile: PROFILE };
   ctx.health = { status: "loaded", entries: [] };
+  ctx.customMetrics = [];
   resetFirestoreState(state);
 });
 
@@ -186,6 +201,38 @@ describe("HealthLog route + redirect", () => {
     );
     // The component no longer debounces; debounce lives in DataContext.
     expect(ctx.setHealthEntryMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("HealthLog custom-metric row", () => {
+  it("renders the custom metric name as a link to /health/:customId", () => {
+    // Regression: the custom row was rendering name as plain text
+    // because the <MetricInputRow> call site omitted detailHref. Match
+    // the built-in branch and CompetitionLog parity by linking to the
+    // metric-detail route.
+    const customDef: CustomMetricDef = {
+      id: "c_abc1234567",
+      ownerId: "u1",
+      name: "Caffeine Intake",
+      metricType: "health",
+      inputType: "numeric",
+      unit: "mg",
+      goalRaw: 200,
+      yTopRaw: 400,
+      yBottomRaw: 0,
+      avgDecimals: 0,
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    };
+    ctx.customMetrics = [customDef];
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedHealthMetrics: [customDef.id] },
+    };
+    renderAt("/health");
+    const link = screen.getByRole("link", { name: "Caffeine Intake" });
+    expect(link).toHaveAttribute("href", "/health/c_abc1234567");
   });
 });
 

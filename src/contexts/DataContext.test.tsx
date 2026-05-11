@@ -586,6 +586,46 @@ describe("DataContext optimistic merge memo", () => {
     expect(entry?.metrics).toEqual({ wins: 5, losses: 2, goals: 7 });
   });
 
+  it("6b' health optimistic merge preserves established customMetrics", () => {
+    // Mirror of 6b for the health customMetrics map. HealthLog writes
+    // a sparse partial (only the metric being edited); the optimistic
+    // overlay must merge it against the server's other custom-metric
+    // values rather than clobber them, otherwise other custom-metric
+    // rows blink to blank for the debounce + RTT window on every
+    // keystroke.
+    const { result } = renderHook(() => useData(), { wrapper });
+    emit(latestSub(state.healthSubs), [
+      {
+        path: `users/u1/healthEntries/${HEALTH_DATE}`,
+        data: {
+          version: 1,
+          date: HEALTH_DATE,
+          hydration: 0,
+          sleepTime: 0,
+          sleepEfficiency: 0,
+          protein: 0,
+          leanMass: 0,
+          availability: FULL_AVAILABILITY,
+          customMetrics: { c_a: 5, c_b: 3 },
+        },
+      },
+    ]);
+    emit(latestSub(state.competitionSubs), []);
+    expect(result.current.health.status).toBe("loaded");
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_a: 7 },
+      });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    const entry = result.current.health.entries.find(
+      (e) => e.date === HEALTH_DATE,
+    );
+    expect(entry?.customMetrics).toEqual({ c_a: 7, c_b: 3 });
+  });
+
   it("6c optimistic UI is not gated on initial server load", () => {
     // Server never settles - we never call .emit() on the health
     // subscription. The optimistic value must still surface.

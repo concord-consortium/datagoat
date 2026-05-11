@@ -712,6 +712,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...base.availability,
           ...(entry.partial.availability ?? {}),
         },
+        customMetrics: {
+          ...(base.customMetrics ?? {}),
+          ...(entry.partial.customMetrics ?? {}),
+        },
       });
     }
     if (healthServer.status !== "loaded" && byDate.size === 0) {

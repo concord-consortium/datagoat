@@ -79,11 +79,68 @@ vi.mock("./AuthContext", () => ({
 import {
   CustomMetricsProvider,
   useCustomMetrics,
+  fromDoc,
 } from "./CustomMetricsContext";
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <CustomMetricsProvider>{children}</CustomMetricsProvider>
 );
+
+describe("CustomMetricsContext.fromDoc", () => {
+  it("reads primitive='ordinal' with a levels array", () => {
+    const def = fromDoc("c_x", {
+      ownerId: "u1",
+      name: "Mood",
+      metricType: "health",
+      primitive: "ordinal",
+      levels: [
+        { label: "Low", value: 1 },
+        { label: "High", value: 3 },
+      ],
+      yTopRaw: 3,
+      yBottomRaw: 1,
+      avgDecimals: 1,
+      inputType: "radio",
+      referenceUrl: "",
+    });
+    expect(def.primitive).toBe("ordinal");
+    expect(def.levels).toEqual([
+      { label: "Low", value: 1 },
+      { label: "High", value: 3 },
+    ]);
+  });
+
+  it("reads primitive='numeric' without levels", () => {
+    const def = fromDoc("c_y", {
+      ownerId: "u1",
+      name: "Steps",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "steps",
+      goalRaw: 10000,
+      yTopRaw: 20000,
+      yBottomRaw: 0,
+      avgDecimals: 0,
+      inputType: "numeric",
+      referenceUrl: "",
+    });
+    expect(def.primitive).toBe("numeric");
+    expect(def.levels).toBeUndefined();
+  });
+
+  it("throws on an unknown primitive value", () => {
+    expect(() =>
+      fromDoc("c_z", {
+        ownerId: "u1",
+        name: "Bogus",
+        metricType: "health",
+        primitive: "garbage",
+        inputType: "numeric",
+        referenceUrl: "",
+      }),
+    ).toThrow();
+  });
+});
 
 describe("CustomMetricsContext (Firestore-backed)", () => {
   beforeEach(() => {
@@ -101,6 +158,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
       await result.current.addMetric({
         name: "5K Time",
         metricType: "competition",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "min",
         goalRaw: 25,
@@ -124,6 +182,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
       const def = await result.current.addMetric({
         name: "x",
         metricType: "health",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "",
         goalRaw: 0,
@@ -149,6 +208,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
       const def = await result.current.addMetric({
         name: "x",
         metricType: "health",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "",
         goalRaw: 0,
@@ -174,6 +234,7 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
         ownerId: "u1",
         name: "seeded",
         metricType: "health" as const,
+        primitive: "numeric" as const,
         inputType: "numeric" as const,
         unit: "",
         goalRaw: 0,

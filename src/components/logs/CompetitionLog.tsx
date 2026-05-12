@@ -12,7 +12,7 @@ import {
   historyOffsetFromISO,
   toISO,
 } from "../../utils/dates";
-import { competitionTotal } from "./CompetitionTotals";
+import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
@@ -158,20 +158,27 @@ export function CompetitionLog() {
                     ? live
                     : "";
               const filled = stringValue !== "";
-              const total = competitionTotal(entries, metric.id);
               const nameCellId = `${nameIdBase}-${metric.id}`;
+              const builtInDef = builtInById.get(metric.id);
+              const customDef = customById.get(metric.id);
+
+              // Total cell: winningPercentage gets its derived
+              // percentage; all other metrics fall back to the
+              // running sum from competitionTotal.
+              let totalCell: string;
+              if (metric.id === "winningPercentage") {
+                const rate = winningPercentageRate(entries);
+                totalCell = rate === undefined ? "" : `${rate}%`;
+              } else {
+                const total = competitionTotal(entries, metric.id);
+                totalCell = hasEntriesForMetric(metric.id, [], entries)
+                  ? String(total)
+                  : "";
+              }
+
               return (
                 <tr key={metric.id}>
-                  <td className={css.colTotal}>
-                    {/* competitionTotal returns 0 both for "no entries"
-                        and for "entries summing to 0" - use
-                        hasEntriesForMetric to render the cell only when
-                        there's real data, so a legit 0-total shows as
-                        "0" and an empty cell stays blank. */}
-                    {hasEntriesForMetric(metric.id, [], entries)
-                      ? String(total)
-                      : ""}
-                  </td>
+                  <td className={css.colTotal}>{totalCell}</td>
                   <td id={nameCellId} className={css.colMetric}>
                     <Link
                       to={`/competition/${metric.id}`}
@@ -182,9 +189,33 @@ export function CompetitionLog() {
                   </td>
                   <td className={css.colRecord}>
                     {(() => {
-                      const customDef = customById.get(metric.id);
-                      if (customDef?.primitive === "ordinal" && customDef.levels) {
-                        const live = currentEntry.metrics?.[metric.id];
+                      // Built-in ordinal metrics (currently
+                      // winningPercentage) carry their levels on the
+                      // registry entry. Render the tile selector via
+                      // OrdinalRadioGroup, same renderer customs use.
+                      if (
+                        builtInDef?.inputType === "ordinal" &&
+                        builtInDef.levels
+                      ) {
+                        const ordinalValue =
+                          typeof live === "number" && Number.isFinite(live)
+                            ? live
+                            : undefined;
+                        return (
+                          <OrdinalRadioGroup
+                            levels={builtInDef.levels}
+                            value={ordinalValue}
+                            onChange={(next) =>
+                              setMetricValue(metric.id, String(next))
+                            }
+                            labelledBy={nameCellId}
+                          />
+                        );
+                      }
+                      if (
+                        customDef?.primitive === "ordinal" &&
+                        customDef.levels
+                      ) {
                         const ordinalValue =
                           typeof live === "number" && Number.isFinite(live)
                             ? live

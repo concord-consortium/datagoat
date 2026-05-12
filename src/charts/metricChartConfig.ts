@@ -161,6 +161,19 @@ function competitionConfig(
   };
 }
 
+// Winning Percentage. Per-entry values are 0 (loss) or 1 (win); the
+// chart renders the per-game pattern (binary axis) rather than a
+// derived percentage line. Aggregating to a running percentage in
+// the chart is a follow-up — the Competition Log Total column already
+// shows the overall percentage.
+const WINNING_PERCENTAGE: MetricChartConfig = {
+  chartType: "bar",
+  yTopRaw: 1,
+  yBottomRaw: 0,
+  formatValue: (v) => (v === 1 ? "W" : v === 0 ? "L" : `${v}`),
+  random: (rng) => (rng() < 0.5 ? 0 : 1),
+};
+
 const CONFIG: Record<string, MetricChartConfig> = {
   hydration: HYDRATION,
   sleepTime: SLEEP_TIME,
@@ -169,12 +182,13 @@ const CONFIG: Record<string, MetricChartConfig> = {
   leanMass: LEAN_MASS,
   availability: AVAILABILITY,
   mood: MOOD,
+  winningPercentage: WINNING_PERCENTAGE,
   goals: competitionConfig(0, 10),
   assists: competitionConfig(0, 10),
   yards: competitionConfig(0, 200),
   tackles: competitionConfig(0, 10),
-  wins: competitionConfig(0, 5),
-  losses: competitionConfig(0, 5),
+  scores: competitionConfig(0, 100),
+  times: competitionConfig(0, 60),
 };
 
 const DEFAULT_CONFIG: MetricChartConfig = {

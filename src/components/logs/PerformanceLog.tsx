@@ -120,9 +120,7 @@ export function PerformanceLog() {
           <div className={css.emptyState}>
             <p>
               No performance metrics tracked yet.{" "}
-              <Link to="/add-metric/performance">
-                Add a performance metric
-              </Link>{" "}
+              <Link to="/setup/tracking">Add a performance metric</Link>{" "}
               to start logging 1-rep maxes, sprint times, jump heights, and
               more.
             </p>

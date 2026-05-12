@@ -101,7 +101,7 @@ export function CompetitionLog() {
   // whose author chose `yBottomRaw < 0`.
   const allowNegativeIds = new Set(
     Array.from(customById.values())
-      .filter((m) => m.yBottomRaw < 0)
+      .filter((m) => (m.yBottomRaw ?? 0) < 0)
       .map((m) => m.id),
   );
 

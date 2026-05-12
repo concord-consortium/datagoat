@@ -11,6 +11,7 @@ function customDef(overrides: Partial<CustomMetricDef> = {}): CustomMetricDef {
     ownerId: "u1",
     name: "Test",
     metricType: "health",
+    primitive: "numeric",
     inputType: "numeric",
     unit: "",
     goalRaw: 5,

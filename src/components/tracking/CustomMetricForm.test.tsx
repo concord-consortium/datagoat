@@ -373,6 +373,116 @@ describe("CustomMetricForm — top-level type chooser", () => {
   });
 });
 
+describe("CustomMetricForm — submit shape per top-level type", () => {
+  it("writes primitive='numeric' with the full numeric config when Numeric is chosen", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Steps");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.primitive).toBe("numeric");
+    expect(payload.levels).toBeUndefined();
+    expect(payload.unit).toBe("");
+    expect(payload.goalRaw).toBe(0);
+  });
+
+  it("writes primitive='ordinal' and the Y/N levels when Y/N is chosen", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Slept Well?");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.primitive).toBe("ordinal");
+    expect(payload.inputType).toBe("radio");
+    expect(payload.levels).toEqual([
+      { label: "No", value: 0 },
+      { label: "Yes", value: 1 },
+    ]);
+    expect(payload.yTopRaw).toBe(1);
+    expect(payload.yBottomRaw).toBe(0);
+    expect(payload.unit).toBeUndefined();
+  });
+
+  it("derives yTop/yBottom from levels' min/max when Categorical is chosen", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Mood");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Low");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "Mid");
+    await user.type(values[1], "3");
+    await user.type(labels[2], "High");
+    await user.type(values[2], "5");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.primitive).toBe("ordinal");
+    expect(payload.levels).toEqual([
+      { label: "Low", value: 1 },
+      { label: "Mid", value: 3 },
+      { label: "High", value: 5 },
+    ]);
+    expect(payload.yTopRaw).toBe(5);
+    expect(payload.yBottomRaw).toBe(1);
+  });
+
+  it("rejects Categorical submit when any level is missing a value", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Bad");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    const labels = screen.getAllByLabelText(/^label/i);
+    await user.type(labels[0], "Solo");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(/each level needs a numeric value/i)).toBeTruthy();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it("rejects Categorical submit when fewer than 2 levels are defined", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Tiny");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(/at least two levels/i)).toBeTruthy();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it("rejects Categorical submit when level values are not unique", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Dup");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "A");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "B");
+    await user.type(values[1], "1");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(/level values must be unique/i)).toBeTruthy();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+});
+
 describe("CustomMetricForm (auto-track on create)", () => {
   it("appends the new metric id to trackedHealthMetrics on the first profile create", async () => {
     // userMock starts with loadState.status === "missing" (no profile

@@ -215,6 +215,7 @@ describe("HealthLog custom-metric row", () => {
       ownerId: "u1",
       name: "Caffeine Intake",
       metricType: "health",
+      primitive: "numeric",
       inputType: "numeric",
       unit: "mg",
       goalRaw: 200,

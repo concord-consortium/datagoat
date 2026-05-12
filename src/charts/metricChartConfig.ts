@@ -252,22 +252,22 @@ export function customDefToChartConfig(
   // Firestore could surface legacy/externally-written values, so the
   // clamp is defense-in-depth.
   const decimals = Number.isFinite(def.avgDecimals)
-    ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals)))
+    ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals ?? 1)))
     : 1;
   // Defense-in-depth: finite-check the axis bounds and goal. If
   // either bound is non-finite or the pair is inverted (yBottom >=
   // yTop), fall back to the safe default range. goalRaw drops to
   // undefined when non-finite — chartSeries.lookupGoalLine handles
   // undefined as "no goal line for this metric".
-  let yTopRaw = Number.isFinite(def.yTopRaw) ? def.yTopRaw : FALLBACK_Y_TOP;
+  let yTopRaw = Number.isFinite(def.yTopRaw) ? (def.yTopRaw ?? FALLBACK_Y_TOP) : FALLBACK_Y_TOP;
   let yBottomRaw = Number.isFinite(def.yBottomRaw)
-    ? def.yBottomRaw
+    ? (def.yBottomRaw ?? FALLBACK_Y_BOTTOM)
     : FALLBACK_Y_BOTTOM;
   if (yBottomRaw >= yTopRaw) {
     yTopRaw = FALLBACK_Y_TOP;
     yBottomRaw = FALLBACK_Y_BOTTOM;
   }
-  const goalRaw = Number.isFinite(def.goalRaw) ? def.goalRaw : undefined;
+  const goalRaw = Number.isFinite(def.goalRaw) ? (def.goalRaw ?? undefined) : undefined;
   return {
     chartType: "bar",
     yTopRaw,

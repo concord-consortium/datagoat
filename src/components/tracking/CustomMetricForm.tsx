@@ -41,6 +41,85 @@ function inferTopLevel(def: CustomMetricDef): TopLevelKind {
   return "categorical";
 }
 
+function buildPayload(
+  draft: DraftState,
+  trimmedName: string,
+  trimmedRef: string,
+  type: CustomMetricType,
+): Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt"> {
+  const avgDecimals = Number(draft.avgDecimals);
+  if (
+    !Number.isInteger(avgDecimals) ||
+    avgDecimals < 0 ||
+    avgDecimals > 100
+  ) {
+    throw new Error("Decimals must be an integer between 0 and 100.");
+  }
+
+  if (draft.topLevel === "numeric") {
+    const goalRaw = Number(draft.goalRaw);
+    const yTopRaw = Number(draft.yTopRaw);
+    const yBottomRaw = Number(draft.yBottomRaw);
+    if ([goalRaw, yTopRaw, yBottomRaw].some((v) => !Number.isFinite(v))) {
+      throw new Error("Goal, y-axis top, and y-axis bottom must be finite.");
+    }
+    if (yBottomRaw >= yTopRaw) {
+      throw new Error("Y-axis top must be greater than y-axis bottom.");
+    }
+    return {
+      name: trimmedName,
+      metricType: type,
+      primitive: "numeric",
+      inputType: "numeric",
+      unit: draft.unit.trim(),
+      goalRaw,
+      yTopRaw,
+      yBottomRaw,
+      avgDecimals,
+      referenceUrl: trimmedRef,
+    };
+  }
+
+  // Categorical / Y/N share an ordinal shape.
+  const levels = draft.topLevel === "yn" ? YN_LEVELS : draft.levels;
+  if (levels.some((l) => !l.label.trim())) {
+    throw new Error("Each level needs a label.");
+  }
+  if (levels.some((l) => l.value === undefined || !Number.isFinite(l.value))) {
+    throw new Error("Each level needs a numeric value.");
+  }
+  if (levels.length < 2) {
+    throw new Error("Categorical metrics need at least two levels.");
+  }
+  const values = levels.map((l) => l.value as number);
+  if (new Set(values).size !== values.length) {
+    throw new Error("Level values must be unique.");
+  }
+  const yTopRaw = Math.max(...values);
+  const yBottomRaw = Math.min(...values);
+
+  return {
+    name: trimmedName,
+    metricType: type,
+    primitive: "ordinal",
+    inputType: "radio",
+    levels: levels.map((l) => {
+      const out: CustomMetricLevel = { label: l.label.trim(), value: l.value };
+      if (l.color) out.color = l.color;
+      return out;
+    }),
+    avgDecimals,
+    // For Y/N: goal is greyed and omitted. For Categorical: goal is editable
+    // and meaningful.
+    ...(draft.topLevel === "yn"
+      ? {}
+      : { goalRaw: Number(draft.goalRaw) || 0 }),
+    yTopRaw,
+    yBottomRaw,
+    referenceUrl: trimmedRef,
+  };
+}
+
 function isValidType(t: string | undefined): t is CustomMetricType {
   return t === "health" || t === "competition";
 }
@@ -181,33 +260,6 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       setError(`Name must be ${NAME_MAX} characters or fewer.`);
       return;
     }
-    const goalRaw = Number(draft.goalRaw);
-    const yTopRaw = Number(draft.yTopRaw);
-    const yBottomRaw = Number(draft.yBottomRaw);
-    const avgDecimals = Number(draft.avgDecimals);
-    // !Number.isFinite rejects NaN, +Infinity, and -Infinity. Plain
-    // Number.isNaN would accept Infinity (e.g. typing 1e500 into the
-    // numeric input parses to Infinity), which would corrupt chart
-    // scaling once persisted.
-    if ([goalRaw, yTopRaw, yBottomRaw, avgDecimals].some((v) => !Number.isFinite(v))) {
-      setError("Goal, y-axis top/bottom, and decimals must be finite numbers.");
-      return;
-    }
-    if (
-      !Number.isInteger(avgDecimals) ||
-      avgDecimals < 0 ||
-      avgDecimals > 100
-    ) {
-      // 100 is the upper bound `Number.prototype.toFixed` accepts —
-      // beyond that it throws RangeError, which would crash chart
-      // formatting for the metric.
-      setError("Decimals must be an integer between 0 and 100.");
-      return;
-    }
-    if (yBottomRaw >= yTopRaw) {
-      setError("Y-axis top must be greater than y-axis bottom.");
-      return;
-    }
     const referenceUrl = draft.referenceUrl.trim();
     if (referenceUrl) {
       // Two-step validation:
@@ -235,10 +287,18 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       }
     }
 
+    let payload: Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">;
+    try {
+      payload = buildPayload(draft, trimmed, referenceUrl, type);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid form.");
+      return;
+    }
+
     try {
       if (editing) {
-        const inputTypeChanged = draft.inputType !== editing.inputType;
-        const unitChanged = draft.unit.trim() !== editing.unit;
+        const inputTypeChanged = payload.inputType !== editing.inputType;
+        const unitChanged = (payload.unit ?? "") !== (editing.unit ?? "");
         const dataShapingChanged = inputTypeChanged || unitChanged;
         if (
           dataShapingChanged &&
@@ -258,32 +318,9 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             return;
           }
         }
-        await updateMetric(editing.id, {
-          name: trimmed,
-          inputType: draft.inputType,
-          unit: draft.unit.trim(),
-          goalRaw,
-          yTopRaw,
-          yBottomRaw,
-          avgDecimals,
-          referenceUrl,
-        });
+        await updateMetric(editing.id, { ...payload });
       } else {
-        // TODO (Task 5): pass primitive + levels; derive y-range for
-        // ordinals. For now forward "numeric" as primitive so existing
-        // tests that exercise the numeric path continue to pass.
-        const def = await addMetric({
-          name: trimmed,
-          metricType: type,
-          primitive: "numeric",
-          inputType: draft.inputType,
-          unit: draft.unit.trim() || undefined,
-          goalRaw,
-          yTopRaw,
-          yBottomRaw,
-          avgDecimals,
-          referenceUrl,
-        });
+        const def = await addMetric(payload);
         // Auto-track the newly created metric. Appending to the existing
         // tracked-ids list places it right after the user's last
         // currently-tracked item — Tracked Data Setup renders trackedIds

@@ -126,8 +126,8 @@ export function HealthLog() {
   const adaptCustom = (def: CustomMetricDef): MetricDefinition => ({
     id: def.id,
     name: def.name,
-    unit: def.unit,
-    displayUnit: def.unit,
+    unit: def.unit ?? "",
+    displayUnit: def.unit ?? "",
     type: "health",
     whoCollects: "",
     howCollected: "",
@@ -254,7 +254,7 @@ export function HealthLog() {
                     // only when the metric's range goes below 0;
                     // otherwise typing minus stays blocked, matching
                     // built-in behavior.
-                    allowNegative={def.yBottomRaw < 0}
+                    allowNegative={(def.yBottomRaw ?? 0) < 0}
                   />
                 );
               }

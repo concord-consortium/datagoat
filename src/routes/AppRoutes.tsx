@@ -86,10 +86,10 @@ export function AppRoutes() {
             element={<MetricDetail type="health" />}
           />
           <Route path="/performance" element={<PerformanceLog />} />
-          {/* /performance/:metricId omitted intentionally: MetricDetail
-              still types as "health" | "competition" and supporting
-              performance there is a follow-up. PerformanceLog renders
-              metric names without detail links for now. */}
+          <Route
+            path="/performance/:metricId"
+            element={<MetricDetail type="performance" />}
+          />
           <Route path="/competition" element={<CompetitionLog />} />
           <Route
             path="/competition/:metricId"

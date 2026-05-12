@@ -10,8 +10,10 @@ import {
 } from "../components/dashboard/TimeRangePicker";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import {
   ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
   ADDABLE_COMPETITION,
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
@@ -25,6 +27,7 @@ import { useUser } from "../contexts/UserContext";
 import {
   useHealthData,
   useCompetitionData,
+  usePerformanceData,
 } from "../contexts/DataContext";
 import {
   capitalizeAthleteType,
@@ -40,7 +43,7 @@ import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
 interface MetricDetailProps {
-  type: "health" | "competition";
+  type: "health" | "performance" | "competition";
 }
 
 // Hydration bracket labels (verbatim port of the prototype's label runs
@@ -64,7 +67,9 @@ export function MetricDetail({ type }: MetricDetailProps) {
   const allMetrics =
     type === "health"
       ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
-      : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
+      : type === "performance"
+        ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
+        : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
   const { metrics: allCustom, loading: customsLoading } = useCustomMetrics();
   // Match the route's :type so a health URL doesn't resolve a
   // competition-typed custom metric (and vice versa) — without the
@@ -93,14 +98,19 @@ export function MetricDetail({ type }: MetricDetailProps) {
 
   const health = useHealthData();
   const competition = useCompetitionData();
+  const performance = usePerformanceData();
   const dataLoading =
     type === "health"
       ? health.status === "loading"
-      : competition.status === "loading";
+      : type === "performance"
+        ? performance.status === "loading"
+        : competition.status === "loading";
   const healthEntries =
     health.status === "loaded" ? health.entries : [];
   const competitionEntries =
     competition.status === "loaded" ? competition.entries : [];
+  const performanceEntries =
+    performance.status === "loaded" ? performance.entries : [];
 
   const [range, setRange] = useState<TimeRangeKey>("7d");
   const demoMode = useDemoMode();
@@ -110,6 +120,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
     metricId: metric?.id ?? "",
     healthEntries,
     competitionEntries,
+    performanceEntries,
     rangeDays: TIME_RANGE_DAYS[range],
     demoMode,
   });
@@ -120,7 +131,13 @@ export function MetricDetail({ type }: MetricDetailProps) {
   if (!metric) {
     return (
       <Navigate
-        to={type === "health" ? "/health" : "/competition"}
+        to={
+          type === "health"
+            ? "/health"
+            : type === "performance"
+              ? "/performance"
+              : "/competition"
+        }
         replace
       />
     );
@@ -375,7 +392,7 @@ function renderMultiline(text: string) {
 // doesn't render the link).
 function customAsMetricDefinition(
   def: CustomMetricDef | undefined,
-  type: "health" | "competition",
+  type: "health" | "performance" | "competition",
 ): MetricDefinition | undefined {
   if (!def) return undefined;
   return {

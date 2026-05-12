@@ -151,11 +151,12 @@ export function PerformanceLog() {
                   <tr key={metric.id}>
                     <td className={css.colTotal}>{filled ? stringValue : ""}</td>
                     <td id={nameCellId} className={css.colMetric}>
-                      {/* Per-metric detail page (/performance/:id) is a
-                          follow-up; render the name as plain text for
-                          now so PerformanceLog ships without a dead
-                          link. */}
-                      {metric.name}
+                      <Link
+                        to={`/performance/${metric.id}`}
+                        className={css.metricLink}
+                      >
+                        {metric.name}
+                      </Link>
                     </td>
                     <td className={css.colRecord}>
                       {(() => {

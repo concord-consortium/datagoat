@@ -10,8 +10,10 @@ import PlusCircleIcon from "@/icons/plus-circle.svg?react";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import {
   ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
   ADDABLE_COMPETITION,
 } from "../metrics/addableMetrics";
 import type { CustomMetricDef } from "../types/customMetrics";
@@ -114,6 +116,32 @@ const PATTERNS: Array<{
           title: c.name,
           icon: <CustomMetricIcon />,
           backTo: "/health",
+        };
+      }
+      return null;
+    },
+  },
+  {
+    pattern: "/performance/:metricId",
+    resolve: (params, customs) => {
+      const m =
+        PERFORMANCE_METRICS.find((x) => x.id === params.metricId) ??
+        ADDABLE_PERFORMANCE.find((x) => x.id === params.metricId);
+      if (m) {
+        return {
+          title: m.name,
+          icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
+          backTo: "/performance",
+        };
+      }
+      const c = customs.find(
+        (x) => x.id === params.metricId && x.metricType === "performance",
+      );
+      if (c) {
+        return {
+          title: c.name,
+          icon: <CustomMetricIcon />,
+          backTo: "/performance",
         };
       }
       return null;

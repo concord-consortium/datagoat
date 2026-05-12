@@ -207,14 +207,68 @@ export function HealthLog() {
                     />
                   );
                 }
-                const fieldKey = id as keyof Pick<
-                  HealthEntry,
-                  "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
-                >;
-                const live = currentEntry[fieldKey];
-                // A finite number (including 0) renders verbatim so the
-                // user sees what they logged. undefined / absent renders
-                // as blank - that's the "not logged" state.
+                // Numeric named-field built-ins. Original five metrics
+                // store values as typed fields on HealthEntry; the chart
+                // engine's readHealthMetric has matching `case` branches.
+                if (
+                  id === "sleepTime" ||
+                  id === "sleepEfficiency" ||
+                  id === "protein" ||
+                  id === "leanMass"
+                ) {
+                  const fieldKey = id as keyof Pick<
+                    HealthEntry,
+                    "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
+                  >;
+                  const live = currentEntry[fieldKey];
+                  const stringValue =
+                    typeof live === "number" && Number.isFinite(live)
+                      ? String(live)
+                      : "";
+                  return (
+                    <MetricInputRow
+                      key={id}
+                      metric={builtIn}
+                      inputType="numeric"
+                      value={stringValue}
+                      onChange={(raw) => setNumericField(fieldKey, raw)}
+                      detailHref={`/health/${id}`}
+                    />
+                  );
+                }
+                // Generic built-in path for new metrics (Mood, plus
+                // off-by-default additions). Values live in the
+                // `customMetrics` map (misleading name kept until a
+                // follow-up renames the field to `metrics`). Dispatches
+                // on the registry's `inputType` so adding another
+                // ordinal/numeric built-in needs only a HEALTH_METRICS
+                // entry — no new branches here, no `case` in
+                // readHealthMetric (its default case reads
+                // customMetrics).
+                if (builtIn.inputType === "ordinal" && builtIn.levels) {
+                  const live = currentEntry.customMetrics?.[id];
+                  const ordinalValue =
+                    typeof live === "number" && Number.isFinite(live)
+                      ? live
+                      : undefined;
+                  return (
+                    <MetricInputRow
+                      key={id}
+                      metric={builtIn}
+                      inputType="ordinal"
+                      levels={builtIn.levels}
+                      value={ordinalValue}
+                      onChange={(next) =>
+                        setCustomMetric(id, String(next))
+                      }
+                      detailHref={`/health/${id}`}
+                    />
+                  );
+                }
+                // Numeric fall-through for new built-ins that aren't
+                // named-field, aren't ordinal, and aren't one of the
+                // special inputType cases above.
+                const live = currentEntry.customMetrics?.[id];
                 const stringValue =
                   typeof live === "number" && Number.isFinite(live)
                     ? String(live)
@@ -225,7 +279,7 @@ export function HealthLog() {
                     metric={builtIn}
                     inputType="numeric"
                     value={stringValue}
-                    onChange={(raw) => setNumericField(fieldKey, raw)}
+                    onChange={(raw) => setCustomMetric(id, raw)}
                     detailHref={`/health/${id}`}
                   />
                 );

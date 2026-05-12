@@ -132,6 +132,15 @@ const AVAILABILITY: MetricChartConfig = {
   random: () => 100,
 };
 
+const MOOD: MetricChartConfig = {
+  chartType: "bar",
+  yTopRaw: 5,
+  yBottomRaw: 1,
+  goalRaw: 4,
+  formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 1, 5),
+};
+
 // Competition metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
 // All numeric, all sport-counter-shaped. Demo random values span the
 // metric's full [yBottomRaw, yTopRaw] range so bars exercise the full
@@ -159,6 +168,7 @@ const CONFIG: Record<string, MetricChartConfig> = {
   protein: PROTEIN,
   leanMass: LEAN_MASS,
   availability: AVAILABILITY,
+  mood: MOOD,
   goals: competitionConfig(0, 10),
   assists: competitionConfig(0, 10),
   yards: competitionConfig(0, 200),

@@ -18,6 +18,7 @@ const STATIC_GOALS: Record<string, string> = {
   sleepTime: "to get 7-9 hours of sleep every night",
   availability:
     "to be available for more than 80% of your practices and {compTermPlural}",
+  mood: "to rate your mood at 4 or higher on most days",
 };
 
 // metric.id -> profile-keyed goal text. Only the four built-in

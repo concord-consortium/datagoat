@@ -9,6 +9,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
+import { ADDABLE_HEALTH } from "../../metrics/addableMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import {
@@ -21,12 +22,19 @@ import { getChipState } from "../../utils/healthCompleteness";
 import { emptyHealthEntry, type HealthEntry } from "../../types/data";
 import css from "./HealthLog.module.css";
 
-// Built-in health metrics indexed by id. Hoisted to module scope so
-// the lookup map is constant across renders without needing a hook —
-// the component early-returns on bad ?date= params, and a useMemo
-// declared after that return would violate the Rules of Hooks.
+// All built-in health metric definitions (default-on + addable),
+// indexed by id. Hoisted to module scope so the lookup map is
+// constant across renders without needing a hook — the component
+// early-returns on bad ?date= params, and a useMemo declared after
+// that return would violate the Rules of Hooks.
+//
+// Including ADDABLE_HEALTH here means a user who opts into an
+// addable (e.g., Pain) via TrackedDataSetup can resolve its
+// MetricDefinition for rendering. Default-on vs default-off is a
+// property of the tracked-id list (HEALTH_METRICS by default), not
+// the lookup map.
 const BUILT_IN_BY_ID = new Map<string, MetricDefinition>(
-  HEALTH_METRICS.map((m) => [m.id, m]),
+  [...HEALTH_METRICS, ...ADDABLE_HEALTH].map((m) => [m.id, m]),
 );
 
 export function HealthLog() {

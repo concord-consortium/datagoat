@@ -5,6 +5,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import { ADDABLE_PERFORMANCE } from "../../metrics/addableMetrics";
 import {
   HISTORY,
   dateAtOffset,
@@ -70,7 +71,13 @@ export function PerformanceLog() {
     setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
 
-  const builtInById = new Map(PERFORMANCE_METRICS.map((m) => [m.id, m]));
+  // Include ADDABLE_PERFORMANCE so opt-in metrics resolve here too.
+  // PERFORMANCE_METRICS is currently empty (every Perf metric is
+  // off by default per the sheet), so all 16 entries flow through
+  // the addable side.
+  const builtInById = new Map(
+    [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE].map((m) => [m.id, m]),
+  );
   const customById = new Map<string, (typeof allCustom)[number]>();
   for (const def of allCustom) {
     if (def.metricType === "performance") customById.set(def.id, def);

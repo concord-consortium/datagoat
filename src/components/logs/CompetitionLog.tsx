@@ -5,6 +5,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
+import { ADDABLE_COMPETITION } from "../../metrics/addableMetrics";
 import {
   HISTORY,
   dateAtOffset,
@@ -78,7 +79,13 @@ export function CompetitionLog() {
   // preference. The user can drag-reorder a custom metric among
   // built-ins on /setup/tracking; iterating trackedIds (rather than
   // appending customs after built-ins) honors that ordering here.
-  const builtInById = new Map(COMPETITION_METRICS.map((m) => [m.id, m]));
+  // Include ADDABLE_COMPETITION so users who opted into a default-off
+  // metric (Assists, Tackles, Rebounds, etc.) can resolve its
+  // MetricDefinition. Default-on vs default-off is a property of the
+  // tracked-id list, not of the lookup map.
+  const builtInById = new Map(
+    [...COMPETITION_METRICS, ...ADDABLE_COMPETITION].map((m) => [m.id, m]),
+  );
   const customById = new Map<string, (typeof allCustom)[number]>();
   for (const def of allCustom) {
     if (def.metricType === "competition") customById.set(def.id, def);

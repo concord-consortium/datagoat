@@ -24,7 +24,7 @@ import css from "./TrackedMetricsTable.module.css";
 import common from "../common.module.css";
 
 interface TrackedMetricsTableProps {
-  type: "health" | "competition";
+  type: "health" | "performance" | "competition";
   heading: string;
   // The full registry for this type. We persist an explicit user-ordered
   // list of ids; metrics not in the user's list still render here when

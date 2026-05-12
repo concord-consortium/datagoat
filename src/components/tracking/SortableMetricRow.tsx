@@ -108,6 +108,10 @@ export function SortableMetricRow({
             in addition to functioning as the chart-detail link. */}
         <Link
           to={`/${type}/${id}`}
+          // Pass backTo via location state so MetricDetail's back chevron
+          // returns the user to /setup/tracking instead of bouncing them
+          // to the log page (the registry default for that detail route).
+          state={{ backTo: "/setup/tracking" }}
           className={css.metricInfoBtn}
           aria-label={`${name} info`}
         >

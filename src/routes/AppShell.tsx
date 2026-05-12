@@ -76,7 +76,7 @@ export function AppShell() {
 function AppShellInner() {
   const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
   const { user } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, state: locationState } = useLocation();
   const isAuthRoute = AUTH_PATHS.has(pathname);
   const showHeader = !isAuthRoute;
   // /dashboard renders DashboardHeaderSlide (the wordmark<->motivation
@@ -91,7 +91,11 @@ function AppShellInner() {
   // /health/:metricId and /competition/:metricId can resolve a custom
   // metric's name + back-target.
   const { metrics: customs } = useCustomMetrics();
-  const routeMeta = resolveRouteMeta(pathname, customs);
+  const routeMeta = resolveRouteMeta(
+    pathname,
+    customs,
+    locationState as { backTo?: string } | null,
+  );
   const mainRef = useRef<HTMLElement | null>(null);
 
   // WCAG 2.4.2 (Page Titled): keep document.title in sync with the active

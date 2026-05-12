@@ -266,9 +266,33 @@ const PATTERNS: Array<{
 
 const NO_CUSTOMS: readonly CustomMetricDef[] = [];
 
+// Optional location-state shape consumed by resolveRouteMeta. Callers
+// navigating to a metric detail (or other route with a static backTo)
+// can set `backTo` here to override the registry default, so the
+// SectionHeading back chevron returns the user to the page they
+// actually came from. Example: SortableMetricRow on /setup/tracking
+// navigates to /performance/:id with state.backTo = "/setup/tracking"
+// so the back button doesn't bounce them to /performance.
+export interface RouteLocationState {
+  backTo?: string;
+}
+
 export function resolveRouteMeta(
   pathname: string,
   customs: readonly CustomMetricDef[] = NO_CUSTOMS,
+  state?: RouteLocationState | null,
+): RouteMeta | null {
+  const base = resolveBase(pathname, customs);
+  if (!base) return base;
+  if (state && typeof state.backTo === "string") {
+    return { ...base, backTo: state.backTo };
+  }
+  return base;
+}
+
+function resolveBase(
+  pathname: string,
+  customs: readonly CustomMetricDef[],
 ): RouteMeta | null {
   if (STATIC[pathname]) return STATIC[pathname];
   for (const entry of PATTERNS) {

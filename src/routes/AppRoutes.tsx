@@ -13,6 +13,7 @@ import { EmailVerification } from "../components/auth/EmailVerification";
 import { ProfileForm } from "../components/profile/ProfileForm";
 import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
 import { HealthLog } from "../components/logs/HealthLog";
+import { PerformanceLog } from "../components/logs/PerformanceLog";
 import { CompetitionLog } from "../components/logs/CompetitionLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { MetricDetail } from "../charts/MetricDetail";
@@ -84,6 +85,11 @@ export function AppRoutes() {
             path="/health/:metricId"
             element={<MetricDetail type="health" />}
           />
+          <Route path="/performance" element={<PerformanceLog />} />
+          {/* /performance/:metricId omitted intentionally: MetricDetail
+              still types as "health" | "competition" and supporting
+              performance there is a follow-up. PerformanceLog renders
+              metric names without detail links for now. */}
           <Route path="/competition" element={<CompetitionLog />} />
           <Route
             path="/competition/:metricId"

@@ -1,5 +1,6 @@
 import { CURRENT_HEALTH_ENTRY_VERSION } from "../migrations/healthEntry";
 import { CURRENT_COMPETITION_ENTRY_VERSION } from "../migrations/competitionEntry";
+import { CURRENT_PERFORMANCE_ENTRY_VERSION } from "../migrations/performanceEntry";
 
 export interface HealthEntry {
   version: number;
@@ -45,6 +46,16 @@ export interface CompetitionEntry {
   metrics: Record<string, number | string | undefined>;
 }
 
+export interface PerformanceEntry {
+  version: number;
+  date: string;
+  // Same map shape as CompetitionEntry. Built-in performance metrics
+  // (1RMs, sprints, jumps, GPS-derived) are registry-defined; values
+  // land here keyed by MetricDefinition.id. Custom user-defined
+  // performance metrics share the same map.
+  metrics: Record<string, number | string | undefined>;
+}
+
 export type DataLoadState<T> =
   | { status: "loading" }
   | { status: "loaded"; entries: T[] };
@@ -64,6 +75,14 @@ export function emptyHealthEntry(date: string): HealthEntry {
 export function emptyCompetitionEntry(date: string): CompetitionEntry {
   return {
     version: CURRENT_COMPETITION_ENTRY_VERSION,
+    date,
+    metrics: {},
+  };
+}
+
+export function emptyPerformanceEntry(date: string): PerformanceEntry {
+  return {
+    version: CURRENT_PERFORMANCE_ENTRY_VERSION,
     date,
     metrics: {},
   };

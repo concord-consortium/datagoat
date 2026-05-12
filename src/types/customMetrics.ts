@@ -1,4 +1,4 @@
-export type CustomMetricType = "health" | "competition";
+export type CustomMetricType = "health" | "performance" | "competition";
 
 // `inputType` is orthogonal to `primitive`. Today numeric metrics render
 // as "numeric" and ordinal metrics render as "radio"; a future story can

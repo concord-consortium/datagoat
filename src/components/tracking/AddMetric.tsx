@@ -13,13 +13,21 @@ import css from "./AddMetric.module.css";
 // re-implementing the tracking UI.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
-  if (type !== "health" && type !== "competition") {
+  if (
+    type !== "health" &&
+    type !== "performance" &&
+    type !== "competition"
+  ) {
     return <Navigate to="/setup/tracking" replace />;
   }
   return <AddMetricInner type={type} />;
 }
 
-function AddMetricInner({ type }: { type: "health" | "competition" }) {
+function AddMetricInner({
+  type,
+}: {
+  type: "health" | "performance" | "competition";
+}) {
   const { metrics: allCustom, loading } = useCustomMetrics();
   const customForType = allCustom.filter((m) => m.metricType === type);
 

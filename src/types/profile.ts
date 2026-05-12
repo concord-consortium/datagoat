@@ -14,6 +14,11 @@ export interface UserProfile {
   athleteType: AthleteType;
   competitionTerm: string;
   trackedHealthMetrics: string[];
+  // Optional during the transition to a 3-section model (DGT-51). New
+  // profiles initialize it to [] alongside trackedHealthMetrics /
+  // trackedCompetitionMetrics; legacy profiles may omit it. Consumers
+  // fall back to an empty array or PERFORMANCE_METRICS-default.
+  trackedPerformanceMetrics?: string[];
   trackedCompetitionMetrics: string[];
   profileComplete: boolean;
   trackingSetupComplete: boolean;

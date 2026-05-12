@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import css from "./CustomMetricLevelsEditor.module.css";
 
@@ -7,24 +6,18 @@ interface Props {
   onChange: (next: CustomMetricLevel[]) => void;
 }
 
-export function CustomMetricLevelsEditor({ levels: levelsProp, onChange }: Props) {
-  const [levels, setLevels] = useState<CustomMetricLevel[]>(levelsProp);
-
-  function commit(next: CustomMetricLevel[]) {
-    setLevels(next);
+export function CustomMetricLevelsEditor({ levels, onChange }: Props) {
+  function update(idx: number, patch: Partial<CustomMetricLevel>) {
+    const next = levels.map((l, i) => (i === idx ? { ...l, ...patch } : l));
     onChange(next);
   }
 
-  function update(idx: number, patch: Partial<CustomMetricLevel>) {
-    commit(levels.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
-  }
-
   function remove(idx: number) {
-    commit(levels.filter((_, i) => i !== idx));
+    onChange(levels.filter((_, i) => i !== idx));
   }
 
   function add() {
-    commit([...levels, { label: "", value: undefined }]);
+    onChange([...levels, { label: "", value: undefined }]);
   }
 
   return (

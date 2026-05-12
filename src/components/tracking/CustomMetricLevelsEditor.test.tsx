@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -7,9 +8,19 @@ import type { CustomMetricLevel } from "../../types/customMetrics";
 
 function renderEditor(initial: CustomMetricLevel[] = []) {
   const onChange = vi.fn<(next: CustomMetricLevel[]) => void>();
-  const utils = render(
-    <CustomMetricLevelsEditor levels={initial} onChange={onChange} />,
-  );
+  function Host() {
+    const [levels, setLevels] = useState<CustomMetricLevel[]>(initial);
+    return (
+      <CustomMetricLevelsEditor
+        levels={levels}
+        onChange={(next) => {
+          setLevels(next);
+          onChange(next);
+        }}
+      />
+    );
+  }
+  const utils = render(<Host />);
   return { onChange, ...utils };
 }
 
@@ -28,7 +39,7 @@ describe("CustomMetricLevelsEditor", () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor([{ label: "A", value: 1 }]);
     await user.click(screen.getByRole("button", { name: /add row/i }));
-    expect(onChange).toHaveBeenCalledWith([
+    expect(onChange).toHaveBeenLastCalledWith([
       { label: "A", value: 1 },
       { label: "", value: undefined },
     ]);

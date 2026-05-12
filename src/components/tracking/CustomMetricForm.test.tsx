@@ -364,6 +364,31 @@ describe("CustomMetricForm — top-level type chooser", () => {
     expect(screen.queryByRole("button", { name: /remove row/i })).toBeNull();
   });
 
+  it("preserves in-progress Categorical rows across a Y/N detour", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Type into the two seeded rows.
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Low");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "High");
+    await user.type(values[1], "9");
+    // Detour through Y/N - the read-only table shows No/Yes here, but
+    // the user's Categorical edits must survive untouched.
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    expect((screen.getByLabelText(/^Label for row 1$/i) as HTMLInputElement).value).toBe("No");
+    expect((screen.getByLabelText(/^Label for row 2$/i) as HTMLInputElement).value).toBe("Yes");
+    // Back to Categorical - the user's rows are restored.
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect((screen.getByLabelText(/^Label for row 1$/i) as HTMLInputElement).value).toBe("Low");
+    expect((screen.getByLabelText(/^Value for row 1$/i) as HTMLInputElement).value).toBe("1");
+    expect((screen.getByLabelText(/^Label for row 2$/i) as HTMLInputElement).value).toBe("High");
+    expect((screen.getByLabelText(/^Value for row 2$/i) as HTMLInputElement).value).toBe("9");
+  });
+
+
   it("greys out goal when Y/N is selected (per spec)", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");

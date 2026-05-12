@@ -126,14 +126,24 @@ function buildPayload(
     }),
     avgDecimals,
     // For Y/N: goal is greyed and omitted. For Categorical: goal is editable
-    // and meaningful.
-    ...(draft.topLevel === "yn"
-      ? {}
-      : { goalRaw: Number(draft.goalRaw) || 0 }),
+    // and meaningful. Empty string defaults to 0; anything that parses to
+    // a non-finite number (NaN, Infinity from `1e500`) is rejected
+    // explicitly so it can't leak through `|| 0` short-circuit logic and
+    // corrupt chart scaling/formatting downstream.
+    ...(draft.topLevel === "yn" ? {} : { goalRaw: parseCategoricalGoal(draft.goalRaw) }),
     yTopRaw,
     yBottomRaw,
     referenceUrl: trimmedRef,
   };
+}
+
+function parseCategoricalGoal(raw: string): number {
+  if (raw.trim() === "") return 0;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    throw new Error("Goal must be a finite number.");
+  }
+  return n;
 }
 
 function isValidType(t: string | undefined): t is CustomMetricType {
@@ -248,7 +258,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       // external tool that omitted the field) don't crash the controlled
       // input on undefined.
       referenceUrl: editing.referenceUrl ?? "",
-      levels: editing.levels ?? [],
+      // Y/N opens with an empty draft.levels: the editor + buildPayload
+      // both substitute YN_LEVELS for that case, so storing the canonical
+      // pair in draft.levels would just be dead state — and would muddy a
+      // future Categorical detour by carrying the Y/N rows into the
+      // editable table.
+      levels: topLevel === "yn" ? [] : (editing.levels ?? []),
     };
   });
   const [error, setError] = useState<string | null>(null);
@@ -259,7 +274,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         return { ...prev, topLevel: next, inputType: "numeric", levels: [] };
       }
       if (next === "yn") {
-        return { ...prev, topLevel: next, inputType: "radio", levels: YN_LEVELS };
+        // Y/N is a constant preset, not a user-edited state. Leave
+        // prev.levels alone so a user who was mid-edit on Categorical
+        // can tab back without their rows being overwritten. The
+        // levels editor render and buildPayload both substitute
+        // YN_LEVELS for Y/N regardless of what's in draft.levels.
+        return { ...prev, topLevel: next, inputType: "radio" };
       }
       // Categorical: preserve existing rows when the user is toggling
       // back from Y/N or returning to a partially-edited table. Seed two
@@ -414,6 +434,13 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   // whose effect is tangential to the Y/N concept.
   const decimalsDisabled = draft.topLevel === "yn";
 
+  // Y/N is a constant preset that doesn't live in draft.levels (so the
+  // user's Categorical edits survive a Y/N detour). Resolve the
+  // effective levels here so both the y-range derivation and the
+  // editor render see the right shape.
+  const effectiveLevels =
+    draft.topLevel === "yn" ? YN_LEVELS : draft.levels;
+
   // For ordinal kinds the y-axis is derived from levels at submit-time;
   // mirror that derivation into the (disabled) display fields so users
   // see what will actually be saved instead of stale Numeric defaults.
@@ -422,7 +449,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   const yRangeDisplay =
     draft.topLevel === "numeric"
       ? { top: draft.yTopRaw, bottom: draft.yBottomRaw }
-      : deriveLevelRangeDisplay(draft.levels);
+      : deriveLevelRangeDisplay(effectiveLevels);
 
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
@@ -472,7 +499,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         <div className={css.levelsBlock}>
           <label className={css.fieldLabel}>Levels</label>
           <CustomMetricLevelsEditor
-            levels={draft.levels}
+            levels={effectiveLevels}
             onChange={(next) => update("levels", next)}
             readOnly={draft.topLevel === "yn"}
           />

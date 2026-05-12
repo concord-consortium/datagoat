@@ -280,6 +280,14 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       // already rules them out of the patch shape, but a TS-bypassed
       // caller could still pass them and silently overwrite the
       // provider-managed timestamps.
+      //
+      // TODO (DGT-50 follow-up): primitive changes (numeric -> ordinal
+      // / nominal) leave stale numeric-only fields (`unit`, `goalRaw`,
+      // `yTopRaw`, `yBottomRaw`) in Firestore because the form's
+      // payload omits them and this strip-undefined drops them from
+      // the write. Either thread `deleteField()` through here or have
+      // the form pass explicit clearing values when primitive changes.
+      // Demo scope is fresh-create, so deferred.
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
         if (k === "createdAt" || k === "updatedAt") continue;

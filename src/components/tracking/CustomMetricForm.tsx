@@ -244,7 +244,17 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         return { ...prev, topLevel: next, inputType: "numeric", levels: [] };
       }
       if (next === "yn") {
-        return { ...prev, topLevel: next, inputType: "radio", levels: YN_LEVELS };
+        // Mirror the derived y-axis range into the (disabled) display
+        // fields so the user sees the actual 0..1 range Y/N writes,
+        // rather than the lingering Numeric defaults.
+        return {
+          ...prev,
+          topLevel: next,
+          inputType: "radio",
+          levels: YN_LEVELS,
+          yTopRaw: "1",
+          yBottomRaw: "0",
+        };
       }
       // Categorical: preserve existing rows when the user is toggling
       // back from Y/N or returning to a partially-edited table. Seed two
@@ -393,6 +403,11 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   const unitDisabled = draft.topLevel !== "numeric";
   const goalDisabled = draft.topLevel === "yn";
   const yAxisDisabled = draft.topLevel !== "numeric";
+  // Y/N's only possible values are 0 and 1, so the decimals setting
+  // applies to the formatted average display. The form holds it fixed
+  // at the EMPTY_DRAFT default so the user doesn't fiddle with a knob
+  // whose effect is tangential to the Y/N concept.
+  const decimalsDisabled = draft.topLevel === "yn";
 
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
@@ -494,6 +509,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         type="number"
         inputMode="numeric"
         value={draft.avgDecimals}
+        disabled={decimalsDisabled}
         onChange={(e) => update("avgDecimals", e.target.value)}
       />
 

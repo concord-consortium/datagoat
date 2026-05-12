@@ -372,6 +372,22 @@ describe("CustomMetricForm — top-level type chooser", () => {
     expect(goal.disabled).toBe(true);
   });
 
+  it("greys out decimals when Y/N is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    const decimals = screen.getByLabelText(/^decimals$/i) as HTMLInputElement;
+    expect(decimals.disabled).toBe(true);
+  });
+
+  it("displays y-axis range as 0..1 when Y/N is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).value).toBe("1");
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("0");
+  });
+
   it("greys out y-axis range when Categorical is selected", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");

@@ -250,12 +250,7 @@ describe("CodapPlugin", () => {
           sleepEfficiency: 0,
           protein: 0,
           leanMass: 0,
-          availability: {
-            practiceHeld: null,
-            practiceParticipation: null,
-            gameHeld: null,
-            gameParticipation: null,
-          },
+          availability: {},
         },
       ],
     };

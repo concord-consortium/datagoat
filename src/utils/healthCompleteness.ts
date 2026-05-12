@@ -5,9 +5,11 @@ export type ChipState = "all" | "some" | "none";
 // Per spec: "All" = every tracked metric has a non-empty value;
 // "Some" = at least one has a value; "None" = all empty.
 //
-// Availability counts as filled iff practiceHeld !== null && (practiceHeld
-// === false || practiceParticipation !== null) - the tree must be answered
-// to its leaves to count. Same rule for game.
+// Availability counts as filled iff practiceHeld is answered AND
+// (practiceHeld === false OR practiceParticipation is answered) - the
+// tree must be answered to its leaves to count. Same rule for game.
+// "Answered" means typeof === "boolean"; absent / undefined means
+// "not answered."
 //
 // trackedMetricIds is the user's currently-tracked health metric ids
 // (e.g., ["hydration", "sleepTime", ...]). Metrics not in the user's
@@ -30,26 +32,26 @@ function isFieldFilled(entry: HealthEntry | null, id: string): boolean {
   if (!entry) return false;
   switch (id) {
     case "hydration":
-      return typeof entry.hydration === "number" && entry.hydration > 0;
+      return typeof entry.hydration === "number" && Number.isFinite(entry.hydration);
     case "sleepTime":
-      return typeof entry.sleepTime === "number" && entry.sleepTime > 0;
+      return typeof entry.sleepTime === "number" && Number.isFinite(entry.sleepTime);
     case "sleepEfficiency":
       return (
-        typeof entry.sleepEfficiency === "number" && entry.sleepEfficiency > 0
+        typeof entry.sleepEfficiency === "number" &&
+        Number.isFinite(entry.sleepEfficiency)
       );
     case "protein":
-      return typeof entry.protein === "number" && entry.protein > 0;
+      return typeof entry.protein === "number" && Number.isFinite(entry.protein);
     case "leanMass":
-      return typeof entry.leanMass === "number" && entry.leanMass > 0;
+      return typeof entry.leanMass === "number" && Number.isFinite(entry.leanMass);
     case "availability":
       return availabilityFilled(entry);
     default: {
-      // Custom metric: read from entry.customMetrics. A non-zero number
-      // (incl. negatives for customs with yBottomRaw < 0) or a non-empty
-      // string counts as filled — matches the !== 0 sentinel rule used
-      // by Dashboard.competitionLoggedAny and CompetitionLog stringValue.
+      // Custom metric: a finite number (including 0 and negatives)
+      // or a non-empty string counts as filled. A missing / undefined
+      // key means "not logged."
       const v = entry.customMetrics?.[id];
-      if (typeof v === "number") return v !== 0;
+      if (typeof v === "number") return Number.isFinite(v);
       if (typeof v === "string") return v.trim() !== "";
       return false;
     }
@@ -60,10 +62,10 @@ function availabilityFilled(entry: HealthEntry): boolean {
   const a = entry.availability;
   if (!a) return false;
   const practiceFilled =
-    a.practiceHeld !== null &&
-    (a.practiceHeld === false || a.practiceParticipation !== null);
+    typeof a.practiceHeld === "boolean" &&
+    (a.practiceHeld === false || typeof a.practiceParticipation === "boolean");
   const gameFilled =
-    a.gameHeld !== null &&
-    (a.gameHeld === false || a.gameParticipation !== null);
+    typeof a.gameHeld === "boolean" &&
+    (a.gameHeld === false || typeof a.gameParticipation === "boolean");
   return practiceFilled && gameFilled;
 }

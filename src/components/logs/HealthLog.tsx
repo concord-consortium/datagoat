@@ -83,7 +83,11 @@ export function HealthLog() {
     field: K,
     raw: string,
   ) {
-    const numeric = raw === "" ? 0 : Number(raw);
+    if (raw === "") {
+      setHealthEntry(dateIso, { [field]: undefined } as Partial<HealthEntry>);
+      return;
+    }
+    const numeric = Number(raw);
     if (!Number.isFinite(numeric)) return;
     setHealthEntry(dateIso, { [field]: numeric } as Partial<HealthEntry>);
   }
@@ -97,7 +101,13 @@ export function HealthLog() {
   }
 
   function setCustomMetric(metricId: string, raw: string) {
-    const numeric = raw === "" ? 0 : Number(raw);
+    if (raw === "") {
+      setHealthEntry(dateIso, {
+        customMetrics: { [metricId]: undefined },
+      });
+      return;
+    }
+    const numeric = Number(raw);
     if (!Number.isFinite(numeric)) return;
     setHealthEntry(dateIso, { customMetrics: { [metricId]: numeric } });
   }
@@ -174,6 +184,10 @@ export function HealthLog() {
                       key={id}
                       metric={builtIn}
                       inputType="colorScale"
+                      // Hydration is optional (undefined = not entered). The
+                      // ColorScale component renders "no selection" when value
+                      // is 0 or undefined, preserving the undefined semantics
+                      // throughout the data flow.
                       value={currentEntry.hydration}
                       onChange={setHydration}
                       detailHref={`/health/${id}`}
@@ -198,8 +212,13 @@ export function HealthLog() {
                   "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
                 >;
                 const live = currentEntry[fieldKey];
+                // A finite number (including 0) renders verbatim so the
+                // user sees what they logged. undefined / absent renders
+                // as blank - that's the "not logged" state.
                 const stringValue =
-                  typeof live === "number" && live > 0 ? String(live) : "";
+                  typeof live === "number" && Number.isFinite(live)
+                    ? String(live)
+                    : "";
                 return (
                   <MetricInputRow
                     key={id}
@@ -214,12 +233,11 @@ export function HealthLog() {
               const def = customById.get(id);
               if (def) {
                 const live = currentEntry.customMetrics?.[id];
-                // !== 0 (rather than > 0) so custom metrics with a
-                // negative yBottomRaw can render legitimate negative
-                // values. 0 stays the "blank input" sentinel since 0
-                // is what the writer stores for an empty entry.
+                // Finite numbers (incl. 0 and negatives for customs
+                // with yBottomRaw < 0) render verbatim. A missing key
+                // (undefined) is "not logged" and renders as blank.
                 const stringValue =
-                  typeof live === "number" && live !== 0
+                  typeof live === "number" && Number.isFinite(live)
                     ? String(live)
                     : typeof live === "string"
                       ? live

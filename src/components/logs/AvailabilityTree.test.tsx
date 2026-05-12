@@ -6,12 +6,7 @@ import type { HealthEntry } from "../../types/data";
 
 type Avail = HealthEntry["availability"];
 
-const EMPTY: Avail = {
-  practiceHeld: null,
-  practiceParticipation: null,
-  gameHeld: null,
-  gameParticipation: null,
-};
+const EMPTY: Avail = {};
 
 function renderTree(value: Avail) {
   const onChange = vi.fn<(next: Avail) => void>();
@@ -36,13 +31,13 @@ describe("AvailabilityTree", () => {
     const { radios, onChange } = renderTree({
       ...EMPTY,
       practiceHeld: true,
-      practiceParticipation: "played",
+      practiceParticipation: true,
     });
     fireEvent.click(radios[1]); // practice N
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       practiceHeld: false,
-      practiceParticipation: null,
+      practiceParticipation: undefined,
     });
   });
 
@@ -50,14 +45,14 @@ describe("AvailabilityTree", () => {
     const { radios, onChange } = renderTree({
       ...EMPTY,
       gameHeld: true,
-      gameParticipation: "dnp",
+      gameParticipation: false,
     });
     // 0=practice Y, 1=practice N, 2=game Y, 3=game N, 4=game played, 5=game dnp
     fireEvent.click(radios[3]); // game N
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       gameHeld: false,
-      gameParticipation: null,
+      gameParticipation: undefined,
     });
   });
 
@@ -65,13 +60,12 @@ describe("AvailabilityTree", () => {
     const { radios, onChange } = renderTree({
       ...EMPTY,
       practiceHeld: false,
-      practiceParticipation: null,
     });
     fireEvent.click(radios[0]); // practice Y
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       practiceHeld: true,
-      practiceParticipation: null,
+      practiceParticipation: undefined,
     });
   });
 
@@ -84,7 +78,7 @@ describe("AvailabilityTree", () => {
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       practiceHeld: true,
-      practiceParticipation: "played",
+      practiceParticipation: true,
     });
   });
 
@@ -98,7 +92,7 @@ describe("AvailabilityTree", () => {
     expect(onChange).toHaveBeenCalledWith({
       ...EMPTY,
       gameHeld: true,
-      gameParticipation: "dnp",
+      gameParticipation: false,
     });
   });
 });

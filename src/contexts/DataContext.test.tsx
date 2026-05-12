@@ -15,8 +15,9 @@ import {
   type ReactNode,
 } from "react";
 import {
-  firestoreMockFactory,
+  DeleteFieldSentinel,
   authMockFactory,
+  firestoreMockFactory,
   latestSub,
   resetFirestoreState,
   type FirestoreMockState,
@@ -67,9 +68,7 @@ const HEALTH_DATE_B = "2026-04-29";
 
 const FULL_AVAILABILITY = {
   practiceHeld: false,
-  practiceParticipation: null,
   gameHeld: false,
-  gameParticipation: null,
 } as const;
 
 beforeEach(() => {
@@ -462,18 +461,14 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     expect("version" in payload).toBe(false);
   });
 
-  it("creation: partial availability write expands to full null-defaulted sub-keys", () => {
-    // Without this, setDoc(merge:true) of `{availability: {practiceHeld:true}}`
-    // on a brand-new doc would leave the other sub-fields absent on
-    // disk - read back as undefined, which silently passes the
-    // availabilityFilled `!== null` guard and flips the health chip
-    // to "all" prematurely.
+  it("creation: partial availability write stores ONLY the provided sub-keys (no null-stamping) [DGT-53]", () => {
+    // Under the new optional model, writing { availability: { practiceHeld: true } }
+    // on a brand-new doc produces ONLY { practiceHeld: true } on disk -
+    // no null-defaulting for the other sub-keys. The readers use typeof
+    // checks so absent keys are correctly treated as "not answered."
     const { result } = renderHook(() => useData(), { wrapper });
     driveLoaded(result, "u1");
     act(() => {
-      // Cast: Partial<HealthEntry> is shallow, so this exercises the
-      // runtime-deeply-partial path that reduceHealthPartial can also
-      // produce.
       result.current.setHealthEntry(HEALTH_DATE, {
         availability: { practiceHeld: true },
       } as Parameters<typeof result.current.setHealthEntry>[1]);
@@ -483,19 +478,14 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
     });
     expect(state.setDoc).toHaveBeenCalledTimes(1);
     const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
-    expect(payload.availability).toEqual({
-      practiceHeld: true,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-    });
+    expect(payload.availability).toEqual({ practiceHeld: true });
     expect(payload.version).toBe(1);
   });
 
   it("upgrade path: partial availability write is NOT expanded (existing sub-keys preserved)", () => {
     // The existing doc may already have non-null sub-key values that
-    // merge:true would overwrite with null. Stamping defaults is safe
-    // only on creation.
+    // merge:true would overwrite. Stamping defaults is safe only on
+    // creation; an existing doc just gets the partial sub-keys.
     const { result } = renderHook(() => useData(), { wrapper });
     emit(latestSub(state.healthSubs), [
       {
@@ -507,9 +497,8 @@ describe("DataContext debounce accumulator (lifted from log components)", () => 
           date: HEALTH_DATE,
           availability: {
             practiceHeld: true,
-            practiceParticipation: "played",
+            practiceParticipation: true,
             gameHeld: false,
-            gameParticipation: null,
           },
         },
       },
@@ -696,9 +685,8 @@ describe("DataContext reconciliation against onSnapshot", () => {
     driveLoaded(result, "u1");
     const availability = {
       practiceHeld: false,
-      practiceParticipation: null,
       gameHeld: true,
-      gameParticipation: "played",
+      gameParticipation: true,
     } as const;
     act(() => {
       result.current.setHealthEntry(HEALTH_DATE, {
@@ -726,9 +714,9 @@ describe("DataContext reconciliation against onSnapshot", () => {
     // the OLD value and mask the server's new value.
     const newAvail = {
       practiceHeld: true,
-      practiceParticipation: "played",
+      practiceParticipation: true,
       gameHeld: true,
-      gameParticipation: "played",
+      gameParticipation: true,
     } as const;
     emit(latestSub(state.healthSubs), [
       {
@@ -763,7 +751,7 @@ describe("DataContext reconciliation against onSnapshot", () => {
     // not stick the partial across snapshots.
     act(() => {
       result.current.setHealthEntry(HEALTH_DATE, {
-        availability: { practiceHeld: true, practiceParticipation: "played" } as HealthEntry["availability"],
+        availability: { practiceHeld: true, practiceParticipation: true } as HealthEntry["availability"],
       });
     });
     // Server confirms practiceHeld but NOT practiceParticipation.
@@ -780,16 +768,13 @@ describe("DataContext reconciliation against onSnapshot", () => {
           leanMass: 0,
           availability: {
             practiceHeld: true,
-            practiceParticipation: null,
-            gameHeld: null,
-            gameParticipation: null,
           },
         },
       },
     ]);
     // Pending should retain only practiceParticipation. A second
-    // snapshot replacing practiceParticipation with "dnp" stays masked
-    // by the optimistic overlay (pending="played" wins).
+    // snapshot replacing practiceParticipation with false stays masked
+    // by the optimistic overlay (pending=true wins).
     emit(latestSub(state.healthSubs), [
       {
         path: `users/u1/healthEntries/${HEALTH_DATE}`,
@@ -803,9 +788,7 @@ describe("DataContext reconciliation against onSnapshot", () => {
           leanMass: 0,
           availability: {
             practiceHeld: true,
-            practiceParticipation: "dnp",
-            gameHeld: null,
-            gameParticipation: null,
+            practiceParticipation: false,
           },
         },
       },
@@ -816,9 +799,9 @@ describe("DataContext reconciliation against onSnapshot", () => {
     const entry = result.current.health.entries.find(
       (e) => e.date === HEALTH_DATE,
     );
-    expect(entry?.availability.practiceParticipation).toBe("played");
+    expect(entry?.availability.practiceParticipation).toBe(true);
     expect(entry?.availability.practiceHeld).toBe(true);
-    // Now the server confirms practiceParticipation = "played" too.
+    // Now the server confirms practiceParticipation = true too.
     // After reconciliation pending is fully consumed, so a later
     // snapshot with a DIFFERENT practiceParticipation must surface.
     emit(latestSub(state.healthSubs), [
@@ -834,9 +817,7 @@ describe("DataContext reconciliation against onSnapshot", () => {
           leanMass: 0,
           availability: {
             practiceHeld: true,
-            practiceParticipation: "played",
-            gameHeld: null,
-            gameParticipation: null,
+            practiceParticipation: true,
           },
         },
       },
@@ -854,9 +835,7 @@ describe("DataContext reconciliation against onSnapshot", () => {
           leanMass: 0,
           availability: {
             practiceHeld: true,
-            practiceParticipation: "dnp",
-            gameHeld: null,
-            gameParticipation: null,
+            practiceParticipation: false,
           },
         },
       },
@@ -867,7 +846,7 @@ describe("DataContext reconciliation against onSnapshot", () => {
     const after = result.current.health.entries.find(
       (e) => e.date === HEALTH_DATE,
     );
-    expect(after?.availability.practiceParticipation).toBe("dnp");
+    expect(after?.availability.practiceParticipation).toBe(false);
   });
 
   it("7c competition.metrics map: per-key reconciliation", () => {
@@ -1007,6 +986,226 @@ describe("DataContext reconciliation against onSnapshot", () => {
       (e) => e.date === HEALTH_DATE,
     );
     expect(entry?.hydration).toBe(5);
+  });
+});
+
+describe("DataContext deleteField sentinels (DGT-53)", () => {
+  beforeEach(() => {
+    state.user.current = { uid: "u1" };
+    vi.useFakeTimers();
+  });
+
+  it("clears practiceParticipation via deleteField when practiceHeld flips to false [DGT-53]", () => {
+    // AvailabilityTree sets practiceParticipation: undefined when held=false.
+    // The Firestore boundary must translate that undefined to deleteField()
+    // so the stored doc loses the key entirely (not store explicit null).
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    // First write: log practiceHeld=true + practiceParticipation=true (played)
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        availability: {
+          practiceHeld: true,
+          practiceParticipation: true,
+        } as Parameters<typeof result.current.setHealthEntry>[1]["availability"],
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const firstPayload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect((firstPayload.availability as Record<string, unknown>).practiceHeld).toBe(true);
+    expect((firstPayload.availability as Record<string, unknown>).practiceParticipation).toBe(true);
+    state.setDoc.mockClear();
+
+    // Second write: flip to practiceHeld=false with practiceParticipation=undefined.
+    // Must produce deleteField() sentinel for practiceParticipation.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        availability: {
+          practiceHeld: false,
+          practiceParticipation: undefined,
+        } as Parameters<typeof result.current.setHealthEntry>[1]["availability"],
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    const avail = payload.availability as Record<string, unknown>;
+    expect(avail.practiceHeld).toBe(false);
+    expect(avail.practiceParticipation).toBeInstanceOf(DeleteFieldSentinel);
+  });
+
+  it("clears a built-in numeric field when setHealthEntry receives undefined (DGT-53)", () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    // First write: set hydration to 5 and flush to server.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, { hydration: 5 });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    expect(state.setDoc.mock.calls[0][1]).toMatchObject({ hydration: 5 });
+    state.setDoc.mockClear();
+
+    // Second write: clear hydration by passing undefined. The Firestore
+    // payload must use deleteField() — not undefined (rejected by SDK),
+    // not 5 (stale), not 0 (falsy but still a number).
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        hydration: undefined,
+      } as Parameters<typeof result.current.setHealthEntry>[1]);
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    // deleteField() returns a sentinel object; undefined would be rejected
+    // by Firestore SDK and is never a valid payload value.
+    expect(payload.hydration).toBeInstanceOf(DeleteFieldSentinel);
+  });
+
+  it("removes a customMetrics key when setHealthEntry sets it to undefined (DGT-53)", () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    // First write: log a custom metric value.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: 30 },
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const firstPayload = state.setDoc.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    expect(
+      (firstPayload.customMetrics as Record<string, unknown>).c_stretch,
+    ).toBe(30);
+    state.setDoc.mockClear();
+
+    // Second write: clear the custom metric by passing undefined. The
+    // Firestore payload must nest deleteField() under customMetrics.c_stretch
+    // — not undefined (rejected by SDK), not 30 (stale), not 0.
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: undefined },
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(state.setDoc).toHaveBeenCalledTimes(1);
+    const payload = state.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    const customs = payload.customMetrics as Record<string, unknown>;
+    expect(customs.c_stretch).toBeInstanceOf(DeleteFieldSentinel);
+  });
+});
+
+describe("DataContext optimistic overlay clearing (DGT-53)", () => {
+  beforeEach(() => {
+    state.user.current = { uid: "u1" };
+    vi.useFakeTimers();
+  });
+
+  it("clears built-in numeric field in optimistic overlay", () => {
+    // Write { hydration: 5 }, read it from useData(), then write
+    // { hydration: undefined } and assert it's undefined pre-flush.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, { hydration: 5 });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    let entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.hydration).toBe(5);
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, { hydration: undefined } as Parameters<typeof result.current.setHealthEntry>[1]);
+    });
+    entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.hydration).toBe(undefined);
+    // Verify no timer-advancing; check state pre-flush
+    expect(state.setDoc).not.toHaveBeenCalled();
+  });
+
+  it("clears customMetrics key in optimistic overlay", () => {
+    // Write { customMetrics: { c_stretch: 30 } }, read it, then write
+    // { customMetrics: { c_stretch: undefined } } and assert undefined pre-flush.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: 30 },
+      });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    let entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.customMetrics?.c_stretch).toBe(30);
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        customMetrics: { c_stretch: undefined },
+      });
+    });
+    entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.customMetrics?.c_stretch).toBe(undefined);
+    // Verify no timer-advancing; check state pre-flush
+    expect(state.setDoc).not.toHaveBeenCalled();
+  });
+
+  it("clears availability sub-key in optimistic overlay", () => {
+    // Write { availability: { practiceHeld: true, practiceParticipation: true } },
+    // read it, then write { availability: { practiceHeld: false, practiceParticipation: undefined } }
+    // and assert the overlay reflects both changes pre-flush.
+    const { result } = renderHook(() => useData(), { wrapper });
+    driveLoaded(result, "u1");
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        availability: {
+          practiceHeld: true,
+          practiceParticipation: true,
+        } as Parameters<typeof result.current.setHealthEntry>[1]["availability"],
+      });
+    });
+    if (result.current.health.status !== "loaded") {
+      throw new Error("expected loaded");
+    }
+    let entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.availability.practiceParticipation).toBe(true);
+
+    act(() => {
+      result.current.setHealthEntry(HEALTH_DATE, {
+        availability: {
+          practiceHeld: false,
+          practiceParticipation: undefined,
+        } as Parameters<typeof result.current.setHealthEntry>[1]["availability"],
+      });
+    });
+    entry = result.current.health.entries.find((e) => e.date === HEALTH_DATE);
+    expect(entry?.availability.practiceHeld).toBe(false);
+    expect(entry?.availability.practiceParticipation).toBe(undefined);
+    // Verify no timer-advancing; check state pre-flush
+    expect(state.setDoc).not.toHaveBeenCalled();
   });
 });
 

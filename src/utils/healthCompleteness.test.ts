@@ -15,17 +15,7 @@ function emptyEntry(): HealthEntry {
   return {
     version: 1,
     date: "2026-04-28",
-    hydration: 0,
-    sleepTime: 0,
-    sleepEfficiency: 0,
-    protein: 0,
-    leanMass: 0,
-    availability: {
-      practiceHeld: null,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-    },
+    availability: {},
   };
 }
 
@@ -48,20 +38,20 @@ describe("getChipState", () => {
     expect(getChipState(entry, TRACKED_DEFAULT)).toBe("some");
   });
 
-  it("availability null + one numeric tracked field => 'some'", () => {
+  it("availability unanswered + one numeric tracked field => 'some'", () => {
     const entry = emptyEntry();
     entry.hydration = 4;
     expect(getChipState(entry, ["hydration", "availability"])).toBe("some");
   });
 
-  it("availability null alone (only metric tracked) => 'none'", () => {
+  it("availability unanswered alone (only metric tracked) => 'none'", () => {
     expect(getChipState(emptyEntry(), ["availability"])).toBe("none");
   });
 
   it("availability practiceHeld=true without participation does NOT count as filled", () => {
     const entry = emptyEntry();
     entry.availability.practiceHeld = true;
-    entry.availability.practiceParticipation = null;
+    // practiceParticipation intentionally absent (undefined) - not answered
     entry.availability.gameHeld = false;
     expect(getChipState(entry, ["availability"])).toBe("none");
   });
@@ -76,7 +66,7 @@ describe("getChipState", () => {
   it("availability with held=true + participation set counts as filled", () => {
     const entry = emptyEntry();
     entry.availability.practiceHeld = true;
-    entry.availability.practiceParticipation = "played";
+    entry.availability.practiceParticipation = true; // played
     entry.availability.gameHeld = false;
     expect(getChipState(entry, ["availability"])).toBe("all");
   });
@@ -89,7 +79,7 @@ describe("getChipState", () => {
     entry.protein = 1.5;
     entry.leanMass = 60;
     entry.availability.practiceHeld = true;
-    entry.availability.practiceParticipation = "played";
+    entry.availability.practiceParticipation = true; // played
     entry.availability.gameHeld = false;
     expect(getChipState(entry, TRACKED_DEFAULT)).toBe("all");
   });
@@ -122,17 +112,32 @@ describe("getChipState", () => {
     expect(getChipState(entry, ["c_weight_change"])).toBe("all");
   });
 
-  it("counts a tracked custom metric with a zero value as NOT filled", () => {
-    // Zero remains the "not entered" sentinel for customs, matching
+  it("counts a tracked custom metric with a zero value as filled", () => {
+    // Zero now counts as a valid logged value (DGT-53), matching
     // the built-in metrics behavior.
     const entry = emptyEntry();
     entry.customMetrics = { c_caffeine: 0 };
-    expect(getChipState(entry, ["c_caffeine"])).toBe("none");
+    expect(getChipState(entry, ["c_caffeine"])).toBe("all");
   });
 
   it("counts a tracked custom metric absent from customMetrics as NOT filled", () => {
     const entry = emptyEntry();
     // customMetrics undefined; tracked id has no entry yet.
     expect(getChipState(entry, ["c_caffeine"])).toBe("none");
+  });
+
+  it("counts a built-in field of 0 as filled (DGT-53)", () => {
+    const entry = emptyEntry();
+    entry.sleepTime = 0;
+    expect(getChipState(entry, ["sleepTime"])).toBe("all");
+  });
+
+  it("treats an undefined built-in field as 'not logged' (DGT-53)", () => {
+    const entry: HealthEntry = {
+      version: 1,
+      date: "2026-04-28",
+      availability: {},
+    };
+    expect(getChipState(entry, ["sleepTime"])).toBe("none");
   });
 });

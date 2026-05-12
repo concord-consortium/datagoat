@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   collection,
+  deleteField,
   doc,
   onSnapshot,
   query,
@@ -64,6 +65,37 @@ const LISTENER_WINDOW_DAYS = 365;
 type PendingEntry<T> = { uid: string; partial: Partial<T> };
 type PendingMap<T> = Record<string, PendingEntry<T>>;
 
+// Walks an object one level deep, replacing top-level `undefined` values
+// with deleteField() sentinels. Recurses one extra level into known
+// nested map fields (availability sub-keys, customMetrics, metrics) since
+// those also support per-key clearing under setDoc(merge:true). Other
+// nested objects pass through as-is.
+function withDeleteSentinels(
+  payload: Record<string, unknown>,
+  deepMapKeys: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (v === undefined) {
+      out[k] = deleteField();
+    } else if (
+      deepMapKeys.includes(k) &&
+      v !== null &&
+      typeof v === "object" &&
+      !Array.isArray(v)
+    ) {
+      const inner: Record<string, unknown> = {};
+      for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) {
+        inner[ik] = iv === undefined ? deleteField() : iv;
+      }
+      out[k] = inner;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 // Partial-merge writes only stamp `version` when the server doc is
 // either unknown to us (creation path) or known to be older than ours
 // (upgrade path). This keeps a stale client - whose CURRENT_*_VERSION
@@ -81,38 +113,31 @@ function firestoreSetHealthEntry(
   knownServerVersion: number | undefined,
 ): Promise<void> {
   const ref = doc(db, "users", uid, "healthEntries", date);
-  const fields: Record<string, unknown> = { ...partial, date };
+  const fields = withDeleteSentinels(
+    { ...(partial as Record<string, unknown>), date },
+    ["availability", "customMetrics"],
+  );
   if (
     knownServerVersion === undefined ||
     knownServerVersion < CURRENT_HEALTH_ENTRY_VERSION
   ) {
     fields.version = CURRENT_HEALTH_ENTRY_VERSION;
   }
-  // Creation path only: expand a partial availability payload so all
-  // four sub-keys are written with explicit null defaults. Without
-  // this, setDoc(merge:true) of `{ availability: { practiceHeld: true } }`
-  // on a brand-new doc leaves the other sub-fields absent on disk and
-  // read back as `undefined`, which silently violates the typed-null
-  // contract that availabilityFilled (`!== null` checks) depends on -
-  // and flips the health chip to "all" prematurely. Skipped on the
-  // upgrade path because the existing doc may already have non-null
-  // sub-key values that merge:true would overwrite with null.
-  if (
-    knownServerVersion === undefined &&
-    partial.availability !== undefined
-  ) {
-    // Spread is cast to a deeply-partial because reduceHealthPartial
-    // can produce one at runtime (it returns a `Record<string, unknown>`
-    // cast back to the strict type). The TS Partial<HealthEntry> is
-    // shallow, so partial.availability's static type still has all four
-    // keys - widening here is what lets the null defaults survive.
-    fields.availability = {
-      practiceHeld: null,
-      practiceParticipation: null,
-      gameHeld: null,
-      gameParticipation: null,
-      ...(partial.availability as Partial<HealthEntry["availability"]>),
-    };
+  // Availability sub-keys are optional in the type model - an absent
+  // key means "not answered." Writing { availability: { practiceHeld: true } }
+  // under merge:true correctly leaves the other sub-keys absent on disk,
+  // and the readers (availabilityFilled etc.) treat absent keys as
+  // unanswered.
+  //
+  // But HealthEntry.availability itself is required, so the stored doc
+  // must always have at least an empty object for it. Without this,
+  // a first write of only a numeric field (e.g. { sleepTime: 7 }) would
+  // persist a doc with no `availability` key, violating the type contract
+  // on subsequent reads. Defensive fill only on the creation path - on
+  // updates, the partial may legitimately omit `availability` because the
+  // server already has it.
+  if (knownServerVersion === undefined && fields.availability === undefined) {
+    fields.availability = {};
   }
   return setDoc(ref, fields, { merge: true });
 }
@@ -124,12 +149,22 @@ function firestoreSetCompetitionEntry(
   knownServerVersion: number | undefined,
 ): Promise<void> {
   const ref = doc(db, "users", uid, "competitionEntries", date);
-  const fields: Record<string, unknown> = { ...partial, date };
+  const fields = withDeleteSentinels(
+    { ...(partial as Record<string, unknown>), date },
+    ["metrics"],
+  );
   if (
     knownServerVersion === undefined ||
     knownServerVersion < CURRENT_COMPETITION_ENTRY_VERSION
   ) {
     fields.version = CURRENT_COMPETITION_ENTRY_VERSION;
+  }
+  // CompetitionEntry.metrics is required in the type model. Same
+  // creation-path concern as availability in firestoreSetHealthEntry:
+  // ensure the stored doc always has at least an empty metrics object
+  // so subsequent reads satisfy the type contract.
+  if (knownServerVersion === undefined && fields.metrics === undefined) {
+    fields.metrics = {};
   }
   return setDoc(ref, fields, { merge: true });
 }
@@ -191,7 +226,7 @@ function reduceHealthPartial(
       // stuck and re-flushing the same payload on every debounce.
       const pendingCustoms = partial.customMetrics ?? {};
       const serverCustoms = server.customMetrics ?? {};
-      const remainingCustoms: Record<string, number | string> = {};
+      const remainingCustoms: Record<string, number | string | undefined> = {};
       for (const m of Object.keys(pendingCustoms)) {
         if (!deepEqual(pendingCustoms[m], serverCustoms[m])) {
           remainingCustoms[m] = pendingCustoms[m];
@@ -218,7 +253,7 @@ function reduceCompetitionPartial(
     if (key === "metrics") {
       const pendingMetrics = partial.metrics ?? {};
       const serverMetrics = server.metrics ?? {};
-      const remainingMetrics: Record<string, number | string> = {};
+      const remainingMetrics: Record<string, number | string | undefined> = {};
       for (const m of Object.keys(pendingMetrics)) {
         if (!deepEqual(pendingMetrics[m], serverMetrics[m])) {
           remainingMetrics[m] = pendingMetrics[m];

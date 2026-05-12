@@ -50,22 +50,28 @@ export function AvailabilityTree({
     onChange({
       ...value,
       practiceHeld: held,
-      // Clear participation when switching to "no practice" - the field
-      // becomes meaningless.
-      practiceParticipation: held ? value.practiceParticipation : null,
+      // Clear participation when switching to "no practice" - the
+      // field becomes meaningless. undefined here triggers the
+      // Firestore boundary's deleteField() translation so the stored
+      // doc loses the key.
+      practiceParticipation: held ? value.practiceParticipation : undefined,
     });
   }
-  function setPracticeParticipation(p: "played" | "dnp") {
+  function setPracticeParticipation(p: boolean) {
     onChange({ ...value, practiceParticipation: p });
   }
   function setGameHeld(held: boolean) {
     onChange({
       ...value,
       gameHeld: held,
-      gameParticipation: held ? value.gameParticipation : null,
+      // Clear participation when switching to "no game" - the
+      // field becomes meaningless. undefined here triggers the
+      // Firestore boundary's deleteField() translation so the stored
+      // doc loses the key.
+      gameParticipation: held ? value.gameParticipation : undefined,
     });
   }
-  function setGameParticipation(p: "played" | "dnp") {
+  function setGameParticipation(p: boolean) {
     onChange({ ...value, gameParticipation: p });
   }
 
@@ -124,9 +130,9 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={practiceParticipationName}
-                value="played"
-                checked={value.practiceParticipation === "played"}
-                onChange={() => setPracticeParticipation("played")}
+                value="true"
+                checked={value.practiceParticipation === true}
+                onChange={() => setPracticeParticipation(true)}
               />{" "}
               Y
             </label>
@@ -135,9 +141,9 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={practiceParticipationName}
-                value="dnp"
-                checked={value.practiceParticipation === "dnp"}
-                onChange={() => setPracticeParticipation("dnp")}
+                value="false"
+                checked={value.practiceParticipation === false}
+                onChange={() => setPracticeParticipation(false)}
               />{" "}
               N
             </label>
@@ -194,9 +200,9 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={gameParticipationName}
-                value="played"
-                checked={value.gameParticipation === "played"}
-                onChange={() => setGameParticipation("played")}
+                value="true"
+                checked={value.gameParticipation === true}
+                onChange={() => setGameParticipation(true)}
               />{" "}
               Y
             </label>
@@ -205,9 +211,9 @@ export function AvailabilityTree({
                 type="radio"
                 className={css.availRadio}
                 name={gameParticipationName}
-                value="dnp"
-                checked={value.gameParticipation === "dnp"}
-                onChange={() => setGameParticipation("dnp")}
+                value="false"
+                checked={value.gameParticipation === false}
+                onChange={() => setGameParticipation(false)}
               />{" "}
               N
             </label>

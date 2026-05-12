@@ -250,16 +250,7 @@ describe("HealthLog chip reactivity to tracked-metric changes", () => {
           version: 1,
           date: TODAY_ISO,
           hydration: 3,
-          sleepTime: 0,
-          sleepEfficiency: 0,
-          protein: 0,
-          leanMass: 0,
-          availability: {
-            practiceHeld: null,
-            practiceParticipation: null,
-            gameHeld: null,
-            gameParticipation: null,
-          },
+          availability: {},
         },
       ],
     };

@@ -14,6 +14,7 @@ import {
 import { competitionTotal } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
+import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import css from "./CompetitionLog.module.css";
 
 export function CompetitionLog() {
@@ -61,7 +62,13 @@ export function CompetitionLog() {
   }
 
   function setMetricValue(metricId: string, raw: string) {
-    const numeric = raw === "" ? 0 : Number(raw);
+    if (raw === "") {
+      setCompetitionEntry(dateIso, {
+        metrics: { [metricId]: undefined },
+      });
+      return;
+    }
+    const numeric = Number(raw);
     if (!Number.isFinite(numeric)) return;
     setCompetitionEntry(dateIso, { metrics: { [metricId]: numeric } });
   }
@@ -133,14 +140,11 @@ export function CompetitionLog() {
           <tbody>
             {displayedMetrics.map((metric) => {
               const live = currentEntry.metrics?.[metric.id];
-              // !== 0 (rather than > 0) so custom metrics with a
-              // negative yBottomRaw can render legitimate negative
-              // values. 0 stays the "blank input" sentinel since 0 is
-              // what the writer stores for an empty entry. Built-in
-              // competition metrics are always non-negative, so this
-              // check change is a no-op for them.
+              // stringValue renders the input control. A stored 0 is
+              // valid logged data and must show as "0". A missing key
+              // (undefined) is "not logged" and renders as blank.
               const stringValue =
-                typeof live === "number" && live !== 0
+                typeof live === "number" && Number.isFinite(live)
                   ? String(live)
                   : typeof live === "string" && live !== ""
                     ? live
@@ -151,13 +155,14 @@ export function CompetitionLog() {
               return (
                 <tr key={metric.id}>
                   <td className={css.colTotal}>
-                    {/* total !== 0 (rather than > 0) so custom
-                        competition metrics with negative ranges can
-                        render legitimate negative totals — aligns
-                        with the stringValue check above. Built-in
-                        counter metrics never go negative, so the
-                        change is a no-op for them. */}
-                    {total !== 0 ? String(total) : ""}
+                    {/* competitionTotal returns 0 both for "no entries"
+                        and for "entries summing to 0" - use
+                        hasEntriesForMetric to render the cell only when
+                        there's real data, so a legit 0-total shows as
+                        "0" and an empty cell stays blank. */}
+                    {hasEntriesForMetric(metric.id, [], entries)
+                      ? String(total)
+                      : ""}
                   </td>
                   <td id={nameCellId} className={css.colMetric}>
                     <Link

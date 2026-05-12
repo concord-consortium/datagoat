@@ -34,7 +34,7 @@ export interface NumericMetricInputRowProps extends BaseProps {
 
 export interface ColorScaleMetricInputRowProps extends BaseProps {
   inputType: "colorScale";
-  value: number;
+  value: number | undefined;
   onChange: (next: number) => void;
 }
 
@@ -101,7 +101,7 @@ export function MetricInputRow(props: MetricInputRowProps) {
 
 interface ColorScaleProps {
   metric: MetricDefinition;
-  value: number;
+  value: number | undefined;
   onChange: (next: number) => void;
   labelledBy: string;
 }
@@ -115,6 +115,14 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const max = metric.max ?? 8;
   const swatchValues = HYDRATION_HEXES.slice(0, max);
+
+  // True when no swatch is selected. A fresh entry has undefined
+  // hydration. Per DGT-53 the model is "undefined === not logged" and
+  // any other finite number is valid data; the hydration UI cannot
+  // produce 0, and value validation for metric-specific ranges
+  // (hydration `min: 1`) is deferred to the upcoming categorical-
+  // metrics work that owns the metric definitions.
+  const noSelection = value === undefined;
 
   const select = useCallback(
     (next: number) => {
@@ -177,7 +185,7 @@ function ColorScale({ metric, value, onChange, labelledBy }: ColorScaleProps) {
             style={{ background: bg }}
             aria-label={`${level} of ${max}`}
             aria-pressed={selected}
-            tabIndex={selected || (value === 0 && idx === 0) ? 0 : -1}
+            tabIndex={selected || (noSelection && idx === 0) ? 0 : -1}
             onClick={() => select(level)}
             onKeyDown={(e) => onKeyDown(e, idx)}
           >

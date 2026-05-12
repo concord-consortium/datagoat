@@ -24,13 +24,18 @@ describe("hasEntriesForMetric", () => {
     expect(hasEntriesForMetric("c_xyz", [], [p])).toBe(true);
   });
 
-  it("ignores zero values (treats them as absent)", () => {
-    // Zero is the codebase's sentinel for "blank input" — the health
-    // and competition log write 0 when the user leaves a numeric input
-    // empty. Treating 0 as "logged" would flag every metric the user
-    // ever interacted with.
-    const w = emptyHealthEntry("2026-05-01");
-    w.customMetrics = { c_xyz: 0 };
-    expect(hasEntriesForMetric("c_xyz", [w], [])).toBe(false);
+  it("considers a 0 value meaningful (DGT-53)", () => {
+    const h: HealthEntry[] = [
+      {
+        ...emptyHealthEntry("2026-05-11"),
+        customMetrics: { c_stretch: 0 },
+      },
+    ];
+    expect(hasEntriesForMetric("c_stretch", h, [])).toBe(true);
+  });
+
+  it("ignores an undefined / missing custom metric key (DGT-53)", () => {
+    const h: HealthEntry[] = [emptyHealthEntry("2026-05-11")];
+    expect(hasEntriesForMetric("c_stretch", h, [])).toBe(false);
   });
 });

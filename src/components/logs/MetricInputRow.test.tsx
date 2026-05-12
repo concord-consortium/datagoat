@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { MetricInputRow } from "./MetricInputRow";
 import type { MetricDefinition } from "../../metrics/types";
+import type { CustomMetricLevel } from "../../types/customMetrics";
 
 const HYDRATION: MetricDefinition = {
   id: "hydration",
@@ -135,6 +137,66 @@ describe("MetricInputRow ColorScale", () => {
   it("clicking a swatch selects that level", () => {
     const { swatches, onChange } = renderColorScale(0);
     fireEvent.click(swatches[4]);
+    expect(onChange).toHaveBeenCalledWith(5);
+  });
+});
+
+const MOOD_LEVELS: CustomMetricLevel[] = [
+  { label: "Low", value: 1 },
+  { label: "Mid", value: 3 },
+  { label: "High", value: 5 },
+];
+
+const MOOD_METRIC: MetricDefinition = {
+  id: "c_mood",
+  name: "Mood",
+  unit: "",
+  type: "health",
+  whoCollects: "",
+  howCollected: "",
+  description: "",
+  inputType: "radio",
+};
+
+function renderOrdinal(initial: number | undefined = undefined) {
+  const onChange = vi.fn<(next: number) => void>();
+  const utils = render(
+    <MemoryRouter>
+      <table>
+        <tbody>
+          <MetricInputRow
+            inputType="ordinal"
+            metric={MOOD_METRIC}
+            levels={MOOD_LEVELS}
+            value={initial}
+            onChange={onChange}
+          />
+        </tbody>
+      </table>
+    </MemoryRouter>,
+  );
+  return { onChange, ...utils };
+}
+
+describe("MetricInputRow Ordinal", () => {
+  it("renders one radio per level with the label as visible text", () => {
+    renderOrdinal();
+    expect(screen.getByRole("radio", { name: /^low$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^mid$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^high$/i })).toBeTruthy();
+  });
+
+  it("marks the selected level via checked", () => {
+    renderOrdinal(3);
+    expect(
+      (screen.getByRole("radio", { name: /^mid$/i }) as HTMLInputElement).checked,
+    ).toBe(true);
+  });
+
+  it("fires onChange with the numeric value when a level is clicked", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderOrdinal();
+    await user.click(screen.getByRole("radio", { name: /^high$/i }));
     expect(onChange).toHaveBeenCalledWith(5);
   });
 });

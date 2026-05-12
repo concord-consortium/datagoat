@@ -10,6 +10,7 @@ import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
 import type { HealthEntry } from "../../types/data";
+import type { CustomMetricLevel } from "../../types/customMetrics";
 import css from "./MetricInputRow.module.css";
 
 import { HYDRATION_HEXES } from "../../data/hydrationColors";
@@ -45,10 +46,18 @@ export interface TreeMetricInputRowProps extends BaseProps {
   onChange: (next: HealthEntry["availability"]) => void;
 }
 
+export interface OrdinalMetricInputRowProps extends BaseProps {
+  inputType: "ordinal";
+  levels: CustomMetricLevel[];
+  value: number | undefined;
+  onChange: (next: number) => void;
+}
+
 export type MetricInputRowProps =
   | NumericMetricInputRowProps
   | ColorScaleMetricInputRowProps
-  | TreeMetricInputRowProps;
+  | TreeMetricInputRowProps
+  | OrdinalMetricInputRowProps;
 
 // Single row for a tracked health metric. Switches on metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
@@ -94,8 +103,58 @@ export function MetricInputRow(props: MetricInputRowProps) {
             labelledBy={nameId}
           />
         )}
+        {props.inputType === "ordinal" && (
+          <OrdinalRadioGroup
+            levels={props.levels}
+            value={props.value}
+            onChange={props.onChange}
+            labelledBy={nameId}
+          />
+        )}
       </td>
     </tr>
+  );
+}
+
+interface OrdinalRadioGroupProps {
+  levels: CustomMetricLevel[];
+  value: number | undefined;
+  onChange: (next: number) => void;
+  labelledBy: string;
+}
+
+function OrdinalRadioGroup({
+  levels,
+  value,
+  onChange,
+  labelledBy,
+}: OrdinalRadioGroupProps) {
+  const groupName = useId();
+  return (
+    <div
+      className={css.ordinalGroup}
+      role="radiogroup"
+      aria-labelledby={labelledBy}
+    >
+      {levels.map((level) => {
+        // Levels with a numeric value are the only ones reachable here
+        // (the form rejects any submit that leaves value undefined for
+        // ordinal). Treat absence defensively: skip rendering.
+        if (level.value === undefined) return null;
+        const checked = value === level.value;
+        return (
+          <label key={level.value} className={css.ordinalOption}>
+            <input
+              type="radio"
+              name={groupName}
+              checked={checked}
+              onChange={() => onChange(level.value as number)}
+            />
+            {level.label}
+          </label>
+        );
+      })}
+    </div>
   );
 }
 

@@ -210,6 +210,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
         ownerId: "u1",
         name: "Stretch Minutes",
         metricType: "health",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "min",
         goalRaw: 15,
@@ -296,6 +297,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
         ownerId: "u1",
         name: "5K Time",
         metricType: "competition",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "min",
         goalRaw: 25,
@@ -327,6 +329,47 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
     expect(screen.getByTestId("loc").textContent).toBe(
       "/add-metric/competition/c_p",
     );
+  });
+});
+
+// Thin wrapper that renders the create form for a given metric type.
+// Mirrors renderAt but with a more descriptive name for the new tests.
+function renderCreateForm(type: "health" | "competition") {
+  renderAt(`/add-metric/${type}/new`);
+}
+
+describe("CustomMetricForm — top-level type chooser", () => {
+  it("renders three top-level buttons: Numeric, Categorical, Y/N", () => {
+    renderCreateForm("health");
+    expect(screen.getByRole("radio", { name: /numeric/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /categorical/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /y\/n/i })).toBeTruthy();
+  });
+
+  it("shows the levels editor only when Categorical is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    expect(screen.queryByRole("table")).toBeNull();
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect(screen.getByRole("table")).toBeTruthy();
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  it("greys out goal when Y/N is selected (per spec)", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    const goal = screen.getByLabelText(/^goal$/i) as HTMLInputElement;
+    expect(goal.disabled).toBe(true);
+  });
+
+  it("greys out y-axis range when Categorical is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).disabled).toBe(true);
   });
 });
 

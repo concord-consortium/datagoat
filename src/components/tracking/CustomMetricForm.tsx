@@ -7,30 +7,46 @@ import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { TextField } from "../form/TextField";
-import { SelectField } from "../form/SelectField";
+import { CustomMetricLevelsEditor } from "./CustomMetricLevelsEditor";
 import type {
   CustomMetricDef,
   CustomMetricInputType,
+  CustomMetricLevel,
   CustomMetricType,
 } from "../../types/customMetrics";
 import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
 
-// `radio` (Yes/No) input is reserved in the type system but not yet
-// wired through the health/competition log render + storage paths.
-// Surfacing it in the form would let users create metrics that can't
-// actually be logged, so the option is hidden until the end-to-end
-// path lands. Re-add `{ value: "radio", label: "Yes / No" }` then.
-const INPUT_TYPE_OPTIONS = [
-  { value: "numeric", label: "Numeric" },
+type TopLevelKind = "numeric" | "categorical" | "yn";
+
+const YN_LEVELS: CustomMetricLevel[] = [
+  { label: "No", value: 0 },
+  { label: "Yes", value: 1 },
 ];
+
+function inferTopLevel(def: CustomMetricDef): TopLevelKind {
+  if (def.primitive === "numeric") return "numeric";
+  const lvls = def.levels;
+  if (
+    lvls &&
+    lvls.length === 2 &&
+    lvls[0].label === "No" &&
+    lvls[0].value === 0 &&
+    lvls[1].label === "Yes" &&
+    lvls[1].value === 1
+  ) {
+    return "yn";
+  }
+  return "categorical";
+}
 
 function isValidType(t: string | undefined): t is CustomMetricType {
   return t === "health" || t === "competition";
 }
 
 interface DraftState {
+  topLevel: TopLevelKind;
   name: string;
   inputType: CustomMetricInputType;
   unit: string;
@@ -39,9 +55,11 @@ interface DraftState {
   yBottomRaw: string;
   avgDecimals: string;
   referenceUrl: string;
+  levels: CustomMetricLevel[];
 }
 
 const EMPTY_DRAFT: DraftState = {
+  topLevel: "numeric",
   name: "",
   inputType: "numeric",
   unit: "",
@@ -50,6 +68,7 @@ const EMPTY_DRAFT: DraftState = {
   yBottomRaw: "0",
   avgDecimals: "1",
   referenceUrl: "",
+  levels: [],
 };
 
 // Outer gate. Resolves the route's :type and :metricId, waits for the
@@ -120,33 +139,36 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
 
   const [draft, setDraft] = useState<DraftState>(() => {
     if (!editing) return EMPTY_DRAFT;
-    // INPUT_TYPE_OPTIONS currently lists only "numeric"; if a stored
-    // metric carries an inputType the form doesn't support (e.g. a
-    // legacy "radio" doc written before the option was hidden, or via
-    // an external Firestore tool), the <select> would render with no
-    // matching <option>. Default the draft to "numeric" in that case
-    // so the UI is usable; saving silently migrates the stored value
-    // to numeric.
-    const supportedInputType = INPUT_TYPE_OPTIONS.some(
-      (o) => o.value === editing.inputType,
-    )
-      ? editing.inputType
-      : "numeric";
+    const topLevel = inferTopLevel(editing);
     return {
+      topLevel,
       name: editing.name,
-      inputType: supportedInputType,
-      unit: editing.unit,
-      goalRaw: String(editing.goalRaw),
-      yTopRaw: String(editing.yTopRaw),
-      yBottomRaw: String(editing.yBottomRaw),
-      avgDecimals: String(editing.avgDecimals),
+      inputType: editing.inputType,
+      unit: editing.unit ?? "",
+      goalRaw: String(editing.goalRaw ?? 0),
+      yTopRaw: String(editing.yTopRaw ?? 0),
+      yBottomRaw: String(editing.yBottomRaw ?? 0),
+      avgDecimals: String(editing.avgDecimals ?? 1),
       // ?? "" so docs written before referenceUrl was added (or by an
       // external tool that omitted the field) don't crash the controlled
       // input on undefined.
       referenceUrl: editing.referenceUrl ?? "",
+      levels: editing.levels ?? [],
     };
   });
   const [error, setError] = useState<string | null>(null);
+
+  function switchTopLevel(next: TopLevelKind) {
+    setDraft((prev) => {
+      if (next === "numeric") {
+        return { ...prev, topLevel: next, inputType: "numeric", levels: [] };
+      }
+      if (next === "yn") {
+        return { ...prev, topLevel: next, inputType: "radio", levels: YN_LEVELS };
+      }
+      return { ...prev, topLevel: next, inputType: "radio", levels: prev.levels };
+    });
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -247,11 +269,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           referenceUrl,
         });
       } else {
+        // TODO (Task 5): pass primitive + levels; derive y-range for
+        // ordinals. For now forward "numeric" as primitive so existing
+        // tests that exercise the numeric path continue to pass.
         const def = await addMetric({
           name: trimmed,
           metricType: type,
+          primitive: "numeric",
           inputType: draft.inputType,
-          unit: draft.unit.trim(),
+          unit: draft.unit.trim() || undefined,
           goalRaw,
           yTopRaw,
           yBottomRaw,
@@ -315,8 +341,46 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
+  const unitDisabled = draft.topLevel !== "numeric";
+  const goalDisabled = draft.topLevel === "yn";
+  const yAxisDisabled = draft.topLevel !== "numeric";
+
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
+      <fieldset className={css.typeChooser}>
+        <legend className={css.typeChooserLegend}>Type</legend>
+        <label className={css.typeOption}>
+          <input
+            type="radio"
+            name="cm-toplevel"
+            value="numeric"
+            checked={draft.topLevel === "numeric"}
+            onChange={() => switchTopLevel("numeric")}
+          />
+          Numeric
+        </label>
+        <label className={css.typeOption}>
+          <input
+            type="radio"
+            name="cm-toplevel"
+            value="categorical"
+            checked={draft.topLevel === "categorical"}
+            onChange={() => switchTopLevel("categorical")}
+          />
+          Categorical
+        </label>
+        <label className={css.typeOption}>
+          <input
+            type="radio"
+            name="cm-toplevel"
+            value="yn"
+            checked={draft.topLevel === "yn"}
+            onChange={() => switchTopLevel("yn")}
+          />
+          Y/N
+        </label>
+      </fieldset>
+
       <TextField
         id="cm-name"
         label="Name"
@@ -325,18 +389,21 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         onChange={(e) => update("name", e.target.value)}
       />
 
-      <SelectField
-        id="cm-type"
-        label="Input type"
-        value={draft.inputType}
-        options={INPUT_TYPE_OPTIONS}
-        onChange={(e) => update("inputType", e.target.value as CustomMetricInputType)}
-      />
+      {draft.topLevel === "categorical" && (
+        <div className={css.levelsBlock}>
+          <label className={css.fieldLabel}>Levels</label>
+          <CustomMetricLevelsEditor
+            levels={draft.levels}
+            onChange={(next) => update("levels", next)}
+          />
+        </div>
+      )}
 
       <TextField
         id="cm-unit"
         label="Unit (optional)"
         value={draft.unit}
+        disabled={unitDisabled}
         onChange={(e) => update("unit", e.target.value)}
       />
 
@@ -346,6 +413,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         type="number"
         inputMode="decimal"
         value={draft.goalRaw}
+        disabled={goalDisabled}
         onChange={(e) => update("goalRaw", e.target.value)}
       />
 
@@ -356,6 +424,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           type="number"
           inputMode="decimal"
           value={draft.yTopRaw}
+          disabled={yAxisDisabled}
           onChange={(e) => update("yTopRaw", e.target.value)}
         />
         <TextField
@@ -364,6 +433,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           type="number"
           inputMode="decimal"
           value={draft.yBottomRaw}
+          disabled={yAxisDisabled}
           onChange={(e) => update("yBottomRaw", e.target.value)}
         />
       </div>

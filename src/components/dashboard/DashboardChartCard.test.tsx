@@ -211,7 +211,7 @@ describe("DashboardChartCard", () => {
     // (not the competition one), confirming the type prop is wired
     // through to the SelectField label.
     const label = within(container as HTMLElement).getByText(
-      "Health & Performance metric",
+      "Health metric",
     );
     expect(label).toBeTruthy();
   });

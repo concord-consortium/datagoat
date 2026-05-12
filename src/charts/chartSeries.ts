@@ -1,4 +1,8 @@
-import type { CompetitionEntry, HealthEntry } from "../types/data";
+import type {
+  CompetitionEntry,
+  HealthEntry,
+  PerformanceEntry,
+} from "../types/data";
 import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
 import { getMetricChartConfig } from "./metricChartConfig";
@@ -72,10 +76,15 @@ export function capitalizeAthleteType(t: string): string {
 }
 
 export interface BuildSeriesArgs {
-  type: "health" | "competition";
+  type: "health" | "performance" | "competition";
   metricId: string;
   healthEntries: HealthEntry[];
   competitionEntries: CompetitionEntry[];
+  // Optional during the transition: only the new Performance section
+  // and dashboard card pass this. Older call sites that pre-date the
+  // Performance section leave it undefined; the "performance" branch
+  // below treats undefined as an empty list.
+  performanceEntries?: PerformanceEntry[];
   rangeDays: number;
 }
 
@@ -88,6 +97,7 @@ export function buildSeries({
   metricId,
   healthEntries,
   competitionEntries,
+  performanceEntries,
   rangeDays,
 }: BuildSeriesArgs): Array<{ date: string; value: number }> {
   const out: Array<{ date: string; value: number }> = [];
@@ -99,6 +109,14 @@ export function buildSeries({
       const value = readHealthMetric(e, metricId);
       if (value === undefined) continue;
       out.push({ date: e.date, value });
+    }
+  } else if (type === "performance") {
+    for (const e of performanceEntries ?? []) {
+      const days = daysAgoFromISO(e.date);
+      if (Number.isNaN(days) || days >= rangeDays) continue;
+      const raw = e.metrics?.[metricId];
+      if (typeof raw !== "number" || !Number.isFinite(raw)) continue;
+      out.push({ date: e.date, value: raw });
     }
   } else {
     for (const e of competitionEntries) {
@@ -179,6 +197,7 @@ export function buildAlignedSeries({
   metricId,
   healthEntries,
   competitionEntries,
+  performanceEntries,
   rangeDays,
 }: BuildSeriesArgs): Array<{ date: string; value: number | null }> {
   const valueByDate = new Map<string, number>();
@@ -187,6 +206,13 @@ export function buildAlignedSeries({
     for (const e of healthEntries) {
       const v = readHealthMetric(e, metricId);
       if (v !== undefined) valueByDate.set(e.date, v);
+    }
+  } else if (type === "performance") {
+    for (const e of performanceEntries ?? []) {
+      const raw = e.metrics?.[metricId];
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        valueByDate.set(e.date, raw);
+      }
     }
   } else {
     for (const e of competitionEntries) {

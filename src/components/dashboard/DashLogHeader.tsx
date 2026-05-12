@@ -10,7 +10,7 @@ import StopwatchIcon from "@/icons/stopwatch.svg?react";
 const NBSP = "\u00A0";
 
 interface DashLogHeaderProps {
-  type: "health" | "competition";
+  type: "health" | "performance" | "competition";
   // Free text status: e.g. "Log your 5 metrics for today." for health
   // or "No competition data logged today." for competition.
   status: string;
@@ -29,15 +29,22 @@ export function DashLogHeader({
   highlight,
   post,
 }: DashLogHeaderProps) {
-  const Icon = type === "health" ? CalendarIcon : StopwatchIcon;
-  const to = type === "health" ? "/health" : "/competition";
+  const Icon = type === "competition" ? StopwatchIcon : CalendarIcon;
+  const to =
+    type === "health"
+      ? "/health"
+      : type === "performance"
+        ? "/performance"
+        : "/competition";
   // Lead the accessible name with the visible status so WCAG 2.5.3
   // (Label in Name) is satisfied — voice control "click log your 5
   // remaining metrics" must match the visible text.
   const label =
     type === "health"
-      ? `${status} Go to Health & Performance Log.`
-      : `${status} Go to Competition Log.`;
+      ? `${status} Go to Health Log.`
+      : type === "performance"
+        ? `${status} Go to Performance Log.`
+        : `${status} Go to Competition Log.`;
 
   const preHasTrailingSpace = !!pre && /\s$/.test(pre);
   const postHasLeadingSpace = !!post && /^\s/.test(post);

@@ -26,6 +26,21 @@ const YN_LEVELS: CustomMetricLevel[] = [
   { label: "Yes", value: 1 },
 ];
 
+function deriveLevelRangeDisplay(
+  levels: CustomMetricLevel[],
+): { top: string; bottom: string } {
+  const values = levels
+    .map((l) => l.value)
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (values.length === 0) {
+    return { top: "", bottom: "" };
+  }
+  return {
+    top: String(Math.max(...values)),
+    bottom: String(Math.min(...values)),
+  };
+}
+
 function inferTopLevel(def: CustomMetricDef): TopLevelKind {
   if (def.primitive === "numeric") return "numeric";
   const lvls = def.levels;
@@ -244,17 +259,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         return { ...prev, topLevel: next, inputType: "numeric", levels: [] };
       }
       if (next === "yn") {
-        // Mirror the derived y-axis range into the (disabled) display
-        // fields so the user sees the actual 0..1 range Y/N writes,
-        // rather than the lingering Numeric defaults.
-        return {
-          ...prev,
-          topLevel: next,
-          inputType: "radio",
-          levels: YN_LEVELS,
-          yTopRaw: "1",
-          yBottomRaw: "0",
-        };
+        return { ...prev, topLevel: next, inputType: "radio", levels: YN_LEVELS };
       }
       // Categorical: preserve existing rows when the user is toggling
       // back from Y/N or returning to a partially-edited table. Seed two
@@ -409,6 +414,16 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   // whose effect is tangential to the Y/N concept.
   const decimalsDisabled = draft.topLevel === "yn";
 
+  // For ordinal kinds the y-axis is derived from levels at submit-time;
+  // mirror that derivation into the (disabled) display fields so users
+  // see what will actually be saved instead of stale Numeric defaults.
+  // Partial entries (some level values blank) still show the range over
+  // whatever's been filled in; an empty table shows blanks.
+  const yRangeDisplay =
+    draft.topLevel === "numeric"
+      ? { top: draft.yTopRaw, bottom: draft.yBottomRaw }
+      : deriveLevelRangeDisplay(draft.levels);
+
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
       <fieldset className={css.typeChooser}>
@@ -488,7 +503,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           label="Y-axis top"
           type="number"
           inputMode="decimal"
-          value={draft.yTopRaw}
+          value={yRangeDisplay.top}
           disabled={yAxisDisabled}
           onChange={(e) => update("yTopRaw", e.target.value)}
         />
@@ -497,7 +512,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           label="Y-axis bottom"
           type="number"
           inputMode="decimal"
-          value={draft.yBottomRaw}
+          value={yRangeDisplay.bottom}
           disabled={yAxisDisabled}
           onChange={(e) => update("yBottomRaw", e.target.value)}
         />

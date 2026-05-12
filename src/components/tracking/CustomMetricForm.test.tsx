@@ -388,6 +388,23 @@ describe("CustomMetricForm — top-level type chooser", () => {
     expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("0");
   });
 
+  it("displays y-axis range derived from levels as the user fills Categorical", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // With both seeded rows blank, the derivation has nothing to chew
+    // on - the disabled fields render empty so the user isn't told a
+    // misleading range exists yet.
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("");
+    // Fill in the two seeded rows: values 2 and 7.
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(values[0], "2");
+    await user.type(values[1], "7");
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).value).toBe("7");
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("2");
+  });
+
   it("greys out y-axis range when Categorical is selected", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");

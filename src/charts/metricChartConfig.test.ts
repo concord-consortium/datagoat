@@ -94,7 +94,23 @@ describe("customDefToChartConfig", () => {
     const c = customDefToChartConfig(def);
     expect(c.unit).toBe("min");
     // formatValue does NOT include the unit; Bars / AverageBadge append it.
-    expect(c.formatValue(15)).toBe("15.0");
+    // Trailing zeros drop after the toFixed/Number round-trip, so an
+    // integer value renders without a `.0` suffix even with decimals=1.
+    expect(c.formatValue(15)).toBe("15");
+    expect(c.formatValue(15.4)).toBe("15.4");
+  });
+
+  it("drops trailing zeros so integer bounds render cleanly on axis labels", () => {
+    // Y/N (and any ordinal whose level values happen to be integers)
+    // wants y-axis labels of "1" / "0" rather than "1.0" / "0.0".
+    // Averages that aren't whole numbers still show their decimals.
+    const def = customDef({ avgDecimals: 1 });
+    const c = customDefToChartConfig(def);
+    expect(c.formatValue(1)).toBe("1");
+    expect(c.formatValue(0)).toBe("0");
+    expect(c.formatValue(0.7)).toBe("0.7");
+    // Rounding still happens: 0.583 with decimals=1 rounds to "0.6".
+    expect(c.formatValue(0.583)).toBe("0.6");
   });
 
   it("treats an empty unit string as no unit", () => {

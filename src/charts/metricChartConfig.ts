@@ -268,14 +268,21 @@ export function customDefToChartConfig(
     yBottomRaw = FALLBACK_Y_BOTTOM;
   }
   const goalRaw = Number.isFinite(def.goalRaw) ? (def.goalRaw ?? undefined) : undefined;
+  // Round to `decimals` places via toFixed, then round-trip through
+  // Number so trailing zeros drop. Cleaner everywhere it's displayed:
+  // y-axis labels for an integer bound (Y/N's 1 / 0) render as "1" / "0"
+  // instead of "1.0" / "0.0", while non-integer averages still show
+  // their decimals ("0.7", "0.583" → "0.6").
+  const formatNumber = (v: number): string =>
+    String(Number(v.toFixed(decimals)));
   return {
     chartType: "bar",
     yTopRaw,
     yBottomRaw,
     goalRaw,
     formatValue: isPct
-      ? (v) => `${v.toFixed(decimals)}%`
-      : (v) => v.toFixed(decimals),
+      ? (v) => `${formatNumber(v)}%`
+      : formatNumber,
     unit: isPct ? undefined : def.unit || undefined,
     avgDecimals: decimals,
     // randomFloat (rounded to `decimals`) handles the form's

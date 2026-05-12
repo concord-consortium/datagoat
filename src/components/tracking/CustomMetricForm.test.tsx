@@ -346,14 +346,22 @@ describe("CustomMetricForm — top-level type chooser", () => {
     expect(screen.getByRole("radio", { name: /y\/n/i })).toBeTruthy();
   });
 
-  it("shows the levels editor only when Categorical is selected", async () => {
+  it("shows the levels editor for Categorical and Y/N but not Numeric", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");
+    // Numeric (initial): no table.
     expect(screen.queryByRole("table")).toBeNull();
+    // Categorical: editable table.
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
     expect(screen.getByRole("table")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /add row/i })).toBeTruthy();
+    // Y/N: table visible but read-only (inputs disabled, no Add row).
     await user.click(screen.getByRole("radio", { name: /y\/n/i }));
-    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.getByRole("table")).toBeTruthy();
+    const labelInputs = screen.getAllByLabelText(/label/i) as HTMLInputElement[];
+    expect(labelInputs.every((i) => i.disabled)).toBe(true);
+    expect(screen.queryByRole("button", { name: /add row/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /remove row/i })).toBeNull();
   });
 
   it("greys out goal when Y/N is selected (per spec)", async () => {

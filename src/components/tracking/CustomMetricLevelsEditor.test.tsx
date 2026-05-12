@@ -73,4 +73,25 @@ describe("CustomMetricLevelsEditor", () => {
     await user.click(removeButtons[0]);
     expect(onChange).toHaveBeenCalledWith([{ label: "B", value: 2 }]);
   });
+
+  it("renders read-only: disables inputs and hides Add/Remove buttons", () => {
+    const onChange = vi.fn<(next: CustomMetricLevel[]) => void>();
+    render(
+      <CustomMetricLevelsEditor
+        levels={[
+          { label: "No", value: 0 },
+          { label: "Yes", value: 1 },
+        ]}
+        onChange={onChange}
+        readOnly
+      />,
+    );
+    const inputs = screen
+      .getAllByLabelText(/label|value|color/i)
+      .filter((el): el is HTMLInputElement => el instanceof HTMLInputElement);
+    expect(inputs.length).toBeGreaterThan(0);
+    expect(inputs.every((i) => i.disabled)).toBe(true);
+    expect(screen.queryByRole("button", { name: /add row/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /remove/i })).toBeNull();
+  });
 });

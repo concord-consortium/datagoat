@@ -8,6 +8,7 @@ import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { TextField } from "../form/TextField";
 import { CustomMetricLevelsEditor } from "./CustomMetricLevelsEditor";
+import { If } from "../common/If";
 import type {
   CustomMetricDef,
   CustomMetricInputType,
@@ -437,15 +438,16 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         onChange={(e) => update("name", e.target.value)}
       />
 
-      {draft.topLevel === "categorical" && (
+      <If condition={draft.topLevel !== "numeric"}>
         <div className={css.levelsBlock}>
           <label className={css.fieldLabel}>Levels</label>
           <CustomMetricLevelsEditor
             levels={draft.levels}
             onChange={(next) => update("levels", next)}
+            readOnly={draft.topLevel === "yn"}
           />
         </div>
-      )}
+      </If>
 
       <TextField
         id="cm-unit"

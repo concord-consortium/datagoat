@@ -483,6 +483,95 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
   });
 });
 
+// Helper: renders the edit form for an existing metric seeded into the
+// CustomMetricsContext via initialMetrics. Mirrors the pattern used in
+// the "edit confirmation" describe block above.
+function renderEditForm(type: "health" | "competition", def: CustomMetricDef) {
+  render(
+    <CustomMetricsProvider initialMetrics={[def]}>
+      <MemoryRouter initialEntries={[`/add-metric/${type}/${def.id}`]}>
+        <Routes>
+          <Route
+            path="/add-metric/:type/:metricId"
+            element={<CustomMetricForm />}
+          />
+          <Route
+            path="/setup/tracking"
+            element={<div>back to tracking setup</div>}
+          />
+        </Routes>
+      </MemoryRouter>
+    </CustomMetricsProvider>,
+  );
+}
+
+describe("CustomMetricForm — edit-mode inference", () => {
+  it("opens with Numeric selected for an existing numeric metric", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "Steps",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "steps",
+      goalRaw: 10000,
+      yTopRaw: 20000,
+      yBottomRaw: 0,
+      avgDecimals: 0,
+      inputType: "numeric",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    expect((screen.getByRole("radio", { name: /numeric/i }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("opens with Y/N selected for an ordinal metric with the canonical No/Yes levels", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "Slept Well?",
+      metricType: "health",
+      primitive: "ordinal",
+      levels: [
+        { label: "No", value: 0 },
+        { label: "Yes", value: 1 },
+      ],
+      yTopRaw: 1,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    expect((screen.getByRole("radio", { name: /y\/n/i }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("opens with Categorical selected for an ordinal metric with other levels", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "Mood",
+      metricType: "health",
+      primitive: "ordinal",
+      levels: [
+        { label: "Low", value: 1 },
+        { label: "Mid", value: 3 },
+        { label: "High", value: 5 },
+      ],
+      yTopRaw: 5,
+      yBottomRaw: 1,
+      avgDecimals: 1,
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    expect((screen.getByRole("radio", { name: /categorical/i }) as HTMLInputElement).checked).toBe(true);
+  });
+});
+
 describe("CustomMetricForm (auto-track on create)", () => {
   it("appends the new metric id to trackedHealthMetrics on the first profile create", async () => {
     // userMock starts with loadState.status === "missing" (no profile

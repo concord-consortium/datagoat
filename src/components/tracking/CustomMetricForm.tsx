@@ -41,6 +41,21 @@ function deriveLevelRangeDisplay(
   };
 }
 
+function sameLevelValues(
+  a: CustomMetricLevel[] | undefined,
+  b: CustomMetricLevel[] | undefined,
+): boolean {
+  const sortedFiniteValues = (lvls: CustomMetricLevel[] | undefined): number[] =>
+    (lvls ?? [])
+      .map((l) => l.value)
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v))
+      .sort((x, y) => x - y);
+  const ax = sortedFiniteValues(a);
+  const bx = sortedFiniteValues(b);
+  if (ax.length !== bx.length) return false;
+  return ax.every((v, i) => v === bx[i]);
+}
+
 function inferTopLevel(def: CustomMetricDef): TopLevelKind {
   if (def.primitive === "numeric") return "numeric";
   const lvls = def.levels;
@@ -351,7 +366,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       if (editing) {
         const inputTypeChanged = payload.inputType !== editing.inputType;
         const unitChanged = (payload.unit ?? "") !== (editing.unit ?? "");
-        const dataShapingChanged = inputTypeChanged || unitChanged;
+        // Compare ordinal level values by their multiset (sorted), so a
+        // pure row-reorder that keeps the same numeric values doesn't
+        // trip the prompt (entries stored as the numeric corollary keep
+        // their meaning) but a remap or length change does. Labels and
+        // colors are display-only and don't reinterpret stored entries,
+        // so they aren't part of the diff.
+        const levelsChanged = !sameLevelValues(payload.levels, editing.levels);
+        const dataShapingChanged =
+          inputTypeChanged || unitChanged || levelsChanged;
         if (
           dataShapingChanged &&
           hasEntriesForMetric(editing.id, healthEntries, competitionEntries)
@@ -359,6 +382,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           const fields = [
             inputTypeChanged ? "input type" : null,
             unitChanged ? "unit" : null,
+            levelsChanged ? "level values" : null,
           ]
             .filter(Boolean)
             .join(" and ");

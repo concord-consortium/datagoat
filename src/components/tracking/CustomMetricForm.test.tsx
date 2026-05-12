@@ -250,6 +250,128 @@ describe("CustomMetricForm (edit confirmation)", () => {
 
     confirmSpy.mockRestore();
   });
+
+  it("prompts before saving a level-values change when entries exist", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    // c_x is the id the DataContext mock seeds an entry for, so
+    // hasEntriesForMetric("c_x") returns true at submit time.
+    const seed: CustomMetricDef[] = [
+      {
+        id: "c_x",
+        ownerId: "u1",
+        name: "Mood",
+        metricType: "health",
+        primitive: "ordinal",
+        inputType: "radio",
+        levels: [
+          { label: "Low", value: 1 },
+          { label: "High", value: 5 },
+        ],
+        yTopRaw: 5,
+        yBottomRaw: 1,
+        avgDecimals: 1,
+        referenceUrl: "",
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ];
+
+    render(
+      <CustomMetricsProvider initialMetrics={seed}>
+        <MemoryRouter initialEntries={["/add-metric/health/c_x"]}>
+          <Routes>
+            <Route
+              path="/add-metric/:type/:metricId"
+              element={<CustomMetricForm />}
+            />
+            <Route
+              path="/setup/tracking"
+              element={<div>back to tracking setup</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </CustomMetricsProvider>,
+    );
+
+    // Remap High from 5 to 3. A stored entry of `5` for this metric
+    // would now be out of the new value set, reinterpreting (or
+    // dropping) the data - exactly what the prompt protects against.
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.clear(values[1]);
+    await user.type(values[1], "3");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy.mock.calls[0][0]).toMatch(/level values/i);
+    // Confirm returned false, so we should not have navigated.
+    expect(screen.queryByText("back to tracking setup")).toBeNull();
+
+    confirmSpy.mockRestore();
+  });
+
+  it("does NOT prompt when a level-row reorder leaves the value set unchanged", async () => {
+    // Reordering [Low=1, High=5] to [High=5, Low=1] preserves the
+    // multiset of stored values; entries keep their meaning. The
+    // levels-changed check uses sorted values so position-only edits
+    // don't trip the prompt.
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const seed: CustomMetricDef[] = [
+      {
+        id: "c_x",
+        ownerId: "u1",
+        name: "Mood",
+        metricType: "health",
+        primitive: "ordinal",
+        inputType: "radio",
+        levels: [
+          { label: "Low", value: 1 },
+          { label: "High", value: 5 },
+        ],
+        yTopRaw: 5,
+        yBottomRaw: 1,
+        avgDecimals: 1,
+        referenceUrl: "",
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ];
+
+    render(
+      <CustomMetricsProvider initialMetrics={seed}>
+        <MemoryRouter initialEntries={["/add-metric/health/c_x"]}>
+          <Routes>
+            <Route
+              path="/add-metric/:type/:metricId"
+              element={<CustomMetricForm />}
+            />
+            <Route
+              path="/setup/tracking"
+              element={<div>back to tracking setup</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </CustomMetricsProvider>,
+    );
+
+    // Swap row 0's label "Low"→"High" + value 1→5 and row 1's "High"→"Low" + 5→1.
+    // After the swap the multiset of values is still {1, 5}.
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.clear(labels[0]);
+    await user.type(labels[0], "High");
+    await user.clear(values[0]);
+    await user.type(values[0], "5");
+    await user.clear(labels[1]);
+    await user.type(labels[1], "Low");
+    await user.clear(values[1]);
+    await user.type(values[1], "1");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
 });
 
 describe("CustomMetricForm (validation)", () => {

@@ -176,7 +176,8 @@ describe("buildAlignedSeries", () => {
   it("flows negative health custom values through unchanged", () => {
     // Customs with `yBottomRaw < 0` (e.g. a score-differential
     // metric) need negative values to reach the chart. The
-    // readHealthMetric branch uses `!== 0` rather than `> 0`.
+    // readHealthMetric branch uses `Number.isFinite` so any finite
+    // number (including 0 and negatives) flows through.
     const entry = {
       ...emptyHealthEntry(isoAtDaysAgo(0)),
       customMetrics: { c_diff: -3 },

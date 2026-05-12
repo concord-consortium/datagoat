@@ -12,7 +12,7 @@
 
 import { useSyncExternalStore } from "react";
 import { randomFloat, randomInt } from "./randomValues";
-import type { CustomMetricDef } from "../types/customMetrics";
+import type { CustomMetricDef, CustomMetricLevel } from "../types/customMetrics";
 
 export interface MetricChartConfig {
   chartType: "bar" | "line";
@@ -252,40 +252,66 @@ export function customDefToChartConfig(
   // Firestore could surface legacy/externally-written values, so the
   // clamp is defense-in-depth.
   const decimals = Number.isFinite(def.avgDecimals)
-    ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals)))
+    ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals ?? 1)))
     : 1;
   // Defense-in-depth: finite-check the axis bounds and goal. If
   // either bound is non-finite or the pair is inverted (yBottom >=
   // yTop), fall back to the safe default range. goalRaw drops to
   // undefined when non-finite — chartSeries.lookupGoalLine handles
   // undefined as "no goal line for this metric".
-  let yTopRaw = Number.isFinite(def.yTopRaw) ? def.yTopRaw : FALLBACK_Y_TOP;
+  let yTopRaw = Number.isFinite(def.yTopRaw) ? (def.yTopRaw ?? FALLBACK_Y_TOP) : FALLBACK_Y_TOP;
   let yBottomRaw = Number.isFinite(def.yBottomRaw)
-    ? def.yBottomRaw
+    ? (def.yBottomRaw ?? FALLBACK_Y_BOTTOM)
     : FALLBACK_Y_BOTTOM;
   if (yBottomRaw >= yTopRaw) {
     yTopRaw = FALLBACK_Y_TOP;
     yBottomRaw = FALLBACK_Y_BOTTOM;
   }
-  const goalRaw = Number.isFinite(def.goalRaw) ? def.goalRaw : undefined;
+  const goalRaw = Number.isFinite(def.goalRaw) ? (def.goalRaw ?? undefined) : undefined;
+  // Round to `decimals` places via toFixed, then round-trip through
+  // Number so trailing zeros drop. Cleaner everywhere it's displayed:
+  // y-axis labels for an integer bound (Y/N's 1 / 0) render as "1" / "0"
+  // instead of "1.0" / "0.0", while non-integer averages still show
+  // their decimals ("0.7", "0.583" → "0.6").
+  const formatNumber = (v: number): string =>
+    String(Number(v.toFixed(decimals)));
   return {
     chartType: "bar",
     yTopRaw,
     yBottomRaw,
     goalRaw,
     formatValue: isPct
-      ? (v) => `${v.toFixed(decimals)}%`
-      : (v) => v.toFixed(decimals),
+      ? (v) => `${formatNumber(v)}%`
+      : formatNumber,
     unit: isPct ? undefined : def.unit || undefined,
     avgDecimals: decimals,
-    // randomFloat (rounded to `decimals`) handles the form's
-    // decimal-allowed y-axis bounds correctly. randomInt would
+    // Numeric customs: randomFloat (rounded to `decimals`) handles the
+    // form's decimal-allowed y-axis bounds correctly. randomInt would
     // mis-bin non-integer ranges (e.g. min=0.2, max=0.8 could yield
-    // 1.2). The radio branch keeps randomInt(0, 1) since values are
-    // strictly 0/1.
+    // 1.2). Ordinal customs (incl. the Y/N preset): sample uniformly
+    // from the defined level values so demo data always lands on a
+    // real category - Y/N picks from {0, 1} naturally, a Likert 1..5
+    // picks from {1,2,3,4,5}.
     random:
-      def.inputType === "radio"
-        ? (rng) => randomInt(rng, 0, 1)
-        : (rng) => randomFloat(rng, yBottomRaw, yTopRaw, decimals),
+      def.primitive === "numeric"
+        ? (rng) => randomFloat(rng, yBottomRaw, yTopRaw, decimals)
+        : (rng) => randomLevelValue(rng, def.levels ?? []),
   };
+}
+
+function randomLevelValue(
+  rng: () => number,
+  levels: CustomMetricLevel[],
+): number {
+  const numeric = levels
+    .map((l) => l.value)
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (numeric.length === 0) {
+    // Defensive: an ordinal custom should always have finite values
+    // (form rejects otherwise), but a malformed doc shouldn't crash
+    // demo rendering. Fall back to the legacy 0/1 sample.
+    return randomInt(rng, 0, 1);
+  }
+  const idx = Math.min(numeric.length - 1, Math.floor(rng() * numeric.length));
+  return numeric[idx];
 }

@@ -1,0 +1,108 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table th,
+.table td {
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.rowNum {
+  color: #999;
+  font-variant-numeric: tabular-nums;
+  width: 2rem;
+}
+
+.table input[type="text"],
+.table input[type="number"] {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d6dde3;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: #ffffff;
+}
+
+.table input[type="text"]:disabled,
+.table input[type="number"]:disabled {
+  background: #f0f3f6;
+  border-color: #e1e5ea;
+  color: #888;
+  cursor: not-allowed;
+  /* Override Safari's subtle disabled-input tinting to match the
+     muted background above; without this the field still looks
+     near-active on iOS. */
+  -webkit-text-fill-color: #888;
+  opacity: 1;
+}
+
+.table input[type="color"] {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid #d6dde3;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.table input[type="color"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.removeBtn {
+  appearance: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid #d6dde3;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.removeBtn:hover {
+  color: #e53e3e;
+}
+
+.addBtn {
+  appearance: none;
+  align-self: flex-start;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d6dde3;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #0693e3;
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

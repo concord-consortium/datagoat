@@ -11,6 +11,7 @@ function customDef(overrides: Partial<CustomMetricDef> = {}): CustomMetricDef {
     ownerId: "u1",
     name: "Test",
     metricType: "health",
+    primitive: "numeric",
     inputType: "numeric",
     unit: "",
     goalRaw: 5,
@@ -93,7 +94,23 @@ describe("customDefToChartConfig", () => {
     const c = customDefToChartConfig(def);
     expect(c.unit).toBe("min");
     // formatValue does NOT include the unit; Bars / AverageBadge append it.
-    expect(c.formatValue(15)).toBe("15.0");
+    // Trailing zeros drop after the toFixed/Number round-trip, so an
+    // integer value renders without a `.0` suffix even with decimals=1.
+    expect(c.formatValue(15)).toBe("15");
+    expect(c.formatValue(15.4)).toBe("15.4");
+  });
+
+  it("drops trailing zeros so integer bounds render cleanly on axis labels", () => {
+    // Y/N (and any ordinal whose level values happen to be integers)
+    // wants y-axis labels of "1" / "0" rather than "1.0" / "0.0".
+    // Averages that aren't whole numbers still show their decimals.
+    const def = customDef({ avgDecimals: 1 });
+    const c = customDefToChartConfig(def);
+    expect(c.formatValue(1)).toBe("1");
+    expect(c.formatValue(0)).toBe("0");
+    expect(c.formatValue(0.7)).toBe("0.7");
+    // Rounding still happens: 0.583 with decimals=1 rounds to "0.6".
+    expect(c.formatValue(0.583)).toBe("0.6");
   });
 
   it("treats an empty unit string as no unit", () => {
@@ -163,11 +180,16 @@ describe("customDefToChartConfig", () => {
     }
   });
 
-  it("returns a 0/1 random generator for radio metrics regardless of y-range", () => {
+  it("samples Y/N (ordinal with No=0/Yes=1 levels) only from {0, 1}", () => {
     const def = customDef({
+      primitive: "ordinal",
       inputType: "radio",
-      yTopRaw: 100,
-      yBottomRaw: -50,
+      levels: [
+        { label: "No", value: 0 },
+        { label: "Yes", value: 1 },
+      ],
+      yTopRaw: 1,
+      yBottomRaw: 0,
     });
     const c = customDefToChartConfig(def);
     const rng = mulberry32(0xb6b6b6);
@@ -175,10 +197,38 @@ describe("customDefToChartConfig", () => {
     for (let i = 0; i < 100; i++) {
       values.add(c.random(rng));
     }
-    // Only 0 and 1 should appear.
     for (const v of values) {
       expect(v === 0 || v === 1).toBe(true);
     }
+  });
+
+  it("samples a non-Y/N ordinal (Likert 1..5) only from the defined level values", () => {
+    const def = customDef({
+      primitive: "ordinal",
+      inputType: "radio",
+      levels: [
+        { label: "Strongly Disagree", value: 1 },
+        { label: "Disagree", value: 2 },
+        { label: "Neutral", value: 3 },
+        { label: "Agree", value: 4 },
+        { label: "Strongly Agree", value: 5 },
+      ],
+      yTopRaw: 5,
+      yBottomRaw: 1,
+    });
+    const c = customDefToChartConfig(def);
+    const rng = mulberry32(0xc7c7c7);
+    const allowed = new Set([1, 2, 3, 4, 5]);
+    const seen = new Set<number>();
+    for (let i = 0; i < 500; i++) {
+      const v = c.random(rng);
+      expect(allowed.has(v)).toBe(true);
+      seen.add(v);
+    }
+    // 500 samples across 5 buckets should cover every bucket; the
+    // regression bug (inputType==="radio" => randomInt(0,1)) would
+    // only ever produce 0 or 1, so this size also guards against it.
+    expect(seen.size).toBe(5);
   });
 });
 

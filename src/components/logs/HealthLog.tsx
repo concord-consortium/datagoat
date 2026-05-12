@@ -126,8 +126,8 @@ export function HealthLog() {
   const adaptCustom = (def: CustomMetricDef): MetricDefinition => ({
     id: def.id,
     name: def.name,
-    unit: def.unit,
-    displayUnit: def.unit,
+    unit: def.unit ?? "",
+    displayUnit: def.unit ?? "",
     type: "health",
     whoCollects: "",
     howCollected: "",
@@ -232,6 +232,33 @@ export function HealthLog() {
               }
               const def = customById.get(id);
               if (def) {
+                if (def.primitive === "ordinal" && def.levels) {
+                  const live = currentEntry.customMetrics?.[id];
+                  const ordinalValue =
+                    typeof live === "number" && Number.isFinite(live)
+                      ? live
+                      : undefined;
+                  return (
+                    <MetricInputRow
+                      key={id}
+                      inputType="ordinal"
+                      metric={adaptCustom(def)}
+                      levels={def.levels}
+                      value={ordinalValue}
+                      onChange={(next) => {
+                        setCustomMetric(id, String(next));
+                      }}
+                      detailHref={`/health/${id}`}
+                    />
+                  );
+                }
+                // Nominal customs are schema-reserved but not yet
+                // exposed in the form. If a doc with primitive
+                // "nominal" surfaces (externally written), don't fall
+                // through to the numeric input - that would let users
+                // log a number against a label-valued metric and
+                // corrupt the entry shape. Skip the row.
+                if (def.primitive === "nominal") return null;
                 const live = currentEntry.customMetrics?.[id];
                 // Finite numbers (incl. 0 and negatives for customs
                 // with yBottomRaw < 0) render verbatim. A missing key
@@ -254,7 +281,7 @@ export function HealthLog() {
                     // only when the metric's range goes below 0;
                     // otherwise typing minus stays blocked, matching
                     // built-in behavior.
-                    allowNegative={def.yBottomRaw < 0}
+                    allowNegative={(def.yBottomRaw ?? 0) < 0}
                   />
                 );
               }

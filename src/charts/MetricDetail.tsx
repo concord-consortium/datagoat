@@ -381,8 +381,8 @@ function customAsMetricDefinition(
   return {
     id: def.id,
     name: def.name,
-    unit: def.unit,
-    displayUnit: def.unit,
+    unit: def.unit ?? "",
+    displayUnit: def.unit ?? "",
     type,
     whoCollects: "",
     howCollected: "",

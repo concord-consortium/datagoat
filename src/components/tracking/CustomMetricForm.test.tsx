@@ -210,6 +210,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
         ownerId: "u1",
         name: "Stretch Minutes",
         metricType: "health",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "min",
         goalRaw: 15,
@@ -247,6 +248,128 @@ describe("CustomMetricForm (edit confirmation)", () => {
     expect(confirmSpy.mock.calls[0][0]).toMatch(/unit/i);
     expect(screen.queryByText("back to tracking setup")).toBeNull();
 
+    confirmSpy.mockRestore();
+  });
+
+  it("prompts before saving a level-values change when entries exist", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    // c_x is the id the DataContext mock seeds an entry for, so
+    // hasEntriesForMetric("c_x") returns true at submit time.
+    const seed: CustomMetricDef[] = [
+      {
+        id: "c_x",
+        ownerId: "u1",
+        name: "Mood",
+        metricType: "health",
+        primitive: "ordinal",
+        inputType: "radio",
+        levels: [
+          { label: "Low", value: 1 },
+          { label: "High", value: 5 },
+        ],
+        yTopRaw: 5,
+        yBottomRaw: 1,
+        avgDecimals: 1,
+        referenceUrl: "",
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ];
+
+    render(
+      <CustomMetricsProvider initialMetrics={seed}>
+        <MemoryRouter initialEntries={["/add-metric/health/c_x"]}>
+          <Routes>
+            <Route
+              path="/add-metric/:type/:metricId"
+              element={<CustomMetricForm />}
+            />
+            <Route
+              path="/setup/tracking"
+              element={<div>back to tracking setup</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </CustomMetricsProvider>,
+    );
+
+    // Remap High from 5 to 3. A stored entry of `5` for this metric
+    // would now be out of the new value set, reinterpreting (or
+    // dropping) the data - exactly what the prompt protects against.
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.clear(values[1]);
+    await user.type(values[1], "3");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy.mock.calls[0][0]).toMatch(/level values/i);
+    // Confirm returned false, so we should not have navigated.
+    expect(screen.queryByText("back to tracking setup")).toBeNull();
+
+    confirmSpy.mockRestore();
+  });
+
+  it("does NOT prompt when a level-row reorder leaves the value set unchanged", async () => {
+    // Reordering [Low=1, High=5] to [High=5, Low=1] preserves the
+    // multiset of stored values; entries keep their meaning. The
+    // levels-changed check uses sorted values so position-only edits
+    // don't trip the prompt.
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const seed: CustomMetricDef[] = [
+      {
+        id: "c_x",
+        ownerId: "u1",
+        name: "Mood",
+        metricType: "health",
+        primitive: "ordinal",
+        inputType: "radio",
+        levels: [
+          { label: "Low", value: 1 },
+          { label: "High", value: 5 },
+        ],
+        yTopRaw: 5,
+        yBottomRaw: 1,
+        avgDecimals: 1,
+        referenceUrl: "",
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ];
+
+    render(
+      <CustomMetricsProvider initialMetrics={seed}>
+        <MemoryRouter initialEntries={["/add-metric/health/c_x"]}>
+          <Routes>
+            <Route
+              path="/add-metric/:type/:metricId"
+              element={<CustomMetricForm />}
+            />
+            <Route
+              path="/setup/tracking"
+              element={<div>back to tracking setup</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </CustomMetricsProvider>,
+    );
+
+    // Swap row 0's label "Low"→"High" + value 1→5 and row 1's "High"→"Low" + 5→1.
+    // After the swap the multiset of values is still {1, 5}.
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.clear(labels[0]);
+    await user.type(labels[0], "High");
+    await user.clear(values[0]);
+    await user.type(values[0], "5");
+    await user.clear(labels[1]);
+    await user.type(labels[1], "Low");
+    await user.clear(values[1]);
+    await user.type(values[1], "1");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
     confirmSpy.mockRestore();
   });
 });
@@ -296,6 +419,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
         ownerId: "u1",
         name: "5K Time",
         metricType: "competition",
+        primitive: "numeric",
         inputType: "numeric",
         unit: "min",
         goalRaw: 25,
@@ -327,6 +451,329 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
     expect(screen.getByTestId("loc").textContent).toBe(
       "/add-metric/competition/c_p",
     );
+  });
+});
+
+// Thin wrapper that renders the create form for a given metric type.
+// Mirrors renderAt but with a more descriptive name for the new tests.
+function renderCreateForm(type: "health" | "competition") {
+  renderAt(`/add-metric/${type}/new`);
+}
+
+describe("CustomMetricForm — top-level type chooser", () => {
+  it("renders three top-level buttons: Numeric, Categorical, Y/N", () => {
+    renderCreateForm("health");
+    expect(screen.getByRole("radio", { name: /numeric/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /categorical/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /y\/n/i })).toBeTruthy();
+  });
+
+  it("shows the levels editor for Categorical and Y/N but not Numeric", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    // Numeric (initial): no table.
+    expect(screen.queryByRole("table")).toBeNull();
+    // Categorical: editable table.
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect(screen.getByRole("table")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /add row/i })).toBeTruthy();
+    // Y/N: table visible but read-only (inputs disabled, no Add row).
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    expect(screen.getByRole("table")).toBeTruthy();
+    const labelInputs = screen.getAllByLabelText(/label/i) as HTMLInputElement[];
+    expect(labelInputs.every((i) => i.disabled)).toBe(true);
+    expect(screen.queryByRole("button", { name: /add row/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /remove row/i })).toBeNull();
+  });
+
+  it("preserves in-progress Categorical rows across a Y/N detour", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Type into the two seeded rows.
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Low");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "High");
+    await user.type(values[1], "9");
+    // Detour through Y/N - the read-only table shows No/Yes here, but
+    // the user's Categorical edits must survive untouched.
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    expect((screen.getByLabelText(/^Label for row 1$/i) as HTMLInputElement).value).toBe("No");
+    expect((screen.getByLabelText(/^Label for row 2$/i) as HTMLInputElement).value).toBe("Yes");
+    // Back to Categorical - the user's rows are restored.
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect((screen.getByLabelText(/^Label for row 1$/i) as HTMLInputElement).value).toBe("Low");
+    expect((screen.getByLabelText(/^Value for row 1$/i) as HTMLInputElement).value).toBe("1");
+    expect((screen.getByLabelText(/^Label for row 2$/i) as HTMLInputElement).value).toBe("High");
+    expect((screen.getByLabelText(/^Value for row 2$/i) as HTMLInputElement).value).toBe("9");
+  });
+
+
+  it("greys out goal when Y/N is selected (per spec)", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    const goal = screen.getByLabelText(/^goal$/i) as HTMLInputElement;
+    expect(goal.disabled).toBe(true);
+  });
+
+  it("greys out decimals when Y/N is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    const decimals = screen.getByLabelText(/^decimals$/i) as HTMLInputElement;
+    expect(decimals.disabled).toBe(true);
+  });
+
+  it("displays y-axis range as 0..1 when Y/N is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).value).toBe("1");
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("0");
+  });
+
+  it("displays y-axis range derived from levels as the user fills Categorical", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // With both seeded rows blank, the derivation has nothing to chew
+    // on - the disabled fields render empty so the user isn't told a
+    // misleading range exists yet.
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("");
+    // Fill in the two seeded rows: values 2 and 7.
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(values[0], "2");
+    await user.type(values[1], "7");
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).value).toBe("7");
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("2");
+  });
+
+  it("greys out y-axis range when Categorical is selected", async () => {
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).disabled).toBe(true);
+  });
+});
+
+describe("CustomMetricForm — submit shape per top-level type", () => {
+  it("writes primitive='numeric' with the full numeric config when Numeric is chosen", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Steps");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.primitive).toBe("numeric");
+    expect(payload.levels).toBeUndefined();
+    expect(payload.unit).toBe("");
+    expect(payload.goalRaw).toBe(0);
+  });
+
+  it("writes primitive='ordinal' and the Y/N levels when Y/N is chosen", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Slept Well?");
+    await user.click(screen.getByRole("radio", { name: /y\/n/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.primitive).toBe("ordinal");
+    expect(payload.inputType).toBe("radio");
+    expect(payload.levels).toEqual([
+      { label: "No", value: 0 },
+      { label: "Yes", value: 1 },
+    ]);
+    expect(payload.yTopRaw).toBe(1);
+    expect(payload.yBottomRaw).toBe(0);
+    expect(payload.unit).toBeUndefined();
+  });
+
+  // Picking Categorical seeds two empty rows, so most of these tests
+  // start from a 2-row baseline and either fill those rows or click
+  // "Add row" to extend.
+  it("derives yTop/yBottom from levels' min/max when Categorical is chosen", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Mood");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Two seeded rows + one Add row click → three rows, matching the
+    // Low/Mid/High shape this test exercises.
+    await user.click(screen.getByRole("button", { name: /add row/i }));
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Low");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "Mid");
+    await user.type(values[1], "3");
+    await user.type(labels[2], "High");
+    await user.type(values[2], "5");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.primitive).toBe("ordinal");
+    expect(payload.levels).toEqual([
+      { label: "Low", value: 1 },
+      { label: "Mid", value: 3 },
+      { label: "High", value: 5 },
+    ]);
+    expect(payload.yTopRaw).toBe(5);
+    expect(payload.yBottomRaw).toBe(1);
+  });
+
+  it("rejects Categorical submit when any level is missing a value", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Bad");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Both seeded rows get labels so the label check passes, then
+    // leave row 1's value blank so the value check fires.
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Solo");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "Duo");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(/each level needs a numeric value/i)).toBeTruthy();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it("rejects Categorical submit when fewer than 2 levels are defined", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Tiny");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Remove both seeded rows so the count check fires on submit.
+    // findAllByRole because the buttons appear after a state change.
+    const removeButtons = await screen.findAllByRole("button", {
+      name: /remove row/i,
+    });
+    expect(removeButtons).toHaveLength(2);
+    await user.click(removeButtons[0]);
+    // After the first click, the array re-indexes - find the new
+    // remove button rather than reusing the stale reference.
+    const remaining = screen.getAllByRole("button", { name: /remove row/i });
+    await user.click(remaining[0]);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(/at least two levels/i)).toBeTruthy();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it("rejects Categorical submit when level values are not unique", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await user.type(screen.getByLabelText(/^name$/i), "Dup");
+    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Two seeded rows are exactly right for the dup test.
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "A");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "B");
+    await user.type(values[1], "1");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(/level values must be unique/i)).toBeTruthy();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+});
+
+// Helper: renders the edit form for an existing metric seeded into the
+// CustomMetricsContext via initialMetrics. Mirrors the pattern used in
+// the "edit confirmation" describe block above.
+function renderEditForm(type: "health" | "competition", def: CustomMetricDef) {
+  render(
+    <CustomMetricsProvider initialMetrics={[def]}>
+      <MemoryRouter initialEntries={[`/add-metric/${type}/${def.id}`]}>
+        <Routes>
+          <Route
+            path="/add-metric/:type/:metricId"
+            element={<CustomMetricForm />}
+          />
+          <Route
+            path="/setup/tracking"
+            element={<div>back to tracking setup</div>}
+          />
+        </Routes>
+      </MemoryRouter>
+    </CustomMetricsProvider>,
+  );
+}
+
+describe("CustomMetricForm — edit-mode inference", () => {
+  it("opens with Numeric selected for an existing numeric metric", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "Steps",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "steps",
+      goalRaw: 10000,
+      yTopRaw: 20000,
+      yBottomRaw: 0,
+      avgDecimals: 0,
+      inputType: "numeric",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    expect((screen.getByRole("radio", { name: /numeric/i }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("opens with Y/N selected for an ordinal metric with the canonical No/Yes levels", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "Slept Well?",
+      metricType: "health",
+      primitive: "ordinal",
+      levels: [
+        { label: "No", value: 0 },
+        { label: "Yes", value: 1 },
+      ],
+      yTopRaw: 1,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    expect((screen.getByRole("radio", { name: /y\/n/i }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("opens with Categorical selected for an ordinal metric with other levels", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "Mood",
+      metricType: "health",
+      primitive: "ordinal",
+      levels: [
+        { label: "Low", value: 1 },
+        { label: "Mid", value: 3 },
+        { label: "High", value: 5 },
+      ],
+      yTopRaw: 5,
+      yBottomRaw: 1,
+      avgDecimals: 1,
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    expect((screen.getByRole("radio", { name: /categorical/i }) as HTMLInputElement).checked).toBe(true);
   });
 });
 

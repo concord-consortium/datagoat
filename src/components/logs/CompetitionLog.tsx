@@ -14,6 +14,7 @@ import {
 import { competitionTotal } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
+import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import css from "./CompetitionLog.module.css";
 
@@ -101,7 +102,7 @@ export function CompetitionLog() {
   // whose author chose `yBottomRaw < 0`.
   const allowNegativeIds = new Set(
     Array.from(customById.values())
-      .filter((m) => m.yBottomRaw < 0)
+      .filter((m) => (m.yBottomRaw ?? 0) < 0)
       .map((m) => m.id),
   );
 
@@ -173,14 +174,43 @@ export function CompetitionLog() {
                     </Link>
                   </td>
                   <td className={css.colRecord}>
-                    <CompetitionMetricInput
-                      metricId={metric.id}
-                      labelledBy={nameCellId}
-                      value={stringValue}
-                      filled={filled}
-                      onChange={(raw) => setMetricValue(metric.id, raw)}
-                      allowNegative={allowNegativeIds.has(metric.id)}
-                    />
+                    {(() => {
+                      const customDef = customById.get(metric.id);
+                      if (customDef?.primitive === "ordinal" && customDef.levels) {
+                        const live = currentEntry.metrics?.[metric.id];
+                        const ordinalValue =
+                          typeof live === "number" && Number.isFinite(live)
+                            ? live
+                            : undefined;
+                        return (
+                          <OrdinalRadioGroup
+                            levels={customDef.levels}
+                            value={ordinalValue}
+                            onChange={(next) =>
+                              setMetricValue(metric.id, String(next))
+                            }
+                            labelledBy={nameCellId}
+                          />
+                        );
+                      }
+                      // Nominal customs are schema-reserved but not yet
+                      // exposed in the form. If a doc with primitive
+                      // "nominal" surfaces (externally written), don't
+                      // fall through to the numeric input - render an
+                      // empty cell so users can't log a number against
+                      // a label-valued metric.
+                      if (customDef?.primitive === "nominal") return null;
+                      return (
+                        <CompetitionMetricInput
+                          metricId={metric.id}
+                          labelledBy={nameCellId}
+                          value={stringValue}
+                          filled={filled}
+                          onChange={(raw) => setMetricValue(metric.id, raw)}
+                          allowNegative={allowNegativeIds.has(metric.id)}
+                        />
+                      );
+                    })()}
                   </td>
                 </tr>
               );

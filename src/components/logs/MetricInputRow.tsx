@@ -10,6 +10,8 @@ import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
 import type { HealthEntry } from "../../types/data";
+import type { CustomMetricLevel } from "../../types/customMetrics";
+import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
 import css from "./MetricInputRow.module.css";
 
 import { HYDRATION_HEXES } from "../../data/hydrationColors";
@@ -45,10 +47,18 @@ export interface TreeMetricInputRowProps extends BaseProps {
   onChange: (next: HealthEntry["availability"]) => void;
 }
 
+export interface OrdinalMetricInputRowProps extends BaseProps {
+  inputType: "ordinal";
+  levels: CustomMetricLevel[];
+  value: number | undefined;
+  onChange: (next: number) => void;
+}
+
 export type MetricInputRowProps =
   | NumericMetricInputRowProps
   | ColorScaleMetricInputRowProps
-  | TreeMetricInputRowProps;
+  | TreeMetricInputRowProps
+  | OrdinalMetricInputRowProps;
 
 // Single row for a tracked health metric. Switches on metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
@@ -89,6 +99,14 @@ export function MetricInputRow(props: MetricInputRowProps) {
         {props.inputType === "tree" && (
           <AvailabilityTree
             competitionTerm={props.competitionTerm}
+            value={props.value}
+            onChange={props.onChange}
+            labelledBy={nameId}
+          />
+        )}
+        {props.inputType === "ordinal" && (
+          <OrdinalRadioGroup
+            levels={props.levels}
             value={props.value}
             onChange={props.onChange}
             labelledBy={nameId}

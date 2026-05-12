@@ -21,7 +21,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
-import type { CustomMetricDef } from "../types/customMetrics";
+import type {
+  CustomMetricDef,
+  CustomMetricLevel,
+  CustomMetricPrimitive,
+} from "../types/customMetrics";
 import { mintCustomMetricId } from "../utils/customMetricId";
 import {
   customDefToChartConfig,
@@ -77,18 +81,63 @@ function tsToMillis(ts: unknown): number {
   return 0;
 }
 
-function fromDoc(id: string, data: Record<string, unknown>): CustomMetricDef {
+function readPrimitive(raw: unknown): CustomMetricPrimitive {
+  if (raw === "numeric" || raw === "ordinal" || raw === "nominal") return raw;
+  // Per spec: DB is cleared before demo so primitive is always written
+  // by the form. A missing/invalid value indicates a corrupt doc or a
+  // schema-drift we don't yet handle - fail loud rather than silently
+  // coerce.
+  throw new Error(`CustomMetricDef: invalid primitive value '${String(raw)}'`);
+}
+
+function readLevels(raw: unknown): CustomMetricLevel[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) {
+    throw new Error("CustomMetricDef: levels must be an array");
+  }
+  return raw.map((r, i) => {
+    if (typeof r !== "object" || r === null) {
+      throw new Error(`CustomMetricDef: level ${i} is not an object`);
+    }
+    const row = r as Record<string, unknown>;
+    if (typeof row.label !== "string") {
+      throw new Error(`CustomMetricDef: level ${i} missing label`);
+    }
+    const level: CustomMetricLevel = { label: row.label };
+    if (row.value !== undefined) {
+      if (typeof row.value !== "number" || !Number.isFinite(row.value)) {
+        throw new Error(`CustomMetricDef: level ${i} value not finite`);
+      }
+      level.value = row.value;
+    }
+    if (row.color !== undefined) {
+      if (typeof row.color !== "string") {
+        throw new Error(`CustomMetricDef: level ${i} color not string`);
+      }
+      level.color = row.color;
+    }
+    return level;
+  });
+}
+
+export function fromDoc(id: string, data: Record<string, unknown>): CustomMetricDef {
   return {
     id,
     ownerId: String(data.ownerId ?? ""),
     name: String(data.name ?? ""),
     metricType: data.metricType === "competition" ? "competition" : "health",
+    primitive: readPrimitive(data.primitive),
     inputType: data.inputType === "radio" ? "radio" : "numeric",
-    unit: String(data.unit ?? ""),
-    goalRaw: Number(data.goalRaw ?? 0),
-    yTopRaw: Number(data.yTopRaw ?? 10),
-    yBottomRaw: Number(data.yBottomRaw ?? 0),
-    avgDecimals: Number(data.avgDecimals ?? 1),
+    // `== null` (loose) so a Firestore `null` is treated the same as
+    // an absent field. Strict `=== undefined` here would let
+    // `String(null)` surface as the literal `"null"` in the UI and
+    // `Number(null) === 0` mask a stale-zero in numeric fields.
+    unit: data.unit == null ? undefined : String(data.unit),
+    goalRaw: data.goalRaw == null ? undefined : Number(data.goalRaw),
+    yTopRaw: data.yTopRaw == null ? undefined : Number(data.yTopRaw),
+    yBottomRaw: data.yBottomRaw == null ? undefined : Number(data.yBottomRaw),
+    avgDecimals: data.avgDecimals == null ? undefined : Number(data.avgDecimals),
+    levels: readLevels(data.levels),
     referenceUrl: String(data.referenceUrl ?? ""),
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
@@ -196,20 +245,29 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       };
       // Persist with server timestamps; the snapshot listener will
       // reconcile with the actual Timestamp values shortly.
-      await setDoc(ref, {
+      const levelsForWrite = def.levels?.map((l) => {
+        const out: Record<string, unknown> = { label: l.label };
+        if (l.value !== undefined) out.value = l.value;
+        if (l.color !== undefined) out.color = l.color;
+        return out;
+      });
+      const writePayload: Record<string, unknown> = {
         ownerId: user.uid,
         name: def.name,
         metricType: def.metricType,
+        primitive: def.primitive,
         inputType: def.inputType,
-        unit: def.unit,
-        goalRaw: def.goalRaw,
-        yTopRaw: def.yTopRaw,
-        yBottomRaw: def.yBottomRaw,
-        avgDecimals: def.avgDecimals,
         referenceUrl: def.referenceUrl,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+      if (def.unit !== undefined) writePayload.unit = def.unit;
+      if (def.goalRaw !== undefined) writePayload.goalRaw = def.goalRaw;
+      if (def.yTopRaw !== undefined) writePayload.yTopRaw = def.yTopRaw;
+      if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;
+      if (def.avgDecimals !== undefined) writePayload.avgDecimals = def.avgDecimals;
+      if (levelsForWrite !== undefined) writePayload.levels = levelsForWrite;
+      await setDoc(ref, writePayload);
       return def;
     },
     [user, metrics],
@@ -226,6 +284,14 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       // already rules them out of the patch shape, but a TS-bypassed
       // caller could still pass them and silently overwrite the
       // provider-managed timestamps.
+      //
+      // TODO (DGT-50 follow-up): primitive changes (numeric -> ordinal
+      // / nominal) leave stale numeric-only fields (`unit`, `goalRaw`,
+      // `yTopRaw`, `yBottomRaw`) in Firestore because the form's
+      // payload omits them and this strip-undefined drops them from
+      // the write. Either thread `deleteField()` through here or have
+      // the form pass explicit clearing values when primitive changes.
+      // Demo scope is fresh-create, so deferred.
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
         if (k === "createdAt" || k === "updatedAt") continue;

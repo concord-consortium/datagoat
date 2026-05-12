@@ -7,30 +7,166 @@ import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { TextField } from "../form/TextField";
-import { SelectField } from "../form/SelectField";
+import { CustomMetricLevelsEditor } from "./CustomMetricLevelsEditor";
+import { If } from "../common/If";
 import type {
   CustomMetricDef,
   CustomMetricInputType,
+  CustomMetricLevel,
   CustomMetricType,
 } from "../../types/customMetrics";
 import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
 
-// `radio` (Yes/No) input is reserved in the type system but not yet
-// wired through the health/competition log render + storage paths.
-// Surfacing it in the form would let users create metrics that can't
-// actually be logged, so the option is hidden until the end-to-end
-// path lands. Re-add `{ value: "radio", label: "Yes / No" }` then.
-const INPUT_TYPE_OPTIONS = [
-  { value: "numeric", label: "Numeric" },
+type TopLevelKind = "numeric" | "categorical" | "yn";
+
+const YN_LEVELS: CustomMetricLevel[] = [
+  { label: "No", value: 0 },
+  { label: "Yes", value: 1 },
 ];
+
+function deriveLevelRangeDisplay(
+  levels: CustomMetricLevel[],
+): { top: string; bottom: string } {
+  const values = levels
+    .map((l) => l.value)
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (values.length === 0) {
+    return { top: "", bottom: "" };
+  }
+  return {
+    top: String(Math.max(...values)),
+    bottom: String(Math.min(...values)),
+  };
+}
+
+function sameLevelValues(
+  a: CustomMetricLevel[] | undefined,
+  b: CustomMetricLevel[] | undefined,
+): boolean {
+  const sortedFiniteValues = (lvls: CustomMetricLevel[] | undefined): number[] =>
+    (lvls ?? [])
+      .map((l) => l.value)
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v))
+      .sort((x, y) => x - y);
+  const ax = sortedFiniteValues(a);
+  const bx = sortedFiniteValues(b);
+  if (ax.length !== bx.length) return false;
+  return ax.every((v, i) => v === bx[i]);
+}
+
+function inferTopLevel(def: CustomMetricDef): TopLevelKind {
+  if (def.primitive === "numeric") return "numeric";
+  const lvls = def.levels;
+  if (
+    lvls &&
+    lvls.length === 2 &&
+    lvls[0].label === "No" &&
+    lvls[0].value === 0 &&
+    lvls[1].label === "Yes" &&
+    lvls[1].value === 1
+  ) {
+    return "yn";
+  }
+  return "categorical";
+}
+
+function buildPayload(
+  draft: DraftState,
+  trimmedName: string,
+  trimmedRef: string,
+  type: CustomMetricType,
+): Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt"> {
+  const avgDecimals = Number(draft.avgDecimals);
+  if (
+    !Number.isInteger(avgDecimals) ||
+    avgDecimals < 0 ||
+    avgDecimals > 100
+  ) {
+    throw new Error("Decimals must be an integer between 0 and 100.");
+  }
+
+  if (draft.topLevel === "numeric") {
+    const goalRaw = Number(draft.goalRaw);
+    const yTopRaw = Number(draft.yTopRaw);
+    const yBottomRaw = Number(draft.yBottomRaw);
+    if ([goalRaw, yTopRaw, yBottomRaw].some((v) => !Number.isFinite(v))) {
+      throw new Error("Goal, y-axis top, and y-axis bottom must be finite.");
+    }
+    if (yBottomRaw >= yTopRaw) {
+      throw new Error("Y-axis top must be greater than y-axis bottom.");
+    }
+    return {
+      name: trimmedName,
+      metricType: type,
+      primitive: "numeric",
+      inputType: "numeric",
+      unit: draft.unit.trim(),
+      goalRaw,
+      yTopRaw,
+      yBottomRaw,
+      avgDecimals,
+      referenceUrl: trimmedRef,
+    };
+  }
+
+  // Categorical / Y/N share an ordinal shape.
+  const levels = draft.topLevel === "yn" ? YN_LEVELS : draft.levels;
+  if (levels.some((l) => !l.label.trim())) {
+    throw new Error("Each level needs a label.");
+  }
+  if (levels.some((l) => l.value === undefined || !Number.isFinite(l.value))) {
+    throw new Error("Each level needs a numeric value.");
+  }
+  if (levels.length < 2) {
+    throw new Error("Categorical metrics need at least two levels.");
+  }
+  const values = levels.map((l) => l.value as number);
+  if (new Set(values).size !== values.length) {
+    throw new Error("Level values must be unique.");
+  }
+  const yTopRaw = Math.max(...values);
+  const yBottomRaw = Math.min(...values);
+
+  return {
+    name: trimmedName,
+    metricType: type,
+    primitive: "ordinal",
+    inputType: "radio",
+    levels: levels.map((l) => {
+      const out: CustomMetricLevel = { label: l.label.trim(), value: l.value };
+      if (l.color) out.color = l.color;
+      return out;
+    }),
+    avgDecimals,
+    // For Y/N: goal is greyed and omitted. For Categorical: goal is editable
+    // and meaningful. Empty string defaults to 0; anything that parses to
+    // a non-finite number (NaN, Infinity from `1e500`) is rejected
+    // explicitly so it can't leak through `|| 0` short-circuit logic and
+    // corrupt chart scaling/formatting downstream.
+    ...(draft.topLevel === "yn" ? {} : { goalRaw: parseCategoricalGoal(draft.goalRaw) }),
+    yTopRaw,
+    yBottomRaw,
+    referenceUrl: trimmedRef,
+  };
+}
+
+function parseCategoricalGoal(raw: string): number {
+  if (raw.trim() === "") return 0;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    throw new Error("Goal must be a finite number.");
+  }
+  return n;
+}
 
 function isValidType(t: string | undefined): t is CustomMetricType {
   return t === "health" || t === "competition";
 }
 
 interface DraftState {
+  topLevel: TopLevelKind;
   name: string;
   inputType: CustomMetricInputType;
   unit: string;
@@ -39,9 +175,11 @@ interface DraftState {
   yBottomRaw: string;
   avgDecimals: string;
   referenceUrl: string;
+  levels: CustomMetricLevel[];
 }
 
 const EMPTY_DRAFT: DraftState = {
+  topLevel: "numeric",
   name: "",
   inputType: "numeric",
   unit: "",
@@ -50,6 +188,7 @@ const EMPTY_DRAFT: DraftState = {
   yBottomRaw: "0",
   avgDecimals: "1",
   referenceUrl: "",
+  levels: [],
 };
 
 // Outer gate. Resolves the route's :type and :metricId, waits for the
@@ -120,33 +259,62 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
 
   const [draft, setDraft] = useState<DraftState>(() => {
     if (!editing) return EMPTY_DRAFT;
-    // INPUT_TYPE_OPTIONS currently lists only "numeric"; if a stored
-    // metric carries an inputType the form doesn't support (e.g. a
-    // legacy "radio" doc written before the option was hidden, or via
-    // an external Firestore tool), the <select> would render with no
-    // matching <option>. Default the draft to "numeric" in that case
-    // so the UI is usable; saving silently migrates the stored value
-    // to numeric.
-    const supportedInputType = INPUT_TYPE_OPTIONS.some(
-      (o) => o.value === editing.inputType,
-    )
-      ? editing.inputType
-      : "numeric";
+    const topLevel = inferTopLevel(editing);
     return {
+      topLevel,
       name: editing.name,
-      inputType: supportedInputType,
-      unit: editing.unit,
-      goalRaw: String(editing.goalRaw),
-      yTopRaw: String(editing.yTopRaw),
-      yBottomRaw: String(editing.yBottomRaw),
-      avgDecimals: String(editing.avgDecimals),
+      inputType: editing.inputType,
+      unit: editing.unit ?? "",
+      goalRaw: String(editing.goalRaw ?? 0),
+      yTopRaw: String(editing.yTopRaw ?? 0),
+      yBottomRaw: String(editing.yBottomRaw ?? 0),
+      avgDecimals: String(editing.avgDecimals ?? 1),
       // ?? "" so docs written before referenceUrl was added (or by an
       // external tool that omitted the field) don't crash the controlled
       // input on undefined.
       referenceUrl: editing.referenceUrl ?? "",
+      // Y/N opens with an empty draft.levels: the editor + buildPayload
+      // both substitute YN_LEVELS for that case, so storing the canonical
+      // pair in draft.levels would just be dead state — and would muddy a
+      // future Categorical detour by carrying the Y/N rows into the
+      // editable table.
+      levels: topLevel === "yn" ? [] : (editing.levels ?? []),
     };
   });
   const [error, setError] = useState<string | null>(null);
+
+  function switchTopLevel(next: TopLevelKind) {
+    setDraft((prev) => {
+      if (next === "numeric") {
+        return { ...prev, topLevel: next, inputType: "numeric", levels: [] };
+      }
+      if (next === "yn") {
+        // Y/N is a constant preset, not a user-edited state. Leave
+        // prev.levels alone so a user who was mid-edit on Categorical
+        // can tab back without their rows being overwritten. The
+        // levels editor render and buildPayload both substitute
+        // YN_LEVELS for Y/N regardless of what's in draft.levels.
+        //
+        // Reset avgDecimals to the canonical default so a value the
+        // user set in Numeric mode doesn't silently persist into a
+        // Y/N save (the decimals field is greyed in Y/N, so any
+        // residual value would feel like a hidden-state bug).
+        return { ...prev, topLevel: next, inputType: "radio", avgDecimals: "1" };
+      }
+      // Categorical: preserve existing rows when the user is toggling
+      // back from Y/N or returning to a partially-edited table. Seed two
+      // empty rows on first entry so the table isn't a bare header — the
+      // minimum the form accepts on submit is two levels.
+      const levels =
+        prev.levels.length > 0
+          ? prev.levels
+          : [
+              { label: "", value: undefined },
+              { label: "", value: undefined },
+            ];
+      return { ...prev, topLevel: next, inputType: "radio", levels };
+    });
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -157,33 +325,6 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     }
     if (trimmed.length > NAME_MAX) {
       setError(`Name must be ${NAME_MAX} characters or fewer.`);
-      return;
-    }
-    const goalRaw = Number(draft.goalRaw);
-    const yTopRaw = Number(draft.yTopRaw);
-    const yBottomRaw = Number(draft.yBottomRaw);
-    const avgDecimals = Number(draft.avgDecimals);
-    // !Number.isFinite rejects NaN, +Infinity, and -Infinity. Plain
-    // Number.isNaN would accept Infinity (e.g. typing 1e500 into the
-    // numeric input parses to Infinity), which would corrupt chart
-    // scaling once persisted.
-    if ([goalRaw, yTopRaw, yBottomRaw, avgDecimals].some((v) => !Number.isFinite(v))) {
-      setError("Goal, y-axis top/bottom, and decimals must be finite numbers.");
-      return;
-    }
-    if (
-      !Number.isInteger(avgDecimals) ||
-      avgDecimals < 0 ||
-      avgDecimals > 100
-    ) {
-      // 100 is the upper bound `Number.prototype.toFixed` accepts —
-      // beyond that it throws RangeError, which would crash chart
-      // formatting for the metric.
-      setError("Decimals must be an integer between 0 and 100.");
-      return;
-    }
-    if (yBottomRaw >= yTopRaw) {
-      setError("Y-axis top must be greater than y-axis bottom.");
       return;
     }
     const referenceUrl = draft.referenceUrl.trim();
@@ -213,11 +354,27 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       }
     }
 
+    let payload: Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">;
+    try {
+      payload = buildPayload(draft, trimmed, referenceUrl, type);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid form.");
+      return;
+    }
+
     try {
       if (editing) {
-        const inputTypeChanged = draft.inputType !== editing.inputType;
-        const unitChanged = draft.unit.trim() !== editing.unit;
-        const dataShapingChanged = inputTypeChanged || unitChanged;
+        const inputTypeChanged = payload.inputType !== editing.inputType;
+        const unitChanged = (payload.unit ?? "") !== (editing.unit ?? "");
+        // Compare ordinal level values by their multiset (sorted), so a
+        // pure row-reorder that keeps the same numeric values doesn't
+        // trip the prompt (entries stored as the numeric corollary keep
+        // their meaning) but a remap or length change does. Labels and
+        // colors are display-only and don't reinterpret stored entries,
+        // so they aren't part of the diff.
+        const levelsChanged = !sameLevelValues(payload.levels, editing.levels);
+        const dataShapingChanged =
+          inputTypeChanged || unitChanged || levelsChanged;
         if (
           dataShapingChanged &&
           hasEntriesForMetric(editing.id, healthEntries, competitionEntries)
@@ -225,6 +382,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           const fields = [
             inputTypeChanged ? "input type" : null,
             unitChanged ? "unit" : null,
+            levelsChanged ? "level values" : null,
           ]
             .filter(Boolean)
             .join(" and ");
@@ -236,28 +394,9 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             return;
           }
         }
-        await updateMetric(editing.id, {
-          name: trimmed,
-          inputType: draft.inputType,
-          unit: draft.unit.trim(),
-          goalRaw,
-          yTopRaw,
-          yBottomRaw,
-          avgDecimals,
-          referenceUrl,
-        });
+        await updateMetric(editing.id, { ...payload });
       } else {
-        const def = await addMetric({
-          name: trimmed,
-          metricType: type,
-          inputType: draft.inputType,
-          unit: draft.unit.trim(),
-          goalRaw,
-          yTopRaw,
-          yBottomRaw,
-          avgDecimals,
-          referenceUrl,
-        });
+        const def = await addMetric(payload);
         // Auto-track the newly created metric. Appending to the existing
         // tracked-ids list places it right after the user's last
         // currently-tracked item — Tracked Data Setup renders trackedIds
@@ -315,8 +454,68 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
+  const unitDisabled = draft.topLevel !== "numeric";
+  const goalDisabled = draft.topLevel === "yn";
+  const yAxisDisabled = draft.topLevel !== "numeric";
+  // Y/N's only possible values are 0 and 1, so the decimals setting
+  // applies to the formatted average display. The form holds it fixed
+  // at the EMPTY_DRAFT default so the user doesn't fiddle with a knob
+  // whose effect is tangential to the Y/N concept.
+  const decimalsDisabled = draft.topLevel === "yn";
+
+  // Y/N is a constant preset that doesn't live in draft.levels (so the
+  // user's Categorical edits survive a Y/N detour). Resolve the
+  // effective levels here so both the y-range derivation and the
+  // editor render see the right shape.
+  const effectiveLevels =
+    draft.topLevel === "yn" ? YN_LEVELS : draft.levels;
+
+  // For ordinal kinds the y-axis is derived from levels at submit-time;
+  // mirror that derivation into the (disabled) display fields so users
+  // see what will actually be saved instead of stale Numeric defaults.
+  // Partial entries (some level values blank) still show the range over
+  // whatever's been filled in; an empty table shows blanks.
+  const yRangeDisplay =
+    draft.topLevel === "numeric"
+      ? { top: draft.yTopRaw, bottom: draft.yBottomRaw }
+      : deriveLevelRangeDisplay(effectiveLevels);
+
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
+      <fieldset className={css.typeChooser}>
+        <legend className={css.typeChooserLegend}>Type</legend>
+        <label className={css.typeOption}>
+          <input
+            type="radio"
+            name="cm-toplevel"
+            value="numeric"
+            checked={draft.topLevel === "numeric"}
+            onChange={() => switchTopLevel("numeric")}
+          />
+          Numeric
+        </label>
+        <label className={css.typeOption}>
+          <input
+            type="radio"
+            name="cm-toplevel"
+            value="categorical"
+            checked={draft.topLevel === "categorical"}
+            onChange={() => switchTopLevel("categorical")}
+          />
+          Categorical
+        </label>
+        <label className={css.typeOption}>
+          <input
+            type="radio"
+            name="cm-toplevel"
+            value="yn"
+            checked={draft.topLevel === "yn"}
+            onChange={() => switchTopLevel("yn")}
+          />
+          Y/N
+        </label>
+      </fieldset>
+
       <TextField
         id="cm-name"
         label="Name"
@@ -325,18 +524,22 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         onChange={(e) => update("name", e.target.value)}
       />
 
-      <SelectField
-        id="cm-type"
-        label="Input type"
-        value={draft.inputType}
-        options={INPUT_TYPE_OPTIONS}
-        onChange={(e) => update("inputType", e.target.value as CustomMetricInputType)}
-      />
+      <If condition={draft.topLevel !== "numeric"}>
+        <div className={css.levelsBlock}>
+          <label className={css.fieldLabel}>Levels</label>
+          <CustomMetricLevelsEditor
+            levels={effectiveLevels}
+            onChange={(next) => update("levels", next)}
+            readOnly={draft.topLevel === "yn"}
+          />
+        </div>
+      </If>
 
       <TextField
         id="cm-unit"
         label="Unit (optional)"
         value={draft.unit}
+        disabled={unitDisabled}
         onChange={(e) => update("unit", e.target.value)}
       />
 
@@ -346,6 +549,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         type="number"
         inputMode="decimal"
         value={draft.goalRaw}
+        disabled={goalDisabled}
         onChange={(e) => update("goalRaw", e.target.value)}
       />
 
@@ -355,7 +559,8 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           label="Y-axis top"
           type="number"
           inputMode="decimal"
-          value={draft.yTopRaw}
+          value={yRangeDisplay.top}
+          disabled={yAxisDisabled}
           onChange={(e) => update("yTopRaw", e.target.value)}
         />
         <TextField
@@ -363,7 +568,8 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           label="Y-axis bottom"
           type="number"
           inputMode="decimal"
-          value={draft.yBottomRaw}
+          value={yRangeDisplay.bottom}
+          disabled={yAxisDisabled}
           onChange={(e) => update("yBottomRaw", e.target.value)}
         />
       </div>
@@ -374,6 +580,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         type="number"
         inputMode="numeric"
         value={draft.avgDecimals}
+        disabled={decimalsDisabled}
         onChange={(e) => update("avgDecimals", e.target.value)}
       />
 

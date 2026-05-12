@@ -215,6 +215,7 @@ describe("HealthLog custom-metric row", () => {
       ownerId: "u1",
       name: "Caffeine Intake",
       metricType: "health",
+      primitive: "numeric",
       inputType: "numeric",
       unit: "mg",
       goalRaw: 200,
@@ -233,6 +234,34 @@ describe("HealthLog custom-metric row", () => {
     renderAt("/health");
     const link = screen.getByRole("link", { name: "Caffeine Intake" });
     expect(link).toHaveAttribute("href", "/health/c_abc1234567");
+  });
+});
+
+describe("HealthLog ordinal custom metric", () => {
+  it("renders an ordinal custom metric as a radio group", () => {
+    const ordinalDef: CustomMetricDef = {
+      id: "c_mood1234567",
+      ownerId: "u1",
+      name: "Mood",
+      metricType: "health",
+      primitive: "ordinal",
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+      levels: [
+        { label: "Low", value: 1 },
+        { label: "High", value: 3 },
+      ],
+    };
+    ctx.customMetrics = [ordinalDef];
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedHealthMetrics: [ordinalDef.id] },
+    };
+    renderAt("/health");
+    expect(screen.getByRole("radio", { name: /^low$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^high$/i })).toBeTruthy();
   });
 });
 

@@ -29,6 +29,7 @@ function makeMetric(
     ownerId: "u1",
     name,
     metricType,
+    primitive: "numeric",
     inputType: "numeric",
     unit: "",
     goalRaw: 0,

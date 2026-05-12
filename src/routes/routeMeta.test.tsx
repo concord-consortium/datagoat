@@ -67,7 +67,7 @@ describe("resolveRouteMeta — custom metric routing", () => {
 
   it("titles the create form at /add-metric/:type/new", () => {
     expect(resolveRouteMeta("/add-metric/health/new")?.title).toBe(
-      "New Health & Performance Metric",
+      "New Health Metric",
     );
     expect(resolveRouteMeta("/add-metric/competition/new")?.title).toBe(
       "New Competition Metric",
@@ -100,7 +100,7 @@ describe("resolveRouteMeta — custom metric routing", () => {
     // be the create-form title, never null, for the literal /new URL.
     const customs = [customDef("new", "Decoy", "health")];
     expect(resolveRouteMeta("/add-metric/health/new", customs)?.title).toBe(
-      "New Health & Performance Metric",
+      "New Health Metric",
     );
   });
 });

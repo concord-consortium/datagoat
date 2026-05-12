@@ -26,7 +26,7 @@ interface MenuItem {
 
 const ITEMS: MenuItem[] = [
   { label: "Dashboard", to: "/dashboard", Icon: HomeIcon },
-  { label: "Health & Performance Log", to: "/health", Icon: CalendarIcon },
+  { label: "Health Log", to: "/health", Icon: CalendarIcon },
   { label: "Performance Log", to: "/performance", Icon: StopwatchIcon },
   { label: "Competition Log", to: "/competition", Icon: StopwatchIcon },
   { label: "Profile", to: "/profile", Icon: ProfilePersonIcon },

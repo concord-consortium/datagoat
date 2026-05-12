@@ -40,7 +40,11 @@ const STATIC: Record<string, RouteMeta> = {
     showHome: false,
   },
   "/health": {
-    title: "Health & Performance Log",
+    title: "Health Log",
+    icon: <CalendarIcon />,
+  },
+  "/performance": {
+    title: "Performance Log",
     icon: <CalendarIcon />,
   },
   "/competition": {
@@ -148,12 +152,15 @@ const PATTERNS: Array<{
     pattern: "/add-metric/:type/new",
     resolve: (params) => {
       const t = params.type;
-      if (t !== "health" && t !== "competition") return null;
+      if (t !== "health" && t !== "performance" && t !== "competition")
+        return null;
       return {
         title:
           t === "health"
-            ? "New Health & Performance Metric"
-            : "New Competition Metric",
+            ? "New Health Metric"
+            : t === "performance"
+              ? "New Performance Metric"
+              : "New Competition Metric",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };
@@ -163,7 +170,8 @@ const PATTERNS: Array<{
     pattern: "/add-metric/:type/:metricId",
     resolve: (params, customs) => {
       const t = params.type;
-      if (t !== "health" && t !== "competition") return null;
+      if (t !== "health" && t !== "performance" && t !== "competition")
+        return null;
       // Cross-type access (e.g. health URL on a competition metric) returns
       // null so the form's <Navigate replace /> redirect to the canonical
       // route happens without rendering a misleading title for one frame.
@@ -182,12 +190,15 @@ const PATTERNS: Array<{
     pattern: "/add-metric/:type",
     resolve: (params) => {
       const t = params.type;
-      if (t !== "health" && t !== "competition") return null;
+      if (t !== "health" && t !== "performance" && t !== "competition")
+        return null;
       return {
         title:
           t === "health"
-            ? "Health & Performance Metrics"
-            : "Competition Metrics",
+            ? "Health Metrics"
+            : t === "performance"
+              ? "Performance Metrics"
+              : "Competition Metrics",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };

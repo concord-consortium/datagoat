@@ -160,12 +160,11 @@ export function HealthLog() {
         {isOnboarding && (
           <div className={css.profileWelcome}>
             <h2 className={css.profileWelcomeTitle}>
-              Your Health & Performance Log
+              Your Health Log
             </h2>
             <p>
-              Record your health & performance metrics here. Logging consistently
-              - even on rest days - helps you and your team spot patterns
-              over time.
+              Record your health metrics here. Logging consistently — even
+              on rest days — helps you and your team spot patterns over time.
             </p>
           </div>
         )}

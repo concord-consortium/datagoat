@@ -180,11 +180,16 @@ describe("customDefToChartConfig", () => {
     }
   });
 
-  it("returns a 0/1 random generator for radio metrics regardless of y-range", () => {
+  it("samples Y/N (ordinal with No=0/Yes=1 levels) only from {0, 1}", () => {
     const def = customDef({
+      primitive: "ordinal",
       inputType: "radio",
-      yTopRaw: 100,
-      yBottomRaw: -50,
+      levels: [
+        { label: "No", value: 0 },
+        { label: "Yes", value: 1 },
+      ],
+      yTopRaw: 1,
+      yBottomRaw: 0,
     });
     const c = customDefToChartConfig(def);
     const rng = mulberry32(0xb6b6b6);
@@ -192,10 +197,38 @@ describe("customDefToChartConfig", () => {
     for (let i = 0; i < 100; i++) {
       values.add(c.random(rng));
     }
-    // Only 0 and 1 should appear.
     for (const v of values) {
       expect(v === 0 || v === 1).toBe(true);
     }
+  });
+
+  it("samples a non-Y/N ordinal (Likert 1..5) only from the defined level values", () => {
+    const def = customDef({
+      primitive: "ordinal",
+      inputType: "radio",
+      levels: [
+        { label: "Strongly Disagree", value: 1 },
+        { label: "Disagree", value: 2 },
+        { label: "Neutral", value: 3 },
+        { label: "Agree", value: 4 },
+        { label: "Strongly Agree", value: 5 },
+      ],
+      yTopRaw: 5,
+      yBottomRaw: 1,
+    });
+    const c = customDefToChartConfig(def);
+    const rng = mulberry32(0xc7c7c7);
+    const allowed = new Set([1, 2, 3, 4, 5]);
+    const seen = new Set<number>();
+    for (let i = 0; i < 500; i++) {
+      const v = c.random(rng);
+      expect(allowed.has(v)).toBe(true);
+      seen.add(v);
+    }
+    // 500 samples across 5 buckets should cover every bucket; the
+    // regression bug (inputType==="radio" => randomInt(0,1)) would
+    // only ever produce 0 or 1, so this size also guards against it.
+    expect(seen.size).toBe(5);
   });
 });
 

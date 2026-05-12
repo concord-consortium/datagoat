@@ -12,7 +12,7 @@
 
 import { useSyncExternalStore } from "react";
 import { randomFloat, randomInt } from "./randomValues";
-import type { CustomMetricDef } from "../types/customMetrics";
+import type { CustomMetricDef, CustomMetricLevel } from "../types/customMetrics";
 
 export interface MetricChartConfig {
   chartType: "bar" | "line";
@@ -285,14 +285,33 @@ export function customDefToChartConfig(
       : formatNumber,
     unit: isPct ? undefined : def.unit || undefined,
     avgDecimals: decimals,
-    // randomFloat (rounded to `decimals`) handles the form's
-    // decimal-allowed y-axis bounds correctly. randomInt would
+    // Numeric customs: randomFloat (rounded to `decimals`) handles the
+    // form's decimal-allowed y-axis bounds correctly. randomInt would
     // mis-bin non-integer ranges (e.g. min=0.2, max=0.8 could yield
-    // 1.2). The radio branch keeps randomInt(0, 1) since values are
-    // strictly 0/1.
+    // 1.2). Ordinal customs (incl. the Y/N preset): sample uniformly
+    // from the defined level values so demo data always lands on a
+    // real category - Y/N picks from {0, 1} naturally, a Likert 1..5
+    // picks from {1,2,3,4,5}.
     random:
-      def.inputType === "radio"
-        ? (rng) => randomInt(rng, 0, 1)
-        : (rng) => randomFloat(rng, yBottomRaw, yTopRaw, decimals),
+      def.primitive === "numeric"
+        ? (rng) => randomFloat(rng, yBottomRaw, yTopRaw, decimals)
+        : (rng) => randomLevelValue(rng, def.levels ?? []),
   };
+}
+
+function randomLevelValue(
+  rng: () => number,
+  levels: CustomMetricLevel[],
+): number {
+  const numeric = levels
+    .map((l) => l.value)
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (numeric.length === 0) {
+    // Defensive: an ordinal custom should always have finite values
+    // (form rejects otherwise), but a malformed doc shouldn't crash
+    // demo rendering. Fall back to the legacy 0/1 sample.
+    return randomInt(rng, 0, 1);
+  }
+  const idx = Math.min(numeric.length - 1, Math.floor(rng() * numeric.length));
+  return numeric[idx];
 }

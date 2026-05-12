@@ -45,6 +45,10 @@ interface TrackedMetricsTableProps {
   onToggleCheck: (id: string, checked: boolean) => void;
   addToHref: string;
   addToLabel: string;
+  // When true, the Add control renders as a non-interactive disabled
+  // affordance instead of a Link. Used for the Performance section
+  // until custom-metric creation supports the performance type.
+  addToComingSoon?: boolean;
 }
 
 export function TrackedMetricsTable({
@@ -57,6 +61,7 @@ export function TrackedMetricsTable({
   onToggleCheck,
   addToHref,
   addToLabel,
+  addToComingSoon = false,
 }: TrackedMetricsTableProps) {
   // Display order: any metric in trackedIds first (in user-chosen order),
   // followed by registry metrics not yet in the tracked list (so the user
@@ -178,10 +183,21 @@ export function TrackedMetricsTable({
           </table>
         </SortableContext>
       </DndContext>
-      <Link to={addToHref} className={css.addMeasurementBtn}>
-        <PlusCircleIcon />
-        {addToLabel}
-      </Link>
+      {addToComingSoon ? (
+        <span
+          className={`${css.addMeasurementBtn} ${css.addMeasurementBtnDisabled}`}
+          aria-disabled="true"
+          title="Coming soon"
+        >
+          <PlusCircleIcon />
+          {addToLabel}
+        </span>
+      ) : (
+        <Link to={addToHref} className={css.addMeasurementBtn}>
+          <PlusCircleIcon />
+          {addToLabel}
+        </Link>
+      )}
     </>
   );
 }

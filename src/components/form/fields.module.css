@@ -84,6 +84,27 @@
   box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
 }
 
+.fieldInput:disabled {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: rgba(84, 104, 136, 0.45);
+  color: var(--subtext);
+  cursor: not-allowed;
+  /* Safari ignores the muted `color` above on disabled inputs unless
+     -webkit-text-fill-color is also set; without this, iOS shows the
+     near-active text color. opacity: 1 prevents Safari's default
+     translucent disabled style from doubling up with our darkening. */
+  -webkit-text-fill-color: var(--subtext);
+  opacity: 1;
+}
+
+.fieldInput:disabled:hover,
+.fieldInput:disabled:focus {
+  /* Cancel the active-state highlights inherited from earlier rules so
+     hovering a disabled field doesn't suggest it's interactable. */
+  border-color: rgba(84, 104, 136, 0.45);
+  box-shadow: none;
+}
+
 .fieldInput.short {
   max-width: 120px;
 }

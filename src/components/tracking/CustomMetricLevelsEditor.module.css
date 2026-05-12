@@ -38,6 +38,19 @@
   background: #ffffff;
 }
 
+.table input[type="text"]:disabled,
+.table input[type="number"]:disabled {
+  background: #f0f3f6;
+  border-color: #e1e5ea;
+  color: #888;
+  cursor: not-allowed;
+  /* Override Safari's subtle disabled-input tinting to match the
+     muted background above; without this the field still looks
+     near-active on iOS. */
+  -webkit-text-fill-color: #888;
+  opacity: 1;
+}
+
 .table input[type="color"] {
   width: 2rem;
   height: 2rem;
@@ -46,6 +59,11 @@
   border-radius: 4px;
   background: none;
   cursor: pointer;
+}
+
+.table input[type="color"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .removeBtn {

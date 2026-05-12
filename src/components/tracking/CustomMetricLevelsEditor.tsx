@@ -42,6 +42,12 @@ export function CustomMetricLevelsEditor({ levels, onChange, readOnly }: Props) 
         </thead>
         <tbody>
           {levels.map((level, idx) => (
+            // TODO (DGT-50 follow-up): index-as-key means removing a
+            // middle row re-keys the rows below it, so the DOM nodes
+            // get reused for different logical rows. Fine for the
+            // demo flow (delete typically from the end of the table),
+            // but a future pass should wire stable per-row UIDs into
+            // CustomMetricForm's draft state.
             <tr key={idx}>
               <td className={css.rowNum}>{idx + 1}</td>
               <td>
@@ -60,6 +66,15 @@ export function CustomMetricLevelsEditor({ levels, onChange, readOnly }: Props) 
                 <label className={css.visuallyHidden} htmlFor={`lvl-value-${idx}`}>
                   Value for row {idx + 1}
                 </label>
+                {/*
+                  TODO (DGT-50 follow-up): `Number(v)` on every keystroke
+                  drops intermediate states like "-" or "1." to NaN, which
+                  then renders back as "NaN" and blocks negative-value or
+                  fractional entry. Fine for the demo's positive-integer
+                  use cases (Y/N, Likert 1..5, hydration 1..8); a future
+                  pass should keep the raw string in editor-local state
+                  and parse only at submit time.
+                */}
                 <input
                   id={`lvl-value-${idx}`}
                   type="number"

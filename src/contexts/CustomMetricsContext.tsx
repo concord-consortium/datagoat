@@ -128,11 +128,15 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
     metricType: data.metricType === "competition" ? "competition" : "health",
     primitive: readPrimitive(data.primitive),
     inputType: data.inputType === "radio" ? "radio" : "numeric",
-    unit: data.unit === undefined ? undefined : String(data.unit),
-    goalRaw: data.goalRaw === undefined ? undefined : Number(data.goalRaw),
-    yTopRaw: data.yTopRaw === undefined ? undefined : Number(data.yTopRaw),
-    yBottomRaw: data.yBottomRaw === undefined ? undefined : Number(data.yBottomRaw),
-    avgDecimals: data.avgDecimals === undefined ? undefined : Number(data.avgDecimals),
+    // `== null` (loose) so a Firestore `null` is treated the same as
+    // an absent field. Strict `=== undefined` here would let
+    // `String(null)` surface as the literal `"null"` in the UI and
+    // `Number(null) === 0` mask a stale-zero in numeric fields.
+    unit: data.unit == null ? undefined : String(data.unit),
+    goalRaw: data.goalRaw == null ? undefined : Number(data.goalRaw),
+    yTopRaw: data.yTopRaw == null ? undefined : Number(data.yTopRaw),
+    yBottomRaw: data.yBottomRaw == null ? undefined : Number(data.yBottomRaw),
+    avgDecimals: data.avgDecimals == null ? undefined : Number(data.avgDecimals),
     levels: readLevels(data.levels),
     referenceUrl: String(data.referenceUrl ?? ""),
     createdAt: tsToMillis(data.createdAt),

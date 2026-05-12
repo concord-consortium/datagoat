@@ -23,11 +23,15 @@ export function OrdinalRadioGroup({
       role="radiogroup"
       aria-labelledby={labelledBy}
     >
-      {levels.map((level) => {
+      {levels.map((level, idx) => {
         if (level.value === undefined) return null;
         const checked = value === level.value;
+        // Key includes idx so a malformed doc with duplicate level
+        // values still gets unique React keys; the form rejects
+        // duplicates on write but the read boundary doesn't enforce
+        // it, so this defends against externally-written docs.
         return (
-          <label key={level.value} className={css.ordinalOption}>
+          <label key={`${idx}-${level.value}`} className={css.ordinalOption}>
             <input
               type="radio"
               name={groupName}

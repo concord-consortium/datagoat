@@ -408,14 +408,17 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     expect(payload.unit).toBeUndefined();
   });
 
+  // Picking Categorical seeds two empty rows, so most of these tests
+  // start from a 2-row baseline and either fill those rows or click
+  // "Add row" to extend.
   it("derives yTop/yBottom from levels' min/max when Categorical is chosen", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
     await user.type(screen.getByLabelText(/^name$/i), "Mood");
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
-    await user.click(screen.getByRole("button", { name: /add row/i }));
-    await user.click(screen.getByRole("button", { name: /add row/i }));
+    // Two seeded rows + one Add row click → three rows, matching the
+    // Low/Mid/High shape this test exercises.
     await user.click(screen.getByRole("button", { name: /add row/i }));
     const labels = screen.getAllByLabelText(/^label/i);
     const values = screen.getAllByLabelText(/^value/i);
@@ -444,9 +447,13 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     renderCreateForm("health");
     await user.type(screen.getByLabelText(/^name$/i), "Bad");
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
-    await user.click(screen.getByRole("button", { name: /add row/i }));
+    // Both seeded rows get labels so the label check passes, then
+    // leave row 1's value blank so the value check fires.
     const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
     await user.type(labels[0], "Solo");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "Duo");
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/each level needs a numeric value/i)).toBeTruthy();
     expect(mockedSetDoc).not.toHaveBeenCalled();
@@ -458,6 +465,17 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     renderCreateForm("health");
     await user.type(screen.getByLabelText(/^name$/i), "Tiny");
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Remove both seeded rows so the count check fires on submit.
+    // findAllByRole because the buttons appear after a state change.
+    const removeButtons = await screen.findAllByRole("button", {
+      name: /remove row/i,
+    });
+    expect(removeButtons).toHaveLength(2);
+    await user.click(removeButtons[0]);
+    // After the first click, the array re-indexes - find the new
+    // remove button rather than reusing the stale reference.
+    const remaining = screen.getAllByRole("button", { name: /remove row/i });
+    await user.click(remaining[0]);
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByText(/at least two levels/i)).toBeTruthy();
     expect(mockedSetDoc).not.toHaveBeenCalled();
@@ -469,8 +487,7 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     renderCreateForm("health");
     await user.type(screen.getByLabelText(/^name$/i), "Dup");
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
-    await user.click(screen.getByRole("button", { name: /add row/i }));
-    await user.click(screen.getByRole("button", { name: /add row/i }));
+    // Two seeded rows are exactly right for the dup test.
     const labels = screen.getAllByLabelText(/^label/i);
     const values = screen.getAllByLabelText(/^value/i);
     await user.type(labels[0], "A");

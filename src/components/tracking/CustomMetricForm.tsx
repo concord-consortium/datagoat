@@ -245,7 +245,18 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       if (next === "yn") {
         return { ...prev, topLevel: next, inputType: "radio", levels: YN_LEVELS };
       }
-      return { ...prev, topLevel: next, inputType: "radio", levels: prev.levels };
+      // Categorical: preserve existing rows when the user is toggling
+      // back from Y/N or returning to a partially-edited table. Seed two
+      // empty rows on first entry so the table isn't a bare header — the
+      // minimum the form accepts on submit is two levels.
+      const levels =
+        prev.levels.length > 0
+          ? prev.levels
+          : [
+              { label: "", value: undefined },
+              { label: "", value: undefined },
+            ];
+      return { ...prev, topLevel: next, inputType: "radio", levels };
     });
   }
 

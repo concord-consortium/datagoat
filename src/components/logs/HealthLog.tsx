@@ -252,6 +252,13 @@ export function HealthLog() {
                     />
                   );
                 }
+                // Nominal customs are schema-reserved but not yet
+                // exposed in the form. If a doc with primitive
+                // "nominal" surfaces (externally written), don't fall
+                // through to the numeric input - that would let users
+                // log a number against a label-valued metric and
+                // corrupt the entry shape. Skip the row.
+                if (def.primitive === "nominal") return null;
                 const live = currentEntry.customMetrics?.[id];
                 // Finite numbers (incl. 0 and negatives for customs
                 // with yBottomRaw < 0) render verbatim. A missing key

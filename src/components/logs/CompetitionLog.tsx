@@ -193,6 +193,13 @@ export function CompetitionLog() {
                           />
                         );
                       }
+                      // Nominal customs are schema-reserved but not yet
+                      // exposed in the form. If a doc with primitive
+                      // "nominal" surfaces (externally written), don't
+                      // fall through to the numeric input - render an
+                      // empty cell so users can't log a number against
+                      // a label-valued metric.
+                      if (customDef?.primitive === "nominal") return null;
                       return (
                         <CompetitionMetricInput
                           metricId={metric.id}

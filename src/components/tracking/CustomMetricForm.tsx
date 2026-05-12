@@ -279,7 +279,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         // can tab back without their rows being overwritten. The
         // levels editor render and buildPayload both substitute
         // YN_LEVELS for Y/N regardless of what's in draft.levels.
-        return { ...prev, topLevel: next, inputType: "radio" };
+        //
+        // Reset avgDecimals to the canonical default so a value the
+        // user set in Numeric mode doesn't silently persist into a
+        // Y/N save (the decimals field is greyed in Y/N, so any
+        // residual value would feel like a hidden-state bug).
+        return { ...prev, topLevel: next, inputType: "radio", avgDecimals: "1" };
       }
       // Categorical: preserve existing rows when the user is toggling
       // back from Y/N or returning to a partially-edited table. Seed two

@@ -232,6 +232,26 @@ export function HealthLog() {
               }
               const def = customById.get(id);
               if (def) {
+                if (def.primitive === "ordinal" && def.levels) {
+                  const live = currentEntry.customMetrics?.[id];
+                  const ordinalValue =
+                    typeof live === "number" && Number.isFinite(live)
+                      ? live
+                      : undefined;
+                  return (
+                    <MetricInputRow
+                      key={id}
+                      inputType="ordinal"
+                      metric={adaptCustom(def)}
+                      levels={def.levels}
+                      value={ordinalValue}
+                      onChange={(next) => {
+                        setCustomMetric(id, String(next));
+                      }}
+                      detailHref={`/health/${id}`}
+                    />
+                  );
+                }
                 const live = currentEntry.customMetrics?.[id];
                 // Finite numbers (incl. 0 and negatives for customs
                 // with yBottomRaw < 0) render verbatim. A missing key

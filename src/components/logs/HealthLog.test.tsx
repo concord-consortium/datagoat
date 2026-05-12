@@ -237,6 +237,34 @@ describe("HealthLog custom-metric row", () => {
   });
 });
 
+describe("HealthLog ordinal custom metric", () => {
+  it("renders an ordinal custom metric as a radio group", () => {
+    const ordinalDef: CustomMetricDef = {
+      id: "c_mood1234567",
+      ownerId: "u1",
+      name: "Mood",
+      metricType: "health",
+      primitive: "ordinal",
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+      levels: [
+        { label: "Low", value: 1 },
+        { label: "High", value: 3 },
+      ],
+    };
+    ctx.customMetrics = [ordinalDef];
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedHealthMetrics: [ordinalDef.id] },
+    };
+    renderAt("/health");
+    expect(screen.getByRole("radio", { name: /^low$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^high$/i })).toBeTruthy();
+  });
+});
+
 describe("HealthLog chip reactivity to tracked-metric changes", () => {
   it("chip recomputes when trackedHealthMetrics changes via UserContext", () => {
     // Tracking only hydration, with hydration filled in the entry -> "all".

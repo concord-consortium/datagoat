@@ -136,17 +136,3 @@
     transform: none;
   }
 }
-
-.ordinalGroup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.ordinalOption {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 1rem;
-  cursor: pointer;
-}

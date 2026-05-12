@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
 import type { DataLoadState, CompetitionEntry } from "../../types/data";
+import type { CustomMetricDef } from "../../types/customMetrics";
 import {
   firestoreMockFactory,
   latestSub,
@@ -45,6 +46,7 @@ const ctx = vi.hoisted(() => ({
     entries: [],
   } as DataLoadState<CompetitionEntry>,
   setCompetitionEntryMock: vi.fn() as (...args: unknown[]) => void,
+  customMetrics: [] as CustomMetricDef[],
   useLightweightMocks: true,
 }));
 
@@ -83,6 +85,18 @@ vi.mock("../../contexts/DataContext", async () => {
     },
   };
 });
+
+vi.mock("../../contexts/CustomMetricsContext", () => ({
+  useCustomMetrics: () => ({
+    metrics: ctx.customMetrics,
+    loading: false,
+    addMetric: vi.fn(),
+    updateMetric: vi.fn(),
+    deleteMetric: vi.fn(),
+    getMetric: (id: string) =>
+      ctx.customMetrics.find((m) => m.id === id),
+  }),
+}));
 
 vi.mock("firebase/firestore", () => firestoreMockFactory(state));
 vi.mock("../../firebase", () => ({ db: {} }));
@@ -134,6 +148,7 @@ beforeEach(() => {
   ctx.user = { uid: "u1" };
   ctx.loadState = { status: "loaded", profile: PROFILE };
   ctx.competition = { status: "loaded", entries: [] };
+  ctx.customMetrics = [];
   resetFirestoreState(state);
 });
 
@@ -166,6 +181,37 @@ describe("CompetitionLog route + redirect", () => {
       { metrics: { assists: 2 } },
     );
     expect(ctx.setCompetitionEntryMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("CompetitionLog ordinal custom metric", () => {
+  it("renders an ordinal competition custom metric as a radio group", () => {
+    const ordinalDef: CustomMetricDef = {
+      id: "c_perf1234567",
+      ownerId: "u1",
+      name: "Performance",
+      metricType: "competition",
+      primitive: "ordinal",
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+      levels: [
+        { label: "Poor", value: 1 },
+        { label: "Great", value: 5 },
+      ],
+    };
+    ctx.customMetrics = [ordinalDef];
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedCompetitionMetrics: [ordinalDef.id],
+      },
+    };
+    renderAt("/competition");
+    expect(screen.getByRole("radio", { name: /^poor$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^great$/i })).toBeTruthy();
   });
 });
 

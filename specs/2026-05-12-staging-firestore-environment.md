@@ -169,8 +169,8 @@ Final `scripts` block in `package.json`:
   "build:production": "tsc -b && vite build --mode production",
   "preview": "vite preview",
   "emulators": "firebase emulators:start --only auth,firestore,hosting,functions --project=demo-datagoat --import=./firebase-data --export-on-exit",
-  "deploy:staging": "npm run build:staging && firebase deploy --only hosting,functions,firestore:rules -P staging",
-  "deploy:production": "npm run build:production && firebase deploy --only hosting,functions,firestore:rules -P production",
+  "deploy:staging": "npm run build:staging && firebase deploy --only hosting,functions,firestore -P staging",
+  "deploy:production": "npm run build:production && firebase deploy --only hosting,functions,firestore -P production",
   "deploy:staging:hosting": "npm run build:staging && firebase deploy --only hosting -P staging",
   "deploy:production:hosting": "npm run build:production && firebase deploy --only hosting -P production",
   "deploy:staging:functions": "firebase deploy --only functions -P staging",
@@ -189,7 +189,7 @@ Key design choices:
 - **`build` is kept as an alias for `build:production`.** Bundle-size reports, the README, and any external tooling already reference `npm run build`; keeping it functional avoids a wide doc sweep. The alias means `build` is always production, so it's predictable.
 - **No unsuffixed `deploy` / `deploy:hosting` / `deploy:functions` aliases.** Production deploys must be typed explicitly as `deploy:production`. Mild muscle-memory retraining, big safety win: no one ships to prod by reflex.
 - **`deploy:preview` builds with `--mode staging` and deploys to `-P staging`.** Preview channels live on staging, so they share staging's auth and Firestore — safe for sharing with stakeholders.
-- **`deploy:staging` includes `firestore:rules`** so rule changes are deployed alongside hosting + functions for that environment. Same for `deploy:production`.
+- **`deploy:staging` includes `firestore`** so both rules and indexes ship alongside hosting + functions. The pre-existing `deploy` script in `package.json` uses `firestore:rules` (rules only), which matches the current empty `firestore.indexes.json` but would silently drop composite indexes once any are added. Using the bare `firestore` token here future-proofs the deploy. Same for `deploy:production`.
 
 ---
 
@@ -310,7 +310,7 @@ None blocking. A couple of small decisions to confirm during execution:
 | OAuth credentials misconfigured on staging, sign-in silently broken | Validation step 11 exercises all three providers before declaring done. |
 | Identity Platform upgrade forgotten on staging, `deploy:staging:functions` fails | Documented in Phase 0 step 3 and CLAUDE.md edits. First failure is loud and actionable. |
 | Source-of-truth var renamed by a future contributor with `VITE_` prefix added back, leaking both project IDs into every bundle | Validation step 1 grep catches it. Phase 1b comment in `.env.example` explains why the prefix is omitted. |
-| `default: staging` in `.firebaserc` masks a production-intended `firebase deploy` typo, deploying nothing to prod when intended | Acceptable. The npm scripts always pass `-P` explicitly. The default only fires on ad-hoc CLI use, where "no-op when -P missing" is safer than "ship to prod silently". |
+| `default: datagoat-staging` in `.firebaserc` masks a production-intended `firebase deploy` typo, deploying to staging when prod was intended | Acceptable. The npm scripts always pass `-P` explicitly. The default only fires on ad-hoc CLI use, where deploying to staging is safer than the alternative of silently shipping to prod. |
 | `.env.cloud` deletion breaks an in-flight worktree on someone's machine | Low — the file is currently only referenced by the now-removed `dev:cloud` script. A pre-deletion grep confirms no other references. |
 | Existing CODAP test references `datagoat-production` literal that future readers think is real | Phase 3 fixes the fixture string. |
 

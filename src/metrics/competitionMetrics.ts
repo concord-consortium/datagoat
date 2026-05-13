@@ -21,17 +21,20 @@ export const COMPETITION_METRICS: MetricDefinition[] = [
   {
     id: "winningPercentage",
     name: "Winning Percentage",
-    unit: "%",
+    // Per-competition input is Win or Loss; the percentage is
+    // derived in the Total cell. unit / min / max are intentionally
+    // omitted to keep MetricDetail's Estimated Range honest about
+    // the stored shape.
+    unit: "",
     type: "competition",
     whoCollects: "Self",
     howCollected: "Tap Win or Loss after each competition.",
     description:
       "Percentage of competitions won. Logged per competition as Win or Loss; the percentage is derived across the time window.",
-    min: 0,
-    max: 1,
     inputType: "ordinal",
     levels: WIN_LOSS_LEVELS,
     Icon: TrophyIcon,
+    estimatedRange: "Win or Loss per competition",
   },
   {
     id: "scores",

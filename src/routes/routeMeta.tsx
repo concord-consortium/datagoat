@@ -47,7 +47,7 @@ const STATIC: Record<string, RouteMeta> = {
   },
   "/performance": {
     title: "Performance Log",
-    icon: <CalendarIcon />,
+    icon: <StopwatchIcon />,
   },
   "/competition": {
     title: "Competition Log",
@@ -130,7 +130,7 @@ const PATTERNS: Array<{
       if (m) {
         return {
           title: m.name,
-          icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
+          icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
           backTo: "/performance",
         };
       }

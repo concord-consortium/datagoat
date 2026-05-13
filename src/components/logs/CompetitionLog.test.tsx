@@ -27,8 +27,7 @@ const PROFILE: UserProfile = {
   competitionTerm: "game",
   trackedHealthMetrics: [],
   trackedCompetitionMetrics: [
-    "wins",
-    "losses",
+    "winningPercentage",
     "scores",
     "times",
     "goals",

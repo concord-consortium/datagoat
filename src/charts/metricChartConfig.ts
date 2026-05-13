@@ -150,6 +150,7 @@ const MOOD: MetricChartConfig = {
 function competitionConfig(
   yBottomRaw: number,
   yTopRaw: number,
+  unit?: string,
 ): MetricChartConfig {
   return {
     chartType: "bar",
@@ -157,6 +158,7 @@ function competitionConfig(
     yBottomRaw,
     // No goalRaw — competition goals haven't been content-defined.
     formatValue: fmtRaw,
+    unit,
     random: (rng) => randomInt(rng, yBottomRaw, yTopRaw),
   };
 }
@@ -188,7 +190,7 @@ const CONFIG: Record<string, MetricChartConfig> = {
   yards: competitionConfig(0, 200),
   tackles: competitionConfig(0, 10),
   scores: competitionConfig(0, 100),
-  times: competitionConfig(0, 60),
+  times: competitionConfig(0, 60, "min"),
 };
 
 const DEFAULT_CONFIG: MetricChartConfig = {

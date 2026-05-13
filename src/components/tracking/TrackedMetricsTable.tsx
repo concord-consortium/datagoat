@@ -184,14 +184,20 @@ export function TrackedMetricsTable({
         </SortableContext>
       </DndContext>
       {addToComingSoon ? (
-        <span
+        // Real <button disabled> so SR/keyboard users perceive the
+        // "coming soon" affordance as a disabled control. A <span>
+        // with aria-disabled has no semantic effect; the button
+        // semantics make the state announced and unfocusable for
+        // free.
+        <button
+          type="button"
+          disabled
           className={`${css.addMeasurementBtn} ${css.addMeasurementBtnDisabled}`}
-          aria-disabled="true"
           title="Coming soon"
         >
           <PlusCircleIcon />
           {addToLabel}
-        </span>
+        </button>
       ) : (
         <Link to={addToHref} className={css.addMeasurementBtn}>
           <PlusCircleIcon />

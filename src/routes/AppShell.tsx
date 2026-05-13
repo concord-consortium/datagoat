@@ -112,6 +112,18 @@ function AppShellInner() {
     document.title = docTitle ? `${docTitle} | DataGOAT` : "DataGOAT";
   }, [docTitle]);
 
+  // Reset the scroll container to the top on route change. <main> is
+  // the only scroll container (the column header sits outside <main>
+  // and stays pinned), so without this a navigation from the bottom
+  // of one page lands the next page already scrolled to the bottom —
+  // most visible in the "Go To Dashboard" handoff at the bottom of
+  // /setup/tracking, where the Dashboard's chart cards were rendering
+  // off-screen on first paint.
+  useEffect(() => {
+    const main = mainRef.current;
+    if (main) main.scrollTop = 0;
+  }, [pathname]);
+
   // Document focusin auto-scroll behavior (port of prototype HTML around
   // line 5460). Compute the element's position relative to <main> and the
   // current sticky-chrome offset (DateNav, ~50px when pinned) up front,

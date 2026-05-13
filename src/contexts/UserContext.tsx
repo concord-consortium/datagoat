@@ -25,7 +25,7 @@ export interface UserContextValue {
   // single field to the existing profile doc; throws if no profile exists
   // (caller is expected to gate on loadState).
   setTrackedMetrics: (
-    type: "health" | "competition",
+    type: "health" | "performance" | "competition",
     ids: string[],
   ) => Promise<void>;
   // Re-subscribe to the profile snapshot. Used by the retry UI rendered
@@ -111,7 +111,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         await setDoc(ref, next, { merge: true });
       },
       async setTrackedMetrics(
-        type: "health" | "competition",
+        type: "health" | "performance" | "competition",
         ids: string[],
       ) {
         if (!user)
@@ -120,7 +120,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const field =
           type === "health"
             ? "trackedHealthMetrics"
-            : "trackedCompetitionMetrics";
+            : type === "performance"
+              ? "trackedPerformanceMetrics"
+              : "trackedCompetitionMetrics";
         try {
           await updateDoc(ref, { [field]: ids });
         } catch (err) {

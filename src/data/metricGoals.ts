@@ -11,6 +11,16 @@
 // MetricDetail renders the placeholder verbatim.
 
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
+import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
+
+// Set of all performance-section metric ids. resolveGoalText returns
+// a 🚧 placeholder for these so MetricDetail's "Your goal" section
+// makes the missing per-gender × athlete-type goals visible rather
+// than silently omitting the section.
+const PERFORMANCE_IDS = new Set(
+  [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE].map((m) => m.id),
+);
 
 // metric.id -> static goal text (no profile dependency)
 const STATIC_GOALS: Record<string, string> = {
@@ -18,6 +28,7 @@ const STATIC_GOALS: Record<string, string> = {
   sleepTime: "to get 7-9 hours of sleep every night",
   availability:
     "to be available for more than 80% of your practices and {compTermPlural}",
+  mood: "to rate your mood at 4 or higher on most days",
 };
 
 // metric.id -> profile-keyed goal text. Only the four built-in
@@ -74,6 +85,12 @@ export function resolveGoalText(
   const profileMap = PROFILE_GOALS[metricId];
   if (profileMap) {
     return profileMap[profileKey] ?? "[n]";
+  }
+  if (PERFORMANCE_IDS.has(metricId)) {
+    // Per-gender × athlete-type goals for Performance metrics are
+    // defined in the DGT-51 design source but not yet wired through.
+    // Make the gap visible at the MetricDetail page.
+    return "🚧 Personalized goal coming soon";
   }
   return null;
 }

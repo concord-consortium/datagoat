@@ -1,14 +1,17 @@
 import { useMemo } from "react";
 import {
+  Link,
   Navigate,
   useSearchParams,
 } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { MetricInputRow } from "./MetricInputRow";
+import rowCss from "./MetricInputRow.module.css";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
+import { ADDABLE_HEALTH } from "../../metrics/addableMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import {
@@ -21,12 +24,19 @@ import { getChipState } from "../../utils/healthCompleteness";
 import { emptyHealthEntry, type HealthEntry } from "../../types/data";
 import css from "./HealthLog.module.css";
 
-// Built-in health metrics indexed by id. Hoisted to module scope so
-// the lookup map is constant across renders without needing a hook —
-// the component early-returns on bad ?date= params, and a useMemo
-// declared after that return would violate the Rules of Hooks.
+// All built-in health metric definitions (default-on + addable),
+// indexed by id. Hoisted to module scope so the lookup map is
+// constant across renders without needing a hook — the component
+// early-returns on bad ?date= params, and a useMemo declared after
+// that return would violate the Rules of Hooks.
+//
+// Including ADDABLE_HEALTH here means a user who opts into an
+// addable (e.g., Pain) via TrackedDataSetup can resolve its
+// MetricDefinition for rendering. Default-on vs default-off is a
+// property of the tracked-id list (HEALTH_METRICS by default), not
+// the lookup map.
 const BUILT_IN_BY_ID = new Map<string, MetricDefinition>(
-  HEALTH_METRICS.map((m) => [m.id, m]),
+  [...HEALTH_METRICS, ...ADDABLE_HEALTH].map((m) => [m.id, m]),
 );
 
 export function HealthLog() {
@@ -152,12 +162,11 @@ export function HealthLog() {
         {isOnboarding && (
           <div className={css.profileWelcome}>
             <h2 className={css.profileWelcomeTitle}>
-              Your Health & Performance Log
+              Your Health Log
             </h2>
             <p>
-              Record your health & performance metrics here. Logging consistently
-              - even on rest days - helps you and your team spot patterns
-              over time.
+              Record your health metrics here. Logging consistently — even
+              on rest days — helps you and your team spot patterns over time.
             </p>
           </div>
         )}
@@ -207,14 +216,95 @@ export function HealthLog() {
                     />
                   );
                 }
-                const fieldKey = id as keyof Pick<
-                  HealthEntry,
-                  "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
-                >;
-                const live = currentEntry[fieldKey];
-                // A finite number (including 0) renders verbatim so the
-                // user sees what they logged. undefined / absent renders
-                // as blank - that's the "not logged" state.
+                if (id === "relativeProteinIntake") {
+                  // Auto-calculated metric per the DGT-51 design source.
+                  // The derivation (protein / leanMass with profile
+                  // weighting) is a follow-up; for now the row shows a
+                  // placeholder so the metric is visible without
+                  // pretending it has an input control.
+                  return (
+                    <tr key={id} className={rowCss.metricInputRow}>
+                      <td>
+                        <div className={rowCss.trackCell}>—</div>
+                      </td>
+                      <td className={rowCss.metricName}>
+                        <Link
+                          to={`/health/${id}`}
+                          className={rowCss.metricLink}
+                        >
+                          {builtIn.name}
+                        </Link>
+                      </td>
+                      <td>
+                        <span className={rowCss.placeholderCell}>
+                          🚧 Auto-calculated · coming soon
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                }
+                // Numeric named-field built-ins. Original five metrics
+                // store values as typed fields on HealthEntry; the chart
+                // engine's readHealthMetric has matching `case` branches.
+                if (
+                  id === "sleepTime" ||
+                  id === "sleepEfficiency" ||
+                  id === "protein" ||
+                  id === "leanMass"
+                ) {
+                  const fieldKey = id as keyof Pick<
+                    HealthEntry,
+                    "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
+                  >;
+                  const live = currentEntry[fieldKey];
+                  const stringValue =
+                    typeof live === "number" && Number.isFinite(live)
+                      ? String(live)
+                      : "";
+                  return (
+                    <MetricInputRow
+                      key={id}
+                      metric={builtIn}
+                      inputType="numeric"
+                      value={stringValue}
+                      onChange={(raw) => setNumericField(fieldKey, raw)}
+                      detailHref={`/health/${id}`}
+                    />
+                  );
+                }
+                // Generic built-in path for new metrics (Mood, plus
+                // off-by-default additions). Values live in the
+                // `customMetrics` map (misleading name kept until a
+                // follow-up renames the field to `metrics`). Dispatches
+                // on the registry's `inputType` so adding another
+                // ordinal/numeric built-in needs only a HEALTH_METRICS
+                // entry — no new branches here, no `case` in
+                // readHealthMetric (its default case reads
+                // customMetrics).
+                if (builtIn.inputType === "ordinal" && builtIn.levels) {
+                  const live = currentEntry.customMetrics?.[id];
+                  const ordinalValue =
+                    typeof live === "number" && Number.isFinite(live)
+                      ? live
+                      : undefined;
+                  return (
+                    <MetricInputRow
+                      key={id}
+                      metric={builtIn}
+                      inputType="ordinal"
+                      levels={builtIn.levels}
+                      value={ordinalValue}
+                      onChange={(next) =>
+                        setCustomMetric(id, String(next))
+                      }
+                      detailHref={`/health/${id}`}
+                    />
+                  );
+                }
+                // Numeric fall-through for new built-ins that aren't
+                // named-field, aren't ordinal, and aren't one of the
+                // special inputType cases above.
+                const live = currentEntry.customMetrics?.[id];
                 const stringValue =
                   typeof live === "number" && Number.isFinite(live)
                     ? String(live)
@@ -225,7 +315,7 @@ export function HealthLog() {
                     metric={builtIn}
                     inputType="numeric"
                     value={stringValue}
-                    onChange={(raw) => setNumericField(fieldKey, raw)}
+                    onChange={(raw) => setCustomMetric(id, raw)}
                     detailHref={`/health/${id}`}
                   />
                 );

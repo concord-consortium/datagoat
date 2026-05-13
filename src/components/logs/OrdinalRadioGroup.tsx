@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { CustomMetricLevel } from "../../types/customMetrics";
+import radioCss from "../form/RadioGroup.module.css";
 import css from "./OrdinalRadioGroup.module.css";
 
 export interface OrdinalRadioGroupProps {
@@ -34,6 +35,7 @@ export function OrdinalRadioGroup({
           <label key={`${idx}-${level.value}`} className={css.ordinalOption}>
             <input
               type="radio"
+              className={radioCss.radio}
               name={groupName}
               checked={checked}
               onChange={() => onChange(level.value as number)}

@@ -29,6 +29,15 @@
   font-weight: 600;
 }
 
+/* Placeholder copy in the Record column for auto-calculated /
+   not-yet-wired metrics (e.g. Relative Protein Intake). Muted so
+   the row reads as informational rather than actionable. */
+.placeholderCell {
+  color: var(--subtext);
+  font-size: 14px;
+  font-style: italic;
+}
+
 /* metric-link (lines 3037-3055) - the underlined accent-colored link */
 .metricLink {
   color: var(--accent);

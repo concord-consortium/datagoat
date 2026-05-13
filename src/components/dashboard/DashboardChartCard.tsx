@@ -9,8 +9,18 @@ import {
 } from "./TimeRangePicker";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import {
+  ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
+  ADDABLE_COMPETITION,
+} from "../../metrics/addableMetrics";
 import type { MetricDefinition } from "../../metrics/types";
-import type { CompetitionEntry, HealthEntry } from "../../types/data";
+import type {
+  CompetitionEntry,
+  HealthEntry,
+  PerformanceEntry,
+} from "../../types/data";
 import { useUser } from "../../contexts/UserContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
@@ -30,10 +40,11 @@ import { useDemoMode } from "../../contexts/DemoModeContext";
 import css from "./DashboardChartCard.module.css";
 
 interface DashboardChartCardProps {
-  type: "health" | "competition";
+  type: "health" | "performance" | "competition";
   trackedMetricIds: string[];
   healthEntries?: HealthEntry[];
   competitionEntries?: CompetitionEntry[];
+  performanceEntries?: PerformanceEntry[];
   // When true, the parent's DataContext is still loading. Render a
   // distinguishable skeleton variant of the placeholder per spec
   // "Empty data handling" - never flash zero-value axes during load.
@@ -50,11 +61,16 @@ export function DashboardChartCard({
   trackedMetricIds,
   healthEntries,
   competitionEntries,
+  performanceEntries,
   loading = false,
 }: DashboardChartCardProps) {
   useChartConfigSync();
   const allMetrics: MetricDefinition[] =
-    type === "health" ? HEALTH_METRICS : COMPETITION_METRICS;
+    type === "health"
+      ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
+      : type === "performance"
+        ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
+        : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
   const { loadState } = useUser();
   const { metrics: allCustom } = useCustomMetrics();
   const profile = loadState.status === "loaded" ? loadState.profile : null;
@@ -103,6 +119,7 @@ export function DashboardChartCard({
     metricId: metric?.id ?? "",
     healthEntries: healthEntries ?? [],
     competitionEntries: competitionEntries ?? [],
+    performanceEntries: performanceEntries ?? [],
     rangeDays: TIME_RANGE_DAYS[range],
     demoMode,
   });
@@ -112,8 +129,10 @@ export function DashboardChartCard({
       <div className={css.chartCard}>
         <p className={css.emptyState}>
           {type === "health"
-            ? "No tracked health & performance metrics."
-            : "No tracked competition metrics."}
+            ? "No tracked health metrics."
+            : type === "performance"
+              ? "No tracked performance metrics."
+              : "No tracked competition metrics."}
         </p>
       </div>
     );
@@ -150,8 +169,10 @@ export function DashboardChartCard({
           <SelectField
             label={
               type === "health"
-                ? "Health & Performance metric"
-                : "Competition metric"
+                ? "Health metric"
+                : type === "performance"
+                  ? "Performance metric"
+                  : "Competition metric"
             }
             labelVisuallyHidden
             options={selectOptions}

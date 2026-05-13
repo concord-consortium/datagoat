@@ -6,6 +6,17 @@ import ProteinIcon from "@/icons/metric-protein.svg?react";
 import LeanMassIcon from "@/icons/metric-lean-mass.svg?react";
 import AvailabilityIcon from "@/icons/metric-availability.svg?react";
 
+// Mood is a 5-option ordinal scale (1=worst, 5=best). The form
+// renders these labels via OrdinalRadioGroup. Defining levels in
+// module scope keeps the registry entry below readable.
+const MOOD_LEVELS = [
+  { label: "1", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+];
+
 // Strings ported verbatim from the 2026-04-27 prototype's metricDetails
 // table (whoCollects, howCollected, desc). Do not paraphrase - the prototype
 // HTML at /home/doug/docs/datagoat-2026-04-27.html is the source of truth.
@@ -124,6 +135,19 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     whenCollected: "Daily",
   },
   {
+    id: "relativeProteinIntake",
+    name: "Relative Protein Intake",
+    unit: "g/kg",
+    type: "health",
+    whoCollects: "Auto-calculated",
+    howCollected: "Derived from Protein Intake and Lean Mass.",
+    description:
+      "Daily protein intake relative to lean body mass (g/kg). Auto-calculated; the input on the log row is a placeholder until the derivation lands in a follow-up.",
+    inputType: "numeric",
+    estimatedRange: "0.6–3 g/kg/day",
+    whenCollected: "Daily (auto)",
+  },
+  {
     id: "leanMass",
     name: "Lean Mass",
     unit: "kg",
@@ -155,6 +179,22 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     Icon: AvailabilityIcon,
     learnMoreUrl: "https://pubmed.ncbi.nlm.nih.gov/32362281/",
     estimatedRange: "0–100%",
+    whenCollected: "Daily",
+  },
+  {
+    id: "mood",
+    name: "Mood",
+    unit: "",
+    type: "health",
+    whoCollects: "Self",
+    howCollected: "Self-report on a 1–5 scale at the end of the day.",
+    description:
+      "Subjective rating of overall mood for the day on a 1 (worst) to 5 (best) scale.",
+    min: 1,
+    max: 5,
+    inputType: "ordinal",
+    levels: MOOD_LEVELS,
+    estimatedRange: "1–5",
     whenCollected: "Daily",
   },
 ];

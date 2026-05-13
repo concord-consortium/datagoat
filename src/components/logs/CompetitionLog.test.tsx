@@ -27,12 +27,10 @@ const PROFILE: UserProfile = {
   competitionTerm: "game",
   trackedHealthMetrics: [],
   trackedCompetitionMetrics: [
-    "wins",
-    "losses",
+    "winningPercentage",
+    "scores",
+    "times",
     "goals",
-    "assists",
-    "yards",
-    "tackles",
   ],
   profileComplete: true,
   trackingSetupComplete: true,
@@ -113,11 +111,11 @@ function inputForMetric(label: string): HTMLInputElement {
 }
 
 function setGoals(value: string) {
-  fireEvent.change(inputForMetric("Goals"), { target: { value } });
+  fireEvent.change(inputForMetric("Points/Goals"), { target: { value } });
 }
 
-function setAssists(value: string) {
-  fireEvent.change(inputForMetric("Assists"), { target: { value } });
+function setScores(value: string) {
+  fireEvent.change(inputForMetric("Scores"), { target: { value } });
 }
 
 function renderAt(initialPath: string) {
@@ -175,10 +173,10 @@ describe("CompetitionLog route + redirect", () => {
       TODAY_ISO,
       { metrics: { goals: 3 } },
     );
-    setAssists("2");
+    setScores("2");
     expect(ctx.setCompetitionEntryMock).toHaveBeenCalledWith(
       TODAY_ISO,
-      { metrics: { assists: 2 } },
+      { metrics: { scores: 2 } },
     );
     expect(ctx.setCompetitionEntryMock).toHaveBeenCalledTimes(2);
   });
@@ -228,13 +226,13 @@ describe("CompetitionLog optimistic state via real DataContext", () => {
       latestSub(state.competitionSubs)?.emit([]);
     });
     const goalsRow = Array.from(document.querySelectorAll("tr")).find((r) =>
-      r.textContent?.includes("Goals"),
+      r.textContent?.includes("Points/Goals"),
     );
     expect(goalsRow).toBeDefined();
     setGoals("3");
     // Synchronous re-render: total cell now shows "3".
     const updatedRow = Array.from(document.querySelectorAll("tr")).find((r) =>
-      r.textContent?.includes("Goals"),
+      r.textContent?.includes("Points/Goals"),
     );
     const totalCell = updatedRow?.querySelector("td");
     expect(totalCell?.textContent).toBe("3");

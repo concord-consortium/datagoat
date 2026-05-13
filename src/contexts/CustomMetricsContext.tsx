@@ -125,7 +125,16 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
     id,
     ownerId: String(data.ownerId ?? ""),
     name: String(data.name ?? ""),
-    metricType: data.metricType === "competition" ? "competition" : "health",
+    // Preserve the three-way CustomMetricType (health / performance /
+    // competition) introduced for DGT-51. Anything outside the union
+    // coerces to "health" as the safest default - it puts unknown
+    // metric types in the daily-log section instead of orphaning them.
+    metricType:
+      data.metricType === "competition"
+        ? "competition"
+        : data.metricType === "performance"
+          ? "performance"
+          : "health",
     primitive: readPrimitive(data.primitive),
     inputType: data.inputType === "radio" ? "radio" : "numeric",
     // `== null` (loose) so a Firestore `null` is treated the same as

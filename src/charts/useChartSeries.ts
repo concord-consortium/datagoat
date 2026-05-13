@@ -53,6 +53,7 @@ export function useChartSeries(
     metricId,
     healthEntries,
     competitionEntries,
+    performanceEntries,
     rangeDays,
     demoMode,
   } = args;
@@ -71,6 +72,7 @@ export function useChartSeries(
       metricId,
       healthEntries,
       competitionEntries,
+      performanceEntries,
       rangeDays,
     });
   }, [
@@ -78,6 +80,7 @@ export function useChartSeries(
     metricId,
     healthEntries,
     competitionEntries,
+    performanceEntries,
     rangeDays,
     demoMode,
     customChartConfigs,

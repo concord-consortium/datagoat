@@ -5,17 +5,17 @@ import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
+import { ADDABLE_COMPETITION } from "../../metrics/addableMetrics";
 import {
   HISTORY,
   dateAtOffset,
   historyOffsetFromISO,
   toISO,
 } from "../../utils/dates";
-import { competitionTotal } from "./CompetitionTotals";
+import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
-import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import css from "./CompetitionLog.module.css";
 
 export function CompetitionLog() {
@@ -78,7 +78,13 @@ export function CompetitionLog() {
   // preference. The user can drag-reorder a custom metric among
   // built-ins on /setup/tracking; iterating trackedIds (rather than
   // appending customs after built-ins) honors that ordering here.
-  const builtInById = new Map(COMPETITION_METRICS.map((m) => [m.id, m]));
+  // Include ADDABLE_COMPETITION so users who opted into a default-off
+  // metric (Assists, Tackles, Rebounds, etc.) can resolve its
+  // MetricDefinition. Default-on vs default-off is a property of the
+  // tracked-id list, not of the lookup map.
+  const builtInById = new Map(
+    [...COMPETITION_METRICS, ...ADDABLE_COMPETITION].map((m) => [m.id, m]),
+  );
   const customById = new Map<string, (typeof allCustom)[number]>();
   for (const def of allCustom) {
     if (def.metricType === "competition") customById.set(def.id, def);
@@ -151,20 +157,28 @@ export function CompetitionLog() {
                     ? live
                     : "";
               const filled = stringValue !== "";
-              const total = competitionTotal(entries, metric.id);
               const nameCellId = `${nameIdBase}-${metric.id}`;
+              const builtInDef = builtInById.get(metric.id);
+              const customDef = customById.get(metric.id);
+
+              // Total cell: winningPercentage gets its derived
+              // percentage; all other metrics fall back to the
+              // running sum from competitionTotal. Both helpers
+              // return undefined when no in-window entries exist
+              // (so a metric whose only entries are outside the
+              // visible HISTORY window renders blank, not "0").
+              let totalCell: string;
+              if (metric.id === "winningPercentage") {
+                const rate = winningPercentageRate(entries);
+                totalCell = rate === undefined ? "" : `${rate}%`;
+              } else {
+                const total = competitionTotal(entries, metric.id);
+                totalCell = total === undefined ? "" : String(total);
+              }
+
               return (
                 <tr key={metric.id}>
-                  <td className={css.colTotal}>
-                    {/* competitionTotal returns 0 both for "no entries"
-                        and for "entries summing to 0" - use
-                        hasEntriesForMetric to render the cell only when
-                        there's real data, so a legit 0-total shows as
-                        "0" and an empty cell stays blank. */}
-                    {hasEntriesForMetric(metric.id, [], entries)
-                      ? String(total)
-                      : ""}
-                  </td>
+                  <td className={css.colTotal}>{totalCell}</td>
                   <td id={nameCellId} className={css.colMetric}>
                     <Link
                       to={`/competition/${metric.id}`}
@@ -175,9 +189,33 @@ export function CompetitionLog() {
                   </td>
                   <td className={css.colRecord}>
                     {(() => {
-                      const customDef = customById.get(metric.id);
-                      if (customDef?.primitive === "ordinal" && customDef.levels) {
-                        const live = currentEntry.metrics?.[metric.id];
+                      // Built-in ordinal metrics (currently
+                      // winningPercentage) carry their levels on the
+                      // registry entry. Render the tile selector via
+                      // OrdinalRadioGroup, same renderer customs use.
+                      if (
+                        builtInDef?.inputType === "ordinal" &&
+                        builtInDef.levels
+                      ) {
+                        const ordinalValue =
+                          typeof live === "number" && Number.isFinite(live)
+                            ? live
+                            : undefined;
+                        return (
+                          <OrdinalRadioGroup
+                            levels={builtInDef.levels}
+                            value={ordinalValue}
+                            onChange={(next) =>
+                              setMetricValue(metric.id, String(next))
+                            }
+                            labelledBy={nameCellId}
+                          />
+                        );
+                      }
+                      if (
+                        customDef?.primitive === "ordinal" &&
+                        customDef.levels
+                      ) {
                         const ordinalValue =
                           typeof live === "number" && Number.isFinite(live)
                             ? live

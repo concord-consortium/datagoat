@@ -67,7 +67,7 @@ describe("resolveRouteMeta — custom metric routing", () => {
 
   it("titles the create form at /add-metric/:type/new", () => {
     expect(resolveRouteMeta("/add-metric/health/new")?.title).toBe(
-      "New Health & Performance Metric",
+      "New Health Metric",
     );
     expect(resolveRouteMeta("/add-metric/competition/new")?.title).toBe(
       "New Competition Metric",
@@ -100,7 +100,53 @@ describe("resolveRouteMeta — custom metric routing", () => {
     // be the create-form title, never null, for the literal /new URL.
     const customs = [customDef("new", "Decoy", "health")];
     expect(resolveRouteMeta("/add-metric/health/new", customs)?.title).toBe(
-      "New Health & Performance Metric",
+      "New Health Metric",
     );
+  });
+});
+
+describe("resolveRouteMeta — location-state backTo override", () => {
+  it("overrides the registry backTo when state.backTo is provided", () => {
+    // /health/:metricId resolves to backTo: "/health" by default.
+    // SortableMetricRow on /setup/tracking passes state.backTo so the
+    // back chevron returns the user to /setup/tracking instead.
+    const customs = [customDef("c_stretch", "Stretch Time", "health")];
+    const meta = resolveRouteMeta("/health/c_stretch", customs, {
+      backTo: "/setup/tracking",
+    });
+    expect(meta?.title).toBe("Stretch Time");
+    expect(meta?.backTo).toBe("/setup/tracking");
+  });
+
+  it("keeps the registry backTo when no state is provided", () => {
+    const customs = [customDef("c_stretch", "Stretch Time", "health")];
+    expect(resolveRouteMeta("/health/c_stretch", customs)?.backTo).toBe(
+      "/health",
+    );
+  });
+
+  it("keeps the registry backTo when state is null", () => {
+    const customs = [customDef("c_stretch", "Stretch Time", "health")];
+    expect(
+      resolveRouteMeta("/health/c_stretch", customs, null)?.backTo,
+    ).toBe("/health");
+  });
+
+  it("keeps the registry backTo when state.backTo is not a string", () => {
+    // Defense-in-depth: non-string `backTo` (e.g., undefined or a
+    // typo'd field) shouldn't override the registry default.
+    const customs = [customDef("c_stretch", "Stretch Time", "health")];
+    const meta = resolveRouteMeta("/health/c_stretch", customs, {});
+    expect(meta?.backTo).toBe("/health");
+  });
+
+  it("returns null untouched when the route does not resolve", () => {
+    // An unknown route returns null whether or not state is provided -
+    // the override only applies on top of a real RouteMeta.
+    expect(
+      resolveRouteMeta("/totally-unknown-path", [], {
+        backTo: "/setup/tracking",
+      }),
+    ).toBeNull();
   });
 });

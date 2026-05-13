@@ -1,0 +1,126 @@
+/* Mirrors CompetitionLog.module.css. Performance Log shares the same
+   per-row layout (Total / Metric / Record columns); a follow-up can
+   factor the shared rules into common.module.css. */
+
+.screenContent {
+  padding: 20px 24px 100px;
+}
+.dateNavSibling + .screenContent {
+  padding-top: 10px;
+}
+
+.profileWelcome {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+}
+
+.profileWelcomeTitle {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.profileWelcome p {
+  margin: 0;
+}
+
+.performanceLogTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.performanceLogTable thead th {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.performanceLogTable tbody td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.performanceLogTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.colTotal {
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.colMetric {
+  font-weight: 600;
+}
+
+.metricLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  display: inline;
+  position: relative;
+  padding: 0 0 5px;
+  transition: filter var(--dur-quick) var(--ease-default);
+}
+
+.metricLink::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 44px;
+}
+
+.metricLink:hover {
+  filter: brightness(1.2);
+}
+
+.metricLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.colRecord {
+  width: 100px;
+  text-align: left;
+}
+
+.emptyState {
+  margin-top: 24px;
+  color: var(--subtext);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.emptyState a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metricLink {
+    transition: none;
+  }
+}

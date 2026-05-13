@@ -75,13 +75,19 @@ const dataMock = vi.hoisted(() => ({
     status: "loaded",
     entries: [] as CompetitionEntry[],
   } as DataLoadState<CompetitionEntry>,
+  performance: {
+    status: "loaded",
+    entries: [],
+  },
   setHealthEntry: vi.fn(),
   setCompetitionEntry: vi.fn(),
+  setPerformanceEntry: vi.fn(),
 }));
 vi.mock("../contexts/DataContext", () => ({
   useData: () => dataMock,
   useHealthData: () => dataMock.health,
   useCompetitionData: () => dataMock.competition,
+  usePerformanceData: () => dataMock.performance,
 }));
 
 vi.mock("../contexts/DemoModeContext", () => ({

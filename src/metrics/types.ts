@@ -1,7 +1,13 @@
 import type { ComponentType, SVGProps } from "react";
+import type { CustomMetricLevel } from "../types/customMetrics";
 
-export type MetricType = "health" | "competition";
-export type MetricInputType = "numeric" | "radio" | "tree" | "colorScale";
+export type MetricType = "health" | "performance" | "competition";
+export type MetricInputType =
+  | "numeric"
+  | "radio"
+  | "tree"
+  | "colorScale"
+  | "ordinal";
 
 export interface MetricDefinition {
   id: string;
@@ -42,4 +48,8 @@ export interface MetricDefinition {
   // "2-3x/year"). MetricDetail's "When Collected" section reads this; the
   // log-table per-row hint stays on `hint`.
   whenCollected?: string;
+  // Required when inputType === "ordinal". Ordered ascending by value;
+  // each level carries `{ label, value }`. Reuses CustomMetricLevel so
+  // built-ins and customs share the same OrdinalRadioGroup renderer.
+  levels?: CustomMetricLevel[];
 }

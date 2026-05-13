@@ -71,7 +71,7 @@ describe("TrackedDataSetup — custom-metric integration", () => {
   it("renders the health CTA at /add-metric/health/new with the create-form label", () => {
     renderWith();
     const cta = screen.getByRole("link", {
-      name: /add health & performance metric/i,
+      name: /add health metric/i,
     });
     expect(cta).toHaveAttribute("href", "/add-metric/health/new");
   });

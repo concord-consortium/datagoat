@@ -13,6 +13,7 @@ import { EmailVerification } from "../components/auth/EmailVerification";
 import { ProfileForm } from "../components/profile/ProfileForm";
 import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
 import { HealthLog } from "../components/logs/HealthLog";
+import { PerformanceLog } from "../components/logs/PerformanceLog";
 import { CompetitionLog } from "../components/logs/CompetitionLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { MetricDetail } from "../charts/MetricDetail";
@@ -73,6 +74,10 @@ export function AppRoutes() {
               when loadState.status === 'missing'. ProtectedRoute would
               redirect back to /profile, dead-ending the info link. */}
           <Route path="/info/:topic" element={<InfoScreen />} />
+          {/* /about is version info + credits; no reason to require
+              profileComplete or trackingSetupComplete. Authed users
+              can reach it from the hamburger menu at any point. */}
+          <Route path="/about" element={<About />} />
         </Route>
 
         {/* Authed routes. ProtectedRoute redirects 'missing' profiles to
@@ -84,18 +89,32 @@ export function AppRoutes() {
             path="/health/:metricId"
             element={<MetricDetail type="health" />}
           />
+          <Route path="/performance" element={<PerformanceLog />} />
+          <Route
+            path="/performance/:metricId"
+            element={<MetricDetail type="performance" />}
+          />
           <Route path="/competition" element={<CompetitionLog />} />
           <Route
             path="/competition/:metricId"
             element={<MetricDetail type="competition" />}
           />
+        </Route>
+
+        {/* /add-metric routes are part of the tracking-setup flow,
+            so they must be reachable BEFORE trackingSetupComplete
+            flips. ProtectedRoute with allowTrackingIncomplete keeps
+            the profile-complete gate but drops the
+            trackingSetupComplete redirect, so the "Add Metric"
+            buttons on /setup/tracking can actually open the form
+            during onboarding. */}
+        <Route element={<ProtectedRoute allowTrackingIncomplete />}>
           <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
           <Route
             path="/add-metric/:type/:metricId"
             element={<CustomMetricForm />}
           />
           <Route path="/add-metric/:type" element={<AddMetric />} />
-          <Route path="/about" element={<About />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -6,6 +6,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
 import { getChipState } from "../../utils/healthCompleteness";
 import css from "./Dashboard.module.css";
@@ -15,17 +16,22 @@ import css from "./Dashboard.module.css";
 // metric picker + TimeRangePicker + CodapButton).
 export function Dashboard() {
   const { loadState } = useUser();
-  const { health, competition } = useData();
+  const { health, performance, competition } = useData();
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
 
   const trackedHealthIds =
     profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
+  const trackedPerformanceIds =
+    profile?.trackedPerformanceMetrics ??
+    PERFORMANCE_METRICS.map((m) => m.id);
   const trackedCompetitionIds =
     profile?.trackedCompetitionMetrics ?? COMPETITION_METRICS.map((m) => m.id);
 
   const healthEntries =
     health.status === "loaded" ? health.entries : [];
+  const performanceEntries =
+    performance.status === "loaded" ? performance.entries : [];
   const competitionEntries =
     competition.status === "loaded" ? competition.entries : [];
 
@@ -46,6 +52,20 @@ export function Dashboard() {
     Object.values(todayCompetition.metrics ?? {}).some((v) => {
       // A finite number (including 0 and negatives) or a non-empty
       // string counts as "logged."
+      if (typeof v === "number") return Number.isFinite(v);
+      if (typeof v === "string") return v.trim() !== "";
+      return false;
+    })
+  );
+
+  // Performance status: today-anchored "any value logged" check. Most
+  // performance metrics are entered periodically (quarterly), so a
+  // daily completeness count would be misleading.
+  const todayPerformance =
+    performanceEntries.find((e) => e.date === todayIso) ?? null;
+  const performanceLoggedAny = !!(
+    todayPerformance &&
+    Object.values(todayPerformance.metrics ?? {}).some((v) => {
       if (typeof v === "number") return Number.isFinite(v);
       if (typeof v === "string") return v.trim() !== "";
       return false;
@@ -77,6 +97,12 @@ export function Dashboard() {
     healthStatus = `${healthPre}${healthHighlight}${healthPost}`;
   }
 
+  const performanceStatus = performanceLoggedAny
+    ? "Great! You've logged your performance data!"
+    : trackedPerformanceIds.length === 0
+      ? "No performance metrics tracked yet."
+      : "No performance data logged today.";
+
   const competitionStatus = competitionLoggedAny
     ? "Great! You've logged your competition data!"
     : "No competition data logged today.";
@@ -100,11 +126,10 @@ export function Dashboard() {
           </p>
         )}
 
-        {/* Health & Performance Log Section. Competition section omits the
-            ActivityCalendar entirely, matching the prototype's dashboard
-            layout (only health has a section calendar at HTML line
-            4170-4187; competition section starts with dash-log-label-row
-            directly at line 4225). */}
+        {/* Health Log Section. Performance and Competition sections
+            omit the ActivityCalendar entirely (only Health has a
+            section calendar - performance / competition data is
+            periodic and would render mostly empty). */}
         <div className={`${css.dashLogSection} ${css.dashHealthSection}`}>
           <ActivityCalendar
             type="health"
@@ -114,7 +139,7 @@ export function Dashboard() {
           <hr className={css.sectionRule} aria-hidden="true" />
           <div className={css.dashLogLabelRow}>
             <span className={css.sectionCalToday}>
-              Health & Performance Data
+              Health Data
             </span>
           </div>
           <DashLogHeader
@@ -129,6 +154,25 @@ export function Dashboard() {
             trackedMetricIds={trackedHealthIds}
             healthEntries={healthEntries}
             loading={health.status === "loading"}
+          />
+        </div>
+
+        <hr className={css.sectionRule} aria-hidden="true" />
+
+        {/* Performance Log Section. No ActivityCalendar (matches the
+            Competition pattern) — performance metrics are periodic
+            (e.g. quarterly 1RMs, sprint times), so a daily calendar
+            would render mostly empty. */}
+        <div className={`${css.dashLogSection} ${css.dashCompetitionSection}`}>
+          <div className={css.dashLogLabelRow}>
+            <span className={css.sectionCalToday}>Performance Data</span>
+          </div>
+          <DashLogHeader type="performance" status={performanceStatus} />
+          <DashboardChartCard
+            type="performance"
+            trackedMetricIds={trackedPerformanceIds}
+            performanceEntries={performanceEntries}
+            loading={performance.status === "loading"}
           />
         </div>
 

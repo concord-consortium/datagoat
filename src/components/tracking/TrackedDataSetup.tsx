@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import {
+  ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
+  ADDABLE_COMPETITION,
+} from "../../metrics/addableMetrics";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import { TrackedMetricsTable } from "./TrackedMetricsTable";
@@ -17,7 +23,7 @@ import screenCss from "./TrackedDataSetup.module.css";
 // aren't read on this page.
 function customAsMetricDefinition(
   def: CustomMetricDef,
-  type: "health" | "competition",
+  type: "health" | "performance" | "competition",
 ): MetricDefinition {
   return {
     id: def.id,
@@ -40,12 +46,34 @@ export function TrackedDataSetup() {
   const profile =
     loadState.status === "loaded" ? loadState.profile : null;
 
+  // Auto-clear the trackingSetupComplete gate as soon as a user with a
+  // complete profile reaches this page. Testers got confused when they
+  // toggled metrics (which auto-save per row), navigated away via the
+  // hamburger, and discovered they were still locked to /profile +
+  // /setup/tracking because they had not clicked the "Go To Dashboard"
+  // button. Defaults are sensible (HEALTH_METRICS auto-populates
+  // trackedHealthMetrics), every row edit auto-persists, and the
+  // "Go To Dashboard" button remains as a navigation shortcut, so
+  // flipping the flag on view is the lowest-surprise UX.
+  useEffect(() => {
+    if (profile?.profileComplete && !profile.trackingSetupComplete) {
+      void updateProfile({ trackingSetupComplete: true });
+    }
+  }, [profile?.profileComplete, profile?.trackingSetupComplete, updateProfile]);
+
   // Custom metrics for each type, adapted to MetricDefinition shape.
   const customHealth = useMemo(
     () =>
       allCustom
         .filter((m) => m.metricType === "health")
         .map((m) => customAsMetricDefinition(m, "health")),
+    [allCustom],
+  );
+  const customPerformance = useMemo(
+    () =>
+      allCustom
+        .filter((m) => m.metricType === "performance")
+        .map((m) => customAsMetricDefinition(m, "performance")),
     [allCustom],
   );
   const customCompetition = useMemo(
@@ -56,68 +84,86 @@ export function TrackedDataSetup() {
     [allCustom],
   );
 
-  // Combined registries (built-ins + customs) handed to TrackedMetricsTable.
-  // Custom ids are tracked in a Set so each row's right-edge affordance
-  // switches from info link → edit pencil for customs.
+  // Combined registries (built-ins + addables + customs) handed to
+  // TrackedMetricsTable so users can browse every metric — default-on
+  // entries appear pre-checked; default-off (addable) entries appear
+  // unchecked. Custom ids are tracked in a Set so each row's
+  // right-edge affordance switches from info link → edit pencil for
+  // customs.
   const healthRegistry = useMemo(
-    () => [...HEALTH_METRICS, ...customHealth],
+    () => [...HEALTH_METRICS, ...ADDABLE_HEALTH, ...customHealth],
     [customHealth],
   );
+  const performanceRegistry = useMemo(
+    () => [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE, ...customPerformance],
+    [customPerformance],
+  );
   const competitionRegistry = useMemo(
-    () => [...COMPETITION_METRICS, ...customCompetition],
+    () => [
+      ...COMPETITION_METRICS,
+      ...ADDABLE_COMPETITION,
+      ...customCompetition,
+    ],
     [customCompetition],
   );
   const customHealthIds = useMemo(
     () => new Set(customHealth.map((m) => m.id)),
     [customHealth],
   );
+  const customPerformanceIds = useMemo(
+    () => new Set(customPerformance.map((m) => m.id)),
+    [customPerformance],
+  );
   const customCompetitionIds = useMemo(
     () => new Set(customCompetition.map((m) => m.id)),
     [customCompetition],
   );
 
-  // First-time onboarding: every built-in is checked by default.
-  // Returning users keep whatever's in their profile. Custom metrics
-  // appear unchecked until the user explicitly tracks them — matches
-  // the "Choose what to track" semantics of this page.
+  // First-time onboarding: every default-on built-in is checked.
+  // Returning users keep whatever's in their profile. Addable +
+  // custom metrics appear unchecked until the user explicitly tracks
+  // them — matches the "Choose what to track" semantics of this page.
   const healthIds =
     profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
+  const performanceIds =
+    profile?.trackedPerformanceMetrics ??
+    PERFORMANCE_METRICS.map((m) => m.id);
   const competitionIds =
     profile?.trackedCompetitionMetrics ??
     COMPETITION_METRICS.map((m) => m.id);
 
+  type TrackingType = "health" | "performance" | "competition";
+
   async function handleToggleCheck(
-    type: "health" | "competition",
+    type: TrackingType,
     id: string,
     checked: boolean,
   ) {
-    const ids = type === "health" ? healthIds : competitionIds;
+    const ids =
+      type === "health"
+        ? healthIds
+        : type === "performance"
+          ? performanceIds
+          : competitionIds;
     const next = checked
       ? [...ids, id].filter((v, i, arr) => arr.indexOf(v) === i)
       : ids.filter((existing) => existing !== id);
     await persistOrCache(type, next);
   }
 
-  async function handleChangeOrder(
-    type: "health" | "competition",
-    next: string[],
-  ) {
+  async function handleChangeOrder(type: TrackingType, next: string[]) {
     await persistOrCache(type, next);
   }
 
-  async function persistOrCache(
-    type: "health" | "competition",
-    next: string[],
-  ) {
+  async function persistOrCache(type: TrackingType, next: string[]) {
     if (!profile) {
-      // Onboarding: no Firestore profile yet. updateProfile creates it
-      // with merge: true, stamping the tracked-metric arrays so the
-      // doc lands.
-      await updateProfile({
-        [type === "health"
+      const field =
+        type === "health"
           ? "trackedHealthMetrics"
-          : "trackedCompetitionMetrics"]: next,
-      });
+          : type === "performance"
+            ? "trackedPerformanceMetrics"
+            : "trackedCompetitionMetrics";
+      await updateProfile({ [field]: next });
       return;
     }
     await setTrackedMetrics(type, next);
@@ -142,7 +188,7 @@ export function TrackedDataSetup() {
 
       <TrackedMetricsTable
         type="health"
-        heading="Health & Performance Log"
+        heading="Health Log"
         registry={healthRegistry}
         customIds={customHealthIds}
         trackedIds={healthIds}
@@ -151,7 +197,24 @@ export function TrackedDataSetup() {
           void handleToggleCheck("health", id, checked)
         }
         addToHref="/add-metric/health/new"
-        addToLabel="Add Health & Performance Metric"
+        addToLabel="Add Health Metric"
+      />
+
+      <div className={css.chartDivider} aria-hidden="true" />
+
+      <TrackedMetricsTable
+        type="performance"
+        heading="Performance Log"
+        registry={performanceRegistry}
+        customIds={customPerformanceIds}
+        trackedIds={performanceIds}
+        onChangeOrder={(ids) => void handleChangeOrder("performance", ids)}
+        onToggleCheck={(id, checked) =>
+          void handleToggleCheck("performance", id, checked)
+        }
+        addToHref="/add-metric/performance/new"
+        addToLabel="🚧 Add Performance Metric"
+        addToComingSoon
       />
 
       <div className={css.chartDivider} aria-hidden="true" />

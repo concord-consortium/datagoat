@@ -24,7 +24,7 @@ import css from "./TrackedMetricsTable.module.css";
 import common from "../common.module.css";
 
 interface TrackedMetricsTableProps {
-  type: "health" | "competition";
+  type: "health" | "performance" | "competition";
   heading: string;
   // The full registry for this type. We persist an explicit user-ordered
   // list of ids; metrics not in the user's list still render here when
@@ -45,6 +45,10 @@ interface TrackedMetricsTableProps {
   onToggleCheck: (id: string, checked: boolean) => void;
   addToHref: string;
   addToLabel: string;
+  // When true, the Add control renders as a non-interactive disabled
+  // affordance instead of a Link. Used for the Performance section
+  // until custom-metric creation supports the performance type.
+  addToComingSoon?: boolean;
 }
 
 export function TrackedMetricsTable({
@@ -57,6 +61,7 @@ export function TrackedMetricsTable({
   onToggleCheck,
   addToHref,
   addToLabel,
+  addToComingSoon = false,
 }: TrackedMetricsTableProps) {
   // Display order: any metric in trackedIds first (in user-chosen order),
   // followed by registry metrics not yet in the tracked list (so the user
@@ -178,10 +183,27 @@ export function TrackedMetricsTable({
           </table>
         </SortableContext>
       </DndContext>
-      <Link to={addToHref} className={css.addMeasurementBtn}>
-        <PlusCircleIcon />
-        {addToLabel}
-      </Link>
+      {addToComingSoon ? (
+        // Real <button disabled> so SR/keyboard users perceive the
+        // "coming soon" affordance as a disabled control. A <span>
+        // with aria-disabled has no semantic effect; the button
+        // semantics make the state announced and unfocusable for
+        // free.
+        <button
+          type="button"
+          disabled
+          className={`${css.addMeasurementBtn} ${css.addMeasurementBtnDisabled}`}
+          title="Coming soon"
+        >
+          <PlusCircleIcon />
+          {addToLabel}
+        </button>
+      ) : (
+        <Link to={addToHref} className={css.addMeasurementBtn}>
+          <PlusCircleIcon />
+          {addToLabel}
+        </Link>
+      )}
     </>
   );
 }

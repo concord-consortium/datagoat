@@ -61,9 +61,9 @@ function fakeRect(partial: Partial<DOMRect>): DOMRect {
 
 describe("AppShell", () => {
   describe("document.title sync (WCAG 2.4.2)", () => {
-    it("sets document.title to 'Health & Performance Log | DataGOAT' on /health", () => {
+    it("sets document.title to 'Health Log | DataGOAT' on /health", () => {
       renderShell("/health", <div>health content</div>);
-      expect(document.title).toBe("Health & Performance Log | DataGOAT");
+      expect(document.title).toBe("Health Log | DataGOAT");
     });
   });
 

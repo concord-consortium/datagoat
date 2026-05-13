@@ -13,6 +13,12 @@ import css from "./AddMetric.module.css";
 // re-implementing the tracking UI.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
+  // TODO(DGT-51 follow-up): accept "performance" once CustomMetricForm
+  // supports authoring performance customs. Until then, /add-metric/
+  // performance bounces back to /setup/tracking — matching the disabled
+  // 🚧 button there. CustomMetricForm itself also rejects "performance"
+  // today, so a deep-link to /add-metric/performance/new would lead to
+  // a broken flow if we accepted it here.
   if (type !== "health" && type !== "competition") {
     return <Navigate to="/setup/tracking" replace />;
   }

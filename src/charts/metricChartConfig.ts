@@ -132,6 +132,15 @@ const AVAILABILITY: MetricChartConfig = {
   random: () => 100,
 };
 
+const MOOD: MetricChartConfig = {
+  chartType: "bar",
+  yTopRaw: 5,
+  yBottomRaw: 1,
+  goalRaw: 4,
+  formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 1, 5),
+};
+
 // Competition metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
 // All numeric, all sport-counter-shaped. Demo random values span the
 // metric's full [yBottomRaw, yTopRaw] range so bars exercise the full
@@ -141,6 +150,7 @@ const AVAILABILITY: MetricChartConfig = {
 function competitionConfig(
   yBottomRaw: number,
   yTopRaw: number,
+  unit?: string,
 ): MetricChartConfig {
   return {
     chartType: "bar",
@@ -148,9 +158,23 @@ function competitionConfig(
     yBottomRaw,
     // No goalRaw — competition goals haven't been content-defined.
     formatValue: fmtRaw,
+    unit,
     random: (rng) => randomInt(rng, yBottomRaw, yTopRaw),
   };
 }
+
+// Winning Percentage. Per-entry values are 0 (loss) or 1 (win); the
+// chart renders the per-game pattern (binary axis) rather than a
+// derived percentage line. Aggregating to a running percentage in
+// the chart is a follow-up — the Competition Log Total column already
+// shows the overall percentage.
+const WINNING_PERCENTAGE: MetricChartConfig = {
+  chartType: "bar",
+  yTopRaw: 1,
+  yBottomRaw: 0,
+  formatValue: (v) => (v === 1 ? "W" : v === 0 ? "L" : `${v}`),
+  random: (rng) => (rng() < 0.5 ? 0 : 1),
+};
 
 const CONFIG: Record<string, MetricChartConfig> = {
   hydration: HYDRATION,
@@ -159,12 +183,14 @@ const CONFIG: Record<string, MetricChartConfig> = {
   protein: PROTEIN,
   leanMass: LEAN_MASS,
   availability: AVAILABILITY,
+  mood: MOOD,
+  winningPercentage: WINNING_PERCENTAGE,
   goals: competitionConfig(0, 10),
   assists: competitionConfig(0, 10),
   yards: competitionConfig(0, 200),
   tackles: competitionConfig(0, 10),
-  wins: competitionConfig(0, 5),
-  losses: competitionConfig(0, 5),
+  scores: competitionConfig(0, 100),
+  times: competitionConfig(0, 60, "min"),
 };
 
 const DEFAULT_CONFIG: MetricChartConfig = {

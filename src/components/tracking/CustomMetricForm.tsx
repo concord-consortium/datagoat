@@ -7,6 +7,7 @@ import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { TextField } from "../form/TextField";
+import radioCss from "../form/RadioGroup.module.css";
 import { CustomMetricLevelsEditor } from "./CustomMetricLevelsEditor";
 import { If } from "../common/If";
 import type {
@@ -487,6 +488,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         <label className={css.typeOption}>
           <input
             type="radio"
+            className={radioCss.radio}
             name="cm-toplevel"
             value="numeric"
             checked={draft.topLevel === "numeric"}
@@ -497,6 +499,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         <label className={css.typeOption}>
           <input
             type="radio"
+            className={radioCss.radio}
             name="cm-toplevel"
             value="categorical"
             checked={draft.topLevel === "categorical"}
@@ -507,6 +510,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         <label className={css.typeOption}>
           <input
             type="radio"
+            className={radioCss.radio}
             name="cm-toplevel"
             value="yn"
             checked={draft.topLevel === "yn"}

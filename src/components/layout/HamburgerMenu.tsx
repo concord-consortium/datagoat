@@ -26,7 +26,8 @@ interface MenuItem {
 
 const ITEMS: MenuItem[] = [
   { label: "Dashboard", to: "/dashboard", Icon: HomeIcon },
-  { label: "Health & Performance Log", to: "/health", Icon: CalendarIcon },
+  { label: "Health Log", to: "/health", Icon: CalendarIcon },
+  { label: "Performance Log", to: "/performance", Icon: StopwatchIcon },
   { label: "Competition Log", to: "/competition", Icon: StopwatchIcon },
   { label: "Profile", to: "/profile", Icon: ProfilePersonIcon },
   { label: "Tracked Data Setup", to: "/setup/tracking", Icon: GearIcon },
@@ -69,6 +70,9 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
     if (!isOnboarding) return true;
     if (to === "/profile") return true;
     if (to === "/setup/tracking" && phase === "pre-tracking") return true;
+    // About is version info + credits; it has no profile / tracking
+    // prerequisite, so let users reach it from the menu even mid-onboarding.
+    if (to === "/about") return true;
     return false;
   }
 

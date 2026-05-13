@@ -10,8 +10,10 @@ import PlusCircleIcon from "@/icons/plus-circle.svg?react";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import {
   ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
   ADDABLE_COMPETITION,
 } from "../metrics/addableMetrics";
 import type { CustomMetricDef } from "../types/customMetrics";
@@ -40,8 +42,12 @@ const STATIC: Record<string, RouteMeta> = {
     showHome: false,
   },
   "/health": {
-    title: "Health & Performance Log",
+    title: "Health Log",
     icon: <CalendarIcon />,
+  },
+  "/performance": {
+    title: "Performance Log",
+    icon: <StopwatchIcon />,
   },
   "/competition": {
     title: "Competition Log",
@@ -116,6 +122,32 @@ const PATTERNS: Array<{
     },
   },
   {
+    pattern: "/performance/:metricId",
+    resolve: (params, customs) => {
+      const m =
+        PERFORMANCE_METRICS.find((x) => x.id === params.metricId) ??
+        ADDABLE_PERFORMANCE.find((x) => x.id === params.metricId);
+      if (m) {
+        return {
+          title: m.name,
+          icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
+          backTo: "/performance",
+        };
+      }
+      const c = customs.find(
+        (x) => x.id === params.metricId && x.metricType === "performance",
+      );
+      if (c) {
+        return {
+          title: c.name,
+          icon: <CustomMetricIcon />,
+          backTo: "/performance",
+        };
+      }
+      return null;
+    },
+  },
+  {
     pattern: "/competition/:metricId",
     resolve: (params, customs) => {
       const m =
@@ -147,13 +179,16 @@ const PATTERNS: Array<{
     // permissive pattern and the create form would render with no title.
     pattern: "/add-metric/:type/new",
     resolve: (params) => {
+      // TODO(DGT-51 follow-up): accept "performance" here once
+      // CustomMetricForm supports authoring performance customs. For
+      // now AddMetric / CustomMetricForm reject "performance" and
+      // redirect to /setup/tracking, so resolving a Performance title
+      // here would render a stale header for one frame. Return null
+      // for performance until the form supports it.
       const t = params.type;
       if (t !== "health" && t !== "competition") return null;
       return {
-        title:
-          t === "health"
-            ? "New Health & Performance Metric"
-            : "New Competition Metric",
+        title: t === "health" ? "New Health Metric" : "New Competition Metric",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };
@@ -162,6 +197,8 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type/:metricId",
     resolve: (params, customs) => {
+      // TODO(DGT-51 follow-up): mirror the change above once
+      // CustomMetricForm supports performance customs.
       const t = params.type;
       if (t !== "health" && t !== "competition") return null;
       // Cross-type access (e.g. health URL on a competition metric) returns
@@ -181,13 +218,13 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type",
     resolve: (params) => {
+      // TODO(DGT-51 follow-up): accept "performance" once AddMetric
+      // does too. Same rationale as the /add-metric/:type/new entry
+      // above.
       const t = params.type;
       if (t !== "health" && t !== "competition") return null;
       return {
-        title:
-          t === "health"
-            ? "Health & Performance Metrics"
-            : "Competition Metrics",
+        title: t === "health" ? "Health Metrics" : "Competition Metrics",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };
@@ -227,9 +264,33 @@ const PATTERNS: Array<{
 
 const NO_CUSTOMS: readonly CustomMetricDef[] = [];
 
+// Optional location-state shape consumed by resolveRouteMeta. Callers
+// navigating to a metric detail (or other route with a static backTo)
+// can set `backTo` here to override the registry default, so the
+// SectionHeading back chevron returns the user to the page they
+// actually came from. Example: SortableMetricRow on /setup/tracking
+// navigates to /performance/:id with state.backTo = "/setup/tracking"
+// so the back button doesn't bounce them to /performance.
+export interface RouteLocationState {
+  backTo?: string;
+}
+
 export function resolveRouteMeta(
   pathname: string,
   customs: readonly CustomMetricDef[] = NO_CUSTOMS,
+  state?: RouteLocationState | null,
+): RouteMeta | null {
+  const base = resolveBase(pathname, customs);
+  if (!base) return base;
+  if (state && typeof state.backTo === "string") {
+    return { ...base, backTo: state.backTo };
+  }
+  return base;
+}
+
+function resolveBase(
+  pathname: string,
+  customs: readonly CustomMetricDef[],
 ): RouteMeta | null {
   if (STATIC[pathname]) return STATIC[pathname];
   for (const entry of PATTERNS) {

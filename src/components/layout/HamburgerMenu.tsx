@@ -70,6 +70,9 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
     if (!isOnboarding) return true;
     if (to === "/profile") return true;
     if (to === "/setup/tracking" && phase === "pre-tracking") return true;
+    // About is version info + credits; it has no profile / tracking
+    // prerequisite, so let users reach it from the menu even mid-onboarding.
+    if (to === "/about") return true;
     return false;
   }
 

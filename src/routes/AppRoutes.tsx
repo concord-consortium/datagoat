@@ -74,6 +74,10 @@ export function AppRoutes() {
               when loadState.status === 'missing'. ProtectedRoute would
               redirect back to /profile, dead-ending the info link. */}
           <Route path="/info/:topic" element={<InfoScreen />} />
+          {/* /about is version info + credits; no reason to require
+              profileComplete or trackingSetupComplete. Authed users
+              can reach it from the hamburger menu at any point. */}
+          <Route path="/about" element={<About />} />
         </Route>
 
         {/* Authed routes. ProtectedRoute redirects 'missing' profiles to
@@ -95,7 +99,6 @@ export function AppRoutes() {
             path="/competition/:metricId"
             element={<MetricDetail type="competition" />}
           />
-          <Route path="/about" element={<About />} />
         </Route>
 
         {/* /add-metric routes are part of the tracking-setup flow,

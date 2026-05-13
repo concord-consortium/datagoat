@@ -9,7 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
 import { OverlayProvider } from "../contexts/OverlayContext";
-import { resolveRouteMeta } from "./routeMeta";
+import { resolveRouteMeta, type RouteLocationState } from "./routeMeta";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
@@ -91,11 +91,16 @@ function AppShellInner() {
   // /health/:metricId and /competition/:metricId can resolve a custom
   // metric's name + back-target.
   const { metrics: customs } = useCustomMetrics();
-  const routeMeta = resolveRouteMeta(
-    pathname,
-    customs,
-    locationState as { backTo?: string } | null,
-  );
+  // useLocation().state is typed `unknown`; narrow it at the boundary
+  // to the exported RouteLocationState shape (or null). Callers that
+  // navigate with state via Link / navigate(...) pass an object
+  // matching RouteLocationState; anything else flows through as null
+  // so the resolver falls back to the registry defaults.
+  const safeLocationState: RouteLocationState | null =
+    locationState && typeof locationState === "object"
+      ? (locationState as RouteLocationState)
+      : null;
+  const routeMeta = resolveRouteMeta(pathname, customs, safeLocationState);
   const mainRef = useRef<HTMLElement | null>(null);
 
   // WCAG 2.4.2 (Page Titled): keep document.title in sync with the active

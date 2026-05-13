@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import {
+  Link,
   Navigate,
   useSearchParams,
 } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { MetricInputRow } from "./MetricInputRow";
+import rowCss from "./MetricInputRow.module.css";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
@@ -212,6 +214,33 @@ export function HealthLog() {
                       onChange={setAvailability}
                       detailHref={`/health/${id}`}
                     />
+                  );
+                }
+                if (id === "relativeProteinIntake") {
+                  // Auto-calculated metric per the DGT-51 design source.
+                  // The derivation (protein / leanMass with profile
+                  // weighting) is a follow-up; for now the row shows a
+                  // placeholder so the metric is visible without
+                  // pretending it has an input control.
+                  return (
+                    <tr key={id} className={rowCss.metricInputRow}>
+                      <td>
+                        <div className={rowCss.trackCell}>—</div>
+                      </td>
+                      <td className={rowCss.metricName}>
+                        <Link
+                          to={`/health/${id}`}
+                          className={rowCss.metricLink}
+                        >
+                          {builtIn.name}
+                        </Link>
+                      </td>
+                      <td>
+                        <span className={rowCss.placeholderCell}>
+                          🚧 Auto-calculated · coming soon
+                        </span>
+                      </td>
+                    </tr>
                   );
                 }
                 // Numeric named-field built-ins. Original five metrics

@@ -135,6 +135,19 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     whenCollected: "Daily",
   },
   {
+    id: "relativeProteinIntake",
+    name: "Relative Protein Intake",
+    unit: "g/kg",
+    type: "health",
+    whoCollects: "Auto-calculated",
+    howCollected: "Derived from Protein Intake and Lean Mass.",
+    description:
+      "Daily protein intake relative to lean body mass (g/kg). Auto-calculated; the input on the log row is a placeholder until the derivation lands in a follow-up.",
+    inputType: "numeric",
+    estimatedRange: "0.6–3 g/kg/day",
+    whenCollected: "Daily (auto)",
+  },
+  {
     id: "leanMass",
     name: "Lean Mass",
     unit: "kg",

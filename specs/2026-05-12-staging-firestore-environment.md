@@ -127,7 +127,7 @@ FIREBASE_PRODUCTION_APP_ID=...
 FIREBASE_PRODUCTION_MEASUREMENT_ID=...
 ```
 
-Real values must never be committed — each developer fills in their own `.env.local` from the secrets channel the team uses for these (e.g., the password manager entry created when the staging project ships).
+Real values must never be committed — each developer fills in their own `.env.local` from the secrets channel the team uses for these (e.g., the password manager entry created when the staging project ships). Copy values verbatim from the Firebase console; in particular, the storage bucket name may be in the legacy `*.appspot.com` form on older projects or the newer `*.firebasestorage.app` form on projects created after the migration. The example above uses the newer form, but the literal value from the console is what should be in `.env.local`.
 
 **`.env.staging`** (committed):
 ```bash
@@ -143,7 +143,18 @@ VITE_FIREBASE_MEASUREMENT_ID=${FIREBASE_STAGING_MEASUREMENT_ID}
 
 **`.env.production`** (committed): identical shape, `STAGING` → `PRODUCTION`.
 
-**`.env.emulators`** (committed, unchanged): still `VITE_USE_EMULATORS=true`. Emulator builds don't need real Firebase keys.
+**`.env.emulators`** (committed): keeps `VITE_USE_EMULATORS=true` and adds dummy `VITE_FIREBASE_*` values, matching the pattern already used by `.env.test`. `src/firebase.ts` unconditionally calls `initializeApp` with `VITE_FIREBASE_*` before `connectAuthEmulator` / `connectFirestoreEmulator` override the endpoints, so the values must be defined even though their content doesn't matter at runtime. Use `demo-datagoat` as the project ID for consistency with the `npm run emulators` script:
+
+```bash
+VITE_USE_EMULATORS=true
+VITE_FIREBASE_API_KEY=demo-api-key
+VITE_FIREBASE_AUTH_DOMAIN=demo-datagoat.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=demo-datagoat
+VITE_FIREBASE_STORAGE_BUCKET=demo-datagoat.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=000000000000
+VITE_FIREBASE_APP_ID=1:000000000000:web:0000000000000000000000
+VITE_FIREBASE_MEASUREMENT_ID=
+```
 
 **`.env.cloud`** (committed): **delete.** Superseded by `.env.staging` for the common "test against real cloud safely" case and `.env.production` for the rare "debug a prod-only issue" case.
 

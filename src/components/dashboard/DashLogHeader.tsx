@@ -29,7 +29,11 @@ export function DashLogHeader({
   highlight,
   post,
 }: DashLogHeaderProps) {
-  const Icon = type === "competition" ? StopwatchIcon : CalendarIcon;
+  // Health = Calendar (daily logging); Performance + Competition =
+  // Stopwatch (periodic / event-anchored data). Matches the icon
+  // choice in routeMeta and HamburgerMenu so the Performance section
+  // has a single visual identity across surfaces.
+  const Icon = type === "health" ? CalendarIcon : StopwatchIcon;
   const to =
     type === "health"
       ? "/health"

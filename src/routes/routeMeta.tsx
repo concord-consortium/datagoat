@@ -179,16 +179,16 @@ const PATTERNS: Array<{
     // permissive pattern and the create form would render with no title.
     pattern: "/add-metric/:type/new",
     resolve: (params) => {
+      // TODO(DGT-51 follow-up): accept "performance" here once
+      // CustomMetricForm supports authoring performance customs. For
+      // now AddMetric / CustomMetricForm reject "performance" and
+      // redirect to /setup/tracking, so resolving a Performance title
+      // here would render a stale header for one frame. Return null
+      // for performance until the form supports it.
       const t = params.type;
-      if (t !== "health" && t !== "performance" && t !== "competition")
-        return null;
+      if (t !== "health" && t !== "competition") return null;
       return {
-        title:
-          t === "health"
-            ? "New Health Metric"
-            : t === "performance"
-              ? "New Performance Metric"
-              : "New Competition Metric",
+        title: t === "health" ? "New Health Metric" : "New Competition Metric",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };
@@ -197,9 +197,10 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type/:metricId",
     resolve: (params, customs) => {
+      // TODO(DGT-51 follow-up): mirror the change above once
+      // CustomMetricForm supports performance customs.
       const t = params.type;
-      if (t !== "health" && t !== "performance" && t !== "competition")
-        return null;
+      if (t !== "health" && t !== "competition") return null;
       // Cross-type access (e.g. health URL on a competition metric) returns
       // null so the form's <Navigate replace /> redirect to the canonical
       // route happens without rendering a misleading title for one frame.
@@ -217,16 +218,13 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type",
     resolve: (params) => {
+      // TODO(DGT-51 follow-up): accept "performance" once AddMetric
+      // does too. Same rationale as the /add-metric/:type/new entry
+      // above.
       const t = params.type;
-      if (t !== "health" && t !== "performance" && t !== "competition")
-        return null;
+      if (t !== "health" && t !== "competition") return null;
       return {
-        title:
-          t === "health"
-            ? "Health Metrics"
-            : t === "performance"
-              ? "Performance Metrics"
-              : "Competition Metrics",
+        title: t === "health" ? "Health Metrics" : "Competition Metrics",
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type MouseEvent } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppHeader } from "../components/layout/AppHeader";
 import { DashboardHeaderSlide } from "../components/dashboard/DashboardHeaderSlide";
@@ -119,7 +119,13 @@ function AppShellInner() {
   // most visible in the "Go To Dashboard" handoff at the bottom of
   // /setup/tracking, where the Dashboard's chart cards were rendering
   // off-screen on first paint.
-  useEffect(() => {
+  //
+  // useLayoutEffect (not useEffect) so the scrollTop write happens
+  // before the browser paints the new route. With useEffect, the
+  // new page would briefly render at the previous scroll position
+  // and then jump to the top, which is the visible flicker the PR
+  // is supposed to eliminate.
+  useLayoutEffect(() => {
     const main = mainRef.current;
     if (main) main.scrollTop = 0;
   }, [pathname]);

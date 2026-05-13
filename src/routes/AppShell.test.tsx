@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
 
 // AppShell pulls in DashboardHeaderSlide (carousel + matchMedia),
@@ -138,6 +138,47 @@ describe("AppShell", () => {
       fireEvent.focusIn(target);
 
       expect(scrollBy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("scroll position reset on route change", () => {
+    it("resets <main>.scrollTop to 0 when navigating between routes", async () => {
+      // Regression guard for DGT-57. <main> is the only scroll
+      // container in AppShell; React Router does not reset nested
+      // container scroll on navigation, so without the
+      // useLayoutEffect added in this PR, the new page would land
+      // wherever the old page was scrolled (visible after
+      // /setup/tracking → /dashboard for the "Go To Dashboard"
+      // handoff at the bottom of the page).
+      const user = userEvent.setup();
+      render(
+        <MemoryRouter initialEntries={["/test"]}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route
+                path="/test"
+                element={
+                  <Link to="/health" data-testid="go-health">
+                    To Health
+                  </Link>
+                }
+              />
+              <Route path="/health" element={<div>health content</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      const main = document.getElementById("main-content")!;
+      // Simulate the user having scrolled down before navigating.
+      main.scrollTop = 1200;
+      expect(main.scrollTop).toBe(1200);
+
+      await user.click(screen.getByTestId("go-health"));
+
+      // After the route change, the useLayoutEffect resets the
+      // scroll container before paint.
+      expect(main.scrollTop).toBe(0);
     });
   });
 });

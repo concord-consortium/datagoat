@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
@@ -45,6 +45,21 @@ export function TrackedDataSetup() {
 
   const profile =
     loadState.status === "loaded" ? loadState.profile : null;
+
+  // Auto-clear the trackingSetupComplete gate as soon as a user with a
+  // complete profile reaches this page. Testers got confused when they
+  // toggled metrics (which auto-save per row), navigated away via the
+  // hamburger, and discovered they were still locked to /profile +
+  // /setup/tracking because they had not clicked the "Go To Dashboard"
+  // button. Defaults are sensible (HEALTH_METRICS auto-populates
+  // trackedHealthMetrics), every row edit auto-persists, and the
+  // "Go To Dashboard" button remains as a navigation shortcut, so
+  // flipping the flag on view is the lowest-surprise UX.
+  useEffect(() => {
+    if (profile?.profileComplete && !profile.trackingSetupComplete) {
+      void updateProfile({ trackingSetupComplete: true });
+    }
+  }, [profile?.profileComplete, profile?.trackingSetupComplete, updateProfile]);
 
   // Custom metrics for each type, adapted to MetricDefinition shape.
   const customHealth = useMemo(

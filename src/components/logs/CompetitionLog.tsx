@@ -16,7 +16,6 @@ import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
-import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import css from "./CompetitionLog.module.css";
 
 export function CompetitionLog() {
@@ -164,16 +163,17 @@ export function CompetitionLog() {
 
               // Total cell: winningPercentage gets its derived
               // percentage; all other metrics fall back to the
-              // running sum from competitionTotal.
+              // running sum from competitionTotal. Both helpers
+              // return undefined when no in-window entries exist
+              // (so a metric whose only entries are outside the
+              // visible HISTORY window renders blank, not "0").
               let totalCell: string;
               if (metric.id === "winningPercentage") {
                 const rate = winningPercentageRate(entries);
                 totalCell = rate === undefined ? "" : `${rate}%`;
               } else {
                 const total = competitionTotal(entries, metric.id);
-                totalCell = hasEntriesForMetric(metric.id, [], entries)
-                  ? String(total)
-                  : "";
+                totalCell = total === undefined ? "" : String(total);
               }
 
               return (

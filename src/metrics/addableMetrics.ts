@@ -124,9 +124,9 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
 ];
 
 // Default-off Performance metrics from the same design source. All
-// numeric; values stored in the generic `customMetrics` map on the
-// (future) PerformanceEntry until the built-ins-to-Firestore migration
-// reshapes storage.
+// numeric; values are stored in `PerformanceEntry.metrics` (the
+// generic map this entry type uses for both built-ins and customs)
+// until the built-ins-to-Firestore migration reshapes storage.
 export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   {
     id: "oneRepMaxBench",

@@ -14,10 +14,13 @@ export interface UserProfile {
   athleteType: AthleteType;
   competitionTerm: string;
   trackedHealthMetrics: string[];
-  // Optional during the transition to a 3-section model (DGT-51). New
-  // profiles initialize it to [] alongside trackedHealthMetrics /
-  // trackedCompetitionMetrics; legacy profiles may omit it. Consumers
-  // fall back to an empty array or PERFORMANCE_METRICS-default.
+  // Optional during the transition to a 3-section model (DGT-51).
+  // Like the other tracked* arrays, this field may be absent on
+  // newly-created profile docs: ProfileForm doesn't initialize it
+  // on first write and TrackedDataSetup only stamps it when the
+  // user toggles a Performance metric. Consumers fall back to a
+  // default — either PERFORMANCE_METRICS.map(m => m.id) (empty
+  // today) or [] depending on the call site.
   trackedPerformanceMetrics?: string[];
   trackedCompetitionMetrics: string[];
   profileComplete: boolean;

@@ -95,13 +95,23 @@ export function AppRoutes() {
             path="/competition/:metricId"
             element={<MetricDetail type="competition" />}
           />
+          <Route path="/about" element={<About />} />
+        </Route>
+
+        {/* /add-metric routes are part of the tracking-setup flow,
+            so they must be reachable BEFORE trackingSetupComplete
+            flips. ProtectedRoute with allowTrackingIncomplete keeps
+            the profile-complete gate but drops the
+            trackingSetupComplete redirect, so the "Add Metric"
+            buttons on /setup/tracking can actually open the form
+            during onboarding. */}
+        <Route element={<ProtectedRoute allowTrackingIncomplete />}>
           <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
           <Route
             path="/add-metric/:type/:metricId"
             element={<CustomMetricForm />}
           />
           <Route path="/add-metric/:type" element={<AddMetric />} />
-          <Route path="/about" element={<About />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

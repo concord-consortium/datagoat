@@ -17,7 +17,18 @@ import { ProfileLoadError } from "./ProfileLoadError";
 //              transient Firestore error or migration failure would drop
 //              a real user into onboarding and overwrite their profile
 //              on submit)
-export function ProtectedRoute() {
+//
+// `allowTrackingIncomplete` skips the trackingSetupComplete redirect.
+// Use it for routes that ARE part of the tracking-setup flow (e.g.,
+// /add-metric/*) — gating those behind trackingSetupComplete would
+// make the buttons that launch them dead-on-arrive: the user clicks
+// "Add Metric" while completing tracking, the gate bounces them
+// back to /setup/tracking, and they can never finish.
+export function ProtectedRoute({
+  allowTrackingIncomplete = false,
+}: {
+  allowTrackingIncomplete?: boolean;
+} = {}) {
   const { user, loading } = useAuth();
   const { loadState, retry } = useUser();
   if (loading) return <Loading />;
@@ -29,7 +40,7 @@ export function ProtectedRoute() {
     return <Navigate to="/profile" replace />;
   if (!loadState.profile.profileComplete)
     return <Navigate to="/profile" replace />;
-  if (!loadState.profile.trackingSetupComplete)
+  if (!allowTrackingIncomplete && !loadState.profile.trackingSetupComplete)
     return <Navigate to="/setup/tracking" replace />;
   return <Outlet />;
 }

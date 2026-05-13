@@ -112,6 +112,45 @@ describe("ProtectedRoute", () => {
     expect(screen.queryByText("PROFILE")).toBeNull();
   });
 
+  it("renders the child with allowTrackingIncomplete even when trackingSetupComplete is false", () => {
+    // Regression: /add-metric/* routes opt into allowTrackingIncomplete
+    // so the Add Metric buttons on /setup/tracking can launch the
+    // create form during the tracking-setup flow. Without this, the
+    // gate is circular - the user can't add metrics until tracking is
+    // complete, but tracking is completed by adding metrics.
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: true,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderRoute(<ProtectedRoute allowTrackingIncomplete />);
+    expect(screen.getByText("CHILD")).toBeInTheDocument();
+    expect(screen.queryByText("TRACKING")).toBeNull();
+  });
+
+  it("still redirects to /profile with allowTrackingIncomplete when profileComplete is false", () => {
+    // allowTrackingIncomplete only skips the trackingSetupComplete
+    // redirect; the profileComplete gate still applies, so a user
+    // who hasn't even started onboarding can't deep-link to an
+    // /add-metric/* URL.
+    ctx.user = { uid: "u1" };
+    ctx.loading = false;
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        profileComplete: false,
+        trackingSetupComplete: false,
+      }),
+    };
+    renderRoute(<ProtectedRoute allowTrackingIncomplete />);
+    expect(screen.getByText("PROFILE")).toBeInTheDocument();
+    expect(screen.queryByText("CHILD")).toBeNull();
+  });
+
   it("redirects to /login when no auth user", () => {
     ctx.user = null;
     ctx.loading = false;

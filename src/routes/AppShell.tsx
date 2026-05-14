@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type MouseEvent } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppHeader } from "../components/layout/AppHeader";
 import { DashboardHeaderSlide } from "../components/dashboard/DashboardHeaderSlide";
@@ -111,6 +111,24 @@ function AppShellInner() {
   useEffect(() => {
     document.title = docTitle ? `${docTitle} | DataGOAT` : "DataGOAT";
   }, [docTitle]);
+
+  // Reset the scroll container to the top on route change. <main> is
+  // the only scroll container (the column header sits outside <main>
+  // and stays pinned), so without this a navigation from the bottom
+  // of one page lands the next page already scrolled to the bottom -
+  // most visible in the "Go To Dashboard" handoff at the bottom of
+  // /setup/tracking, where the Dashboard's chart cards were rendering
+  // off-screen on first paint.
+  //
+  // useLayoutEffect (not useEffect) so the scrollTop write happens
+  // before the browser paints the new route. With useEffect, the
+  // new page would briefly render at the previous scroll position
+  // and then jump to the top, which is the visible flicker the PR
+  // is supposed to eliminate.
+  useLayoutEffect(() => {
+    const main = mainRef.current;
+    if (main) main.scrollTop = 0;
+  }, [pathname]);
 
   // Document focusin auto-scroll behavior (port of prototype HTML around
   // line 5460). Compute the element's position relative to <main> and the

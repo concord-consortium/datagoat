@@ -323,7 +323,7 @@ After implementation, before declaring done, run this checklist top to bottom. E
 **Deploy validation** (the real test — catches GCP-side gaps):
 10. `npm run deploy:staging` succeeds end-to-end. Functions deploy confirms staging Identity Platform upgrade landed. Hosting deploy confirms the SPA bundle reaches `datagoat-staging.web.app`.
 11. Visit `datagoat-staging.web.app`. Sign up with email/password, then sign in with Google, then sign in with Facebook. Each proves the respective OAuth credential is wired in the staging project.
-12. Attempt a Facebook sign-in with email scope omitted. Confirm rejection with the `[BLOCKED_NO_EMAIL]` sentinel in the client error. Post-deploy version of the wire-level smoke check.
+12. Attempt a Facebook sign-in with email scope omitted. To trigger this, on the Facebook OAuth consent screen click "Edit" (or "Choose what you allow") and uncheck the Email permission before continuing; Facebook returns a credential with no email, which the `beforeUserCreated` blocking trigger rejects. Confirm the client error contains the `[BLOCKED_NO_EMAIL]` sentinel. Post-deploy version of the wire-level smoke check.
 13. Create a metric definition; reload the page; confirm it persists. Proves Firestore + rules + indexes deployed to staging.
 14. `firebase functions:list -P staging | grep blockFacebookMissingEmail` returns the function with trigger type `providers/cloud.auth/eventTypes/user.beforeCreate`.
 
@@ -353,6 +353,7 @@ None blocking. A couple of small decisions to confirm during execution:
 | `default: datagoat-staging` in `.firebaserc` masks a production-intended `firebase deploy` typo, deploying to staging when prod was intended | Acceptable. The npm scripts always pass `-P` explicitly. The default only fires on ad-hoc CLI use, where deploying to staging is safer than the alternative of silently shipping to prod. |
 | `.env.cloud` deletion breaks an in-flight worktree on someone's machine | Low — the file is currently only referenced by the now-removed `dev:cloud` script. A pre-deletion grep confirms no other references. |
 | Existing CODAP test references `datagoat-production` literal that future readers think is real | Phase 3 fixes the fixture string. |
+| Switching `deploy:preview` to staging orphans any live production-hosted preview channels — they stay reachable at their `datagoat-b07dd--*.web.app` URLs but no longer receive updates from `deploy:preview` | At implementation time, run `firebase hosting:channel:list -P production` and confirm no channels are still being shared with stakeholders. Let unused channels expire (default 30 days) or delete them with `firebase hosting:channel:delete <channel> -P production`. If any are still live and in use, migrate the stakeholder to a fresh staging channel before the cutover. |
 
 ## What this spec does not cover
 

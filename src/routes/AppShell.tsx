@@ -115,7 +115,7 @@ function AppShellInner() {
   // Reset the scroll container to the top on route change. <main> is
   // the only scroll container (the column header sits outside <main>
   // and stays pinned), so without this a navigation from the bottom
-  // of one page lands the next page already scrolled to the bottom —
+  // of one page lands the next page already scrolled to the bottom -
   // most visible in the "Go To Dashboard" handoff at the bottom of
   // /setup/tracking, where the Dashboard's chart cards were rendering
   // off-screen on first paint.

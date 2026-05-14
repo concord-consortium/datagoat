@@ -14,11 +14,14 @@ import type {
   CustomMetricDef,
   CustomMetricInputType,
   CustomMetricLevel,
-  CustomMetricType,
 } from "../../types/customMetrics";
 import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
+
+// Authoring is not yet implemented for performance custom metrics, so
+// the form's route guard, builder, and body all narrow to this subset.
+type AuthorableCustomMetricType = "health" | "competition";
 
 type TopLevelKind = "numeric" | "categorical" | "yn";
 
@@ -77,7 +80,7 @@ function buildPayload(
   draft: DraftState,
   trimmedName: string,
   trimmedRef: string,
-  type: CustomMetricType,
+  type: AuthorableCustomMetricType,
 ): Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt"> {
   const avgDecimals = Number(draft.avgDecimals);
   if (
@@ -162,7 +165,7 @@ function parseCategoricalGoal(raw: string): number {
   return n;
 }
 
-function isValidType(t: string | undefined): t is CustomMetricType {
+function isAuthorableType(t: string | undefined): t is AuthorableCustomMetricType {
   return t === "health" || t === "competition";
 }
 
@@ -205,7 +208,7 @@ export function CustomMetricForm() {
   const { getMetric, loading } = useCustomMetrics();
   const { health, competition } = useData();
 
-  if (!isValidType(type)) {
+  if (!isAuthorableType(type)) {
     return <Navigate to="/setup/tracking" replace />;
   }
 
@@ -244,7 +247,7 @@ export function CustomMetricForm() {
 }
 
 interface BodyProps {
-  type: CustomMetricType;
+  type: AuthorableCustomMetricType;
   editing: CustomMetricDef | undefined;
 }
 

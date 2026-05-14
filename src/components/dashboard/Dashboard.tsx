@@ -84,7 +84,7 @@ export function Dashboard() {
   let healthPost: string | undefined;
   let healthStatus: string;
   if (healthChip === "all") {
-    healthStatus = "Great! You've logged all your health & performance data!";
+    healthStatus = "Great! You've logged all your health data!";
   } else if (healthLogged > 0) {
     healthPre = "Log ";
     healthHighlight = `${healthRemaining} remaining metric${healthRemaining === 1 ? "" : "s"}`;
@@ -160,10 +160,10 @@ export function Dashboard() {
         <hr className={css.sectionRule} aria-hidden="true" />
 
         {/* Performance Log Section. No ActivityCalendar (matches the
-            Competition pattern) — performance metrics are periodic
+            Competition pattern) - performance metrics are periodic
             (e.g. quarterly 1RMs, sprint times), so a daily calendar
             would render mostly empty. */}
-        <div className={`${css.dashLogSection} ${css.dashCompetitionSection}`}>
+        <div className={`${css.dashLogSection} ${css.dashPerformanceSection}`}>
           <div className={css.dashLogLabelRow}>
             <span className={css.sectionCalToday}>Performance Data</span>
           </div>

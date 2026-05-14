@@ -202,6 +202,34 @@ Key design choices:
 - **`deploy:preview` builds with `--mode staging` and deploys to `-P staging`.** Preview channels live on staging, so they share staging's auth and Firestore — safe for sharing with stakeholders.
 - **`deploy:staging` includes `firestore`** so both rules and indexes ship alongside hosting + functions. The pre-existing `deploy` script in `package.json` uses `firestore:rules` (rules only), which matches the current empty `firestore.indexes.json` but would silently drop composite indexes once any are added. Using the bare `firestore` token here future-proofs the deploy. Same for `deploy:production`.
 
+### 2a. CI workflow
+
+`.github/workflows/ci.yaml` keeps `npm run build` (= `build:production`) so CI continues to exercise the real production-mode build path — `.env.production`'s `${VAR}` expansion, dotenv-expand chain semantics, and the production bundle pipeline end-to-end. The catch: CI has no `.env.local`, so the `FIREBASE_PRODUCTION_*` source vars that `.env.production` references would expand to empty strings without erroring, and the bundle would ship with no Firebase config. CI would stop being a meaningful regression gate without flagging anything.
+
+Fix: inject dummy `FIREBASE_PRODUCTION_*` values via the workflow step's `env:` block. GitHub Actions puts the block's values into `process.env`, and Vite's dotenv-expand uses `process.env` as a source — so `.env.production`'s `${FIREBASE_PRODUCTION_*}` references resolve against the dummies and the build proceeds with real production env-file plumbing under test. No secrets needed (the values are placeholders, not real config).
+
+```yaml
+- run: npm run build
+  env:
+    FIREBASE_PRODUCTION_API_KEY: ci-dummy-api-key
+    FIREBASE_PRODUCTION_AUTH_DOMAIN: ci-dummy.firebaseapp.com
+    FIREBASE_PRODUCTION_PROJECT_ID: ci-dummy-project
+    FIREBASE_PRODUCTION_STORAGE_BUCKET: ci-dummy.appspot.com
+    FIREBASE_PRODUCTION_MESSAGING_SENDER_ID: "000000000000"
+    FIREBASE_PRODUCTION_APP_ID: "1:000000000000:web:0000000000000000000000"
+    FIREBASE_PRODUCTION_MEASUREMENT_ID: ""
+```
+
+What this catches that the previous (single-project) `vite build` on CI did not:
+
+- Typos in `.env.production`'s `${VAR}` references (e.g. `${FIREBASE_PRDUCTION_API_KEY}`) — the resulting empty bundle value is detectable by a small grep assertion or a runtime guard added later. The mechanics being exercised at all is the point.
+- A new `VITE_FIREBASE_*` field added to `src/firebase.ts` but not wired into `.env.production`.
+- Future regressions in Vite's dotenv-expand chain semantics.
+
+What CI still does not catch: that real values in a developer's `.env.local` are correct. That stays a Phase 5 local check.
+
+The maintenance cost is one workflow update each time a `FIREBASE_*` field is added or renamed — rare (the seven Firebase fields are stable). If the dummy schema starts feeling duplicative, the values can be moved into a checked-in `.github/ci.env` file that the workflow sources with `set -a; source .github/ci.env; set +a` before the build step.
+
 ---
 
 ## Phase 3: Code reference updates
@@ -321,6 +349,7 @@ None blocking. A couple of small decisions to confirm during execution:
 | OAuth credentials misconfigured on staging, sign-in silently broken | Validation step 11 exercises all three providers before declaring done. |
 | Identity Platform upgrade forgotten on staging, `deploy:staging:functions` fails | Documented in Phase 0 step 3 and CLAUDE.md edits. First failure is loud and actionable. |
 | Source-of-truth var renamed by a future contributor with `VITE_` prefix added back, leaking both project IDs into every bundle | Validation step 1 grep catches it. Phase 1b comment in `.env.example` explains why the prefix is omitted. |
+| `vite build` on CI silently expands `${FIREBASE_*}` source-var references to empty strings (no `.env.local` on CI), masking the breakage until a real production deploy | `ci.yaml` injects dummy `FIREBASE_PRODUCTION_*` values via the workflow step's `env:` block so `.env.production`'s `${VAR}` references resolve at build time (Phase 2a). CI now exercises the real production-mode build path; Phase 5 steps 1–3 still catch real-value bundle regressions locally. |
 | `default: datagoat-staging` in `.firebaserc` masks a production-intended `firebase deploy` typo, deploying to staging when prod was intended | Acceptable. The npm scripts always pass `-P` explicitly. The default only fires on ad-hoc CLI use, where deploying to staging is safer than the alternative of silently shipping to prod. |
 | `.env.cloud` deletion breaks an in-flight worktree on someone's machine | Low — the file is currently only referenced by the now-removed `dev:cloud` script. A pre-deletion grep confirms no other references. |
 | Existing CODAP test references `datagoat-production` literal that future readers think is real | Phase 3 fixes the fixture string. |

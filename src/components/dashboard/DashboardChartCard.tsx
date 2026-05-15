@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import { MetricChart } from "../../charts/MetricChart";
 import { SelectField } from "../form/SelectField";
 import {
@@ -82,13 +83,19 @@ export function DashboardChartCard({
   // custom among built-ins on /setup/tracking, and the picker
   // dropdown should reflect that order. Iterate trackedMetricIds and
   // dispatch to whichever map (built-in or custom) carries the id.
-  const tracked = useMemo<Array<{ id: string; name: string }>>(() => {
+  const tracked = useMemo<
+    Array<{ id: string; name: string; Icon?: MetricDefinition["Icon"] }>
+  >(() => {
     const builtInById = new Map(allMetrics.map((m) => [m.id, m]));
     const customById = new Map<string, (typeof allCustom)[number]>();
     for (const def of allCustom) {
       if (def.metricType === type) customById.set(def.id, def);
     }
-    const out: Array<{ id: string; name: string }> = [];
+    const out: Array<{
+      id: string;
+      name: string;
+      Icon?: MetricDefinition["Icon"];
+    }> = [];
     for (const id of trackedMetricIds) {
       const builtIn = builtInById.get(id);
       if (builtIn) {
@@ -160,7 +167,14 @@ export function DashboardChartCard({
         .filter(Boolean)
         .join(" ");
 
-  const selectOptions = tracked.map((m) => ({ value: m.id, label: m.name }));
+  // Addable built-ins and user custom metrics ship without a
+  // designer-final glyph; fall back to the generic custom-metric icon
+  // so every picker row (and the closed-state trigger) stays aligned.
+  const selectOptions = tracked.map((m) => ({
+    value: m.id,
+    label: m.name,
+    Icon: m.Icon ?? CustomMetricIcon,
+  }));
 
   return (
     <div className={css.chartCard}>

@@ -193,27 +193,59 @@
   display: none;
 }
 
-/* When open, paint the bright accent border + glow, square off the
-   bottom corners so the trigger merges with the picker panel below,
-   and clip the bottom of the painted area so the focus glow doesn't
-   bleed into the seam (matches the prototype's .custom-select.open
-   state). */
+/* When open, paint the bright accent border + glow. The picker panel
+   keeps its own full border (not merged with the trigger) so the same
+   styling reads correctly whether Chrome positions the picker below
+   or flips it above the trigger. The previously-merged look (square
+   inner corners + clip-path to hide the seam) couldn't be mirrored
+   for the flipped case -- @position-try only accepts positioning
+   properties, not border-radius -- so we render trigger and picker as
+   two distinct rounded rectangles in both directions. */
 .fieldSelect:open {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
-  border-radius: 6px 6px 0 0;
-  clip-path: inset(-20px -20px 0 -20px);
 }
 
 .fieldSelect::picker(select) {
   background: var(--surface2);
   border: 1.5px solid var(--accent);
-  border-top: none;
-  border-radius: 0 0 6px 6px;
+  border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5),
               0 2px 8px rgba(0, 0, 0, 0.3);
   padding: 0;
   margin: 0;
+  /* Prefer below the trigger; fall back to above only when there
+     isn't room. Without an explicit position-area Chrome flips the
+     panel near the bottom of the viewport, which surprised users. */
+  position-area: block-end span-inline-end;
+  position-try-fallbacks: block-start span-inline-end;
+  /* Cap the open list so a long Health metric set scrolls inside the
+     panel instead of overflowing into the next dashboard section. */
+  max-height: min(60svh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Standard-property fallback for browsers that don't apply the
+     ::-webkit-scrollbar rules below. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 175, 196, 0.5) transparent;
+}
+
+/* Chrome doesn't clip the scrollbar to the panel's border-radius, so a
+   default scrollbar pokes square into the rounded top/bottom corners.
+   Insetting the track with a vertical margin keeps it clear of the 6px
+   radius. */
+.fieldSelect::picker(select)::-webkit-scrollbar {
+  width: 10px;
+}
+
+.fieldSelect::picker(select)::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 8px;
+}
+
+.fieldSelect::picker(select)::-webkit-scrollbar-thumb {
+  background: rgba(155, 175, 196, 0.5);
+  border-radius: 5px;
 }
 
 .fieldSelect option {
@@ -224,6 +256,20 @@
   font-family: var(--font-body);
   font-size: 16px;
   border-bottom: 1px solid var(--border);
+  /* Lay icon + label out as a row so the metric glyph aligns with the
+     option text. */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The closed-state trigger renders <selectedcontent>, a clone of the
+   selected option's children (glyph <svg> + label text). Match the
+   open list's row layout so the trigger icon aligns with its label. */
+.fieldSelect selectedcontent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .fieldSelect option:last-child {

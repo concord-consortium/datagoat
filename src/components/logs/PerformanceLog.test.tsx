@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, fireEvent, screen } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  useLocation,
+  type Location,
+} from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
 import type { DataLoadState, PerformanceEntry } from "../../types/data";
@@ -88,12 +94,37 @@ function renderAt(initialPath: string) {
   );
 }
 
+let capturedLocation: Location | null = null;
+function LocationCapture() {
+  capturedLocation = useLocation();
+  return null;
+}
+
+function renderAtWithLocation(initialPath: string) {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route
+          path="/performance"
+          element={
+            <>
+              <PerformanceLog />
+              <LocationCapture />
+            </>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   ctx.user = { uid: "u1" };
   ctx.loadState = { status: "loaded", profile: PROFILE };
   ctx.performance = { status: "loaded", entries: [] };
   ctx.customMetrics = [];
+  capturedLocation = null;
 });
 
 afterEach(() => {
@@ -106,8 +137,9 @@ describe("PerformanceLog route + redirect", () => {
       status: "loaded",
       profile: { ...PROFILE, trackedPerformanceMetrics: ["oneRepMaxBench"] },
     };
-    renderAt("/performance?date=NOT-A-DATE");
-    expect(document.querySelectorAll("table").length).toBeGreaterThan(0);
+    renderAtWithLocation("/performance?date=NOT-A-DATE");
+    expect(capturedLocation?.pathname).toBe("/performance");
+    expect(capturedLocation?.search).toBe("");
   });
 
   it("?date= outside [0, HISTORY] falls back to /performance", () => {
@@ -115,8 +147,9 @@ describe("PerformanceLog route + redirect", () => {
       status: "loaded",
       profile: { ...PROFILE, trackedPerformanceMetrics: ["oneRepMaxBench"] },
     };
-    renderAt("/performance?date=2099-01-01");
-    expect(document.querySelectorAll("table").length).toBeGreaterThan(0);
+    renderAtWithLocation("/performance?date=2099-01-01");
+    expect(capturedLocation?.pathname).toBe("/performance");
+    expect(capturedLocation?.search).toBe("");
   });
 });
 

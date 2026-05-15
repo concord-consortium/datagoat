@@ -80,6 +80,14 @@
   flex-shrink: 0;
   position: relative;
   z-index: 3;
+  /* Match DashboardHeaderSlide's headerSlideWrap floor (which inherits
+     from the wordmark button's WCAG tap target) so AppHeader's row
+     height equals the dashboard's. Global box-sizing: border-box means
+     a min-height on .headerZone wouldn't bind, so we apply the floor
+     to the flex child instead. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .wordmark .data {

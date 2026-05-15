@@ -263,15 +263,6 @@
   gap: 10px;
 }
 
-/* The closed-state trigger renders <selectedcontent>, a clone of the
-   selected option's children (glyph <svg> + label text). Match the
-   open list's row layout so the trigger icon aligns with its label. */
-.fieldSelect selectedcontent {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .fieldSelect option:last-child {
   border-bottom: none;
 }

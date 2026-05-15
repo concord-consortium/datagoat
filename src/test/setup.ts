@@ -22,7 +22,9 @@ console.error = (...args: unknown[]) => {
     msg.includes("option") &&
     msg.includes("svg");
   if (isOptionNestingWarning) return;
-  realConsoleError(...args);
+  // Call with `console` as the receiver -- some console.error
+  // implementations rely on `this` being the console object.
+  realConsoleError.call(console, ...args);
 };
 
 // vitest.config has globals: false, which disables RTL's auto-cleanup hook

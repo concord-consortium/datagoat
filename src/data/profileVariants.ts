@@ -30,9 +30,9 @@ export interface ChartGoals {
   leanMassGoalLabel: string;
   leanMassYTop: string;
   leanMassYMid: string;
-  // Competition metric goals — placeholder values; content team will
-  // refine per-profile down the road. wins/losses intentionally have
-  // no goal (leaving the goal badge off for those metrics).
+  // Competition metric goals - placeholder values; content team will
+  // refine per-profile down the road. winningPercentage intentionally
+  // has no goal (leaving the goal badge off for that metric).
   goalsGoal?: number;
   assistsGoal?: number;
   yardsGoal?: number;

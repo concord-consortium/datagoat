@@ -41,6 +41,11 @@
      health-only color rules. */
 }
 
+.dashPerformanceSection {
+  /* prototype #dash-performance-section anchor; reserved for future
+     performance-only color rules. */
+}
+
 .dashCompetitionSection {
   /* prototype #dash-competition-section anchor. */
 }

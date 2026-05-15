@@ -27,7 +27,9 @@ type SlideIndex = 0 | 1;
 // to its off-screen-right default position. Without this, the next time
 // that slide becomes active it would animate from the LEFT (where it
 // finished exiting), reversing the direction every other cycle.
-const EXIT_RESET_MS = 650;
+// Exported so DashboardHeaderSlide.test.tsx can advance fake timers
+// precisely past the reset.
+export const EXIT_RESET_MS = 650;
 
 export function DashboardHeaderSlide() {
   const [slide, setSlide] = useState<SlideIndex>(0);

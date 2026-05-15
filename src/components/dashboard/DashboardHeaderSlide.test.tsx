@@ -40,6 +40,7 @@ import {
   DashboardHeaderSlide,
   WORDMARK_HOLD_MS,
   MOTIVATION_HOLD_MS,
+  EXIT_RESET_MS,
 } from "./DashboardHeaderSlide";
 
 // matchMedia mock with an addEventListener / removeEventListener spy so the
@@ -114,6 +115,36 @@ describe("DashboardHeaderSlide", () => {
     });
     const after2 = container.querySelectorAll(`[class*='headerSlideItem']`);
     expect(after2[0].className).toMatch(/active/);
+  });
+
+  it("clears the exit class after EXIT_RESET_MS so a slide re-enters from the right", async () => {
+    // Regression guard: the reset timeout was previously scheduled by
+    // advance() but cancelled by the slide-scheduling effect's cleanup
+    // (which re-runs on every `slide` change). exitingSlide never
+    // cleared, so the just-exited slide stayed pinned at its exitLeft
+    // (off-screen LEFT) position and every entrance after the first
+    // animated in from the left instead of the right.
+    const { container } = render(<DashboardHeaderSlide />);
+    const items = () =>
+      container.querySelectorAll(`[class*='headerSlideItem']`);
+
+    // Advance past the wordmark hold: slide 0 exits, slide 1 activates.
+    await act(async () => {
+      vi.advanceTimersByTime(WORDMARK_HOLD_MS + 10);
+    });
+    // Slide 0 is mid-exit -- it carries the exitLeft class.
+    expect(items()[0].className).toMatch(/exitLeft/);
+    expect(items()[1].className).toMatch(/active/);
+
+    // After EXIT_RESET_MS the exit class must be gone: slide 0 is back
+    // in its default (off-screen RIGHT) state -- neither exitLeft nor
+    // active -- so its next entrance sweeps in from the right.
+    await act(async () => {
+      vi.advanceTimersByTime(EXIT_RESET_MS + 10);
+    });
+    expect(items()[0].className).not.toMatch(/exitLeft/);
+    expect(items()[0].className).not.toMatch(/active/);
+    expect(items()[1].className).toMatch(/active/);
   });
 
   it("does NOT advance when any overlay is open (carousel paused)", async () => {

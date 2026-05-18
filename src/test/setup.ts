@@ -2,6 +2,32 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
+// React's validateDOMNesting predates the Customizable Select API and
+// flags <svg> as an invalid child of <option>. SelectField renders metric
+// glyphs inside <option> on purpose -- appearance: base-select makes that
+// markup valid, so the glyph shows in the open list (the closed-state
+// trigger paints its own separate overlay). The app is a client-only
+// SPA (no hydration), so the warning is pure noise. Filter ONLY this
+// exact <option>/<svg> nesting warning; every other console.error
+// still surfaces so real regressions aren't masked.
+//
+// React passes the tag names as %s substitution args (with or without
+// angle brackets depending on version), so the whole arg list is joined
+// and matched on the stable validateDOMNesting phrasing plus both tags.
+const realConsoleError = console.error;
+console.error = (...args: unknown[]) => {
+  const msg = args.map(String).join(" ");
+  const isOptionNestingWarning =
+    (msg.includes("cannot contain a nested") ||
+      msg.includes("cannot be a child of")) &&
+    msg.includes("option") &&
+    msg.includes("svg");
+  if (isOptionNestingWarning) return;
+  // Call with `console` as the receiver -- some console.error
+  // implementations rely on `this` being the console object.
+  realConsoleError.call(console, ...args);
+};
+
 // vitest.config has globals: false, which disables RTL's auto-cleanup hook
 // so we run cleanup manually here. Without this, dialogs and other rendered
 // trees from prior tests stay in the DOM and trip up the next test's queries.

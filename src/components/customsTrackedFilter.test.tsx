@@ -253,9 +253,10 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
         healthEntries={[]}
       />,
     );
-    // The first option is the disabled "Select …" placeholder, so
-    // option-values [1..] are the metrics.
-    expect(selectOptions(container).slice(1)).toEqual([
+    // DashboardChartCard always has a metric selected (tracked[0]), so
+    // SelectField omits the disabled "Select …" placeholder option --
+    // every rendered option is a real metric.
+    expect(selectOptions(container)).toEqual([
       "hydration",
       "c_w",
       "sleepTime",

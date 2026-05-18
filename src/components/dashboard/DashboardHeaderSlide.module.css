@@ -117,7 +117,10 @@
   width: 100%;
   overflow: visible;
   position: relative;
-  min-height: 60px;
+  /* 44px matches the wordmark button's WCAG tap-target min-height and
+     keeps the dashboard's brand chrome the same height as AppHeader's
+     (which has the same floor on its row). */
+  min-height: 44px;
 }
 
 /* .header-slide-item (prototype 972-991). The carousel uses asymmetric

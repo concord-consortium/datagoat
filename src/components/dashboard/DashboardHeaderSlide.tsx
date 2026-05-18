@@ -27,7 +27,9 @@ type SlideIndex = 0 | 1;
 // to its off-screen-right default position. Without this, the next time
 // that slide becomes active it would animate from the LEFT (where it
 // finished exiting), reversing the direction every other cycle.
-const EXIT_RESET_MS = 650;
+// Exported so DashboardHeaderSlide.test.tsx can advance fake timers
+// precisely past the reset.
+export const EXIT_RESET_MS = 650;
 
 export function DashboardHeaderSlide() {
   const [slide, setSlide] = useState<SlideIndex>(0);
@@ -41,22 +43,30 @@ export function DashboardHeaderSlide() {
   // both would create two sources of truth for the same state.
   const isAnyOverlayOpen = useIsAnyOverlayOpen();
   const timerRef = useRef<number | null>(null);
-  const resetRef = useRef<number | null>(null);
 
   const advance = useCallback(() => {
     setSlide((prev) => {
-      const next = ((prev + 1) % 2) as SlideIndex;
       setExitingSlide(prev);
-      // Clear the exit class after the animation completes so the
-      // outgoing slide returns to default (off-screen right).
-      if (resetRef.current !== null) window.clearTimeout(resetRef.current);
-      resetRef.current = window.setTimeout(() => {
-        setExitingSlide(null);
-        resetRef.current = null;
-      }, EXIT_RESET_MS);
-      return next;
+      return ((prev + 1) % 2) as SlideIndex;
     });
   }, []);
+
+  // Clear the exit class once the slide-out animation has finished, so
+  // the just-exited slide returns to its off-screen-RIGHT default and
+  // its next entrance sweeps in from the right.
+  //
+  // This MUST be its own effect keyed on exitingSlide. Folded into the
+  // slide-scheduling effect below, the reset timeout was cancelled by
+  // that effect's cleanup -- which re-runs on every `slide` change,
+  // i.e. exactly when advance() fires -- before it could clear
+  // exitingSlide. The just-exited slide then stayed pinned at its
+  // exit-left position, so every entrance after the first came in
+  // from the left instead of the right.
+  useEffect(() => {
+    if (exitingSlide === null) return;
+    const id = window.setTimeout(() => setExitingSlide(null), EXIT_RESET_MS);
+    return () => window.clearTimeout(id);
+  }, [exitingSlide]);
 
   // Reduced-motion + overlay pause guard. Three reactive inputs:
   //   - mq.matches (prefers-reduced-motion at schedule time AND at OS toggle)
@@ -91,10 +101,6 @@ export function DashboardHeaderSlide() {
 
     return () => {
       clear();
-      if (resetRef.current !== null) {
-        window.clearTimeout(resetRef.current);
-        resetRef.current = null;
-      }
       mq.removeEventListener("change", onMqChange);
     };
   }, [slide, isAnyOverlayOpen, advance]);

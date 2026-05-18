@@ -1,8 +1,15 @@
-import { forwardRef, useId, type Ref } from "react";
+import {
+  forwardRef,
+  useId,
+  type ComponentType,
+  type Ref,
+  type SVGProps,
+} from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import ChevronDownIcon from "@/icons/chevron-down.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
+import { If } from "../common/If";
 import fields from "./fields.module.css";
 import common from "../common.module.css";
 import css from "./SelectField.module.css";
@@ -10,6 +17,16 @@ import css from "./SelectField.module.css";
 export interface SelectOption {
   value: string;
   label: string;
+  // Optional per-option glyph rendered as an inline <svg> inside the
+  // <option>. appearance: base-select allows rich option content, so
+  // the glyph shows in the open list. The closed-state trigger does
+  // NOT inherit it -- base-select's default trigger renders only the
+  // selected option's text -- so SelectField paints the trigger glyph
+  // separately as an overlay, keyed off this same Icon. React warns
+  // that <svg> isn't a valid <option> child (its DOM-nesting validator
+  // predates the Customizable Select API); that warning is filtered in
+  // the test setup and is harmless at runtime in a non-SSR app.
+  Icon?: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 export interface SelectFieldProps {
@@ -66,14 +83,30 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
     const errorId = error ? `${selectId}-error` : undefined;
     const hintId = hint ? `${selectId}-hint` : undefined;
     const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
+    // Effective selection: the controlled value, or the uncontrolled
+    // defaultValue when no value is supplied. Both `filled` and the
+    // trigger glyph derive from this so controlled and uncontrolled
+    // usage stay consistent.
+    const selectedValue = value ?? defaultValue;
     const filled =
       hasValue ??
-      (typeof value === "string" ? value.length > 0 : false);
+      (typeof selectedValue === "string" ? selectedValue.length > 0 : false);
+
+    // Glyph for the closed-state trigger. appearance: base-select's
+    // default trigger renders only the selected option's text, not its
+    // child <svg>, so SelectField paints the icon itself as an overlay
+    // (same pattern as the chevron) rather than authoring a
+    // <button><selectedcontent> -- which would add button-in-select
+    // nesting warnings.
+    const TriggerIcon = options.find(
+      (opt) => opt.value === selectedValue,
+    )?.Icon;
 
     const selectCls = clsx(
       fields.fieldSelect,
       filled && fields.hasValue,
       error && fields.fieldError,
+      TriggerIcon && css.hasTriggerIcon,
     );
 
     const labelCls = clsx(fields.fieldLabel, labelVisuallyHidden && common.visuallyHidden);
@@ -104,15 +137,29 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
               onBlur={onBlur}
               disabled={disabled}
             >
-              <option value="" disabled>
-                {placeholder}
-              </option>
-              {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              <If condition={!filled}>
+                <option value="" disabled>
+                  {placeholder}
                 </option>
-              ))}
+              </If>
+              {options.map((opt) => {
+                const OptionIcon = opt.Icon;
+                return (
+                  <option key={opt.value} value={opt.value}>
+                    {OptionIcon && (
+                      <OptionIcon
+                        className={css.optionIcon}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {opt.label}
+                  </option>
+                );
+              })}
             </select>
+            {TriggerIcon && (
+              <TriggerIcon className={css.triggerIcon} aria-hidden="true" />
+            )}
             <ChevronDownIcon className={css.chevron} aria-hidden="true" />
           </div>
           {infoTopic && (

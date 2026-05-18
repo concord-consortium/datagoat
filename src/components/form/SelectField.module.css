@@ -24,6 +24,13 @@
   padding-right: 40px;
 }
 
+/* Extra left padding when the closed-state trigger paints a metric
+   glyph, so the selected option's label clears the .triggerIcon
+   overlay. 14px (icon left) + 24px (icon) + 10px (gap) = 48px. */
+.selectInner > select.hasTriggerIcon {
+  padding-left: 48px;
+}
+
 .chevron {
   position: absolute;
   right: 14px;
@@ -53,4 +60,31 @@
   .selectInner > select:open ~ .chevron {
     transform: translateY(-50%);
   }
+}
+
+/* Per-option metric glyph rendered as an inline <svg> inside <option>,
+   next to the label text node. 24px matches the SectionHeading icon
+   grid; flex-shrink:0 keeps the glyph from collapsing when option text
+   is long. color drives the SVG's stroke="currentColor"; accent keeps
+   the glyph on-brand in the open list. */
+.optionIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* Closed-state trigger glyph for the selected metric. Overlaid on the
+   left of the <select> (mirror of .chevron on the right) because
+   base-select's default trigger only renders the selected option's
+   text. The select gets matching padding-left via .hasTriggerIcon. */
+.triggerIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  color: var(--accent);
+  pointer-events: none;
 }

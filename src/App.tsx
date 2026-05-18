@@ -7,8 +7,8 @@ import { CustomMetricsProvider } from "./contexts/CustomMetricsContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import css from "./App.module.css";
 
-export const APP_VERSION = "v0.3.0";
-export const APP_VERSION_DESC = "Custom metrics and more default metrics";
+export const APP_VERSION = "v0.3.1";
+export const APP_VERSION_DESC = "Custom metrics, more default metrics, bug fixes";
 
 export default function App() {
   return (

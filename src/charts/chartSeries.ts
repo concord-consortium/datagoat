@@ -7,10 +7,11 @@ import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
 import { getMetricChartConfig, getMetricOverride } from "./metricChartConfig";
 
-// Resolve the chart goal line for a metric in raw units.
-// Per-profile goals from PROFILE_CHART_GOALS take precedence; metrics
-// without a per-profile entry fall back to the static goal in
-// metricChartConfig (e.g., Hydration's 3, Availability's 80%).
+// Resolve the chart goal line for a metric in raw units. Precedence:
+//   1. a user metric override (getMetricOverride) — beats everything;
+//   2. per-profile goals from PROFILE_CHART_GOALS;
+//   3. the static goal in metricChartConfig (e.g., Hydration's 3,
+//      Availability's 80%).
 export function lookupGoalLine(
   metricId: string,
   profileKey: string,

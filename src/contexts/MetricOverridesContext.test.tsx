@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-const setDocSpy = vi.fn(async () => {});
+const setDocSpy = vi.fn<(...args: unknown[]) => Promise<void>>(async () => {});
 vi.mock("firebase/firestore", () => ({
   collection: () => ({}),
   doc: (_db: unknown, _col: string, id: string) => ({ id }),
@@ -84,7 +84,7 @@ describe("MetricOverridesProvider", () => {
     );
     await save!("leanMass", { goalRaw: 80, yTopRaw: 100, yBottomRaw: 0 });
     expect(setDocSpy).toHaveBeenCalledTimes(1);
-    const [ref, payload, options] = setDocSpy.mock.calls[0] as [
+    const [ref, payload, options] = setDocSpy.mock.calls[0] as unknown as [
       { id: string },
       Record<string, unknown>,
       Record<string, unknown>,

@@ -88,18 +88,18 @@ export function SortableMetricRow({
       </td>
       <td className={css.metricName}>{name}</td>
       <td>
-        {/* Edit-pencil cell: only populated for custom metrics so
-            authors can jump back to the create/edit form. Built-in
-            rows render an empty cell so the column lines up. */}
-        {isCustom && (
-          <Link
-            to={`/add-metric/${type}/${id}`}
-            className={css.metricInfoBtn}
-            aria-label={`Edit ${name}`}
-          >
-            ✏︎
-          </Link>
-        )}
+        {/* Edit-pencil cell: links to the metric's edit form. For a
+            custom metric this opens CustomMetricForm; for a built-in
+            it opens MetricOverrideForm (goal / y-axis override). The
+            route is the same — the form's gateway dispatches on the
+            id. */}
+        <Link
+          to={`/add-metric/${type}/${id}`}
+          className={css.metricInfoBtn}
+          aria-label={`Edit ${name}`}
+        >
+          ✏︎
+        </Link>
       </td>
       <td>
         {/* Info link: same destination (MetricDetail) for both

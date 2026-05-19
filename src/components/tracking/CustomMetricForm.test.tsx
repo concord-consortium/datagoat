@@ -79,6 +79,7 @@ import {
 } from "react-router-dom";
 import { setDoc as mockedSetDoc } from "firebase/firestore";
 import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
+import { MetricOverridesProvider } from "../../contexts/MetricOverridesContext";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import { CustomMetricForm } from "./CustomMetricForm";
 
@@ -91,15 +92,17 @@ function LocationProbe() {
 
 function renderAt(path: string) {
   return render(
-    <CustomMetricsProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
-          <Route path="/add-metric/:type/:metricId" element={<CustomMetricForm />} />
-          <Route path="/setup/tracking" element={<div>back to tracking setup</div>} />
-        </Routes>
-      </MemoryRouter>
-    </CustomMetricsProvider>,
+    <MemoryRouter initialEntries={[path]}>
+      <CustomMetricsProvider>
+        <MetricOverridesProvider initialOverrides={[]}>
+          <Routes>
+            <Route path="/add-metric/:type/new" element={<CustomMetricForm />} />
+            <Route path="/add-metric/:type/:metricId" element={<CustomMetricForm />} />
+            <Route path="/setup/tracking" element={<div>back to tracking setup</div>} />
+          </Routes>
+        </MetricOverridesProvider>
+      </CustomMetricsProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -774,6 +777,17 @@ describe("CustomMetricForm — edit-mode inference", () => {
       updatedAt: 0,
     });
     expect((screen.getByRole("radio", { name: /categorical/i }) as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe("CustomMetricForm (built-in metric gateway)", () => {
+  it("renders the override form for a built-in metric id", async () => {
+    // leanMass is a built-in health metric — the gateway should route to
+    // MetricOverrideForm, which shows a disabled Name field.
+    renderAt("/add-metric/health/leanMass");
+    const name = await screen.findByLabelText("Name");
+    expect(name).toBeDisabled();
+    expect((name as HTMLInputElement).value).toBe("Lean Mass");
   });
 });
 

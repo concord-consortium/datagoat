@@ -45,7 +45,7 @@ function renderForm(metric = leanMass, overrides: MetricOverride[] = []) {
   return render(
     <MemoryRouter>
       <MetricOverridesProvider initialOverrides={overrides}>
-        <MetricOverrideForm type="health" metric={metric} />
+        <MetricOverrideForm metric={metric} />
       </MetricOverridesProvider>
     </MemoryRouter>,
   );
@@ -93,6 +93,34 @@ describe("MetricOverrideForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByText(/between 1 and 8/i)).toBeInTheDocument();
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects y-axis top <= bottom for an ascending metric", () => {
+    renderForm(leanMass);
+    fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "70" },
+    });
+    fireEvent.change(screen.getByLabelText("Y-axis top"), {
+      target: { value: "50" },
+    });
+    fireEvent.change(screen.getByLabelText("Y-axis bottom"), {
+      target: { value: "50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText(/top must be greater/i)).toBeInTheDocument();
+  });
+
+  it("rejects y-axis top >= bottom for an inverted metric (hydration)", () => {
+    renderForm(hydration);
+    fireEvent.change(screen.getByLabelText("Goal"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("Y-axis top"), {
+      target: { value: "5" },
+    });
+    fireEvent.change(screen.getByLabelText("Y-axis bottom"), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText(/top must be less/i)).toBeInTheDocument();
   });
 
   it("saves a valid override and navigates back", async () => {

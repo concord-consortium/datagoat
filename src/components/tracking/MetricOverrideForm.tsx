@@ -9,18 +9,18 @@ import {
 } from "../../charts/chartSeries";
 import { getBaseMetricChartConfig } from "../../charts/metricChartConfig";
 import { resolveGoalText } from "../../data/metricGoals";
+import { If } from "../common/If";
 import { TextField } from "../form/TextField";
 import type { MetricDefinition } from "../../metrics/types";
 import css from "./CustomMetricForm.module.css";
 
 interface MetricOverrideFormProps {
-  type: "health" | "competition";
   metric: MetricDefinition;
 }
 
 // Edit form for a built-in metric: only the goal and the chart y-axis
 // bounds are editable. Everything else is shown disabled / read-only.
-export function MetricOverrideForm({ type: _type, metric }: MetricOverrideFormProps) {
+export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
   const navigate = useNavigate();
   const { getOverride, saveOverride } = useMetricOverrides();
   const { loadState } = useUser();
@@ -55,6 +55,10 @@ export function MetricOverrideForm({ type: _type, metric }: MetricOverrideFormPr
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (goalRaw.trim() === "") {
+      setError("Goal is required.");
+      return;
+    }
     const goal = Number(goalRaw);
     const top = Number(yTopRaw);
     const bottom = Number(yBottomRaw);
@@ -106,22 +110,20 @@ export function MetricOverrideForm({ type: _type, metric }: MetricOverrideFormPr
         label="Name"
         value={metric.name}
         disabled
-        onChange={() => {}}
       />
       <TextField
         id="mo-unit"
         label="Unit"
         value={metric.displayUnit ?? metric.unit}
         disabled
-        onChange={() => {}}
       />
 
-      {existing && (
+      <If condition={existing !== undefined}>
         <p className={css.hint}>This metric has been customized.</p>
-      )}
-      {goalText && (
+      </If>
+      <If condition={goalText !== null}>
         <p className={css.hint}>Recommended goal: {goalText}.</p>
-      )}
+      </If>
 
       <TextField
         id="mo-goal"

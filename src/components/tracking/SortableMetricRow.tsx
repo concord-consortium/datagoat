@@ -18,11 +18,9 @@ interface SortableMetricRowProps {
   // table; the drag handle aria-describedby's it so SR users hear the
   // keyboard shortcut summary on focus.
   reorderHintId: string;
-  // True for user-defined custom metrics. Custom rows populate the
-  // Edit-pencil cell (link to the create/edit form) and render the
-  // custom-metric icon in the Info cell instead of the built-in's
-  // Icon. The Info-cell link target stays the same — both built-ins
-  // and customs link to /:type/:id (MetricDetail).
+  // True for user-defined custom metrics. Affects only the Info-cell
+  // icon (CustomMetricIcon instead of the built-in's Icon). The
+  // edit-pencil cell is rendered for all rows regardless of this flag.
   isCustom?: boolean;
 }
 

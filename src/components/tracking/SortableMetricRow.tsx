@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import DragDots from "@/icons/drag-dots.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
+import { If } from "../common/If";
 import css from "./TrackedMetricsTable.module.css";
 
 interface SortableMetricRowProps {
@@ -20,7 +21,7 @@ interface SortableMetricRowProps {
   reorderHintId: string;
   // True for user-defined custom metrics. Affects only the Info-cell
   // icon (CustomMetricIcon instead of the built-in's Icon). The
-  // edit-pencil cell is rendered for all rows regardless of this flag.
+  // edit-pencil cell is suppressed for performance rows (unsupported).
   isCustom?: boolean;
 }
 
@@ -86,18 +87,20 @@ export function SortableMetricRow({
       </td>
       <td className={css.metricName}>{name}</td>
       <td>
-        {/* Edit-pencil cell: links to the metric's edit form. For a
-            custom metric this opens CustomMetricForm; for a built-in
-            it opens MetricOverrideForm (goal / y-axis override). The
-            route is the same — the form's gateway dispatches on the
-            id. */}
-        <Link
-          to={`/add-metric/${type}/${id}`}
-          className={css.metricInfoBtn}
-          aria-label={`Edit ${name}`}
-        >
-          ✏︎
-        </Link>
+        {/* Edit-pencil cell: links to the metric's edit form (custom
+            metrics open CustomMetricForm, built-ins open
+            MetricOverrideForm). Suppressed for performance metrics -
+            performance editing is not supported, so the route would
+            dead-end back to /setup/tracking. */}
+        <If condition={type !== "performance"}>
+          <Link
+            to={`/add-metric/${type}/${id}`}
+            className={css.metricInfoBtn}
+            aria-label={`Edit ${name}`}
+          >
+            ✏︎
+          </Link>
+        </If>
       </td>
       <td>
         {/* Info link: same destination (MetricDetail) for both

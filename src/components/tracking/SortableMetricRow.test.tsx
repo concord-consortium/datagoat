@@ -6,7 +6,10 @@ import { DndContext } from "@dnd-kit/core";
 import { SortableContext } from "@dnd-kit/sortable";
 import { SortableMetricRow } from "./SortableMetricRow";
 
-function renderRow(isCustom: boolean) {
+function renderRow(
+  isCustom: boolean,
+  type: "health" | "performance" | "competition" = "health",
+) {
   return render(
     <MemoryRouter>
       <DndContext>
@@ -16,7 +19,7 @@ function renderRow(isCustom: boolean) {
               <SortableMetricRow
                 id="leanMass"
                 name="Lean Mass"
-                type="health"
+                type={type}
                 checked
                 onToggleCheck={vi.fn()}
                 reorderHintId="hint"
@@ -42,5 +45,10 @@ describe("SortableMetricRow edit pencil", () => {
     expect(
       screen.getByRole("link", { name: "Edit Lean Mass" }),
     ).toHaveAttribute("href", "/add-metric/health/leanMass");
+  });
+
+  it("does not render an Edit link for a performance metric row", () => {
+    renderRow(false, "performance");
+    expect(screen.queryByRole("link", { name: /^Edit / })).toBeNull();
   });
 });

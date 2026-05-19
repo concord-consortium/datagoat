@@ -5,7 +5,7 @@ import type {
 } from "../types/data";
 import { daysAgoFromISO, isoAtDaysAgo } from "../utils/dates";
 import { PROFILE_CHART_GOALS } from "../data/profileVariants";
-import { getMetricChartConfig } from "./metricChartConfig";
+import { getMetricChartConfig, getMetricOverride } from "./metricChartConfig";
 
 // Resolve the chart goal line for a metric in raw units.
 // Per-profile goals from PROFILE_CHART_GOALS take precedence; metrics
@@ -15,6 +15,12 @@ export function lookupGoalLine(
   metricId: string,
   profileKey: string,
 ): number | undefined {
+  // A user override of the goal wins over every default — including
+  // the profile-keyed goals below.
+  const override = getMetricOverride(metricId);
+  if (override?.goalRaw !== undefined) {
+    return override.goalRaw;
+  }
   const goals = PROFILE_CHART_GOALS[profileKey];
   if (goals) {
     switch (metricId) {

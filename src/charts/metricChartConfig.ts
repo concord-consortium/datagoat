@@ -208,10 +208,13 @@ const DEFAULT_CONFIG: MetricChartConfig = {
   random: (rng) => randomInt(rng, 0, 100),
 };
 
-// Module-level overlay for user-defined custom metrics. The
-// CustomMetricsProvider syncs this on every change via
-// setCustomChartConfigs() below. getMetricChartConfig consults this
-// after the built-in CONFIG and before falling back to DEFAULT_CONFIG.
+// Module-level overlays for chart-config augmentation. Two registries
+// share a single subscriber set and version counter:
+//   _customConfigs    — full config replacements for user-defined
+//     custom metrics (set by CustomMetricsProvider via
+//     setCustomChartConfigs).
+//   _metricOverrides  — partial goal/axis overrides for built-in
+//     metrics (set by MetricOverridesProvider via setMetricOverrides).
 //
 // This is a deliberate side-effect channel rather than a parameter
 // thread because getMetricChartConfig is called from many pure

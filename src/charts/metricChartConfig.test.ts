@@ -264,6 +264,7 @@ describe("metric overrides overlay", () => {
   it("getBaseMetricChartConfig ignores the override registry", () => {
     setMetricOverrides({ leanMass: { goalRaw: 70 } });
     expect(getBaseMetricChartConfig("leanMass").goalRaw).toBeUndefined();
+    expect(getBaseMetricChartConfig("leanMass").unit).toBe("kg");
   });
 
   it("getMetricOverride returns the registered partial, or undefined", () => {

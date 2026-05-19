@@ -55,13 +55,17 @@
   }
 }
 
-/* .data-table - prototype lines 1401-1431 */
+/* .data-table - prototype lines 1401-1431.
+   table-layout: fixed pairs with the explicit widths on the drag /
+   track / edit / info columns below so the metric-name column absorbs
+   the remaining space and can elide long names without pushing the
+   table past its container. */
 .dataTable {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-body);
   font-size: 16px;
-  table-layout: auto;
+  table-layout: fixed;
 }
 .dataTable thead th {
   font-family: var(--font-display);
@@ -82,7 +86,8 @@
 .dataTable thead th:nth-child(2) .trackLabel {
   display: inline-block;
 }
-.dataTable thead th:nth-child(4) {
+.dataTable thead th:nth-child(4),
+.dataTable thead th:nth-child(5) {
   width: 52px;
   text-align: center;
 }
@@ -100,6 +105,12 @@
 }
 .metricName {
   font-weight: 600;
+  /* Elide long names so the fixed-layout column can shrink without
+     overflowing. The full name remains in the DOM (accessible to
+     screen readers) and is shown on hover via the cell's title. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* metric-info-btn - prototype lines 1442-1471 */

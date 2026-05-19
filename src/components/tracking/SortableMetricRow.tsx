@@ -86,7 +86,7 @@ export function SortableMetricRow({
           aria-label={`Track ${name}`}
         />
       </td>
-      <td className={css.metricName}>{name}</td>
+      <td className={css.metricName} title={name}>{name}</td>
       <td>
         {/* Edit-pencil cell: links to the metric's edit form (custom
             metrics open CustomMetricForm, built-ins open

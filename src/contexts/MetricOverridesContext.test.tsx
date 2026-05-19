@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const setDocSpy = vi.fn(async () => {});
@@ -43,6 +43,8 @@ function Probe() {
 }
 
 describe("MetricOverridesProvider", () => {
+  beforeEach(() => { setMetricOverrides({}); });
+
   it("exposes seeded overrides via getOverride", () => {
     render(
       <MetricOverridesProvider initialOverrides={[seed({ goalRaw: 70 })]}>
@@ -53,7 +55,6 @@ describe("MetricOverridesProvider", () => {
   });
 
   it("registers the chart-config overlay for seeded overrides", () => {
-    setMetricOverrides({});
     render(
       <MetricOverridesProvider
         initialOverrides={[seed({ goalRaw: 70, yTopRaw: 90, yBottomRaw: 40 })]}
@@ -66,7 +67,6 @@ describe("MetricOverridesProvider", () => {
       yTopRaw: 90,
       yBottomRaw: 40,
     });
-    setMetricOverrides({});
   });
 
   it("saveOverride upserts a doc with the deterministic id and ownerId", async () => {

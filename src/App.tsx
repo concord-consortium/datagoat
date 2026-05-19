@@ -4,6 +4,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { CustomMetricsProvider } from "./contexts/CustomMetricsContext";
+import { MetricOverridesProvider } from "./contexts/MetricOverridesContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import css from "./App.module.css";
 
@@ -18,9 +19,11 @@ export default function App() {
           <AuthProvider>
             <UserProvider>
               <CustomMetricsProvider>
-                <DataProvider>
-                  <AppRoutes />
-                </DataProvider>
+                <MetricOverridesProvider>
+                  <DataProvider>
+                    <AppRoutes />
+                  </DataProvider>
+                </MetricOverridesProvider>
               </CustomMetricsProvider>
             </UserProvider>
           </AuthProvider>

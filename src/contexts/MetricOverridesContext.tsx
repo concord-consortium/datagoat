@@ -1,0 +1,220 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+  type Timestamp,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "./AuthContext";
+import type { MetricOverride } from "../types/metricOverrides";
+import {
+  setMetricOverrides,
+  type MetricOverrideFields,
+} from "../charts/metricChartConfig";
+
+// The three editable fields, as the form passes them in.
+export type MetricOverridePatch = {
+  goalRaw?: number;
+  yTopRaw?: number;
+  yBottomRaw?: number;
+};
+
+interface MetricOverridesValue {
+  overrides: MetricOverride[];
+  // True until the first snapshot lands (or there is no user / a test
+  // seed short-circuits the subscription).
+  loading: boolean;
+  getOverride: (metricId: string) => MetricOverride | undefined;
+  saveOverride: (metricId: string, patch: MetricOverridePatch) => Promise<void>;
+}
+
+const MetricOverridesContext = createContext<MetricOverridesValue | null>(null);
+
+interface ProviderProps {
+  children: ReactNode;
+  // Test seam — pre-seeds the list AND short-circuits the Firestore
+  // subscription. Production callers omit this.
+  initialOverrides?: MetricOverride[];
+}
+
+const COLLECTION = "metricOverrides";
+
+// Deterministic doc id: one override doc per (user, metric).
+function overrideDocId(uid: string, metricId: string): string {
+  return `${uid}_${metricId}`;
+}
+
+// Firestore Timestamp -> ms epoch.
+function tsToMillis(ts: unknown): number {
+  if (
+    ts &&
+    typeof ts === "object" &&
+    typeof (ts as Timestamp).toMillis === "function"
+  ) {
+    return (ts as Timestamp).toMillis();
+  }
+  return 0;
+}
+
+// A finite number or undefined — never NaN. Guards both the Firestore
+// reader and the overlay builder against a corrupt / partially-written
+// doc producing NaN downstream in linearScale / SVG attributes.
+function finiteOrUndefined(raw: unknown): number | undefined {
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : undefined;
+}
+
+export function fromDoc(
+  id: string,
+  data: Record<string, unknown>,
+): MetricOverride {
+  return {
+    id,
+    ownerId: String(data.ownerId ?? ""),
+    metricId: String(data.metricId ?? ""),
+    goalRaw: finiteOrUndefined(data.goalRaw),
+    yTopRaw: finiteOrUndefined(data.yTopRaw),
+    yBottomRaw: finiteOrUndefined(data.yBottomRaw),
+    createdAt: tsToMillis(data.createdAt),
+    updatedAt: tsToMillis(data.updatedAt),
+  };
+}
+
+// Build the chart-config overlay: one partial entry per override,
+// carrying only the fields that are finite numbers.
+function buildOverlay(
+  overrides: MetricOverride[],
+): Record<string, MetricOverrideFields> {
+  const overlay: Record<string, MetricOverrideFields> = {};
+  for (const o of overrides) {
+    const fields: MetricOverrideFields = {};
+    if (o.goalRaw !== undefined) fields.goalRaw = o.goalRaw;
+    if (o.yTopRaw !== undefined) fields.yTopRaw = o.yTopRaw;
+    if (o.yBottomRaw !== undefined) fields.yBottomRaw = o.yBottomRaw;
+    if (Object.keys(fields).length > 0) overlay[o.metricId] = fields;
+  }
+  return overlay;
+}
+
+export function MetricOverridesProvider({
+  children,
+  initialOverrides,
+}: ProviderProps) {
+  const { user } = useAuth();
+  const [overrides, setOverrides] = useState<MetricOverride[]>(
+    initialOverrides ?? [],
+  );
+  const [loading, setLoading] = useState<boolean>(
+    initialOverrides === undefined,
+  );
+
+  useEffect(() => {
+    if (initialOverrides !== undefined) {
+      setLoading(false);
+      return;
+    }
+    if (!user) {
+      setOverrides([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const q = query(
+      collection(db, COLLECTION),
+      where("ownerId", "==", user.uid),
+    );
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        const next: MetricOverride[] = [];
+        snap.forEach((d) => {
+          next.push(fromDoc(d.id, d.data({ serverTimestamps: "estimate" })));
+        });
+        setOverrides(next);
+        setLoading(false);
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error("MetricOverrides onSnapshot error", err);
+        setLoading(false);
+      },
+    );
+    return unsubscribe;
+  }, [user, initialOverrides]);
+
+  // Sync the runtime overlay so getMetricChartConfig / lookupGoalLine
+  // see the user's overrides. Effect (post-commit) so render stays pure.
+  const overlay = useMemo(() => buildOverlay(overrides), [overrides]);
+  useEffect(() => {
+    setMetricOverrides(overlay);
+  }, [overlay]);
+
+  const saveOverride = useCallback<MetricOverridesValue["saveOverride"]>(
+    async (metricId, patch) => {
+      if (!user) {
+        throw new Error("saveOverride requires a signed-in user");
+      }
+      const ref = doc(db, COLLECTION, overrideDocId(user.uid, metricId));
+      const existing = overrides.find((o) => o.metricId === metricId);
+      const payload: Record<string, unknown> = {
+        ownerId: user.uid,
+        metricId,
+        updatedAt: serverTimestamp(),
+      };
+      // Only write fields that are finite; never write undefined.
+      if (patch.goalRaw !== undefined) payload.goalRaw = patch.goalRaw;
+      if (patch.yTopRaw !== undefined) payload.yTopRaw = patch.yTopRaw;
+      if (patch.yBottomRaw !== undefined) payload.yBottomRaw = patch.yBottomRaw;
+      // Stamp createdAt only on first write so a later save doesn't
+      // reset it (merge:true would otherwise overwrite it every time).
+      if (!existing) payload.createdAt = serverTimestamp();
+      await setDoc(ref, payload, { merge: true });
+    },
+    [user, overrides],
+  );
+
+  const value = useMemo<MetricOverridesValue>(
+    () => ({
+      overrides,
+      loading,
+      getOverride: (metricId) =>
+        overrides.find((o) => o.metricId === metricId),
+      saveOverride,
+    }),
+    [overrides, loading, saveOverride],
+  );
+
+  return (
+    <MetricOverridesContext.Provider value={value}>
+      {children}
+    </MetricOverridesContext.Provider>
+  );
+}
+
+// Empty fallback when no provider is mounted — keeps unrelated tests
+// rendering without wrapping in MetricOverridesProvider.
+const NOOP_VALUE: MetricOverridesValue = {
+  overrides: [],
+  loading: false,
+  getOverride: () => undefined,
+  saveOverride: async () => {
+    throw new Error("saveOverride called without MetricOverridesProvider");
+  },
+};
+
+export function useMetricOverrides(): MetricOverridesValue {
+  const ctx = useContext(MetricOverridesContext);
+  return ctx ?? NOOP_VALUE;
+}

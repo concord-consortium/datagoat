@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import type { ProfileLoadState, UserProfile } from "../../types/profile";
 
 // CustomMetricsProvider's useAuth is mocked via the auth-context stub
 // so the provider renders without exercising Firestore. We rely on the
@@ -22,7 +23,7 @@ vi.mock("../../contexts/AuthContext", () => ({
 // doesn't dispatch from this test surface — we only assert what
 // renders.
 const userMock = vi.hoisted(() => ({
-  loadState: { status: "missing" as const },
+  loadState: { status: "missing" } as ProfileLoadState,
   updateProfile: vi.fn(async () => {}),
   setTrackedMetrics: vi.fn(async () => {}),
 }));
@@ -57,6 +58,32 @@ function customDef(
   };
 }
 
+// A loaded-profile load state whose tracked-health list is exactly the
+// given ids. Used to render a custom metric in the *tracked* state so
+// its edit pencil shows (the pencil renders only for checked rows).
+function loadedProfileTracking(trackedHealthMetrics: string[]): ProfileLoadState {
+  return {
+    status: "loaded",
+    profile: {
+      version: 1,
+      fullName: "T",
+      email: "t@e.com",
+      nickname: "",
+      age: 18,
+      heightFt: 5,
+      heightIn: 9,
+      weight: 150,
+      gender: "male",
+      athleteType: "endurance",
+      competitionTerm: "game",
+      trackedHealthMetrics,
+      trackedCompetitionMetrics: [],
+      profileComplete: true,
+      trackingSetupComplete: true,
+    } as UserProfile,
+  };
+}
+
 function renderWith(seed: CustomMetricDef[] = []) {
   return render(
     <CustomMetricsProvider initialMetrics={seed}>
@@ -68,6 +95,12 @@ function renderWith(seed: CustomMetricDef[] = []) {
 }
 
 describe("TrackedDataSetup — custom-metric integration", () => {
+  afterEach(() => {
+    // Reset the shared mock so a loaded-profile test doesn't leak into
+    // the missing-profile tests that follow it.
+    userMock.loadState = { status: "missing" };
+  });
+
   it("renders the health CTA at /add-metric/health/new with the create-form label", () => {
     renderWith();
     const cta = screen.getByRole("link", {
@@ -100,10 +133,22 @@ describe("TrackedDataSetup — custom-metric integration", () => {
     expect(screen.getAllByText("5K Time")).toHaveLength(1);
   });
 
-  it("gives custom rows an edit-pencil link to the create/edit form", () => {
+  it("gives tracked custom rows an edit-pencil link to the create/edit form", () => {
+    // The custom metric must be tracked (checked) for its edit pencil
+    // to render — the pencil is gated on the row being checked.
+    userMock.loadState = loadedProfileTracking(["c_w"]);
     renderWith([customDef("c_w", "Stretch Time", "health")]);
     const editLink = screen.getByRole("link", { name: /edit stretch time/i });
     expect(editLink).toHaveAttribute("href", "/add-metric/health/c_w");
+  });
+
+  it("does not give an untracked custom row an edit-pencil link", () => {
+    // Missing profile -> only built-in defaults are tracked, so the
+    // seeded custom metric is untracked and gets no edit pencil.
+    renderWith([customDef("c_w", "Stretch Time", "health")]);
+    expect(
+      screen.queryByRole("link", { name: /edit stretch time/i }),
+    ).toBeNull();
   });
 
   it("renders an info link to MetricDetail for custom rows (parallel to built-ins)", () => {

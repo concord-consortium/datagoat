@@ -9,6 +9,7 @@ import { SortableMetricRow } from "./SortableMetricRow";
 function renderRow(
   isCustom: boolean,
   type: "health" | "performance" | "competition" = "health",
+  checked = true,
 ) {
   return render(
     <MemoryRouter>
@@ -20,7 +21,7 @@ function renderRow(
                 id="leanMass"
                 name="Lean Mass"
                 type={type}
-                checked
+                checked={checked}
                 onToggleCheck={vi.fn()}
                 reorderHintId="hint"
                 isCustom={isCustom}
@@ -49,6 +50,11 @@ describe("SortableMetricRow edit pencil", () => {
 
   it("does not render an Edit link for a performance metric row", () => {
     renderRow(false, "performance");
+    expect(screen.queryByRole("link", { name: /^Edit / })).toBeNull();
+  });
+
+  it("does not render an Edit link for an unchecked (untracked) row", () => {
+    renderRow(false, "health", false);
     expect(screen.queryByRole("link", { name: /^Edit / })).toBeNull();
   });
 });

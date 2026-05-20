@@ -24,21 +24,5 @@ service cloud.firestore {
       allow delete: if request.auth != null
                     && resource.data.ownerId == request.auth.uid;
     }
-
-    // Top-level per-user metric overrides (goal / y-axis bounds for
-    // built-in metrics). Owner-scoped exactly like metricDefinitions:
-    // a user reads / writes only docs whose `ownerId` is their uid,
-    // and `ownerId` is pinned to the caller on both create and update.
-    match /metricOverrides/{overrideId} {
-      allow read: if request.auth != null
-                  && resource.data.ownerId == request.auth.uid;
-      allow create: if request.auth != null
-                    && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null
-                    && resource.data.ownerId == request.auth.uid
-                    && request.resource.data.ownerId == request.auth.uid;
-      allow delete: if request.auth != null
-                    && resource.data.ownerId == request.auth.uid;
-    }
   }
 }

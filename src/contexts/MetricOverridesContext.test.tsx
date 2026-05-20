@@ -7,14 +7,23 @@ const setDocSpy = vi.fn<(...args: unknown[]) => Promise<void>>(async () => {});
 // the payload contains it for cleared fields.
 const DELETE_SENTINEL = { __delete: true };
 vi.mock("firebase/firestore", () => ({
-  collection: () => ({}),
+  // The collection ref carries the joined path so the test can verify
+  // the snapshot listener is pointed at the user subcollection.
+  collection: (_db: unknown, ...segments: string[]) => ({
+    path: segments.join("/"),
+  }),
   deleteField: () => DELETE_SENTINEL,
-  doc: (_db: unknown, _col: string, id: string) => ({ id }),
+  // doc() accepts a variadic path (5 segments for our nested case);
+  // return the last segment as the doc id and the joined path for
+  // assertion.
+  doc: (_db: unknown, ...segments: string[]) => ({
+    id: segments[segments.length - 1],
+    path: segments.join("/"),
+  }),
   onSnapshot: () => () => {},
   query: () => ({}),
   serverTimestamp: () => ({ __ts: true }),
   setDoc: (...args: unknown[]) => setDocSpy(...args),
-  where: () => ({}),
 }));
 vi.mock("../firebase", () => ({ db: {} }));
 vi.mock("./AuthContext", () => ({
@@ -94,11 +103,15 @@ describe("MetricOverridesProvider", () => {
     await save()("leanMass", { goalRaw: 80, yTopRaw: 100, yBottomRaw: 0 });
     expect(setDocSpy).toHaveBeenCalledTimes(1);
     const [ref, payload, options] = setDocSpy.mock.calls[0] as unknown as [
-      { id: string },
+      { id: string; path: string },
       Record<string, unknown>,
       Record<string, unknown>,
     ];
-    expect(ref.id).toBe("u1_leanMass");
+    // Doc id is now just the metric id; the user is encoded in the
+    // collection path, eliminating the prior ${uid}_${metricId}
+    // collision surface.
+    expect(ref.id).toBe("leanMass");
+    expect(ref.path).toBe("users/u1/metricOverrides/leanMass");
     expect(payload.ownerId).toBe("u1");
     expect(payload.metricId).toBe("leanMass");
     expect(payload.goalRaw).toBe(80);

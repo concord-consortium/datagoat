@@ -12,10 +12,8 @@ import {
   deleteField,
   doc,
   onSnapshot,
-  query,
   serverTimestamp,
   setDoc,
-  where,
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
@@ -59,12 +57,14 @@ interface ProviderProps {
   initialOverrides?: MetricOverride[];
 }
 
-const COLLECTION = "metricOverrides";
-
-// Deterministic doc id: one override doc per (user, metric).
-function overrideDocId(uid: string, metricId: string): string {
-  return `${uid}_${metricId}`;
-}
+// Each user's overrides live in a subcollection of their user doc:
+//   /users/{uid}/metricOverrides/{metricId}
+// The doc id is the metric id, so (user, metric) uniqueness is enforced
+// by Firestore itself - the legacy `${uid}_${metricId}` doc id had a
+// collision surface when either component contained an underscore. The
+// existing /users/{userId}/{document=**} security rule already restricts
+// reads and writes to the path's owner, so no dedicated rule is needed.
+const OVERRIDES_SUBCOLLECTION = "metricOverrides";
 
 // Firestore Timestamp -> ms epoch.
 function tsToMillis(ts: unknown): number {
@@ -140,12 +140,16 @@ export function MetricOverridesProvider({
       return;
     }
     setLoading(true);
-    const q = query(
-      collection(db, COLLECTION),
-      where("ownerId", "==", user.uid),
+    // Every doc in this subcollection is by construction owned by the
+    // path uid, so no ownerId where-clause is needed.
+    const overridesRef = collection(
+      db,
+      "users",
+      user.uid,
+      OVERRIDES_SUBCOLLECTION,
     );
     const unsubscribe = onSnapshot(
-      q,
+      overridesRef,
       (snap) => {
         const next: MetricOverride[] = [];
         snap.forEach((d) => {
@@ -175,7 +179,13 @@ export function MetricOverridesProvider({
       if (!user) {
         throw new Error("saveOverride requires a signed-in user");
       }
-      const ref = doc(db, COLLECTION, overrideDocId(user.uid, metricId));
+      const ref = doc(
+        db,
+        "users",
+        user.uid,
+        OVERRIDES_SUBCOLLECTION,
+        metricId,
+      );
       const existing = overrides.find((o) => o.metricId === metricId);
       const payload: Record<string, unknown> = {
         ownerId: user.uid,

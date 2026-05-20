@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import DragDots from "@/icons/drag-dots.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
 import CustomMetricIcon from "@/icons/custom-metric.svg?react";
+import { If } from "../common/If";
 import css from "./TrackedMetricsTable.module.css";
 
 interface SortableMetricRowProps {
@@ -18,11 +19,10 @@ interface SortableMetricRowProps {
   // table; the drag handle aria-describedby's it so SR users hear the
   // keyboard shortcut summary on focus.
   reorderHintId: string;
-  // True for user-defined custom metrics. Custom rows populate the
-  // Edit-pencil cell (link to the create/edit form) and render the
-  // custom-metric icon in the Info cell instead of the built-in's
-  // Icon. The Info-cell link target stays the same — both built-ins
-  // and customs link to /:type/:id (MetricDetail).
+  // True for user-defined custom metrics. Affects only the Info-cell
+  // icon (CustomMetricIcon instead of the built-in's Icon). The
+  // edit-pencil cell renders only for checked (tracked) rows, and is
+  // suppressed for performance rows (unsupported).
   isCustom?: boolean;
 }
 
@@ -86,12 +86,16 @@ export function SortableMetricRow({
           aria-label={`Track ${name}`}
         />
       </td>
-      <td className={css.metricName}>{name}</td>
+      <td className={css.metricName} title={name}>{name}</td>
       <td>
-        {/* Edit-pencil cell: only populated for custom metrics so
-            authors can jump back to the create/edit form. Built-in
-            rows render an empty cell so the column lines up. */}
-        {isCustom && (
+        {/* Edit-pencil cell: links to the metric's edit form (custom
+            metrics open CustomMetricForm, built-ins open
+            MetricOverrideForm). Shown only for tracked (checked)
+            metrics - editing a goal/axis is meaningless for a metric
+            the user isn't tracking. Suppressed for performance metrics
+            too - performance editing is not supported, so the route
+            would dead-end back to /setup/tracking. */}
+        <If condition={checked && type !== "performance"}>
           <Link
             to={`/add-metric/${type}/${id}`}
             className={css.metricInfoBtn}
@@ -99,7 +103,7 @@ export function SortableMetricRow({
           >
             ✏︎
           </Link>
-        )}
+        </If>
       </td>
       <td>
         {/* Info link: same destination (MetricDetail) for both

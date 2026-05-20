@@ -1,7 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   customDefToChartConfig,
   getMetricChartConfig,
+  getBaseMetricChartConfig,
+  getMetricOverride,
+  setMetricOverrides,
+  setCustomChartConfigs,
 } from "./metricChartConfig";
 import type { CustomMetricDef } from "../types/customMetrics";
 
@@ -229,6 +233,44 @@ describe("customDefToChartConfig", () => {
     // regression bug (inputType==="radio" => randomInt(0,1)) would
     // only ever produce 0 or 1, so this size also guards against it.
     expect(seen.size).toBe(5);
+  });
+});
+
+describe("metric overrides overlay", () => {
+  afterEach(() => {
+    setMetricOverrides({});
+    setCustomChartConfigs({});
+  });
+
+  it("merges a partial override on top of the hardcoded config", () => {
+    setMetricOverrides({ leanMass: { goalRaw: 70, yTopRaw: 90, yBottomRaw: 40 } });
+    const config = getMetricChartConfig("leanMass");
+    expect(config.goalRaw).toBe(70);
+    expect(config.yTopRaw).toBe(90);
+    expect(config.yBottomRaw).toBe(40);
+    expect(config.unit).toBe("kg");
+    expect(typeof config.formatValue).toBe("function");
+    expect(typeof config.random).toBe("function");
+  });
+
+  it("merges only the fields the override actually sets", () => {
+    setMetricOverrides({ hydration: { goalRaw: 2 } });
+    const config = getMetricChartConfig("hydration");
+    expect(config.goalRaw).toBe(2);
+    expect(config.yTopRaw).toBe(1);
+    expect(config.inverted).toBe(true);
+  });
+
+  it("getBaseMetricChartConfig ignores the override registry", () => {
+    setMetricOverrides({ leanMass: { goalRaw: 70 } });
+    expect(getBaseMetricChartConfig("leanMass").goalRaw).toBeUndefined();
+    expect(getBaseMetricChartConfig("leanMass").unit).toBe("kg");
+  });
+
+  it("getMetricOverride returns the registered partial, or undefined", () => {
+    expect(getMetricOverride("leanMass")).toBeUndefined();
+    setMetricOverrides({ leanMass: { goalRaw: 70 } });
+    expect(getMetricOverride("leanMass")).toEqual({ goalRaw: 70 });
   });
 });
 

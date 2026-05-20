@@ -105,3 +105,9 @@
   font-weight: 600;
   color: #555;
 }
+
+.hint {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  color: var(--subtext);
+}

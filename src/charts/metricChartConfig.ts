@@ -57,6 +57,13 @@ export interface MetricChartConfig {
   random: (rng: () => number) => number;
 }
 
+// Partial chart-config override for a built-in metric. Only the three
+// user-editable fields; everything else (formatValue, inverted,
+// random, unit, ...) is inherited from the metric's base config.
+export type MetricOverrideFields = Partial<
+  Pick<MetricChartConfig, "goalRaw" | "yTopRaw" | "yBottomRaw">
+>;
+
 const fmtRaw = (v: number) => `${v}`;
 const fmtPct = (v: number) => `${v}%`;
 
@@ -201,10 +208,13 @@ const DEFAULT_CONFIG: MetricChartConfig = {
   random: (rng) => randomInt(rng, 0, 100),
 };
 
-// Module-level overlay for user-defined custom metrics. The
-// CustomMetricsProvider syncs this on every change via
-// setCustomChartConfigs() below. getMetricChartConfig consults this
-// after the built-in CONFIG and before falling back to DEFAULT_CONFIG.
+// Module-level overlays for chart-config augmentation. Two registries
+// share a single subscriber set and version counter:
+//   _customConfigs    — full config replacements for user-defined
+//     custom metrics (set by CustomMetricsProvider via
+//     setCustomChartConfigs).
+//   _metricOverrides  — partial goal/axis overrides for built-in
+//     metrics (set by MetricOverridesProvider via setMetricOverrides).
 //
 // This is a deliberate side-effect channel rather than a parameter
 // thread because getMetricChartConfig is called from many pure
@@ -215,44 +225,80 @@ const DEFAULT_CONFIG: MetricChartConfig = {
 // getMetricChartConfig in render should call useChartConfigSync(),
 // which subscribes via useSyncExternalStore.
 let _customConfigs: Record<string, MetricChartConfig> = {};
+// Partial overrides keyed by metric id. Distinct from _customConfigs:
+// a custom-metric entry fully replaces the resolved config, whereas an
+// override entry shallow-merges on top of the metric's base config so
+// the built-in formatValue / inverted / random survive.
+let _metricOverrides: Record<string, MetricOverrideFields> = {};
+// Monotonic counter bumped whenever either overlay registry changes.
+// useChartConfigSync exposes it so a change to *either* registry
+// invalidates dependent memos (e.g. useChartSeries). Consumers treat
+// it as an opaque dependency token and never read it.
+let _overlayVersion = 0;
 const _subscribers = new Set<() => void>();
+
+function notifyOverlay(): void {
+  _overlayVersion += 1;
+  for (const callback of _subscribers) callback();
+}
 
 export function setCustomChartConfigs(
   next: Record<string, MetricChartConfig>,
 ): void {
   if (next === _customConfigs) return;
   _customConfigs = next;
-  for (const callback of _subscribers) callback();
+  notifyOverlay();
 }
 
-function subscribeCustomChartConfigs(callback: () => void): () => void {
+export function setMetricOverrides(
+  next: Record<string, MetricOverrideFields>,
+): void {
+  if (next === _metricOverrides) return;
+  _metricOverrides = next;
+  notifyOverlay();
+}
+
+function subscribeOverlay(callback: () => void): () => void {
   _subscribers.add(callback);
   return () => {
     _subscribers.delete(callback);
   };
 }
 
-function getCustomChartConfigsSnapshot(): Record<string, MetricChartConfig> {
-  return _customConfigs;
+function getOverlaySnapshot(): number {
+  return _overlayVersion;
 }
 
-// Subscribe a component to overlay changes so subsequent
-// getMetricChartConfig reads pick up newly-arrived custom-metric
-// configs. Components that render charts (or otherwise read
-// getMetricChartConfig in their render) should call this once. Returns
-// the current snapshot reference so consumers can include it in
-// useMemo dep arrays — when the overlay is replaced, the reference
-// changes and dependent memoized values invalidate.
-export function useChartConfigSync(): Record<string, MetricChartConfig> {
+// Subscribe a component to overlay changes (custom-metric configs OR
+// metric overrides) so subsequent getMetricChartConfig reads pick up
+// new values. Components that render charts should call this once.
+// Returns a version counter that changes on every overlay mutation —
+// include it in useMemo dep arrays to invalidate on change.
+export function useChartConfigSync(): number {
   return useSyncExternalStore(
-    subscribeCustomChartConfigs,
-    getCustomChartConfigsSnapshot,
-    getCustomChartConfigsSnapshot,
+    subscribeOverlay,
+    getOverlaySnapshot,
+    getOverlaySnapshot,
   );
 }
 
-export function getMetricChartConfig(metricId: string): MetricChartConfig {
+// The metric's config without any user override applied: the built-in
+// CONFIG entry, a custom-metric config, or DEFAULT_CONFIG.
+export function getBaseMetricChartConfig(metricId: string): MetricChartConfig {
   return CONFIG[metricId] ?? _customConfigs[metricId] ?? DEFAULT_CONFIG;
+}
+
+// The partial override registered for a metric, if any.
+export function getMetricOverride(
+  metricId: string,
+): MetricOverrideFields | undefined {
+  return _metricOverrides[metricId];
+}
+
+export function getMetricChartConfig(metricId: string): MetricChartConfig {
+  const base = getBaseMetricChartConfig(metricId);
+  const override = _metricOverrides[metricId];
+  return override ? { ...base, ...override } : base;
 }
 
 // Build a MetricChartConfig from a user-authored CustomMetricDef.

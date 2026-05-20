@@ -1,9 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   lookupGoalLine,
   buildAlignedSeries,
   computeAverage,
 } from "./chartSeries";
+import { setMetricOverrides } from "./metricChartConfig";
 import { emptyHealthEntry, type HealthEntry } from "../types/data";
 import { isoAtDaysAgo } from "../utils/dates";
 
@@ -227,5 +228,28 @@ describe("computeAverage", () => {
         nullsCountAsZero: true,
       }),
     ).toBe(0);
+  });
+});
+
+describe("lookupGoalLine with metric overrides", () => {
+  afterEach(() => {
+    setMetricOverrides({});
+  });
+
+  it("an override goal beats a profile-keyed goal", () => {
+    const profileGoal = lookupGoalLine("leanMass", "Male/Strength and Power");
+    expect(typeof profileGoal).toBe("number");
+    setMetricOverrides({ leanMass: { goalRaw: 88 } });
+    expect(lookupGoalLine("leanMass", "Male/Strength and Power")).toBe(88);
+  });
+
+  it("an override goal beats a static config goal", () => {
+    expect(lookupGoalLine("hydration", "Male/Endurance")).toBe(3);
+    setMetricOverrides({ hydration: { goalRaw: 2 } });
+    expect(lookupGoalLine("hydration", "Male/Endurance")).toBe(2);
+  });
+
+  it("falls through to the normal resolution when no override is set", () => {
+    expect(lookupGoalLine("hydration", "Male/Endurance")).toBe(3);
   });
 });

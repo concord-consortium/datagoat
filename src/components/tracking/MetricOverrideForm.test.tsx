@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
@@ -52,6 +52,13 @@ function renderForm(metric = leanMass, overrides: MetricOverride[] = []) {
 }
 
 describe("MetricOverrideForm", () => {
+  beforeEach(() => {
+    // navigateSpy is module-scope; clear between tests so a successful
+    // save in an earlier case doesn't leak into a "rejects ..." case
+    // that asserts on .not.toHaveBeenCalled.
+    navigateSpy.mockClear();
+  });
+
   it("renders Name and Unit disabled", () => {
     renderForm();
     expect(screen.getByLabelText("Name")).toBeDisabled();
@@ -61,8 +68,8 @@ describe("MetricOverrideForm", () => {
   it("leaves Goal and the y-axis fields editable", () => {
     renderForm();
     expect(screen.getByLabelText("Goal")).not.toBeDisabled();
-    expect(screen.getByLabelText("Y-axis top")).not.toBeDisabled();
-    expect(screen.getByLabelText("Y-axis bottom")).not.toBeDisabled();
+    expect(screen.getByLabelText(/^Y-axis top/)).not.toBeDisabled();
+    expect(screen.getByLabelText(/^Y-axis bottom/)).not.toBeDisabled();
   });
 
   it("shows a 'customized' note only when an override exists", () => {
@@ -100,10 +107,10 @@ describe("MetricOverrideForm", () => {
     fireEvent.change(screen.getByLabelText("Goal"), {
       target: { value: "70" },
     });
-    fireEvent.change(screen.getByLabelText("Y-axis top"), {
+    fireEvent.change(screen.getByLabelText(/^Y-axis top/), {
       target: { value: "50" },
     });
-    fireEvent.change(screen.getByLabelText("Y-axis bottom"), {
+    fireEvent.change(screen.getByLabelText(/^Y-axis bottom/), {
       target: { value: "50" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -113,10 +120,10 @@ describe("MetricOverrideForm", () => {
   it("rejects y-axis top >= bottom for an inverted metric (hydration)", () => {
     renderForm(hydration);
     fireEvent.change(screen.getByLabelText("Goal"), { target: { value: "3" } });
-    fireEvent.change(screen.getByLabelText("Y-axis top"), {
+    fireEvent.change(screen.getByLabelText(/^Y-axis top/), {
       target: { value: "5" },
     });
-    fireEvent.change(screen.getByLabelText("Y-axis bottom"), {
+    fireEvent.change(screen.getByLabelText(/^Y-axis bottom/), {
       target: { value: "2" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -128,15 +135,41 @@ describe("MetricOverrideForm", () => {
     fireEvent.change(screen.getByLabelText("Goal"), {
       target: { value: "75" },
     });
-    fireEvent.change(screen.getByLabelText("Y-axis top"), {
+    fireEvent.change(screen.getByLabelText(/^Y-axis top/), {
       target: { value: "100" },
     });
-    fireEvent.change(screen.getByLabelText("Y-axis bottom"), {
+    fireEvent.change(screen.getByLabelText(/^Y-axis bottom/), {
       target: { value: "0" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
     );
+  });
+
+  it("starts with blank y-axis fields when no override exists", () => {
+    renderForm(leanMass);
+    expect(
+      (screen.getByLabelText(/^Y-axis top/) as HTMLInputElement).value,
+    ).toBe("");
+    expect(
+      (screen.getByLabelText(/^Y-axis bottom/) as HTMLInputElement).value,
+    ).toBe("");
+  });
+
+  it("rejects one-of-two y-axis fields blank as ambiguous", () => {
+    renderForm(leanMass);
+    fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "70" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Y-axis top/), {
+      target: { value: "120" },
+    });
+    // bottom left blank
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      screen.getByText(/both y-axis fields or leave both blank/i),
+    ).toBeInTheDocument();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 });

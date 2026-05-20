@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   collection,
+  deleteField,
   doc,
   onSnapshot,
   query,
@@ -25,11 +26,18 @@ import {
   type MetricOverrideFields,
 } from "../charts/metricChartConfig";
 
-// The three editable fields, as the form passes them in.
+// Patch shape passed to saveOverride. For each axis field, three states
+// are meaningful:
+//   - number: set/replace the override for that field
+//   - null: clear an existing override on that field (Firestore deleteField)
+//   - undefined / omitted: leave the field untouched in the stored doc
+// goalRaw is currently always required by the form, so it stays a plain
+// number; the partial-override surface is intentionally narrowed to the
+// y-axis bounds for this iteration.
 export type MetricOverridePatch = {
   goalRaw?: number;
-  yTopRaw?: number;
-  yBottomRaw?: number;
+  yTopRaw?: number | null;
+  yBottomRaw?: number | null;
 };
 
 interface MetricOverridesValue {
@@ -173,10 +181,20 @@ export function MetricOverridesProvider({
         metricId,
         updatedAt: serverTimestamp(),
       };
-      // Only write fields that are finite; never write undefined.
-      if (patch.goalRaw !== undefined) payload.goalRaw = patch.goalRaw;
-      if (patch.yTopRaw !== undefined) payload.yTopRaw = patch.yTopRaw;
-      if (patch.yBottomRaw !== undefined) payload.yBottomRaw = patch.yBottomRaw;
+      // Set numeric fields only when finite. null means "clear" — convert
+      // to deleteField() so merge:true actually removes it. undefined /
+      // absent leaves the stored field untouched.
+      if (Number.isFinite(patch.goalRaw)) payload.goalRaw = patch.goalRaw;
+      if (patch.yTopRaw === null) {
+        payload.yTopRaw = deleteField();
+      } else if (Number.isFinite(patch.yTopRaw)) {
+        payload.yTopRaw = patch.yTopRaw;
+      }
+      if (patch.yBottomRaw === null) {
+        payload.yBottomRaw = deleteField();
+      } else if (Number.isFinite(patch.yBottomRaw)) {
+        payload.yBottomRaw = patch.yBottomRaw;
+      }
       // Stamp createdAt only on first write so a later save doesn't
       // reset it (merge:true would otherwise overwrite it every time).
       if (!existing) payload.createdAt = serverTimestamp();

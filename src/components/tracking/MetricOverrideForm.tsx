@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
+import {
+  useMetricOverrides,
+  type MetricOverridePatch,
+} from "../../contexts/MetricOverridesContext";
 import { useUser } from "../../contexts/UserContext";
 import {
   capitalizeAthleteType,
@@ -35,21 +38,21 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
     : "";
   const goalText = resolveGoalText(metric.id, profileKey);
 
-  // Initial values. Goal: the current effective goal (lookupGoalLine
-  // returns the override if present, else the profile/static default).
-  // Axis: the existing override falling back to the base config — read
-  // straight from the override doc so a fresh deep-link works before
-  // the overlay effect has registered.
+  // Initial values. Goal is required, so it always shows the current
+  // effective goal (override > profile-keyed > static default). Y-axis
+  // fields are *optional* overrides: when there is no axis override
+  // they start blank, and the base config's value renders as a
+  // placeholder. Clearing them later removes the override.
   const [goalRaw, setGoalRaw] = useState<string>(() => {
     const effective =
       existing?.goalRaw ?? lookupGoalLine(metric.id, profileKey);
     return effective === undefined ? "" : String(effective);
   });
   const [yTopRaw, setYTopRaw] = useState<string>(
-    String(existing?.yTopRaw ?? base.yTopRaw),
+    existing?.yTopRaw !== undefined ? String(existing.yTopRaw) : "",
   );
   const [yBottomRaw, setYBottomRaw] = useState<string>(
-    String(existing?.yBottomRaw ?? base.yBottomRaw),
+    existing?.yBottomRaw !== undefined ? String(existing.yBottomRaw) : "",
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -60,10 +63,8 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       return;
     }
     const goal = Number(goalRaw);
-    const top = Number(yTopRaw);
-    const bottom = Number(yBottomRaw);
-    if ([goal, top, bottom].some((v) => !Number.isFinite(v))) {
-      setError("Goal, y-axis top, and y-axis bottom must be numbers.");
+    if (!Number.isFinite(goal)) {
+      setError("Goal must be a number.");
       return;
     }
     // Range check: the goal must fit the metric's built-in data range
@@ -76,24 +77,49 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       setError(`Goal must be between ${metric.min} and ${metric.max}.`);
       return;
     }
-    // The override must keep the base config's axis orientation. Most
-    // metrics ascend (top > bottom); an inverted metric (hydration)
-    // descends (top < bottom).
-    const baseAscending = base.yTopRaw > base.yBottomRaw;
-    if (baseAscending && top <= bottom) {
-      setError("Y-axis top must be greater than y-axis bottom.");
+
+    // Y-axis is an all-or-nothing pair: both blank means no axis
+    // override, both filled means a complete pair to validate. One of
+    // two blank is ambiguous and rejected.
+    const topBlank = yTopRaw.trim() === "";
+    const bottomBlank = yBottomRaw.trim() === "";
+    if (topBlank !== bottomBlank) {
+      setError("Set both y-axis fields or leave both blank.");
       return;
     }
-    if (!baseAscending && top >= bottom) {
-      setError("Y-axis top must be less than y-axis bottom.");
-      return;
+
+    const patch: MetricOverridePatch = { goalRaw: goal };
+
+    if (!topBlank && !bottomBlank) {
+      const top = Number(yTopRaw);
+      const bottom = Number(yBottomRaw);
+      if (!Number.isFinite(top) || !Number.isFinite(bottom)) {
+        setError("Y-axis top and y-axis bottom must be numbers.");
+        return;
+      }
+      // The override must keep the base config's axis orientation. Most
+      // metrics ascend (top > bottom); an inverted metric (hydration)
+      // descends (top < bottom).
+      const baseAscending = base.yTopRaw > base.yBottomRaw;
+      if (baseAscending && top <= bottom) {
+        setError("Y-axis top must be greater than y-axis bottom.");
+        return;
+      }
+      if (!baseAscending && top >= bottom) {
+        setError("Y-axis top must be less than y-axis bottom.");
+        return;
+      }
+      patch.yTopRaw = top;
+      patch.yBottomRaw = bottom;
+    } else {
+      // Both blank — clear any prior axis override so the stored doc
+      // stops shadowing the base config.
+      if (existing?.yTopRaw !== undefined) patch.yTopRaw = null;
+      if (existing?.yBottomRaw !== undefined) patch.yBottomRaw = null;
     }
+
     try {
-      await saveOverride(metric.id, {
-        goalRaw: goal,
-        yTopRaw: top,
-        yBottomRaw: bottom,
-      });
+      await saveOverride(metric.id, patch);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("Failed to save metric override", err);
@@ -145,18 +171,20 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       <div className={css.row}>
         <TextField
           id="mo-ytop"
-          label="Y-axis top"
+          label="Y-axis top (optional)"
           type="number"
           inputMode="decimal"
           value={yTopRaw}
+          placeholder={String(base.yTopRaw)}
           onChange={(e) => setYTopRaw(e.target.value)}
         />
         <TextField
           id="mo-ybot"
-          label="Y-axis bottom"
+          label="Y-axis bottom (optional)"
           type="number"
           inputMode="decimal"
           value={yBottomRaw}
+          placeholder={String(base.yBottomRaw)}
           onChange={(e) => setYBottomRaw(e.target.value)}
         />
       </div>

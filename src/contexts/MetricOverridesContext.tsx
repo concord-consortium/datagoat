@@ -1,3 +1,19 @@
+// MetricOverridesContext — per-user partial overrides of built-in
+// metric goal/axis values.
+//
+// End-to-end save flow:
+//   pencil on a tracked metric row
+//   -> /add-metric/:type/:metricId
+//   -> CustomMetricForm gateway detects a built-in id -> MetricOverrideForm
+//   -> user edits Goal and / or y-axis fields
+//   -> submit -> saveOverride() -> setDoc(merge: true) at
+//        /users/{uid}/metricOverrides/{metricId}
+//   -> Firestore snapshot fires -> setOverrides() rebuilds the overlay
+//   -> setMetricOverrides(overlay) bumps _overlayVersion
+//   -> useChartConfigSync() consumers re-render
+//   -> getMetricChartConfig / lookupGoalLine pick up the new values
+//   -> every chart that reads the metric reflects the override
+
 import {
   createContext,
   useCallback,

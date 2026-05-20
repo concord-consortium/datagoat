@@ -85,7 +85,9 @@ describe("MetricOverrideForm", () => {
     expect(screen.queryByText(/has been customized/i)).toBeNull();
     renderForm(leanMass, [
       {
-        id: "u1_leanMass",
+        // Doc id is just the metric id under the new
+        // /users/{uid}/metricOverrides/{metricId} layout.
+        id: "leanMass",
         ownerId: "u1",
         metricId: "leanMass",
         goalRaw: 70,

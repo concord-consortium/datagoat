@@ -164,6 +164,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
         label="Goal"
         type="number"
         inputMode="decimal"
+        step="any"
         value={goalRaw}
         onChange={(e) => setGoalRaw(e.target.value)}
       />
@@ -174,6 +175,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
           label="Y-axis top (optional)"
           type="number"
           inputMode="decimal"
+          step="any"
           value={yTopRaw}
           placeholder={String(base.yTopRaw)}
           onChange={(e) => setYTopRaw(e.target.value)}
@@ -183,6 +185,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
           label="Y-axis bottom (optional)"
           type="number"
           inputMode="decimal"
+          step="any"
           value={yBottomRaw}
           placeholder={String(base.yBottomRaw)}
           onChange={(e) => setYBottomRaw(e.target.value)}

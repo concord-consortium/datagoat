@@ -31,9 +31,10 @@ import {
 //   - number: set/replace the override for that field
 //   - null: clear an existing override on that field (Firestore deleteField)
 //   - undefined / omitted: leave the field untouched in the stored doc
-// goalRaw is currently always required by the form, so it stays a plain
-// number; the partial-override surface is intentionally narrowed to the
-// y-axis bounds for this iteration.
+// goalRaw uses the same set / omit shape (clearing is not currently
+// supported). The form always sends goalRaw today, so the form-side
+// invariant is "goal is required"; the type stays partial so a future
+// caller can patch only axis fields without re-supplying goalRaw.
 export type MetricOverridePatch = {
   goalRaw?: number;
   yTopRaw?: number | null;

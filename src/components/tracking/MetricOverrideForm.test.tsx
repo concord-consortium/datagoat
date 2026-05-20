@@ -13,7 +13,15 @@ vi.mock("react-router-dom", async () => {
 
 vi.mock("firebase/firestore", () => ({
   collection: () => ({}),
-  doc: (_db: unknown, _col: string, id: string) => ({ id }),
+  deleteField: () => ({ __delete: true }),
+  // Variadic to handle the production path
+  // `doc(db, "users", uid, "metricOverrides", metricId)`. Returning the
+  // last segment as `id` matches Firestore's own semantics and keeps
+  // any future setDoc assertions from being misled by a 3-arg shim.
+  doc: (_db: unknown, ...segments: string[]) => ({
+    id: segments[segments.length - 1],
+    path: segments.join("/"),
+  }),
   onSnapshot: () => () => {},
   query: () => ({}),
   serverTimestamp: () => ({ __ts: true }),

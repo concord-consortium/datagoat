@@ -40,7 +40,9 @@ import type { MetricOverride } from "../types/metricOverrides";
 
 function seed(partial: Partial<MetricOverride>): MetricOverride {
   return {
-    id: "u1_leanMass",
+    // The override doc id is now just the metric id (overrides live at
+    // /users/{uid}/metricOverrides/{metricId}).
+    id: "leanMass",
     ownerId: "u1",
     metricId: "leanMass",
     createdAt: 1,

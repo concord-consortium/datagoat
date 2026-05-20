@@ -108,7 +108,11 @@ export function fromDoc(
   return {
     id,
     ownerId: String(data.ownerId ?? ""),
-    metricId: String(data.metricId ?? ""),
+    // The doc id IS the canonical metric id (overrides live at
+    // /users/{uid}/metricOverrides/{metricId}). Use it directly so a
+    // doc missing the redundant `metricId` field (e.g. written from
+    // the Firestore Console) cannot silently key the overlay on "".
+    metricId: id,
     goalRaw: finiteOrUndefined(data.goalRaw),
     yTopRaw: finiteOrUndefined(data.yTopRaw),
     yBottomRaw: finiteOrUndefined(data.yBottomRaw),

@@ -7,6 +7,7 @@ import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { ADDABLE_HEALTH, ADDABLE_COMPETITION } from "../../metrics/addableMetrics";
+import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
 import radioCss from "../form/RadioGroup.module.css";
@@ -208,6 +209,7 @@ const EMPTY_DRAFT: DraftState = {
 export function CustomMetricForm() {
   const { type, metricId } = useParams<{ type: string; metricId?: string }>();
   const { getMetric, loading } = useCustomMetrics();
+  const { loading: overridesLoading } = useMetricOverrides();
   const { health, competition } = useData();
 
   if (!isAuthorableType(type)) {
@@ -225,6 +227,14 @@ export function CustomMetricForm() {
         : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
     const builtIn = builtIns.find((m) => m.id === metricId);
     if (builtIn) {
+      // Wait for the override snapshot before mounting the form. The
+      // form's useState seeds its goal/axis fields from getOverride()
+      // and lookupGoalLine() exactly once at mount; rendering it
+      // before the snapshot lands would seed with defaults and could
+      // overwrite an existing override on save.
+      if (overridesLoading) {
+        return <p className={css.loading}>Loading…</p>;
+      }
       return <MetricOverrideForm metric={builtIn} />;
     }
 

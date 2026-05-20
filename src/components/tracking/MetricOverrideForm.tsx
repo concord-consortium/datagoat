@@ -121,6 +121,14 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       <If condition={existing !== undefined}>
         <p className={css.hint}>This metric has been customized.</p>
       </If>
+      {/* Placeholder for metric-specific goal-determination text.
+          The actual per-metric paragraphs (story example: "As a
+          [Athlete Type] athlete, your lean mass target should be
+          tailored to your sport-specific demands ...") will be added
+          alongside data-model support in DGT-62. */}
+      <p className={css.hint}>
+        Metric-specific goal value determination will be shown here.
+      </p>
       <If condition={goalText !== null}>
         <p className={css.hint}>Recommended goal: {goalText}.</p>
       </If>

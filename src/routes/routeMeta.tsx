@@ -179,16 +179,18 @@ const PATTERNS: Array<{
     // permissive pattern and the create form would render with no title.
     pattern: "/add-metric/:type/new",
     resolve: (params) => {
-      // TODO(DGT-51 follow-up): accept "performance" here once
-      // CustomMetricForm supports authoring performance customs. For
-      // now AddMetric / CustomMetricForm reject "performance" and
-      // redirect to /setup/tracking, so resolving a Performance title
-      // here would render a stale header for one frame. Return null
-      // for performance until the form supports it.
       const t = params.type;
-      if (t !== "health" && t !== "competition") return null;
+      if (t !== "health" && t !== "performance" && t !== "competition") {
+        return null;
+      }
+      const title =
+        t === "health"
+          ? "New Health Metric"
+          : t === "performance"
+            ? "New Performance Metric"
+            : "New Competition Metric";
       return {
-        title: t === "health" ? "New Health Metric" : "New Competition Metric",
+        title,
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };
@@ -197,12 +199,39 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type/:metricId",
     resolve: (params, customs) => {
-      // TODO(DGT-51 follow-up): mirror the change above once
-      // CustomMetricForm supports performance customs.
       const t = params.type;
-      if (t !== "health" && t !== "competition") return null;
-      // Cross-type access (e.g. health URL on a competition metric) returns
-      // null so the form's <Navigate replace /> redirect to the canonical
+      if (t !== "health" && t !== "performance" && t !== "competition") {
+        return null;
+      }
+      // Built-in metric id -> the goal/axis override form
+      // (MetricOverrideForm). Look up only in the route's :type
+      // registries so a built-in id under the wrong :type returns null
+      // and the form's <Navigate replace /> redirect isn't preempted.
+      // Built-ins are checked before customs, matching the precedence
+      // in CustomMetricForm's gateway; the two id spaces never collide.
+      const builtIns =
+        t === "health"
+          ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
+          : t === "performance"
+            ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
+            : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
+      const m = builtIns.find((x) => x.id === params.metricId);
+      if (m) {
+        return {
+          title: m.name,
+          icon: m.Icon ? (
+            <m.Icon />
+          ) : t === "health" ? (
+            <CalendarIcon />
+          ) : (
+            <StopwatchIcon />
+          ),
+          backTo: "/setup/tracking",
+        };
+      }
+      // Custom metric id -> the custom create/edit form. Cross-type
+      // access (e.g. health URL on a competition metric) returns null
+      // so the form's <Navigate replace /> redirect to the canonical
       // route happens without rendering a misleading title for one frame.
       const c = customs.find(
         (x) => x.id === params.metricId && x.metricType === t,
@@ -218,13 +247,18 @@ const PATTERNS: Array<{
   {
     pattern: "/add-metric/:type",
     resolve: (params) => {
-      // TODO(DGT-51 follow-up): accept "performance" once AddMetric
-      // does too. Same rationale as the /add-metric/:type/new entry
-      // above.
       const t = params.type;
-      if (t !== "health" && t !== "competition") return null;
+      if (t !== "health" && t !== "performance" && t !== "competition") {
+        return null;
+      }
+      const title =
+        t === "health"
+          ? "Health Metrics"
+          : t === "performance"
+            ? "Performance Metrics"
+            : "Competition Metrics";
       return {
-        title: t === "health" ? "Health Metrics" : "Competition Metrics",
+        title,
         icon: <PlusCircleIcon />,
         backTo: "/setup/tracking",
       };

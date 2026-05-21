@@ -117,6 +117,23 @@ describe("TrackedDataSetup — custom-metric integration", () => {
     expect(cta).toHaveAttribute("href", "/add-metric/competition/new");
   });
 
+  it("renders the performance CTA at /add-metric/performance/new as a live link", () => {
+    renderWith();
+    const cta = screen.getByRole("link", {
+      name: /^add performance metric$/i,
+    });
+    expect(cta).toHaveAttribute("href", "/add-metric/performance/new");
+    // Sanity: the 🚧 emoji and 'coming soon' affordance are gone.
+    expect(cta.textContent).not.toMatch(/🚧/);
+  });
+
+  it("does not render a disabled 'coming soon' performance button", () => {
+    renderWith();
+    expect(
+      screen.queryByRole("button", { name: /add performance metric/i }),
+    ).toBeNull();
+  });
+
   it("renders seeded health customs in the health table", () => {
     renderWith([customDef("c_w", "Stretch Time", "health")]);
     expect(screen.getByText("Stretch Time")).toBeInTheDocument();

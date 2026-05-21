@@ -6,7 +6,12 @@ import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
-import { ADDABLE_HEALTH, ADDABLE_COMPETITION } from "../../metrics/addableMetrics";
+import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import {
+  ADDABLE_COMPETITION,
+  ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
+} from "../../metrics/addableMetrics";
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
@@ -22,9 +27,7 @@ import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
 
-// Authoring is not yet implemented for performance custom metrics, so
-// the form's route guard, builder, and body all narrow to this subset.
-type AuthorableCustomMetricType = "health" | "competition";
+type AuthorableCustomMetricType = "health" | "performance" | "competition";
 
 type TopLevelKind = "numeric" | "categorical" | "yn";
 
@@ -169,7 +172,7 @@ function parseCategoricalGoal(raw: string): number {
 }
 
 function isAuthorableType(t: string | undefined): t is AuthorableCustomMetricType {
-  return t === "health" || t === "competition";
+  return t === "health" || t === "performance" || t === "competition";
 }
 
 interface DraftState {
@@ -210,7 +213,7 @@ export function CustomMetricForm() {
   const { type, metricId } = useParams<{ type: string; metricId?: string }>();
   const { getMetric, loading } = useCustomMetrics();
   const { loading: overridesLoading } = useMetricOverrides();
-  const { health, competition } = useData();
+  const { health, performance, competition } = useData();
 
   if (!isAuthorableType(type)) {
     return <Navigate to="/setup/tracking" replace />;
@@ -224,7 +227,9 @@ export function CustomMetricForm() {
     const builtIns =
       type === "health"
         ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
-        : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
+        : type === "performance"
+          ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
+          : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
     const builtIn = builtIns.find((m) => m.id === metricId);
     if (builtIn) {
       // Wait for the override snapshot before mounting the form. The
@@ -257,12 +262,16 @@ export function CustomMetricForm() {
         />
       );
     }
-    // The body's edit-confirmation guard reads health/competition
-    // entries to decide whether changing input type or unit needs user
-    // confirmation. While those logs are still loading, the body would
-    // fall back to empty arrays and silently skip the prompt — wait for
-    // both to land so the prompt fires reliably.
-    if (health.status !== "loaded" || competition.status !== "loaded") {
+    // The body's edit-confirmation guard reads health/performance/
+    // competition entries to decide whether changing input type or unit
+    // needs user confirmation. While those logs are still loading, the
+    // body would fall back to empty arrays and silently skip the prompt
+    // — wait for all three to land so the prompt fires reliably.
+    if (
+      health.status !== "loaded" ||
+      performance.status !== "loaded" ||
+      competition.status !== "loaded"
+    ) {
       return <p className={css.loading}>Loading…</p>;
     }
     return <CustomMetricFormBody type={type} editing={editing} />;
@@ -279,10 +288,12 @@ interface BodyProps {
 function CustomMetricFormBody({ type, editing }: BodyProps) {
   const navigate = useNavigate();
   const { addMetric, updateMetric, deleteMetric } = useCustomMetrics();
-  const { health, competition } = useData();
+  const { health, performance, competition } = useData();
   const { loadState, updateProfile, setTrackedMetrics } = useUser();
   const healthEntries =
     health.status === "loaded" ? health.entries : [];
+  const performanceEntries =
+    performance.status === "loaded" ? performance.entries : [];
   const competitionEntries =
     competition.status === "loaded" ? competition.entries : [];
 
@@ -406,7 +417,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           inputTypeChanged || unitChanged || levelsChanged;
         if (
           dataShapingChanged &&
-          hasEntriesForMetric(editing.id, healthEntries, competitionEntries)
+          hasEntriesForMetric(
+            editing.id,
+            healthEntries,
+            performanceEntries,
+            competitionEntries,
+          )
         ) {
           const fields = [
             inputTypeChanged ? "input type" : null,
@@ -437,19 +453,27 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         const profile =
           loadState.status === "loaded" ? loadState.profile : null;
         const builtIns =
-          type === "health" ? HEALTH_METRICS : COMPETITION_METRICS;
+          type === "health"
+            ? HEALTH_METRICS
+            : type === "performance"
+              ? PERFORMANCE_METRICS
+              : COMPETITION_METRICS;
+        const trackedField =
+          type === "health"
+            ? "trackedHealthMetrics"
+            : type === "performance"
+              ? "trackedPerformanceMetrics"
+              : "trackedCompetitionMetrics";
         const currentIds =
           (type === "health"
             ? profile?.trackedHealthMetrics
-            : profile?.trackedCompetitionMetrics) ??
+            : type === "performance"
+              ? profile?.trackedPerformanceMetrics
+              : profile?.trackedCompetitionMetrics) ??
           builtIns.map((m) => m.id);
         const next = [...currentIds, def.id];
         if (!profile) {
-          void updateProfile({
-            [type === "health"
-              ? "trackedHealthMetrics"
-              : "trackedCompetitionMetrics"]: next,
-          });
+          void updateProfile({ [trackedField]: next });
         } else {
           void setTrackedMetrics(type, next);
         }

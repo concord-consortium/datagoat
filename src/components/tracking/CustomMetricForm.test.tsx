@@ -38,7 +38,7 @@ const userMock = vi.hoisted(() => ({
     async () => {},
   ),
   setTrackedMetrics: vi.fn<
-    (type: "health" | "competition", ids: string[]) => Promise<void>
+    (type: "health" | "performance" | "competition", ids: string[]) => Promise<void>
   >(async () => {}),
 }));
 
@@ -62,8 +62,10 @@ vi.mock("../../contexts/DataContext", async () => {
           },
         ],
       },
+      performance: { status: "loaded", entries: [] },
       competition: { status: "loaded", entries: [] },
       setHealthEntry: vi.fn(),
+      setPerformanceEntry: vi.fn(),
       setCompetitionEntry: vi.fn(),
     }),
   };
@@ -815,5 +817,73 @@ describe("CustomMetricForm (auto-track on create)", () => {
     expect(call?.trackedHealthMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
+  });
+});
+
+describe("CustomMetricForm (performance)", () => {
+  it("renders the form at /add-metric/performance/new instead of redirecting", () => {
+    renderAt("/add-metric/performance/new");
+    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+    expect(screen.queryByText(/back to tracking setup/i)).toBeNull();
+  });
+
+  it("saves a numeric perf metric and persists with metricType performance", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/performance/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Sprint Drill");
+    await user.type(screen.getByLabelText(/unit/i), "sec");
+    await user.clear(screen.getByLabelText(/goal/i));
+    await user.type(screen.getByLabelText(/goal/i), "4.5");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("back to tracking setup")).toBeInTheDocument();
+    });
+    expect(mockedSetDoc).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        name: "Sprint Drill",
+        metricType: "performance",
+        unit: "sec",
+        goalRaw: 4.5,
+      }),
+    );
+  });
+
+  it("auto-tracks the new perf metric id into trackedPerformanceMetrics on first profile create", async () => {
+    userMock.updateProfile.mockClear();
+
+    const user = userEvent.setup();
+    renderAt("/add-metric/performance/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Sprint Drill");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(userMock.updateProfile).toHaveBeenCalled();
+    });
+    const call = userMock.updateProfile.mock.calls.at(-1)?.[0] as
+      | { trackedPerformanceMetrics?: string[] }
+      | undefined;
+    expect(call?.trackedPerformanceMetrics).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^c_/)]),
+    );
+  });
+
+  it("routes a built-in perf metric id (oneRepMaxBench) to MetricOverrideForm", () => {
+    renderAt("/add-metric/performance/oneRepMaxBench");
+    // MetricOverrideForm shows Name and Unit disabled. Unit reads the
+    // MetricDefinition.unit ("kg or lbs"), not the chart CONFIG unit.
+    expect(screen.getByLabelText("Name")).toBeDisabled();
+    expect(screen.getByLabelText("Unit")).toBeDisabled();
+    expect(
+      (screen.getByLabelText("Unit") as HTMLInputElement).value,
+    ).toBe("kg or lbs");
+    // y-axis placeholders pull from the base CONFIG; expect the perf
+    // bounds (0 and 250) rather than DEFAULT_CONFIG's 0/100.
+    expect(
+      (screen.getByLabelText(/^Y-axis top/) as HTMLInputElement).placeholder,
+    ).toBe("250");
   });
 });

@@ -4,7 +4,8 @@ import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./AddMetric.module.css";
 
 // AddMetric: a list + edit-entry-point page for the user's custom
-// metrics, scoped by the route's :type ("health" | "competition").
+// metrics, scoped by the route's :type ("health" | "performance" |
+// "competition").
 // The "+ Create custom metric" CTA at the top routes to
 // /add-metric/:type/new; each existing row links to the edit form.
 // Tracking is managed elsewhere — both built-in and custom rows live
@@ -13,19 +14,13 @@ import css from "./AddMetric.module.css";
 // re-implementing the tracking UI.
 export function AddMetric() {
   const { type } = useParams<{ type: string }>();
-  // TODO(DGT-51 follow-up): accept "performance" once CustomMetricForm
-  // supports authoring performance customs. Until then, /add-metric/
-  // performance bounces back to /setup/tracking — matching the disabled
-  // 🚧 button there. CustomMetricForm itself also rejects "performance"
-  // today, so a deep-link to /add-metric/performance/new would lead to
-  // a broken flow if we accepted it here.
-  if (type !== "health" && type !== "competition") {
+  if (type !== "health" && type !== "performance" && type !== "competition") {
     return <Navigate to="/setup/tracking" replace />;
   }
   return <AddMetricInner type={type} />;
 }
 
-function AddMetricInner({ type }: { type: "health" | "competition" }) {
+function AddMetricInner({ type }: { type: "health" | "performance" | "competition" }) {
   const { metrics: allCustom, loading } = useCustomMetrics();
   const customForType = allCustom.filter((m) => m.metricType === type);
 

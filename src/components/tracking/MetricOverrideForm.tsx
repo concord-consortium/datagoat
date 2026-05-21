@@ -158,6 +158,15 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       <If condition={goalText !== null}>
         <p className={css.hint}>Recommended goal: {goalText}.</p>
       </If>
+      {/* Performance metrics have no canonical recommended goal (per
+          DGT-51 they are all user-set), so resolveGoalText returns null
+          for them. Show a dedicated nudge here instead — this is the
+          one place a perf user acts on it (the Goal input below). */}
+      <If condition={metric.type === "performance"}>
+        <p className={css.hint}>
+          Performance goals are personal — enter your target.
+        </p>
+      </If>
 
       <TextField
         id="mo-goal"

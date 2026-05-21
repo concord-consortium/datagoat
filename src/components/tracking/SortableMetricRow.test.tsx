@@ -10,16 +10,18 @@ function renderRow(
   isCustom: boolean,
   type: "health" | "performance" | "competition" = "health",
   checked = true,
+  id = "leanMass",
+  name = "Lean Mass",
 ) {
   return render(
     <MemoryRouter>
       <DndContext>
-        <SortableContext items={["leanMass"]}>
+        <SortableContext items={[id]}>
           <table>
             <tbody>
               <SortableMetricRow
-                id="leanMass"
-                name="Lean Mass"
+                id={id}
+                name={name}
                 type={type}
                 checked={checked}
                 onToggleCheck={vi.fn()}
@@ -48,9 +50,13 @@ describe("SortableMetricRow edit pencil", () => {
     ).toHaveAttribute("href", "/add-metric/health/leanMass");
   });
 
-  it("does not render an Edit link for a performance metric row", () => {
-    renderRow(false, "performance");
-    expect(screen.queryByRole("link", { name: /^Edit / })).toBeNull();
+  it("renders an Edit link for a performance metric row when tracked", () => {
+    renderRow(false, "performance", true, "fortyYardDash", "40-Yard Dash");
+    const link = screen.getByRole("link", { name: "Edit 40-Yard Dash" });
+    expect(link).toHaveAttribute(
+      "href",
+      "/add-metric/performance/fortyYardDash",
+    );
   });
 
   it("does not render an Edit link for an unchecked (untracked) row", () => {

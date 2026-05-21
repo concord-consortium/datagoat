@@ -11,16 +11,6 @@
 // MetricDetail renders the placeholder verbatim.
 
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
-import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
-
-// Set of all performance-section metric ids. resolveGoalText returns
-// a 🚧 placeholder for these so MetricDetail's "Your goal" section
-// makes the missing per-gender × athlete-type goals visible rather
-// than silently omitting the section.
-const PERFORMANCE_IDS = new Set(
-  [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE].map((m) => m.id),
-);
 
 // metric.id -> static goal text (no profile dependency)
 const STATIC_GOALS: Record<string, string> = {
@@ -86,12 +76,10 @@ export function resolveGoalText(
   if (profileMap) {
     return profileMap[profileKey] ?? "[n]";
   }
-  if (PERFORMANCE_IDS.has(metricId)) {
-    // Per-gender × athlete-type goals for Performance metrics are
-    // defined in the DGT-51 design source but not yet wired through.
-    // Make the gap visible at the MetricDetail page.
-    return "🚧 Personalized goal coming soon";
-  }
+  // Performance and competition metrics have no canonical goal text:
+  // per DGT-51 all 19 perf metrics are "user sets their own goal," so
+  // they fall through to null. MetricOverrideForm shows perf users a
+  // dedicated "goals are personal" hint instead.
   return null;
 }
 

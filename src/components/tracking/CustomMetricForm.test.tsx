@@ -868,4 +868,20 @@ describe("CustomMetricForm (performance)", () => {
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
   });
+
+  it("routes a built-in perf metric id (oneRepMaxBench) to MetricOverrideForm", () => {
+    renderAt("/add-metric/performance/oneRepMaxBench");
+    // MetricOverrideForm shows Name and Unit disabled. Unit reads the
+    // MetricDefinition.unit ("kg or lbs"), not the chart CONFIG unit.
+    expect(screen.getByLabelText("Name")).toBeDisabled();
+    expect(screen.getByLabelText("Unit")).toBeDisabled();
+    expect(
+      (screen.getByLabelText("Unit") as HTMLInputElement).value,
+    ).toBe("kg or lbs");
+    // y-axis placeholders pull from the base CONFIG; expect the perf
+    // bounds (0 and 250) rather than DEFAULT_CONFIG's 0/100.
+    expect(
+      (screen.getByLabelText(/^Y-axis top/) as HTMLInputElement).placeholder,
+    ).toBe("250");
+  });
 });

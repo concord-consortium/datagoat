@@ -7,7 +7,11 @@ import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
-import { ADDABLE_HEALTH, ADDABLE_COMPETITION } from "../../metrics/addableMetrics";
+import {
+  ADDABLE_COMPETITION,
+  ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
+} from "../../metrics/addableMetrics";
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
@@ -223,7 +227,9 @@ export function CustomMetricForm() {
     const builtIns =
       type === "health"
         ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
-        : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
+        : type === "performance"
+          ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
+          : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
     const builtIn = builtIns.find((m) => m.id === metricId);
     if (builtIn) {
       // Wait for the override snapshot before mounting the form. The

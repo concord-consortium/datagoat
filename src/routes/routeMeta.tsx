@@ -203,8 +203,35 @@ const PATTERNS: Array<{
       if (t !== "health" && t !== "performance" && t !== "competition") {
         return null;
       }
-      // Cross-type access (e.g. health URL on a competition metric) returns
-      // null so the form's <Navigate replace /> redirect to the canonical
+      // Built-in metric id -> the goal/axis override form
+      // (MetricOverrideForm). Look up only in the route's :type
+      // registries so a built-in id under the wrong :type returns null
+      // and the form's <Navigate replace /> redirect isn't preempted.
+      // Built-ins are checked before customs, matching the precedence
+      // in CustomMetricForm's gateway; the two id spaces never collide.
+      const builtIns =
+        t === "health"
+          ? [...HEALTH_METRICS, ...ADDABLE_HEALTH]
+          : t === "performance"
+            ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
+            : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
+      const m = builtIns.find((x) => x.id === params.metricId);
+      if (m) {
+        return {
+          title: m.name,
+          icon: m.Icon ? (
+            <m.Icon />
+          ) : t === "health" ? (
+            <CalendarIcon />
+          ) : (
+            <StopwatchIcon />
+          ),
+          backTo: "/setup/tracking",
+        };
+      }
+      // Custom metric id -> the custom create/edit form. Cross-type
+      // access (e.g. health URL on a competition metric) returns null
+      // so the form's <Navigate replace /> redirect to the canonical
       // route happens without rendering a misleading title for one frame.
       const c = customs.find(
         (x) => x.id === params.metricId && x.metricType === t,

@@ -113,6 +113,26 @@ describe("resolveRouteMeta — custom metric routing", () => {
     expect(resolveRouteMeta("/add-metric/health/c_5k", customs)).toBeNull();
   });
 
+  it("titles the built-in override form at /add-metric/:type/:metricId", () => {
+    // Built-in metric ids resolve via the registries, not the customs
+    // list — MetricOverrideForm needs a section header too.
+    expect(resolveRouteMeta("/add-metric/health/leanMass")?.title).toBe(
+      "Lean Mass",
+    );
+    expect(
+      resolveRouteMeta("/add-metric/performance/oneRepMaxBench")?.title,
+    ).toBe("1 Rep Max Bench Press");
+    expect(resolveRouteMeta("/add-metric/competition/assists")?.title).toBe(
+      "Assists",
+    );
+  });
+
+  it("does NOT title a built-in metric id under a mismatched :type", () => {
+    // A perf built-in under a health URL returns null so the form's
+    // <Navigate replace /> redirect isn't preempted.
+    expect(resolveRouteMeta("/add-metric/health/oneRepMaxBench")).toBeNull();
+  });
+
   it("matches /add-metric/:type/new before /add-metric/:type/:metricId", () => {
     // Regression guard: if pattern order is wrong, "new" gets captured as
     // :metricId and falls through to a null lookup. The title should always

@@ -304,6 +304,15 @@ describe("getMetricChartConfig — performance built-ins", () => {
     expect(c.formatValue(4.5)).toBe("4.5");
     expect(c.unit).toBe("min");
   });
+
+  it("marks time-based perf metrics lowerIsBetter, others not", () => {
+    expect(getMetricChartConfig("oneMileRun").lowerIsBetter).toBe(true);
+    expect(getMetricChartConfig("tenMeterSprint").lowerIsBetter).toBe(true);
+    expect(getMetricChartConfig("fortyYardDash").lowerIsBetter).toBe(true);
+    // Higher-is-better perf metrics leave it unset.
+    expect(getMetricChartConfig("verticalJump").lowerIsBetter).toBeFalsy();
+    expect(getMetricChartConfig("oneRepMaxBench").lowerIsBetter).toBeFalsy();
+  });
 });
 
 // Tiny seedable PRNG so the random-generator tests are deterministic.

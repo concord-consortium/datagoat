@@ -30,7 +30,7 @@ export function Bars({ data, goalRaw, config, yScale, geom }: BarsProps) {
 
   const meetsGoal = (v: number): boolean => {
     if (goalRaw === undefined) return true;
-    return config.inverted ? v <= goalRaw : v >= goalRaw;
+    return config.lowerIsBetter ? v <= goalRaw : v >= goalRaw;
   };
 
   return (

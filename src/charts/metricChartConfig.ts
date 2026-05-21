@@ -22,6 +22,13 @@ export interface MetricChartConfig {
   // smaller than yBottomRaw (Hydration's 1..8 urine-color scale: 1 = best,
   // displayed at the top). Default false: yBottomRaw < yTopRaw, top = max.
   inverted?: boolean;
+  // When true, a value at or below goalRaw "meets" the goal (lower is
+  // better — race times, etc.). Default false: at or above goalRaw meets
+  // it. Distinct from `inverted`, which only controls axis orientation:
+  // a metric can be lower-is-better with an ascending axis (a race time
+  // charted 4..15 with the goal line sitting low), so the two are
+  // separate flags rather than one overloaded one.
+  lowerIsBetter?: boolean;
   // Static goal value in raw units. Profile-keyed metrics omit this and
   // resolve via PROFILE_CHART_GOALS instead.
   goalRaw?: number;
@@ -73,6 +80,7 @@ const HYDRATION: MetricChartConfig = {
   yTopRaw: 1,
   yBottomRaw: 8,
   inverted: true,
+  lowerIsBetter: true,
   goalRaw: 3,
   formatValue: fmtRaw,
   random: (rng) => randomInt(rng, 1, 5),
@@ -197,6 +205,11 @@ const WINNING_PERCENTAGE: MetricChartConfig = {
 // improves, matching an athlete's mental model. The override form's
 // existing baseAscending check ends up "always ascending" for perf.
 //
+// Time-based metrics also pass lowerIsBetter so bar coloring treats a
+// faster (smaller) time as meeting the goal. That is independent of
+// axis orientation — the axis stays ascending; only the goal-polarity
+// flips.
+//
 // Unit choice for ambiguous-unit metrics (kg/lbs, m/s/mph, m/mi,
 // in/cm): we pick one canonical unit per metric. Stored entry values
 // remain unit-agnostic raw numbers; the unit string here affects only
@@ -205,11 +218,13 @@ function performanceConfig(
   yBottomRaw: number,
   yTopRaw: number,
   unit?: string,
+  lowerIsBetter?: boolean,
 ): MetricChartConfig {
   return {
     chartType: "bar",
     yTopRaw,
     yBottomRaw,
+    lowerIsBetter,
     // No goalRaw — perf goals are user-set per the DGT-51 sheet.
     formatValue: fmtRaw,
     unit,
@@ -235,10 +250,10 @@ const CONFIG: Record<string, MetricChartConfig> = {
   tackles: competitionConfig(0, 10),
   scores: competitionConfig(0, 100),
   times: competitionConfig(0, 60, "min"),
-  // Performance — from sheet
-  oneMileRun: performanceConfig(4, 15, "min"),               // from sheet
-  tenMeterSprint: performanceConfig(1, 3, "sec"),            // from sheet
-  fortyYardDash: performanceConfig(4.2, 10, "sec"),          // from sheet
+  // Performance — from sheet (time metrics pass lowerIsBetter)
+  oneMileRun: performanceConfig(4, 15, "min", true),         // from sheet
+  tenMeterSprint: performanceConfig(1, 3, "sec", true),      // from sheet
+  fortyYardDash: performanceConfig(4.2, 10, "sec", true),    // from sheet
   beepTest: performanceConfig(1, 21, "levels"),              // from sheet
   standingBroadJump: performanceConfig(100, 350, "cm"),      // from sheet
   verticalJump: performanceConfig(1, 50, "in"),              // from sheet

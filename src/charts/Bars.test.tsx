@@ -67,7 +67,7 @@ describe("Bars", () => {
     ).toBe(2); // 70, 60
   });
 
-  it("inverts the comparison for inverted-axis metrics like hydration (lower raw = at/above)", () => {
+  it("inverts the comparison for lowerIsBetter metrics like hydration (lower raw = at/above)", () => {
     const data = [
       { date: "2026-05-01", value: 2 }, // <= goal 3 → at/above
       { date: "2026-05-02", value: 5 }, // > goal 3 → below
@@ -78,6 +78,30 @@ describe("Bars", () => {
         goalRaw={3}
         config={getMetricChartConfig("hydration")}
         yScale={yScaleHydration}
+        geom={geom}
+      />,
+    );
+    expect(
+      container.querySelectorAll('rect[class*="barAtOrAboveGoal"]').length,
+    ).toBe(1);
+    expect(
+      container.querySelectorAll('rect[class*="barBelowGoal"]').length,
+    ).toBe(1);
+  });
+
+  it("treats a faster time as at/above goal for a lowerIsBetter perf metric (ascending axis)", () => {
+    // fortyYardDash: lowerIsBetter, ascending axis (yBottom 4.2 < yTop 10).
+    // A 5s run beats a 6s goal; an 8s run misses it.
+    const data = [
+      { date: "2026-05-01", value: 5 }, // <= goal 6 → at/above
+      { date: "2026-05-02", value: 8 }, // > goal 6 → below
+    ];
+    const { container } = renderInSvg(
+      <Bars
+        data={data}
+        goalRaw={6}
+        config={getMetricChartConfig("fortyYardDash")}
+        yScale={linearScale([4.2, 10], [geom.plotBottom, geom.plotTop])}
         geom={geom}
       />,
     );

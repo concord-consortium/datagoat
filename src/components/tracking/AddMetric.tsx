@@ -4,7 +4,8 @@ import CustomMetricIcon from "@/icons/custom-metric.svg?react";
 import css from "./AddMetric.module.css";
 
 // AddMetric: a list + edit-entry-point page for the user's custom
-// metrics, scoped by the route's :type ("health" | "competition").
+// metrics, scoped by the route's :type ("health" | "performance" |
+// "competition").
 // The "+ Create custom metric" CTA at the top routes to
 // /add-metric/:type/new; each existing row links to the edit form.
 // Tracking is managed elsewhere — both built-in and custom rows live

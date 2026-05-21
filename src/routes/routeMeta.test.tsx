@@ -6,7 +6,7 @@ import type { CustomMetricDef } from "../types/customMetrics";
 function customDef(
   id: string,
   name: string,
-  metricType: "health" | "competition",
+  metricType: "health" | "performance" | "competition",
 ): CustomMetricDef {
   return {
     id,
@@ -69,19 +69,38 @@ describe("resolveRouteMeta — custom metric routing", () => {
     expect(resolveRouteMeta("/add-metric/health/new")?.title).toBe(
       "New Health Metric",
     );
+    expect(resolveRouteMeta("/add-metric/performance/new")?.title).toBe(
+      "New Performance Metric",
+    );
     expect(resolveRouteMeta("/add-metric/competition/new")?.title).toBe(
       "New Competition Metric",
+    );
+  });
+
+  it("titles the add-metric list at /add-metric/:type", () => {
+    expect(resolveRouteMeta("/add-metric/health")?.title).toBe(
+      "Health Metrics",
+    );
+    expect(resolveRouteMeta("/add-metric/performance")?.title).toBe(
+      "Performance Metrics",
+    );
+    expect(resolveRouteMeta("/add-metric/competition")?.title).toBe(
+      "Competition Metrics",
     );
   });
 
   it("titles the edit form at /add-metric/:type/:metricId with the metric name", () => {
     const customs = [
       customDef("c_stretch", "Stretch Time", "health"),
+      customDef("c_sprint", "Sprint Drill", "performance"),
       customDef("c_5k", "5K Time", "competition"),
     ];
     expect(
       resolveRouteMeta("/add-metric/health/c_stretch", customs)?.title,
     ).toBe("Stretch Time");
+    expect(
+      resolveRouteMeta("/add-metric/performance/c_sprint", customs)?.title,
+    ).toBe("Sprint Drill");
     expect(
       resolveRouteMeta("/add-metric/competition/c_5k", customs)?.title,
     ).toBe("5K Time");

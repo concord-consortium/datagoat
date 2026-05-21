@@ -22,7 +22,7 @@ import { AddMetric } from "./AddMetric";
 
 function makeMetric(
   name: string,
-  metricType: "health" | "competition",
+  metricType: "health" | "performance" | "competition",
 ): CustomMetricDef {
   return {
     id: `c_test_${name.replace(/\s/g, "_")}`,
@@ -40,6 +40,10 @@ function makeMetric(
     createdAt: 0,
     updatedAt: 0,
   };
+}
+
+function makePerfMetric(name: string): CustomMetricDef {
+  return makeMetric(name, "performance");
 }
 
 function harness(path: string, seed: CustomMetricDef[] = []) {
@@ -74,5 +78,17 @@ describe("AddMetric (demo)", () => {
     expect(
       screen.getByRole("link", { name: /create custom metric/i }),
     ).toBeInTheDocument();
+  });
+
+  it("shows the empty-state hint for performance type", () => {
+    harness("/add-metric/performance");
+    expect(screen.getByText(/none yet/i)).toBeInTheDocument();
+  });
+
+  it("renders performance customs in the performance list", () => {
+    harness("/add-metric/performance", [
+      makePerfMetric("Sprint Drill"),
+    ]);
+    expect(screen.getByText("Sprint Drill")).toBeInTheDocument();
   });
 });

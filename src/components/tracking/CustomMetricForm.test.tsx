@@ -62,8 +62,10 @@ vi.mock("../../contexts/DataContext", async () => {
           },
         ],
       },
+      performance: { status: "loaded", entries: [] },
       competition: { status: "loaded", entries: [] },
       setHealthEntry: vi.fn(),
+      setPerformanceEntry: vi.fn(),
       setCompetitionEntry: vi.fn(),
     }),
   };

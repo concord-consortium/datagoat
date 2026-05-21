@@ -213,7 +213,7 @@ export function CustomMetricForm() {
   const { type, metricId } = useParams<{ type: string; metricId?: string }>();
   const { getMetric, loading } = useCustomMetrics();
   const { loading: overridesLoading } = useMetricOverrides();
-  const { health, competition } = useData();
+  const { health, performance, competition } = useData();
 
   if (!isAuthorableType(type)) {
     return <Navigate to="/setup/tracking" replace />;
@@ -262,12 +262,16 @@ export function CustomMetricForm() {
         />
       );
     }
-    // The body's edit-confirmation guard reads health/competition
-    // entries to decide whether changing input type or unit needs user
-    // confirmation. While those logs are still loading, the body would
-    // fall back to empty arrays and silently skip the prompt — wait for
-    // both to land so the prompt fires reliably.
-    if (health.status !== "loaded" || competition.status !== "loaded") {
+    // The body's edit-confirmation guard reads health/performance/
+    // competition entries to decide whether changing input type or unit
+    // needs user confirmation. While those logs are still loading, the
+    // body would fall back to empty arrays and silently skip the prompt
+    // — wait for all three to land so the prompt fires reliably.
+    if (
+      health.status !== "loaded" ||
+      performance.status !== "loaded" ||
+      competition.status !== "loaded"
+    ) {
       return <p className={css.loading}>Loading…</p>;
     }
     return <CustomMetricFormBody type={type} editing={editing} />;
@@ -284,10 +288,12 @@ interface BodyProps {
 function CustomMetricFormBody({ type, editing }: BodyProps) {
   const navigate = useNavigate();
   const { addMetric, updateMetric, deleteMetric } = useCustomMetrics();
-  const { health, competition } = useData();
+  const { health, performance, competition } = useData();
   const { loadState, updateProfile, setTrackedMetrics } = useUser();
   const healthEntries =
     health.status === "loaded" ? health.entries : [];
+  const performanceEntries =
+    performance.status === "loaded" ? performance.entries : [];
   const competitionEntries =
     competition.status === "loaded" ? competition.entries : [];
 
@@ -411,7 +417,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           inputTypeChanged || unitChanged || levelsChanged;
         if (
           dataShapingChanged &&
-          hasEntriesForMetric(editing.id, healthEntries, competitionEntries)
+          hasEntriesForMetric(
+            editing.id,
+            healthEntries,
+            performanceEntries,
+            competitionEntries,
+          )
         ) {
           const fields = [
             inputTypeChanged ? "input type" : null,

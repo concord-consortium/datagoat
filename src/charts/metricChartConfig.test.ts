@@ -274,6 +274,38 @@ describe("metric overrides overlay", () => {
   });
 });
 
+describe("getMetricChartConfig — performance built-ins", () => {
+  it("returns from-sheet bounds for fortyYardDash with sec unit", () => {
+    const c = getMetricChartConfig("fortyYardDash");
+    expect(c.chartType).toBe("bar");
+    expect(c.yBottomRaw).toBe(4.2);
+    expect(c.yTopRaw).toBe(10);
+    expect(c.unit).toBe("sec");
+    expect(c.inverted).toBeFalsy();
+    // Time metrics: ascending axis, goal sits low on the chart.
+  });
+
+  it("returns guesstimate bounds for oneRepMaxBench with kg unit", () => {
+    const c = getMetricChartConfig("oneRepMaxBench");
+    expect(c.yBottomRaw).toBe(0);
+    expect(c.yTopRaw).toBe(250);
+    expect(c.unit).toBe("kg");
+  });
+
+  it("returns unitless bounds for reactiveStrengthIndex (no unit)", () => {
+    const c = getMetricChartConfig("reactiveStrengthIndex");
+    expect(c.yBottomRaw).toBe(0);
+    expect(c.yTopRaw).toBe(5);
+    expect(c.unit).toBeUndefined();
+  });
+
+  it("formats perf values without a unit suffix (unit appended by chart)", () => {
+    const c = getMetricChartConfig("oneMileRun");
+    expect(c.formatValue(4.5)).toBe("4.5");
+    expect(c.unit).toBe("min");
+  });
+});
+
 // Tiny seedable PRNG so the random-generator tests are deterministic.
 // Mirrors the algorithm used in src/charts/randomValues.ts.
 function mulberry32(seed: number): () => number {

@@ -183,6 +183,43 @@ const WINNING_PERCENTAGE: MetricChartConfig = {
   random: (rng) => (rng() < 0.5 ? 0 : 1),
 };
 
+// Performance metrics — per-metric chart bounds for the 19 built-ins
+// in ADDABLE_PERFORMANCE. yBottom/yTop carry one of two provenances:
+//
+//   "from sheet" — bounds derived from the DGT-51 spreadsheet's
+//     "Estimated Range (Physiological)" column. Six metrics qualify.
+//   "guesstimate" — no sheet value; bounds picked during DGT-61 and
+//     flagged for content-team review. Thirteen metrics qualify.
+//
+// All authored ascending (yBottom < yTop) regardless of "lower is
+// better" semantics. Time-based metrics (mile run, sprints) keep the
+// goal line low on the chart — bars get shorter as the athlete
+// improves, matching an athlete's mental model. The override form's
+// existing baseAscending check ends up "always ascending" for perf.
+//
+// Unit choice for ambiguous-unit metrics (kg/lbs, m/s/mph, m/mi,
+// in/cm): we pick one canonical unit per metric. Stored entry values
+// remain unit-agnostic raw numbers; the unit string here affects only
+// chart tooltips and axis labels.
+function performanceConfig(
+  yBottomRaw: number,
+  yTopRaw: number,
+  unit?: string,
+): MetricChartConfig {
+  return {
+    chartType: "bar",
+    yTopRaw,
+    yBottomRaw,
+    // No goalRaw — perf goals are user-set per the DGT-51 sheet.
+    formatValue: fmtRaw,
+    unit,
+    // randomFloat (rather than randomInt) — perf ranges include
+    // non-integer bounds (e.g. fortyYardDash 4.2..10). Rounded to 1
+    // decimal so demo values match the chart's typical avgDecimals.
+    random: (rng) => randomFloat(rng, yBottomRaw, yTopRaw, 1),
+  };
+}
+
 const CONFIG: Record<string, MetricChartConfig> = {
   hydration: HYDRATION,
   sleepTime: SLEEP_TIME,
@@ -198,6 +235,27 @@ const CONFIG: Record<string, MetricChartConfig> = {
   tackles: competitionConfig(0, 10),
   scores: competitionConfig(0, 100),
   times: competitionConfig(0, 60, "min"),
+  // Performance — from sheet
+  oneMileRun: performanceConfig(4, 15, "min"),               // from sheet
+  tenMeterSprint: performanceConfig(1, 3, "sec"),            // from sheet
+  fortyYardDash: performanceConfig(4.2, 10, "sec"),          // from sheet
+  beepTest: performanceConfig(1, 21, "levels"),              // from sheet
+  standingBroadJump: performanceConfig(100, 350, "cm"),      // from sheet
+  verticalJump: performanceConfig(1, 50, "in"),              // from sheet
+  // Performance — guesstimate (content team to confirm)
+  oneRepMaxBench: performanceConfig(0, 250, "kg"),           // guesstimate
+  oneRepMaxDeadlift: performanceConfig(0, 300, "kg"),        // guesstimate
+  oneRepMaxHangClean: performanceConfig(0, 200, "kg"),       // guesstimate
+  oneRepMaxPowerClean: performanceConfig(0, 200, "kg"),      // guesstimate
+  oneRepMaxSquat: performanceConfig(0, 300, "kg"),           // guesstimate
+  averageVelocity: performanceConfig(0, 15, "m/s"),          // guesstimate
+  deceleration: performanceConfig(0, 15, "m/s"),             // guesstimate
+  distance: performanceConfig(0, 20, "mi"),                  // guesstimate
+  forwardAcceleration: performanceConfig(0, 15, "m/s"),      // guesstimate
+  heartRateZone: performanceConfig(50, 200, "bpm"),          // guesstimate
+  peakVelocity: performanceConfig(0, 15, "m/s"),             // guesstimate
+  reactiveStrengthIndex: performanceConfig(0, 5),            // guesstimate
+  upwardAcceleration: performanceConfig(0, 15, "m/s"),       // guesstimate
 };
 
 const DEFAULT_CONFIG: MetricChartConfig = {

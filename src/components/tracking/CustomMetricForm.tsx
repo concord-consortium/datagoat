@@ -6,6 +6,7 @@ import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
+import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import { ADDABLE_HEALTH, ADDABLE_COMPETITION } from "../../metrics/addableMetrics";
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
@@ -22,9 +23,7 @@ import css from "./CustomMetricForm.module.css";
 
 const NAME_MAX = 128;
 
-// Authoring is not yet implemented for performance custom metrics, so
-// the form's route guard, builder, and body all narrow to this subset.
-type AuthorableCustomMetricType = "health" | "competition";
+type AuthorableCustomMetricType = "health" | "performance" | "competition";
 
 type TopLevelKind = "numeric" | "categorical" | "yn";
 
@@ -169,7 +168,7 @@ function parseCategoricalGoal(raw: string): number {
 }
 
 function isAuthorableType(t: string | undefined): t is AuthorableCustomMetricType {
-  return t === "health" || t === "competition";
+  return t === "health" || t === "performance" || t === "competition";
 }
 
 interface DraftState {
@@ -437,19 +436,27 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         const profile =
           loadState.status === "loaded" ? loadState.profile : null;
         const builtIns =
-          type === "health" ? HEALTH_METRICS : COMPETITION_METRICS;
+          type === "health"
+            ? HEALTH_METRICS
+            : type === "performance"
+              ? PERFORMANCE_METRICS
+              : COMPETITION_METRICS;
+        const trackedField =
+          type === "health"
+            ? "trackedHealthMetrics"
+            : type === "performance"
+              ? "trackedPerformanceMetrics"
+              : "trackedCompetitionMetrics";
         const currentIds =
           (type === "health"
             ? profile?.trackedHealthMetrics
-            : profile?.trackedCompetitionMetrics) ??
+            : type === "performance"
+              ? profile?.trackedPerformanceMetrics
+              : profile?.trackedCompetitionMetrics) ??
           builtIns.map((m) => m.id);
         const next = [...currentIds, def.id];
         if (!profile) {
-          void updateProfile({
-            [type === "health"
-              ? "trackedHealthMetrics"
-              : "trackedCompetitionMetrics"]: next,
-          });
+          void updateProfile({ [trackedField]: next });
         } else {
           void setTrackedMetrics(type, next);
         }

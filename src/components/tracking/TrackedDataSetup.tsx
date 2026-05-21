@@ -213,8 +213,7 @@ export function TrackedDataSetup() {
           void handleToggleCheck("performance", id, checked)
         }
         addToHref="/add-metric/performance/new"
-        addToLabel="🚧 Add Performance Metric"
-        addToComingSoon
+        addToLabel="Add Performance Metric"
       />
 
       <div className={css.chartDivider} aria-hidden="true" />

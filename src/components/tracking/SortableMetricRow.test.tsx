@@ -48,9 +48,10 @@ describe("SortableMetricRow edit pencil", () => {
     ).toHaveAttribute("href", "/add-metric/health/leanMass");
   });
 
-  it("does not render an Edit link for a performance metric row", () => {
+  it("renders an Edit link for a performance metric row when tracked", () => {
     renderRow(false, "performance");
-    expect(screen.queryByRole("link", { name: /^Edit / })).toBeNull();
+    const link = screen.getByRole("link", { name: "Edit Lean Mass" });
+    expect(link).toHaveAttribute("href", "/add-metric/performance/leanMass");
   });
 
   it("does not render an Edit link for an unchecked (untracked) row", () => {

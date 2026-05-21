@@ -21,8 +21,7 @@ interface SortableMetricRowProps {
   reorderHintId: string;
   // True for user-defined custom metrics. Affects only the Info-cell
   // icon (CustomMetricIcon instead of the built-in's Icon). The
-  // edit-pencil cell renders only for checked (tracked) rows, and is
-  // suppressed for performance rows (unsupported).
+  // edit-pencil cell renders only for checked (tracked) rows.
   isCustom?: boolean;
 }
 
@@ -92,10 +91,8 @@ export function SortableMetricRow({
             metrics open CustomMetricForm, built-ins open
             MetricOverrideForm). Shown only for tracked (checked)
             metrics - editing a goal/axis is meaningless for a metric
-            the user isn't tracking. Suppressed for performance metrics
-            too - performance editing is not supported, so the route
-            would dead-end back to /setup/tracking. */}
-        <If condition={checked && type !== "performance"}>
+            the user isn't tracking. */}
+        <If condition={checked}>
           <Link
             to={`/add-metric/${type}/${id}`}
             className={css.metricInfoBtn}

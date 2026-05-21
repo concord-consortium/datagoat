@@ -44,10 +44,12 @@ vi.mock("../../contexts/UserContext", () => ({
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { MetricOverridesProvider } from "../../contexts/MetricOverridesContext";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
+import { ADDABLE_PERFORMANCE } from "../../metrics/addableMetrics";
 import type { MetricOverride } from "../../types/metricOverrides";
 
 const leanMass = HEALTH_METRICS.find((m) => m.id === "leanMass")!;
 const hydration = HEALTH_METRICS.find((m) => m.id === "hydration")!;
+const fortyYardDash = ADDABLE_PERFORMANCE.find((m) => m.id === "fortyYardDash")!;
 
 function renderForm(metric = leanMass, overrides: MetricOverride[] = []) {
   return render(
@@ -181,5 +183,43 @@ describe("MetricOverrideForm", () => {
       screen.getByText(/both y-axis fields or leave both blank/i),
     ).toBeInTheDocument();
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("MetricOverrideForm — performance metric", () => {
+  beforeEach(() => {
+    navigateSpy.mockClear();
+  });
+
+  it("renders the personal-target hint for perf metrics", () => {
+    renderForm(fortyYardDash);
+    expect(
+      screen.getByText(/performance goals are personal/i),
+    ).toBeInTheDocument();
+    // Negative: the previous "🚧 Personalized goal coming soon" copy
+    // must not appear.
+    expect(screen.queryByText(/coming soon/i)).toBeNull();
+  });
+
+  it("uses the perf CONFIG bounds as y-axis placeholders", () => {
+    renderForm(fortyYardDash);
+    // fortyYardDash: from-sheet bounds 4.2..10 (sec).
+    expect(
+      (screen.getByLabelText(/^Y-axis top/) as HTMLInputElement).placeholder,
+    ).toBe("10");
+    expect(
+      (screen.getByLabelText(/^Y-axis bottom/) as HTMLInputElement).placeholder,
+    ).toBe("4.2");
+  });
+
+  it("saves a valid perf override and navigates back", async () => {
+    renderForm(fortyYardDash);
+    fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "4.5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
+    );
   });
 });

@@ -87,10 +87,10 @@ export function resolveGoalText(
     return profileMap[profileKey] ?? "[n]";
   }
   if (PERFORMANCE_IDS.has(metricId)) {
-    // Per-gender × athlete-type goals for Performance metrics are
-    // defined in the DGT-51 design source but not yet wired through.
-    // Make the gap visible at the MetricDetail page.
-    return "🚧 Personalized goal coming soon";
+    // Per DGT-51, all 19 perf metrics are marked "user sets their
+    // own goal" — no canonical per-profile recommendations exist.
+    // The form's Goal input is the answer.
+    return "Performance goals are personal — enter your target.";
   }
   return null;
 }

@@ -78,8 +78,8 @@ export function resolveGoalText(
   }
   // Performance and competition metrics have no canonical goal text:
   // per DGT-51 all 19 perf metrics are "user sets their own goal," so
-  // they fall through to null. MetricOverrideForm shows perf users a
-  // dedicated "goals are personal" hint instead.
+  // they fall through to null. MetricOverrideForm shows the universal
+  // goalDeterminationText guidance for these (and every metric type).
   return null;
 }
 

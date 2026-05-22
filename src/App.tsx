@@ -8,7 +8,7 @@ import { MetricOverridesProvider } from "./contexts/MetricOverridesContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import css from "./App.module.css";
 
-export const APP_VERSION = "v0.4.0";
+export const APP_VERSION = "v0.4.1";
 export const APP_VERSION_DESC = "Editable metric goals, performance metric tracking";
 
 export default function App() {

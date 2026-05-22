@@ -83,6 +83,31 @@ export function resolveGoalText(
   return null;
 }
 
+// Goal-determination guidance shown above the Goal field of the
+// built-in metric edit form (DGT-48). One template serves every
+// metric: the athlete type and metric name are the only
+// substitutions, so there is no per-metric copy and no data-model
+// support needed. (We originally read the story's "lean mass" example
+// as metric-specific and deferred this to DGT-62; Leslie clarified the
+// copy is identical for every metric, with the metric name slotted in.)
+function indefiniteArticle(word: string): "a" | "an" {
+  return /^[aeiou]/i.test(word.trim()) ? "an" : "a";
+}
+
+export function goalDeterminationText(
+  athleteType: string,
+  metricName: string,
+): string {
+  return (
+    `As ${indefiniteArticle(athleteType)} ${athleteType} athlete, ` +
+    `your ${metricName} target should be tailored to your sport-specific ` +
+    `demands, performance goals, and individual health. Look at your ` +
+    `current numbers and discuss your goals with a trusted support staff ` +
+    `member (for example: dietician, strength and conditioning coach, ` +
+    `sports medicine) to enter an appropriate goal.`
+  );
+}
+
 // Reference HEALTH_METRICS so a future "every health metric must
 // have a goal mapping" assertion has a target. Currently used by
 // MetricDetail only - competition metrics return null intentionally.

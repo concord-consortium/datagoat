@@ -104,6 +104,19 @@ describe("MetricOverrideForm", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("renders the goal-determination guidance with the athlete type and metric name filled in", () => {
+    renderForm(leanMass);
+    expect(
+      screen.getByText(
+        /^As an Endurance athlete, your Lean Mass target should be tailored/,
+      ),
+    ).toBeInTheDocument();
+    // The pre-DGT-48 generic placeholder must be gone.
+    expect(
+      screen.queryByText(/goal value determination will be shown here/i),
+    ).toBeNull();
+  });
+
   it("rejects a goal outside the metric's [min, max] range", () => {
     renderForm(hydration);
     fireEvent.change(screen.getByLabelText("Goal"), {
@@ -191,14 +204,18 @@ describe("MetricOverrideForm — performance metric", () => {
     navigateSpy.mockClear();
   });
 
-  it("renders the personal-target hint for perf metrics", () => {
+  it("renders the universal goal-determination guidance for perf metrics", () => {
     renderForm(fortyYardDash);
     expect(
-      screen.getByText(/performance goals are personal/i),
+      screen.getByText(
+        /^As an Endurance athlete, your .+ target should be tailored/,
+      ),
     ).toBeInTheDocument();
-    // Negative: the previous "🚧 Personalized goal coming soon" copy
-    // must not appear.
-    expect(screen.queryByText(/coming soon/i)).toBeNull();
+    // The perf-specific stopgap hint has been replaced by the
+    // goal-determination text, which now covers every metric type.
+    expect(
+      screen.queryByText(/performance goals are personal/i),
+    ).toBeNull();
   });
 
   it("uses the perf CONFIG bounds as y-axis placeholders", () => {

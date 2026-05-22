@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveGoalText } from "./metricGoals";
+import { goalDeterminationText, resolveGoalText } from "./metricGoals";
 
 describe("resolveGoalText", () => {
   it("substitutes {compTermPlural} into the availability template", () => {
@@ -32,5 +32,30 @@ describe("resolveGoalText", () => {
 
   it("returns null for a metric id with no goal mapping", () => {
     expect(resolveGoalText("restingHeartRate", "Male/Endurance")).toBeNull();
+  });
+});
+
+describe("goalDeterminationText", () => {
+  it("renders the DataGoat guidance with 'an' before a vowel-initial athlete type", () => {
+    expect(goalDeterminationText("Endurance", "Lean Mass")).toBe(
+      "As an Endurance athlete, your Lean Mass target should be tailored " +
+        "to your sport-specific demands, performance goals, and individual " +
+        "health. Look at your current numbers and discuss your goals with " +
+        "a trusted support staff member (for example: dietician, strength " +
+        "and conditioning coach, sports medicine) to enter an appropriate " +
+        "goal.",
+    );
+  });
+
+  it("uses 'a' before a consonant-initial athlete type", () => {
+    expect(goalDeterminationText("Strength and Power", "Lean Mass")).toMatch(
+      /^As a Strength and Power athlete, your Lean Mass target/,
+    );
+  });
+
+  it("substitutes the metric name verbatim so acronyms keep their casing", () => {
+    expect(goalDeterminationText("Endurance", "VO2 Max")).toContain(
+      "your VO2 Max target",
+    );
   });
 });

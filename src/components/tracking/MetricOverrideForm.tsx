@@ -11,7 +11,7 @@ import {
   lookupGoalLine,
 } from "../../charts/chartSeries";
 import { getBaseMetricChartConfig } from "../../charts/metricChartConfig";
-import { resolveGoalText } from "../../data/metricGoals";
+import { goalDeterminationText, resolveGoalText } from "../../data/metricGoals";
 import { If } from "../common/If";
 import { TextField } from "../form/TextField";
 import type { MetricDefinition } from "../../metrics/types";
@@ -37,6 +37,15 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       )}`
     : "";
   const goalText = resolveGoalText(metric.id, profileKey);
+  // One template for every metric (DGT-48) - the metric name and the
+  // athlete type are the only substitutions. Needs a loaded profile
+  // for the athlete type, so it stays null until the profile resolves.
+  const determinationText = profile
+    ? goalDeterminationText(
+        capitalizeAthleteType(profile.athleteType),
+        metric.name,
+      )
+    : null;
 
   // Initial values. Goal is required, so it always shows the current
   // effective goal (override > profile-keyed > static default). Y-axis
@@ -147,25 +156,14 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       <If condition={existing !== undefined}>
         <p className={css.hint}>This metric has been customized.</p>
       </If>
-      {/* Placeholder for metric-specific goal-determination text.
-          The actual per-metric paragraphs (story example: "As a
-          [Athlete Type] athlete, your lean mass target should be
-          tailored to your sport-specific demands ...") will be added
-          alongside data-model support in DGT-62. */}
-      <p className={css.hint}>
-        Metric-specific goal value determination will be shown here.
-      </p>
+      {/* Goal-determination guidance: one template for every metric,
+          with the athlete type and metric name filled in. Hidden until
+          the profile loads (the athlete type comes from it). */}
+      <If condition={determinationText !== null}>
+        <p className={css.hint}>{determinationText}</p>
+      </If>
       <If condition={goalText !== null}>
         <p className={css.hint}>Recommended goal: {goalText}.</p>
-      </If>
-      {/* Performance metrics have no canonical recommended goal (per
-          DGT-51 they are all user-set), so resolveGoalText returns null
-          for them. Show a dedicated nudge here instead — this is the
-          one place a perf user acts on it (the Goal input below). */}
-      <If condition={metric.type === "performance"}>
-        <p className={css.hint}>
-          Performance goals are personal — enter your target.
-        </p>
       </If>
 
       <TextField

@@ -1,4 +1,4 @@
-// Ported verbatim from window._motivationMessages in
+// Ported from window._motivationMessages in
 // /home/doug/docs/datagoat-2026-04-27.html. {name} substitution happens at
 // render time; the prototype's <br> tags are preserved so the carousel breaks
 // land where the designer intended.

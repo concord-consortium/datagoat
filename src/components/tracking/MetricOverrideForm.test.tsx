@@ -36,7 +36,11 @@ vi.mock("../../contexts/UserContext", () => ({
   useUser: () => ({
     loadState: {
       status: "loaded",
-      profile: { gender: "male", athleteType: "endurance" },
+      profile: {
+        gender: "male",
+        athleteType: "endurance",
+        competitionTerm: "match",
+      },
     },
   }),
 }));
@@ -49,6 +53,7 @@ import type { MetricOverride } from "../../types/metricOverrides";
 
 const leanMass = HEALTH_METRICS.find((m) => m.id === "leanMass")!;
 const hydration = HEALTH_METRICS.find((m) => m.id === "hydration")!;
+const availability = HEALTH_METRICS.find((m) => m.id === "availability")!;
 const fortyYardDash = ADDABLE_PERFORMANCE.find((m) => m.id === "fortyYardDash")!;
 
 function renderForm(metric = leanMass, overrides: MetricOverride[] = []) {
@@ -102,6 +107,26 @@ describe("MetricOverrideForm", () => {
     expect(
       screen.getAllByText(/has been customized/i).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("renders the goal-determination guidance with the athlete type and metric name filled in", () => {
+    renderForm(leanMass);
+    expect(
+      screen.getByText(
+        /^As an Endurance athlete, your Lean Mass target should be tailored/,
+      ),
+    ).toBeInTheDocument();
+    // The pre-DGT-48 generic placeholder must be gone.
+    expect(
+      screen.queryByText(/goal value determination will be shown here/i),
+    ).toBeNull();
+  });
+
+  it("passes the profile's competition term into the Availability recommended-goal copy", () => {
+    renderForm(availability);
+    expect(
+      screen.getByText(/Recommended goal: .*practices and matches/i),
+    ).toBeInTheDocument();
   });
 
   it("rejects a goal outside the metric's [min, max] range", () => {
@@ -191,14 +216,18 @@ describe("MetricOverrideForm — performance metric", () => {
     navigateSpy.mockClear();
   });
 
-  it("renders the personal-target hint for perf metrics", () => {
+  it("renders the universal goal-determination guidance for perf metrics", () => {
     renderForm(fortyYardDash);
     expect(
-      screen.getByText(/performance goals are personal/i),
+      screen.getByText(
+        /^As an Endurance athlete, your .+ target should be tailored/,
+      ),
     ).toBeInTheDocument();
-    // Negative: the previous "🚧 Personalized goal coming soon" copy
-    // must not appear.
-    expect(screen.queryByText(/coming soon/i)).toBeNull();
+    // The perf-specific stopgap hint has been replaced by the
+    // goal-determination text, which now covers every metric type.
+    expect(
+      screen.queryByText(/performance goals are personal/i),
+    ).toBeNull();
   });
 
   it("uses the perf CONFIG bounds as y-axis placeholders", () => {

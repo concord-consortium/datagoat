@@ -143,8 +143,9 @@ describe("MotivationMessage", () => {
     unmount();
 
     // Rotation cursor is module-scope; reset between sub-cases so each
-    // sub-case lands on message 0 (which contains the {name} token -
-    // message 1 has no name substitution and would mask the assertion).
+    // sub-case lands on message 0, which carries the {name} token.
+    // Without the reset the cursor would advance into a message that
+    // omits {name}, leaving the name assertion nothing to match.
     __resetMotivationRotationForTests();
 
     // No nickname -> first token of fullName.

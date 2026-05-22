@@ -36,7 +36,11 @@ vi.mock("../../contexts/UserContext", () => ({
   useUser: () => ({
     loadState: {
       status: "loaded",
-      profile: { gender: "male", athleteType: "endurance" },
+      profile: {
+        gender: "male",
+        athleteType: "endurance",
+        competitionTerm: "match",
+      },
     },
   }),
 }));
@@ -49,6 +53,7 @@ import type { MetricOverride } from "../../types/metricOverrides";
 
 const leanMass = HEALTH_METRICS.find((m) => m.id === "leanMass")!;
 const hydration = HEALTH_METRICS.find((m) => m.id === "hydration")!;
+const availability = HEALTH_METRICS.find((m) => m.id === "availability")!;
 const fortyYardDash = ADDABLE_PERFORMANCE.find((m) => m.id === "fortyYardDash")!;
 
 function renderForm(metric = leanMass, overrides: MetricOverride[] = []) {
@@ -115,6 +120,13 @@ describe("MetricOverrideForm", () => {
     expect(
       screen.queryByText(/goal value determination will be shown here/i),
     ).toBeNull();
+  });
+
+  it("passes the profile's competition term into the Availability recommended-goal copy", () => {
+    renderForm(availability);
+    expect(
+      screen.getByText(/Recommended goal: .*practices and matches/i),
+    ).toBeInTheDocument();
   });
 
   it("rejects a goal outside the metric's [min, max] range", () => {

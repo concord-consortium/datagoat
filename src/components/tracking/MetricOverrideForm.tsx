@@ -11,6 +11,7 @@ import {
   lookupGoalLine,
 } from "../../charts/chartSeries";
 import { getBaseMetricChartConfig } from "../../charts/metricChartConfig";
+import { getCompTermPlural } from "../../data/competitionTerms";
 import { goalDeterminationText, resolveGoalText } from "../../data/metricGoals";
 import { If } from "../common/If";
 import { TextField } from "../form/TextField";
@@ -36,7 +37,11 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
         profile.athleteType,
       )}`
     : "";
-  const goalText = resolveGoalText(metric.id, profileKey);
+  // Pass the user's competition term so the Availability recommended-goal
+  // copy reads "practices and matches/meets/..." instead of always
+  // falling back to "games" (mirrors the MetricDetail call site).
+  const compTermPlural = getCompTermPlural(profile?.competitionTerm ?? "");
+  const goalText = resolveGoalText(metric.id, profileKey, compTermPlural);
   // One template for every metric (DGT-48) - the metric name and the
   // athlete type are the only substitutions. Needs a loaded profile
   // for the athlete type, so it stays null until the profile resolves.

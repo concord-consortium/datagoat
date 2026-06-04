@@ -72,6 +72,53 @@ firebase hosting:channel:list
 firebase hosting:channel:delete <channel-name>
 ```
 
+## Metrics export
+
+`functions/scripts/metrics-export.mjs` pulls a summary of users over time from the **production** project and writes two CSV files: a per-user roster and a per-time-bucket trend. It is a local admin script run by a developer — there is no public endpoint and no auth layer in the script itself; it reads prod directly using your own credentials via the Firebase Admin SDK.
+
+It joins **Firebase Auth** (signup time, last sign-in, email verification — these do not live in Firestore) with **Firestore** (`/users/{uid}/profile/main` demographics + the `healthEntries` / `competitionEntries` / `performanceEntries` subcollections). Activity dates are read via `listDocuments()`, which fetches only document ids (each entry's id is its `YYYY-MM-DD` date), so it does not pay to read every entry body just to count active days.
+
+### 1. Authenticate (one time)
+
+The script uses Application Default Credentials. Either log in with the gcloud CLI:
+
+```bash
+gcloud auth application-default login
+```
+
+or point at a downloaded service-account key:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+Your account needs read access to Auth and Firestore on the `datagoat-b07dd` project.
+
+### 2. Run
+
+```bash
+npm --prefix functions run metrics:export -- --bucket=week --out=./tmp
+```
+
+(The `--` separates npm's args from the script's args.) On success it prints the two output paths. Note that `--prefix functions` runs with the working directory set to `functions/`, so a relative `--out=./tmp` lands at `functions/tmp/`; pass an absolute path to write elsewhere. The output directory is created if it does not exist.
+
+### Output files
+
+| File | One row per | Columns |
+| --- | --- | --- |
+| `datagoat-users-<date>.csv` | user | `uid`, `email`, `emailVerified`, `signupDate`, `lastSignInDate`, `providers`, `gender`, `athleteType`, `age`, `profileComplete`, `trackingSetupComplete`, `hasProfile`, `healthEntries`, `competitionEntries`, `performanceEntries`, `daysActive`, `firstEntryDate`, `lastEntryDate` |
+| `datagoat-summary-<date>.csv` | time bucket | `bucket`, `newSignups`, `cumulativeUsers`, `newVerified`, `cumulativeVerified`, `activeUsers`, `totalEntries`, and new-signup splits by athlete type (`newSignupsEndurance`, `newSignupsStrength`) and gender (`newSignupsMale`, `newSignupsFemale`, `newSignupsOtherGender`) |
+
+A user counts as **active** in a bucket if they logged at least one entry dated within it. Buckets span from the earliest signup/activity through today, with empty buckets included as zeros.
+
+### Options
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--bucket=day\|week\|month` | `week` | Time granularity for the summary file. Weeks snap to the ISO-week Monday (UTC); months are `YYYY-MM`. |
+| `--out=<dir>` | current directory | Output directory for both CSVs (created if missing). |
+| `--project=<id>` | `$FIREBASE_PROJECT_ID` or `datagoat-b07dd` | Firebase project to read from. |
+
 ## Available Scripts
 
 | Script                     | Description                                                          |

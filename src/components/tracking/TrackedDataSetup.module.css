@@ -38,7 +38,7 @@
   margin-top: 16px;
 }
 
-/* Setup-btn arrow - prototype lines 1387-1391 */
+/* Setup-btn arrow glyph, right-aligned and vertically centered. */
 .arrow {
   position: absolute;
   right: 18px;

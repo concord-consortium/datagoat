@@ -13,6 +13,7 @@ import {
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import { TrackedMetricsTable } from "./TrackedMetricsTable";
+import DashboardIcon from "@/icons/dashboard.svg?react";
 import buttons from "../form/buttons.module.css";
 import css from "./TrackedMetricsTable.module.css";
 import screenCss from "./TrackedDataSetup.module.css";
@@ -238,6 +239,7 @@ export function TrackedDataSetup() {
           className={buttons.setupBtn}
           onClick={handleGoToDashboard}
         >
+          <DashboardIcon aria-hidden="true" />
           Go To Dashboard
           <span className={screenCss.arrow} aria-hidden="true">
             →

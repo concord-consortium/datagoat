@@ -202,7 +202,7 @@ Configured in [vite.config.ts](vite.config.ts) (`vite-plugin-pwa`) with two inte
 
 ## Local development
 
-Two terminals: `npm run emulators` (Firebase Auth :9099, Firestore :8080, Functions :5001, Hosting :5000) and `npm run dev` (Vite :5173). The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true`) on top of `.env.local` (your personal Firebase keys), so no per-developer toggle is needed. To run the dev server against the cloud Firebase project instead, use `npm run dev:cloud` (no emulators required). The `beforeUserCreated` blocking trigger runs locally in the functions emulator regardless of Identity Platform upgrade state, so the Facebook-no-email rejection path can be exercised without deploying.
+Two terminals: `npm run emulators` (Firebase Auth :9099, Firestore :8080, Functions :5001, Hosting :5000) and `npm run dev` (Vite :5173). The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true` plus dummy `VITE_FIREBASE_*` values), so no per-developer config is needed for emulator work. To run the dev server against a real cloud project instead, use `npm run dev:staging` (or `npm run dev:production` to debug a prod-only issue; no emulators required). The `beforeUserCreated` blocking trigger runs locally in the functions emulator regardless of Identity Platform upgrade state, so the Facebook-no-email rejection path can be exercised without deploying.
 
 The Firestore SDK uses `persistentLocalCache` with the multi-tab manager so offline writes survive tab close / reload — the PWA can be used on the sideline with no connection.
 
@@ -217,6 +217,6 @@ For the blocking trigger specifically, three layers cover what a single unit tes
 
 ## Deployment
 
-`npm run deploy` runs `vite build` then `firebase deploy --only hosting,functions,firestore:rules -P datagoat-b07dd`. Hosting serves the `dist/` SPA build with the rewrite `** → /index.html`. `npm run deploy:functions` redeploys only the Cloud Functions, useful for flipping the kill-switch param without a code change.
+`npm run deploy:staging` / `npm run deploy:production` run the matching `vite build --mode …` then `firebase deploy --only hosting,functions,firestore -P staging` (or `-P production`). Hosting serves the `dist/` SPA build with the rewrite `** → /index.html`. `npm run deploy:staging:functions` / `npm run deploy:production:functions` redeploy only the Cloud Functions, useful for flipping the kill-switch param without a code change. There is no unsuffixed `deploy` — production deploys are always typed explicitly. See the Environments section of [CLAUDE.md](CLAUDE.md) for the two-project model and env-file pattern.
 
 `APP_VERSION` and `APP_VERSION_DESC` in [src/App.tsx](src/App.tsx) drive the version footer.

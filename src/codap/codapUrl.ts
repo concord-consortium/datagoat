@@ -14,7 +14,7 @@ const CODAP_ORIGIN = "https://codap3.concord.org";
 
 // Resolves the di= origin to the current window's origin. This already
 // covers localhost (with port), prod, and Firebase Hosting preview
-// channels (e.g. datagoat-production--pr-3-abc.web.app), so CODAP
+// channels (e.g. datagoat-staging--pr-3-abc.web.app), so CODAP
 // iframes the *current* /codap rather than always pointing at prod.
 // The SSR guard returns the prod origin as a defensive default; we
 // don't ship SSR.

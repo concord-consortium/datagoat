@@ -1,6 +1,7 @@
 {
   "projects": {
+    "default": "datagoat-staging",
     "staging": "datagoat-staging",
-    "production": "datagoat-production"
+    "production": "datagoat-b07dd"
   }
 }

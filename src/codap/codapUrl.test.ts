@@ -46,9 +46,9 @@ describe("buildCodapWrappedUrl", () => {
   });
 
   it("uses preview-channel origin when running on a Firebase preview host", () => {
-    stubLocation("https://datagoat-production--pr-3-abc.web.app/codap");
+    stubLocation("https://datagoat-staging--pr-3-abc.web.app/codap");
     expect(buildCodapWrappedUrl()).toBe(
-      "https://codap3.concord.org?di=https://datagoat-production--pr-3-abc.web.app/codap",
+      "https://codap3.concord.org?di=https://datagoat-staging--pr-3-abc.web.app/codap",
     );
   });
 });

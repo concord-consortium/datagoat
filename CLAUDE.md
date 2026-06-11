@@ -7,26 +7,32 @@ For a high-level architectural tour (provider tree, routing, data model, optimis
 ## Commands
 
 - `npm run dev` - Vite dev server pointed at local Firebase emulators (port 5173)
-- `npm run dev:cloud` - Vite dev server pointed at the cloud Firebase project (no emulators required)
-- `npm run build` - TypeScript check + production Vite build
-- `npm run preview` - Preview production build locally
+- `npm run dev:staging` - Vite dev server pointed at the staging cloud project (no emulators required)
+- `npm run dev:production` - Vite dev server pointed at the production cloud project (rare; for debugging a prod-only issue)
+- `npm run build` - TypeScript check + production Vite build (alias for `build:production`)
+- `npm run build:staging` - TypeScript check + staging Vite build
+- `npm run build:production` - TypeScript check + production Vite build
+- `npm run preview` - Preview the last build locally
 - `npm run emulators` - Firebase emulators (Auth 9099, Firestore 8080, Functions 5001, Hosting 5000)
-- `npm run deploy` - Build and deploy hosting + functions + Firestore rules
-- `npm run deploy:hosting` - Build and deploy only Firebase Hosting (skips functions + Firestore rules)
-- `npm run deploy:functions` - Redeploy only the Cloud Functions (e.g., to flip a kill-switch param)
-- `npm run deploy:preview -- <channel-name>` - Build and publish a Firebase Hosting preview channel (30-day expiry; share the printed URL with stakeholders)
+- `npm run deploy:staging` - Build and deploy hosting + functions + Firestore (rules + indexes) to staging
+- `npm run deploy:production` - Build and deploy hosting + functions + Firestore (rules + indexes) to production
+- `npm run deploy:staging:hosting` - Build and deploy only Firebase Hosting to staging
+- `npm run deploy:production:hosting` - Build and deploy only Firebase Hosting to production
+- `npm run deploy:staging:functions` - Redeploy only the Cloud Functions on staging (e.g., to flip a kill-switch param)
+- `npm run deploy:production:functions` - Redeploy only the Cloud Functions on production
+- `npm run deploy:preview -- <channel-name>` - Build (staging) and publish a Firebase Hosting preview channel on the staging project (30-day expiry; share the printed URL with stakeholders)
 
-Default local dev uses two terminals: `npm run emulators` and `npm run dev`. The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true`) on top of `.env.local` (your personal Firebase keys), so no per-developer toggle is needed. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.
+Default local dev uses two terminals: `npm run emulators` and `npm run dev`. The `dev` script runs `vite --mode emulators`, which loads `.env.emulators` (committed; sets `VITE_USE_EMULATORS=true` plus dummy `VITE_FIREBASE_*` values), so no per-developer config is needed for emulator work. The functions emulator runs the `beforeUserCreated` blocking trigger locally so the auth flows can exercise it without deploying.
 
-If you want to point the dev server at the cloud Firebase project instead — for example, to verify a change against real data — use `npm run dev:cloud`. That runs `vite --mode cloud`, which loads `.env.cloud` (committed; sets `VITE_USE_EMULATORS=false`) on top of `.env.local`. No emulators need to be running. The explicit `--mode cloud` is what makes this command robust against a stale `VITE_USE_EMULATORS=true` in someone's legacy `.env.local`.
+To point the dev server at a real cloud project, use `npm run dev:staging` (the default "test against real cloud" target) or, rarely, `npm run dev:production` to debug a prod-only issue. These run `vite --mode staging` / `--mode production`, which load the committed `.env.staging` / `.env.production` files; those pull their `VITE_FIREBASE_*` config from non-`VITE_`-prefixed `FIREBASE_STAGING_*` / `FIREBASE_PRODUCTION_*` source vars in your `.env.local` via `${VAR}` expansion. No emulators need to be running. The explicit `--mode` is what makes these robust against a stale `VITE_USE_EMULATORS=true` in someone's legacy `.env.local`. See the [Environments](#environments) section for the full env-file pattern and why the `VITE_` prefix is omitted on the source vars.
 
 No linter is configured. Tests run via `npm test` (Vitest, colocated `*.test.ts` / `*.test.tsx`).
 
 ### Cloud Functions — Identity Platform requirement
 
-The `beforeUserCreated` blocking trigger that rejects Facebook sign-ins missing an email (`functions/src/auth/blockFacebookMissingEmail.ts`) requires Firebase Identity Platform. Before the first `firebase deploy --only functions` succeeds, an admin must upgrade the project once via the Firebase console: **Auth → Settings → "Upgrade to Identity Platform"**. Free tier covers up to 50K MAU. Without the upgrade, blocking-function deploys fail with an explicit Identity Platform error from the CLI. The local emulator runs the trigger regardless of upgrade state.
+The `beforeUserCreated` blocking trigger that rejects Facebook sign-ins missing an email (`functions/src/auth/blockFacebookMissingEmail.ts`) requires Firebase Identity Platform. This upgrade is required **per project** — each of staging and production must be upgraded once via the Firebase console (**Auth → Settings → "Upgrade to Identity Platform"**, or any "Blocking functions" upgrade prompt) before that project's first functions deploy (`deploy:staging:functions` / `deploy:production:functions`) succeeds. Free tier covers up to 50K MAU. Without the upgrade, blocking-function deploys fail with an explicit Identity Platform error from the CLI. The local emulator runs the trigger regardless of upgrade state.
 
-Kill switch: the trigger reads a `FACEBOOK_BLOCKER_ENABLED` runtime parameter (default `'true'`); set it to `'false'` in the Firebase console (Functions → Configuration) and run `npm run deploy:functions` to disable the rule without a code change. Existing instances pick up the new value on next cold-start.
+Kill switch: the trigger reads a `FACEBOOK_BLOCKER_ENABLED` runtime parameter (default `'true'`), which is **per project**. The deploy-time value comes from the committed `functions/.env.datagoat-<projectId>` files (`functions/.env.datagoat-staging`, `functions/.env.datagoat-b07dd`); set it to `'false'` in the relevant file (or in the Firebase console under Functions → Configuration) and run `npm run deploy:staging:functions` / `npm run deploy:production:functions` to disable the rule on that project without a code change. Flipping it on one project does not affect the other. Existing instances pick up the new value on next cold-start.
 
 #### Verifying the trigger is wired
 
@@ -42,8 +48,8 @@ The smoke script POSTs a Facebook-shaped sign-in with no email to the auth emula
 **2. SDK round-trip test (auto-runs with `npm test`)** - catches Firebase JS SDK message-wrapping or truncation changes that would silently strip the sentinel from `err.message` at the client extractor:
 - `src/components/auth/authProviders.emulator.test.ts` drives `signInWithCredential` against the auth emulator and runs the resulting error through the real `extractBlockedNoEmailMessage`. Skips automatically when the emulator is unreachable (the suite probes `127.0.0.1:9099` at module load).
 
-**3. Post-deploy infrastructure checks (manual)** - catches deploy-time regressions the emulator can't see:
-1. `firebase functions:list | grep blockFacebookMissingEmail` - confirm the function is deployed and the trigger type is `providers/cloud.auth/eventTypes/user.beforeCreate`
+**3. Post-deploy infrastructure checks (manual)** - catches deploy-time regressions the emulator can't see. Run these against whichever project you just deployed to (pass `-P staging` or `-P production`):
+1. `firebase functions:list -P staging | grep blockFacebookMissingEmail` (or `-P production`) - confirm the function is deployed and the trigger type is `providers/cloud.auth/eventTypes/user.beforeCreate`
 2. Firebase console → Auth → Settings - confirm the project still says "Identity Platform" (a downgrade silently disables blocking triggers)
 3. Firebase console → Functions → `blockFacebookMissingEmail` → Configuration - confirm `FACEBOOK_BLOCKER_ENABLED` is `true` (unless you intentionally killed the rule)
 
@@ -73,6 +79,50 @@ Key behaviors in `main.tsx`:
 ### Firebase
 
 `firebase.ts` initializes the app from `VITE_*` env vars and connects to emulators when `VITE_USE_EMULATORS=true`. Firestore rules enforce user-level access (`/users/{userId}/**`); anything outside that path is default-denied. Writes are intentionally allowed for unverified accounts - verification is non-blocking per spec.
+
+## Environments
+
+DataGOAT has two Firebase projects:
+
+| Concern | Staging | Production |
+|---|---|---|
+| Project ID | `datagoat-staging` | `datagoat-b07dd` |
+| Default URL | `datagoat-staging.web.app` | `datagoat-b07dd.web.app` |
+| Firestore data | Test data only; safe to drop/reset | Real user data |
+| Preview channels | Live here | Not used |
+
+Both projects deploy the same Firestore rules, schema, and Cloud Functions code. Staging exists for pre-release QA, stakeholder demos, and destructive testing against real Firebase cloud (not emulators). There is no separate cloud "dev" project — developers use the emulators for day-to-day work and staging when they need real cloud.
+
+### Env-file pattern
+
+Per-developer **source-of-truth** Firebase config lives in `.env.local` (untracked) as **non-`VITE_`-prefixed** vars, one set per environment:
+
+```
+FIREBASE_STAGING_*       # staging project's config values
+FIREBASE_PRODUCTION_*    # production project's config values
+```
+
+The committed `.env.staging` and `.env.production` files map these into the `VITE_FIREBASE_*` vars the app reads, via Vite's `${VAR}` expansion (dotenv-expand):
+
+```
+VITE_FIREBASE_API_KEY=${FIREBASE_STAGING_API_KEY}
+```
+
+The `VITE_` prefix is intentionally **omitted** on the source vars: Vite only exposes `VITE_`-prefixed vars to the client bundle, so prefixing the source vars would bundle *both* project IDs into *every* build. Keeping them unprefixed means each mode-scoped build (`--mode staging` / `--mode production`) emits exactly one project's config. `src/firebase.ts` reads `VITE_FIREBASE_*` generically and is unchanged by this scheme. Copy `.env.example` to `.env.local` and fill in both sets of values from the Firebase console (or the team password-manager entry).
+
+### Deploy scripts
+
+Deploy scripts are **suffixed by environment** — there is no unsuffixed `deploy`. Production deploys must be typed explicitly (`deploy:production`), so no one ships to prod by reflex:
+
+- `deploy:staging` / `deploy:production` — hosting + functions + Firestore (rules + indexes)
+- `deploy:staging:hosting` / `deploy:production:hosting` — hosting only
+- `deploy:staging:functions` / `deploy:production:functions` — functions only
+
+`.firebaserc` maps `staging` → `datagoat-staging` and `production` → `datagoat-b07dd`; its `default` alias points at staging so a stray `firebase deploy` with no `-P` flag resolves to staging, not production.
+
+### Preview channels
+
+`npm run deploy:preview -- <channel-name>` builds with `--mode staging` and publishes to the **staging** project, so preview channels share staging's auth and Firestore — safe to share with stakeholders without touching production users.
 
 ## Styling guide
 

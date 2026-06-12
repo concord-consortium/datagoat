@@ -113,6 +113,31 @@
   text-overflow: ellipsis;
 }
 
+/* The name links to the metric's definition (MetricDetail), same
+   destination as the info icon. Kept visually identical to the plain
+   label (inherits the white text + font-weight 600) so it doesn't read
+   as a styled link; only a subtle underline on hover signals it's
+   clickable. Block + line-height (not inline-flex) so the existing
+   ellipsis truncation keeps working; 44px gives the touch target
+   without growing the row past the info icon's height. */
+.definitionLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  line-height: 44px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.definitionLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.definitionLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* metric-info-btn - prototype lines 1442-1471 */
 .metricInfoBtn {
   display: inline-flex;

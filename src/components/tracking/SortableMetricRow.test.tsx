@@ -64,3 +64,11 @@ describe("SortableMetricRow edit pencil", () => {
     expect(screen.queryByRole("link", { name: /^Edit / })).toBeNull();
   });
 });
+
+describe("SortableMetricRow definition link", () => {
+  it("renders the metric name as a link to the metric's definition", () => {
+    renderRow(false);
+    const link = screen.getByRole("link", { name: "Lean Mass" });
+    expect(link).toHaveAttribute("href", "/health/leanMass");
+  });
+});

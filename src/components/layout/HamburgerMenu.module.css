@@ -7,14 +7,16 @@
   flex-direction: column;
 }
 
+/* Onboarding prompt at the top of the menu. Matches the prototype's
+   .nav-onboarding-msg: body font (Barlow), 16px, no letter-spacing -
+   not the condensed display face the rows use. */
 .gateHint {
   margin: 0;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border);
   color: var(--subtext);
-  font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: 0.04em;
+  font-family: var(--font-body);
+  font-size: 16px;
 }
 
 .menuItem {
@@ -85,13 +87,13 @@
   color: var(--accent);
 }
 
+/* Onboarding-gated rows: dim the whole row (icon + text together) to 0.35
+   per spec, matching the prototype's disabled-control convention
+   (.date-nav-btn:disabled etc.). Opacity on .navItem covers both children,
+   so no separate icon color override is needed. */
 .menuItemDisabled .navItem {
-  color: var(--muted);
+  opacity: 0.35;
   pointer-events: none;
-}
-
-.menuItemDisabled .navItemIcon {
-  color: var(--muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

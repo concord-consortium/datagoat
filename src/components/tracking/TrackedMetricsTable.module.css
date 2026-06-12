@@ -87,12 +87,10 @@
 }
 .metricName {
   font-weight: 600;
-  /* Elide long names so the fixed-layout column can shrink without
-     overflowing. The full name remains in the DOM (accessible to
-     screen readers) and is shown on hover via the cell's title. */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Long-name truncation lives on .definitionLink (the cell's child), not
+     here: the cell deliberately has no overflow/clip, which would clip the
+     link's focus-visible outline. The full name stays in the DOM for screen
+     readers and shows on hover via the cell's title. */
 }
 
 /* The name links to the metric's definition (MetricDetail), same

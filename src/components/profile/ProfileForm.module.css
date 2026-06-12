@@ -13,6 +13,15 @@
 .screenContent > *:last-child > *:last-child {
   margin-bottom: 0;
 }
+/* The 100px bottom padding clears the iOS browser chrome / on-screen
+   keyboard on touch devices. A fine-pointer device (desktop/laptop) has no
+   such chrome, so the prototype drops it (.phone.desktop-mode -> 30px);
+   match that here to avoid an excessive gap below the Set Up button. */
+@media (pointer: fine) {
+  .screenContent {
+    padding-bottom: 30px;
+  }
+}
 
 /* "Signed in as ..." read-only account context above the form. No
    prototype counterpart - the prototype's #profile-screen renders an

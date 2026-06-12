@@ -28,8 +28,9 @@
   margin: 0 0 18px;
 }
 
+/* Email rendered in the teal accent per spec (the label stays muted). */
 .signedInAs strong {
-  color: var(--text);
+  color: var(--accent);
   font-weight: 700;
 }
 

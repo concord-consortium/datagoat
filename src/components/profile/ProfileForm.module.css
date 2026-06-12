@@ -69,8 +69,13 @@
   margin: 0;
 }
 
-/* .inline-field - prototype lines 1210-1220
-   Inline row for Age / Height (Ft + In) / Weight. */
+/* .inline-field - prototype lines 1232-1248
+   Single-row layout for Age / Height (Ft + In) / Weight: an inline label,
+   one or two narrow numeric inputs, their unit labels, and - when present -
+   a full-width error message that wraps to its own line below the row.
+   label / input / unit / error are all DIRECT flex children (per spec), so
+   the error's flex-basis:100% actually takes effect and the units are never
+   pushed around by it. */
 .inlineField {
   display: flex;
   align-items: center;
@@ -78,16 +83,39 @@
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
-.inlineField .fieldErrorMsg {
-  flex-basis: 100%;
-  margin-top: 2px;
-}
-.inlineField input {
-  flex: 1;
-  max-width: 120px;
+
+/* Inline label sitting left of the input on one line. Overrides the block
+   .fieldLabel's 8px bottom gap; min-width lines all three inputs up. */
+.inlineField > label {
+  margin-bottom: 0;
+  min-width: 70px;
+  flex: 0 0 auto;
 }
 
-/* .field-unit - prototype lines 1221-1226 */
+/* Narrow numeric inputs. Height ft/in hold at most 1-2 digits -> 56px; Age
+   and Weight can reach 3 digits (100 / up to 500) -> 68px so the last digit
+   isn't clipped. The compound `.inlineField .numInput` selector outranks
+   fields' single-class .fieldInput { width: 100% }, so the fixed width wins
+   regardless of cross-module stylesheet order. */
+.inlineField .numInput {
+  flex: 0 0 auto;
+  width: 56px;
+}
+.inlineField .numInputWide {
+  flex: 0 0 auto;
+  width: 68px;
+}
+
+/* The error <p> is the only paragraph in the row. A bare tag selector
+   matches it across the module boundary (the error carries fields-module's
+   hashed .fieldErrorMsg class, unreachable by class name from here);
+   flex-basis:100% drops it onto its own full-width line below the inputs. */
+.inlineField > p {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+}
+
+/* .field-unit - prototype lines 1243-1248 */
 .fieldUnit {
   font-family: var(--font-display);
   font-size: 16px;
@@ -96,67 +124,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-/* The TextField component wraps its input in .fieldWrap with margin-bottom
-   18px. Inside an .inlineField that bottom margin causes a wrap-line gap;
-   suppress it so the whole row visually behaves as one. */
-.inlineField > div {
-  margin-bottom: 0;
-  min-width: 0;
-  flex: 0 0 auto;
-}
-
-/* Inline-field inputs need a tighter label - the prototype uses a small
-   inline label above the input, but the inputs sit on a single row. We
-   collapse TextField's default 8px label-bottom-gap inside an inline-field
-   to keep the row visually compact. */
-.inlineField > div > label {
-  margin-bottom: 4px;
-  min-width: 70px;
-}
-
-/* Height field group. Uses <fieldset>/<legend> so the two inputs share an
-   accessible group name ("Height"); the inputs themselves are labelled
-   "Feet" / "In" so screen readers announce them distinctly. The legend is
-   absolute-positioned over the feet input's wrapper so the visual matches
-   the prior single-row layout (HEIGHT label above the feet input, IN label
-   above the inches input). */
-.heightFieldset {
-  position: relative;
-  border: 0;
-  padding: 0;
-  margin: 0 0 18px;
-  min-width: 0;
-}
-
-.heightLegend {
-  position: absolute;
-  top: 0;
-  left: 0;
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-display);
-  font-size: 16px;
-  line-height: 1;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--subtext);
-}
-
-.inlineField.heightInlineField {
-  margin-bottom: 0;
-}
-
-/* Pad the feet wrapper so its overall height matches the inches wrapper
-   (which still has a visible label above the input). This keeps the two
-   inputs vertically centered together under .inlineField's
-   align-items: center, and reserves the slot the absolute legend paints
-   into. 20px = .fieldLabel line-height (16) + the inline-field's tighter
-   label-to-input gap (4) declared above. */
-.heightInlineField > div:first-of-type {
-  padding-top: 20px;
 }
 
 /* Setup button is rendered via the shared `.cta-btn` primitive in

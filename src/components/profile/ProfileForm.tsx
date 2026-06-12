@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import clsx from "clsx";
 import { useNavigate } from "react-router-dom";
 import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -17,6 +18,7 @@ import {
   ATHLETE_TYPE_OPTIONS,
 } from "./profileSchema";
 import buttons from "../form/buttons.module.css";
+import fields from "../form/fields.module.css";
 import css from "./ProfileForm.module.css";
 
 // Profile screen. Two derived modes: 'onboarding' when no Firestore profile
@@ -199,65 +201,142 @@ export function ProfileForm() {
           {...register("nickname")}
         />
 
+        {/* Age / Height / Weight render the prototype's flat single-row
+            markup (label + narrow input(s) + unit(s) + error all as direct
+            children of .inlineField) rather than going through TextField,
+            whose label-above-input wrapper splits these short-label fields
+            across lines and traps the error message inside the row. */}
         <div className={css.inlineField}>
-          <TextField
+          <label className={fields.fieldLabel} htmlFor="profile-age">
+            Age
+            <span className={fields.requiredMark} aria-hidden="true">*</span>
+          </label>
+          <input
             id="profile-age"
-            label="Age"
-            type="number"
-            min={0}
-            short
-            required
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={3}
+            className={clsx(
+              fields.fieldInput,
+              css.numInputWide,
+              watched.age && fields.hasValue,
+              errors.age && fields.fieldError,
+            )}
+            aria-required="true"
+            aria-invalid={errors.age ? true : undefined}
+            aria-describedby={errors.age ? "profile-age-error" : undefined}
             value={watched.age ?? ""}
-            error={errors.age?.message}
             {...register("age")}
           />
           <span className={css.fieldUnit}>Yrs</span>
+          {errors.age && (
+            <p id="profile-age-error" className={fields.fieldErrorMsg} role="alert">
+              {errors.age.message}
+            </p>
+          )}
         </div>
 
-        <fieldset className={css.heightFieldset}>
-          <legend className={css.heightLegend}>Height</legend>
-          <div className={`${css.inlineField} ${css.heightInlineField}`}>
-            <TextField
-              id="profile-height-ft"
-              label="Feet"
-              labelVisuallyHidden
-              type="number"
-              min={0}
-              short
-              required
-              value={watched.heightFt ?? ""}
-              error={errors.heightFt?.message}
-              {...register("heightFt")}
-            />
-            <span className={css.fieldUnit} aria-hidden="true">Ft</span>
-            <TextField
-              id="profile-height-in"
-              label="In"
-              type="number"
-              min={0}
-              short
-              required
-              value={watched.heightIn ?? ""}
-              error={errors.heightIn?.message}
-              {...register("heightIn")}
-            />
-            <span className={css.fieldUnit} aria-hidden="true">In</span>
-          </div>
-        </fieldset>
+        {/* Height: one "Height" label (bound to the feet input), two narrow
+            inputs with Ft/In units, and a single shared error line. The
+            inches input has no visible label per spec - it carries an
+            aria-label instead. */}
+        <div className={css.inlineField}>
+          <label className={fields.fieldLabel} htmlFor="profile-height-ft">
+            Height
+            <span className={fields.requiredMark} aria-hidden="true">*</span>
+          </label>
+          <input
+            id="profile-height-ft"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-8]"
+            maxLength={1}
+            className={clsx(
+              fields.fieldInput,
+              css.numInput,
+              watched.heightFt && fields.hasValue,
+              errors.heightFt && fields.fieldError,
+            )}
+            aria-required="true"
+            aria-invalid={errors.heightFt ? true : undefined}
+            aria-describedby={
+              errors.heightFt || errors.heightIn
+                ? "profile-height-error"
+                : undefined
+            }
+            value={watched.heightFt ?? ""}
+            {...register("heightFt")}
+          />
+          <span className={css.fieldUnit}>Ft</span>
+          <input
+            id="profile-height-in"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={2}
+            aria-label="Height inches"
+            className={clsx(
+              fields.fieldInput,
+              css.numInput,
+              watched.heightIn && fields.hasValue,
+              errors.heightIn && fields.fieldError,
+            )}
+            aria-required="true"
+            aria-invalid={errors.heightIn ? true : undefined}
+            aria-describedby={
+              errors.heightFt || errors.heightIn
+                ? "profile-height-error"
+                : undefined
+            }
+            value={watched.heightIn ?? ""}
+            {...register("heightIn")}
+          />
+          <span className={css.fieldUnit}>In</span>
+          {(errors.heightFt || errors.heightIn) && (
+            <p
+              id="profile-height-error"
+              className={fields.fieldErrorMsg}
+              role="alert"
+            >
+              {errors.heightFt?.message ?? errors.heightIn?.message}
+            </p>
+          )}
+        </div>
 
         <div className={css.inlineField}>
-          <TextField
+          <label className={fields.fieldLabel} htmlFor="profile-weight">
+            Weight
+            <span className={fields.requiredMark} aria-hidden="true">*</span>
+          </label>
+          <input
             id="profile-weight"
-            label="Weight"
-            type="number"
-            min={0}
-            short
-            required
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={3}
+            className={clsx(
+              fields.fieldInput,
+              css.numInputWide,
+              watched.weight && fields.hasValue,
+              errors.weight && fields.fieldError,
+            )}
+            aria-required="true"
+            aria-invalid={errors.weight ? true : undefined}
+            aria-describedby={errors.weight ? "profile-weight-error" : undefined}
             value={watched.weight ?? ""}
-            error={errors.weight?.message}
             {...register("weight")}
           />
           <span className={css.fieldUnit}>Lbs</span>
+          {errors.weight && (
+            <p
+              id="profile-weight-error"
+              className={fields.fieldErrorMsg}
+              role="alert"
+            >
+              {errors.weight.message}
+            </p>
+          )}
         </div>
 
         <SelectField

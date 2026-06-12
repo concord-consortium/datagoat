@@ -97,10 +97,23 @@ describe("profileSchema required-string + enum validators", () => {
     expectFieldFailure({ ...baseValues(), fullName: "" }, "fullName");
   });
 
-  it("rejects an empty competitionTerm", () => {
+  it("accepts an empty competitionTerm (optional - defaults to game downstream)", () => {
+    expect(
+      profileSchema.safeParse({ ...baseValues(), competitionTerm: "" }).success,
+    ).toBe(true);
+  });
+
+  it("rejects an empty gender (required - first-timers start unselected)", () => {
     expectFieldFailure(
-      { ...baseValues(), competitionTerm: "" },
-      "competitionTerm",
+      { ...baseValues(), gender: "" as ProfileFormValues["gender"] },
+      "gender",
+    );
+  });
+
+  it("rejects an empty athleteType (required - first-timers start unselected)", () => {
+    expectFieldFailure(
+      { ...baseValues(), athleteType: "" as ProfileFormValues["athleteType"] },
+      "athleteType",
     );
   });
 

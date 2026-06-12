@@ -2,7 +2,8 @@ import { z } from "zod";
 
 // Profile validation per spec: name required; age 5-100; height ft 3-8
 // (integer) + in 0-11; weight 50-500; gender required; athleteType
-// required; competitionTerm required.
+// required; competitionTerm optional (blank is valid - the app defaults an
+// unset term to "game" everywhere it's consumed).
 //
 // Inputs are typed as text + numeric inputmode in the prototype (so the user
 // gets a numeric keypad on iOS/Android without losing copy/paste); the schema
@@ -56,7 +57,10 @@ export const profileSchema = z.object({
   athleteType: z.enum(["endurance", "strength"], {
     message: "Please select an athlete type",
   }),
-  competitionTerm: z.string().min(1, "Please select a competition term"),
+  // Optional per spec: the Competition Term defaults to "game" wherever it's
+  // read (see data/competitionTerms.ts), so a blank selection is valid rather
+  // than mandatory. Kept as a plain string (not .min(1)) so "" passes.
+  competitionTerm: z.string(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;

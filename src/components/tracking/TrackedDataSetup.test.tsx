@@ -35,6 +35,7 @@ import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import { TrackedDataSetup } from "./TrackedDataSetup";
 import tableCss from "./TrackedMetricsTable.module.css";
+import commonCss from "../common.module.css";
 
 function customDef(
   id: string,
@@ -230,5 +231,20 @@ describe("TrackedDataSetup — first heading top margin", () => {
     expect(screen.getByText(/choose what to track/i)).toBeInTheDocument();
     const heading = screen.getByRole("heading", { name: /health log/i });
     expect(heading).not.toHaveClass(tableCss.tightTop);
+  });
+});
+
+describe("TrackedDataSetup — reorder hint", () => {
+  // The visible "Drag the handle to reorder…" prompt is removed per the
+  // design, but the instructions stay in the DOM screen-reader-only so
+  // each drag handle's aria-describedby still announces the keyboard
+  // shortcut to AT/keyboard users.
+  it("renders the reorder hint screen-reader-only, not as a visible prompt", () => {
+    renderWith();
+    const hints = screen.getAllByText(/drag the handle to reorder/i);
+    expect(hints.length).toBeGreaterThan(0);
+    hints.forEach((hint) =>
+      expect(hint).toHaveClass(commonCss.visuallyHidden),
+    );
   });
 });

@@ -135,7 +135,11 @@ export function TrackedMetricsTable({
       <h2 className={clsx(css.infoSectionHeading, tightTop && css.tightTop)}>
         {heading}
       </h2>
-      <p id={reorderHintId} className={css.reorderHint}>
+      {/* Reorder instructions are kept in the DOM but visually hidden:
+          the prompt was dropped from the visible UI per the design, while
+          each drag handle still aria-describedby's this so keyboard / AT
+          users hear the shortcut on focus. */}
+      <p id={reorderHintId} className={common.visuallyHidden}>
         Drag the handle to reorder, or focus a handle and press Space, then
         use the arrow keys to move (Escape to cancel).
       </p>

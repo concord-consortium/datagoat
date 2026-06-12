@@ -25,6 +25,13 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Applied to the first section heading when no intro/welcome block
+   precedes it (return users), so the heading's 24px top margin doesn't
+   stack on .screenContent's top padding and leave an empty gap. */
+.tightTop {
+  margin-top: 0;
+}
+
 /* Reorder-instructions hint shown above each table. Subtext-styled so it
    reads as a help line, not a body paragraph. Each drag handle
    aria-describedby's it so the keyboard shortcuts are announced on focus. */

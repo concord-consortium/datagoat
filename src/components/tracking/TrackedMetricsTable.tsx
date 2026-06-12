@@ -1,5 +1,6 @@
 import { useId, useMemo } from "react";
 import { Link } from "react-router-dom";
+import clsx from "clsx";
 import {
   DndContext,
   KeyboardSensor,
@@ -45,6 +46,10 @@ interface TrackedMetricsTableProps {
   onToggleCheck: (id: string, checked: boolean) => void;
   addToHref: string;
   addToLabel: string;
+  // Drop the heading's top margin when no intro/welcome block precedes
+  // this table (return users), so it doesn't leave an empty gap above
+  // the title. Only the first table on a screen sets this.
+  tightTop?: boolean;
 }
 
 export function TrackedMetricsTable({
@@ -57,6 +62,7 @@ export function TrackedMetricsTable({
   onToggleCheck,
   addToHref,
   addToLabel,
+  tightTop = false,
 }: TrackedMetricsTableProps) {
   // Display order: any metric in trackedIds first (in user-chosen order),
   // followed by registry metrics not yet in the tracked list (so the user
@@ -126,7 +132,9 @@ export function TrackedMetricsTable({
 
   return (
     <>
-      <h2 className={css.infoSectionHeading}>{heading}</h2>
+      <h2 className={clsx(css.infoSectionHeading, tightTop && css.tightTop)}>
+        {heading}
+      </h2>
       <p id={reorderHintId} className={css.reorderHint}>
         Drag the handle to reorder, or focus a handle and press Space, then
         use the arrow keys to move (Escape to cancel).

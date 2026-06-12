@@ -175,9 +175,14 @@ export function TrackedDataSetup() {
     navigate("/dashboard");
   }
 
+  // The intro/welcome block renders only before tracking setup is
+  // complete. When it's absent (return users), tighten the first
+  // heading's top margin so it doesn't leave an empty gap.
+  const showWelcome = !!profile && !profile.trackingSetupComplete;
+
   return (
     <div className={screenCss.screenContent}>
-      {profile && !profile.trackingSetupComplete && (
+      {showWelcome && (
         <div className={screenCss.profileWelcome}>
           <h2 className={screenCss.profileWelcomeTitle}>Choose what to track</h2>
           <p>
@@ -190,6 +195,7 @@ export function TrackedDataSetup() {
       <TrackedMetricsTable
         type="health"
         heading="Health Log"
+        tightTop={!showWelcome}
         registry={healthRegistry}
         customIds={customHealthIds}
         trackedIds={healthIds}

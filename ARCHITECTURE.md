@@ -85,7 +85,7 @@ Three sign-in methods, all defined in [src/components/auth/authProviders.ts](src
 [functions/src/auth/blockFacebookMissingEmail.ts](functions/src/auth/blockFacebookMissingEmail.ts) is a `beforeUserCreated` Identity Platform trigger. On every sign-in attempt it inspects `event.data.providerData`; if the request is from `facebook.com` and `event.data.email` is missing/empty, it throws an `HttpsError` with the `[BLOCKED_NO_EMAIL]` sentinel.
 
 - The pure rule (`evaluateBlockFacebookMissingEmail`) is unit-tested without the Functions runtime.
-- A `FACEBOOK_BLOCKER_ENABLED` runtime parameter acts as a kill switch — flip it to `'false'` in the Firebase console and run `npm run deploy:functions` to disable without a code change.
+- A `FACEBOOK_BLOCKER_ENABLED` runtime parameter acts as a kill switch — flip it to `'false'` in the Firebase console and run `npm run deploy:staging:functions` / `npm run deploy:production:functions` to disable on that project without a code change.
 - Identity Platform must be enabled on the project before the first deploy. See CLAUDE.md "Cloud Functions — Identity Platform requirement" for the upgrade procedure and the three-layer verification strategy (wire-level smoke, SDK round-trip test, post-deploy console checks).
 
 ## Data model

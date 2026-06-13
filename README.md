@@ -24,18 +24,20 @@ A mobile-first PWA for student athletes to track daily health metrics, sport out
    cp .env.example .env.local
    ```
 
-   The required variables are:
+   `.env.local` holds source-of-truth config for both cloud projects as **non-`VITE_`-prefixed** vars, one set per environment:
 
    ```
-   VITE_FIREBASE_API_KEY=
-   VITE_FIREBASE_AUTH_DOMAIN=
-   VITE_FIREBASE_PROJECT_ID=
-   VITE_FIREBASE_STORAGE_BUCKET=
-   VITE_FIREBASE_MESSAGING_SENDER_ID=
-   VITE_FIREBASE_APP_ID=
+   FIREBASE_STAGING_API_KEY=
+   FIREBASE_STAGING_AUTH_DOMAIN=
+   FIREBASE_STAGING_PROJECT_ID=
+   FIREBASE_STAGING_STORAGE_BUCKET=
+   FIREBASE_STAGING_MESSAGING_SENDER_ID=
+   FIREBASE_STAGING_APP_ID=
+   FIREBASE_STAGING_MEASUREMENT_ID=
+   # ...and the matching FIREBASE_PRODUCTION_* set
    ```
 
-   When running against the Firebase emulator, most of these values can be any placeholder, but the project ID needs to be lowercase and hyphen-allowed (use `demo-<anything>`, e.g., `demo-datagoat` for emulator work). The emulator toggle (`VITE_USE_EMULATORS`) is no longer set in `.env.local`; it lives in `.env.emulators` and `.env.cloud` and is selected automatically by the `npm run dev` and `npm run dev:cloud` scripts via Vite's `--mode` flag. See [CLAUDE.md](CLAUDE.md) for details.
+   The committed `.env.staging` / `.env.production` files map these into the `VITE_FIREBASE_*` vars the app reads, via `${VAR}` expansion. The `VITE_` prefix is omitted on the source vars so a given build bundles only one project's config; see the **Environments** section of [CLAUDE.md](CLAUDE.md) for the full rationale. For purely local emulator work you don't need real values — `.env.emulators` supplies dummy `VITE_FIREBASE_*` values and sets `VITE_USE_EMULATORS=true`, selected automatically by `npm run dev` via Vite's `--mode` flag.
 
 ## Local Development
 
@@ -55,21 +57,21 @@ npm run dev
 
 ## Preview channels
 
-Firebase Hosting preview channels publish a temporary URL pointing at a build of the app, useful for testing changes against the real Firebase project before promoting to production.
+Firebase Hosting preview channels publish a temporary URL pointing at a build of the app, useful for sharing in-progress changes with stakeholders. They are published to the **staging** project (the script builds with `--mode staging`), so they never touch production users.
 
 ```bash
 npm run deploy:preview -- <channel-name>
 ```
 
-(The `--` separates npm's args from the script's args; the channel name is forwarded to `firebase hosting:channel:deploy`.) The CLI prints a URL like `https://<project>--<channel-name>-<hash>.web.app`. The script sets a 30-day expiry (the maximum); without that, channels auto-expire after 7 days.
+(The `--` separates npm's args from the script's args; the channel name is forwarded to `firebase hosting:channel:deploy`.) The CLI prints a URL like `https://datagoat-staging--<channel-name>-<hash>.web.app`. The script sets a 30-day expiry (the maximum); without that, channels auto-expire after 7 days.
 
-Only **hosting** is channel-isolated. **Cloud Functions, Firestore data, and Auth state** are project-level and shared with production — sign-ins and writes from the preview URL hit the same backend as the live site.
+Only **hosting** is channel-isolated. **Cloud Functions, Firestore data, and Auth state** are project-level and shared with the rest of staging — sign-ins and writes from the preview URL hit the staging backend.
 
 To list or delete channels:
 
 ```bash
-firebase hosting:channel:list
-firebase hosting:channel:delete <channel-name>
+firebase hosting:channel:list -P staging
+firebase hosting:channel:delete <channel-name> -P staging
 ```
 
 ## Metrics export
@@ -123,15 +125,21 @@ A user counts as **active** in a bucket if they logged at least one entry dated 
 
 | Script                     | Description                                                          |
 | -------------------------- | -------------------------------------------------------------------- |
-| `npm run dev`              | Vite dev server pointed at local Firebase emulators (hot reload)     |
-| `npm run dev:cloud`        | Vite dev server pointed at the cloud Firebase project (no emulators) |
-| `npm run build`            | TypeScript check + production Vite build                             |
-| `npm run preview`          | Preview the production build locally                                 |
-| `npm run emulators`        | Start Firebase emulators (Auth, Firestore, Functions, Hosting)       |
-| `npm run deploy`           | Build and deploy hosting + functions + Firestore rules               |
-| `npm run deploy:hosting`   | Build and deploy only Firebase Hosting (skips functions + rules)     |
-| `npm run deploy:functions` | Redeploy only the Cloud Functions                                    |
-| `npm run deploy:preview`   | Build + publish a preview channel (30-day expiry, `-- <channel-name>`) |
+| `npm run dev`                      | Vite dev server pointed at local Firebase emulators (hot reload)       |
+| `npm run dev:staging`              | Vite dev server pointed at the staging cloud project (no emulators)    |
+| `npm run dev:production`           | Vite dev server pointed at the production cloud project (rare)         |
+| `npm run build`                    | TypeScript check + production Vite build (alias for `build:production`) |
+| `npm run build:staging`            | TypeScript check + staging Vite build                                  |
+| `npm run build:production`         | TypeScript check + production Vite build                               |
+| `npm run preview`                  | Preview the last build locally                                         |
+| `npm run emulators`                | Start Firebase emulators (Auth, Firestore, Functions, Hosting)         |
+| `npm run deploy:staging`           | Build + deploy hosting + functions + Firestore to staging             |
+| `npm run deploy:production`        | Build + deploy hosting + functions + Firestore to production          |
+| `npm run deploy:staging:hosting`   | Build + deploy only Firebase Hosting to staging                       |
+| `npm run deploy:production:hosting` | Build + deploy only Firebase Hosting to production                   |
+| `npm run deploy:staging:functions` | Redeploy only the Cloud Functions on staging                          |
+| `npm run deploy:production:functions` | Redeploy only the Cloud Functions on production                    |
+| `npm run deploy:preview`           | Build (staging) + publish a preview channel (`-- <channel-name>`)     |
 
 ## Tech Stack
 

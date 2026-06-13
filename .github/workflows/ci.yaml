@@ -16,7 +16,32 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # `npm run build` (= build:production) exercises the real .env.production
+      # ${VAR} expansion chain. CI has no .env.local, so inject dummy
+      # FIREBASE_PRODUCTION_* values for the expansion to resolve against -
+      # without them the references would expand to empty strings and ship a
+      # config-less bundle without erroring. Placeholders, not secrets.
       - run: npm run build
+        env:
+          FIREBASE_PRODUCTION_API_KEY: ci-dummy-api-key
+          FIREBASE_PRODUCTION_AUTH_DOMAIN: ci-dummy.firebaseapp.com
+          FIREBASE_PRODUCTION_PROJECT_ID: ci-dummy-project
+          FIREBASE_PRODUCTION_STORAGE_BUCKET: ci-dummy.appspot.com
+          FIREBASE_PRODUCTION_MESSAGING_SENDER_ID: "000000000000"
+          FIREBASE_PRODUCTION_APP_ID: "1:000000000000:web:0000000000000000000000"
+          FIREBASE_PRODUCTION_MEASUREMENT_ID: ""
+      # Also exercise the staging-mode expansion path (.env.staging via
+      # ${FIREBASE_STAGING_*}) so a staging-only env typo is caught in CI
+      # rather than at preview/deploy time. Placeholders, not secrets.
+      - run: npm run build:staging
+        env:
+          FIREBASE_STAGING_API_KEY: ci-dummy-api-key
+          FIREBASE_STAGING_AUTH_DOMAIN: ci-dummy.firebaseapp.com
+          FIREBASE_STAGING_PROJECT_ID: ci-dummy-project
+          FIREBASE_STAGING_STORAGE_BUCKET: ci-dummy.appspot.com
+          FIREBASE_STAGING_MESSAGING_SENDER_ID: "000000000000"
+          FIREBASE_STAGING_APP_ID: "1:000000000000:web:0000000000000000000000"
+          FIREBASE_STAGING_MEASUREMENT_ID: ""
       - run: npm test
 
   functions:

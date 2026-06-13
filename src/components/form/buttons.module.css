@@ -111,21 +111,16 @@
               transform var(--dur-tap) var(--ease-default);
 }
 
-.setupBtn .arrow {
-  position: absolute;
-  right: 18px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.setupBtn > svg {
+/* Left-hand icon slot (e.g. the dashboard mark on "Go To Dashboard").
+   Scoped to the first child so a trailing arrow svg keeps its own
+   right-aligned positioning. */
+.setupBtn > svg:first-child {
   position: absolute;
   left: 18px;
   top: 50%;
   transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
 }
 
 .setupBtn:hover {

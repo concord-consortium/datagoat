@@ -85,7 +85,18 @@ export function SortableMetricRow({
           aria-label={`Track ${name}`}
         />
       </td>
-      <td className={css.metricName} title={name}>{name}</td>
+      <td className={css.metricName} title={name}>
+        {/* Definition link: same destination (MetricDetail) as the info
+            icon, so the label and icon both open the metric's
+            definition. backTo returns the user to /setup/tracking. */}
+        <Link
+          to={`/${type}/${id}`}
+          state={{ backTo: "/setup/tracking" }}
+          className={css.definitionLink}
+        >
+          {name}
+        </Link>
+      </td>
       <td>
         {/* Edit-pencil cell: links to the metric's edit form (custom
             metrics open CustomMetricForm, built-ins open

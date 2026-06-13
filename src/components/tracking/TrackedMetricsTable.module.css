@@ -25,35 +25,17 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* Reorder-instructions hint shown above each table. Subtext-styled so it
-   reads as a help line, not a body paragraph. Each drag handle
-   aria-describedby's it so the keyboard shortcuts are announced on focus. */
-.reorderHint {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--subtext);
-  margin: 0 0 8px;
-  line-height: 1.4;
+/* Applied to the first section heading when no intro/welcome block
+   precedes it (return users), so the heading's 24px top margin doesn't
+   stack on .screenContent's top padding and leave an empty gap. */
+.tightTop {
+  margin-top: 0;
 }
 
-/* On pure touch devices (no fine pointer connected) the keyboard
-   instructions are irrelevant for sighted users - hide visually but
-   keep in the accessibility tree so screen-reader users on iOS/Android
-   still hear them via aria-describedby. iPads with an external keyboard
-   match `any-pointer: fine` and continue to see the hint. */
-@media not (any-pointer: fine) {
-  .reorderHint {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-}
+/* The reorder-instructions hint is rendered visually hidden (shared
+   .visuallyHidden utility) — the visible prompt was dropped per the
+   design, but each drag handle still aria-describedby's it so keyboard
+   and screen-reader users hear the shortcut on focus. */
 
 /* .data-table - prototype lines 1401-1431.
    table-layout: fixed pairs with the explicit widths on the drag /
@@ -105,12 +87,35 @@
 }
 .metricName {
   font-weight: 600;
-  /* Elide long names so the fixed-layout column can shrink without
-     overflowing. The full name remains in the DOM (accessible to
-     screen readers) and is shown on hover via the cell's title. */
+  /* Long-name truncation lives on .definitionLink (the cell's child), not
+     here: the cell deliberately has no overflow/clip, which would clip the
+     link's focus-visible outline. The full name stays in the DOM for screen
+     readers and shows on hover via the cell's title. */
+}
+
+/* The name links to the metric's definition (MetricDetail), same
+   destination as the info icon. Kept visually identical to the plain
+   label (inherits the white text + font-weight 600) so it doesn't read
+   as a styled link; only a subtle underline on hover signals it's
+   clickable. Block + line-height (not inline-flex) so the existing
+   ellipsis truncation keeps working; 44px gives the touch target
+   without growing the row past the info icon's height. */
+.definitionLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  line-height: 44px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.definitionLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.definitionLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* metric-info-btn - prototype lines 1442-1471 */

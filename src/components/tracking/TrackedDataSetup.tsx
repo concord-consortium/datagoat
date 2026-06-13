@@ -13,6 +13,7 @@ import {
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
 import { TrackedMetricsTable } from "./TrackedMetricsTable";
+import DashboardIcon from "@/icons/dashboard.svg?react";
 import buttons from "../form/buttons.module.css";
 import css from "./TrackedMetricsTable.module.css";
 import screenCss from "./TrackedDataSetup.module.css";
@@ -174,9 +175,14 @@ export function TrackedDataSetup() {
     navigate("/dashboard");
   }
 
+  // The intro/welcome block renders only before tracking setup is
+  // complete. When it's absent (return users), tighten the first
+  // heading's top margin so it doesn't leave an empty gap.
+  const showWelcome = !!profile && !profile.trackingSetupComplete;
+
   return (
     <div className={screenCss.screenContent}>
-      {profile && !profile.trackingSetupComplete && (
+      {showWelcome && (
         <div className={screenCss.profileWelcome}>
           <h2 className={screenCss.profileWelcomeTitle}>Choose what to track</h2>
           <p>
@@ -189,6 +195,7 @@ export function TrackedDataSetup() {
       <TrackedMetricsTable
         type="health"
         heading="Health Log"
+        tightTop={!showWelcome}
         registry={healthRegistry}
         customIds={customHealthIds}
         trackedIds={healthIds}
@@ -238,6 +245,7 @@ export function TrackedDataSetup() {
           className={buttons.setupBtn}
           onClick={handleGoToDashboard}
         >
+          <DashboardIcon aria-hidden="true" />
           Go To Dashboard
           <span className={screenCss.arrow} aria-hidden="true">
             →

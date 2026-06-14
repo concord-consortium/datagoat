@@ -331,8 +331,10 @@ export function ProfileForm() {
         {/* Height: one "Height" label (bound to the feet input), two narrow
             inputs with Ft/In units, and a single shared error line. The
             inches input has no visible label per spec - it carries an
-            aria-label instead. */}
-        <div className={css.inlineField}>
+            aria-label instead. role="group" + aria-label restores the
+            programmatic grouping the old <fieldset>/<legend> provided (the
+            two inputs are one measurement) without its layout baggage. */}
+        <div className={css.inlineField} role="group" aria-label="Height">
           <label className={fields.fieldLabel} htmlFor="profile-height-ft">
             Height
             <span className={fields.requiredMark} aria-hidden="true">*</span>

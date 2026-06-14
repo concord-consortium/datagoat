@@ -139,6 +139,18 @@ describe("ProfileForm mode derivation", () => {
     ).toBeInTheDocument();
   });
 
+  it("groups the two height inputs under a programmatic 'Height' group", () => {
+    ctx.loadState = { status: "missing" };
+    renderForm();
+    const group = screen.getByRole("group", { name: "Height" });
+    expect(group).toContainElement(
+      document.getElementById("profile-height-ft"),
+    );
+    expect(group).toContainElement(
+      document.getElementById("profile-height-in"),
+    );
+  });
+
   it("renders edit mode when loadState is loaded with no welcome and a Done button", () => {
     ctx.loadState = { status: "loaded", profile: makeProfile() };
     renderForm();

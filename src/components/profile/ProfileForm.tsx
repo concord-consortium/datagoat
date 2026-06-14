@@ -60,10 +60,12 @@ export function ProfileForm() {
         // Fall back to the same "unselected" state as fresh onboarding: a
         // partially auto-saved doc can lack gender/athleteType, so normalize
         // missing values to "" rather than leaking undefined into the form.
-        gender: profile.gender ?? "",
-        athleteType: profile.athleteType ?? "",
+        // ("" | Enum) overlaps the enum, so a plain cast suffices here.
+        gender: (profile.gender ?? "") as ProfileFormValues["gender"],
+        athleteType: (profile.athleteType ??
+          "") as ProfileFormValues["athleteType"],
         competitionTerm: profile.competitionTerm ?? "",
-      } as ProfileFormValues;
+      };
     }
     return {
       fullName: user?.displayName ?? "",
@@ -75,13 +77,13 @@ export function ProfileForm() {
       // Start the two required selects unselected so first-timers see the
       // "Select …" placeholder and must make an explicit choice. "" isn't a
       // member of either enum, so the schema rejects it with the required
-      // message until the user picks. (Edit mode seeds the stored value
-      // above, so returning users are unaffected.) competitionTerm stays
-      // optional - blank is valid and downstream treats it as "game".
-      gender: "",
-      athleteType: "",
+      // message until the user picks (hence the cast through unknown). Edit
+      // mode seeds the stored value above, so returning users are unaffected;
+      // competitionTerm stays optional - blank is valid, treated as "game".
+      gender: "" as unknown as ProfileFormValues["gender"],
+      athleteType: "" as unknown as ProfileFormValues["athleteType"],
       competitionTerm: "",
-    } as ProfileFormValues;
+    };
   }, [profile, user]);
 
   const {

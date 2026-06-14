@@ -5,9 +5,11 @@ import { z } from "zod";
 // required; competitionTerm optional (blank is valid - the app defaults an
 // unset term to "game" everywhere it's consumed).
 //
-// Inputs are typed as text + numeric inputmode in the prototype (so the user
-// gets a numeric keypad on iOS/Android without losing copy/paste); the schema
-// coerces the string to a number so the writer hands typed data to Firestore.
+// Inputs are text + numeric/decimal inputmode (so the user gets the right
+// on-screen keypad on iOS/Android without losing copy/paste). The schema only
+// validates the string; the callers (ProfileForm onSubmit and
+// profileAutosavePartial) coerce it to a number via Number() before writing
+// the typed value to Firestore.
 
 // Validates a numeric string from a type="text" + inputMode="numeric" input.
 // Text inputs surface their value as a string (RHF default), so we coerce +

@@ -363,9 +363,9 @@ export function ProfileForm() {
           <input
             id="profile-height-in"
             type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={2}
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
+            maxLength={5}
             aria-label="Height inches"
             className={clsx(
               fields.fieldInput,
@@ -403,9 +403,9 @@ export function ProfileForm() {
           <input
             id="profile-weight"
             type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={3}
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
+            maxLength={6}
             className={clsx(
               fields.fieldInput,
               css.numInputWide,

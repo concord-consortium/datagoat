@@ -218,4 +218,12 @@ describe("HamburgerMenu seeds backTo on the Profile link", () => {
     fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
     expect(screen.getByTestId("backto")).toHaveTextContent("none");
   });
+
+  it("preserves the current query string in backTo (so ?date=… survives)", () => {
+    renderMenuAt("/competition?date=2026-06-10");
+    fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
+    expect(screen.getByTestId("backto")).toHaveTextContent(
+      "/competition?date=2026-06-10",
+    );
+  });
 });

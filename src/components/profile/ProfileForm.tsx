@@ -57,10 +57,13 @@ export function ProfileForm() {
         heightFt: profile.heightFt ? String(profile.heightFt) : "",
         heightIn: profile.heightIn != null ? String(profile.heightIn) : "",
         weight: profile.weight ? String(profile.weight) : "",
-        gender: profile.gender,
-        athleteType: profile.athleteType,
+        // Fall back to the same "unselected" state as fresh onboarding: a
+        // partially auto-saved doc can lack gender/athleteType, so normalize
+        // missing values to "" rather than leaking undefined into the form.
+        gender: profile.gender ?? "",
+        athleteType: profile.athleteType ?? "",
         competitionTerm: profile.competitionTerm ?? "",
-      };
+      } as ProfileFormValues;
     }
     return {
       fullName: user?.displayName ?? "",
@@ -210,11 +213,11 @@ export function ProfileForm() {
       // them clobbered. The next screen (TrackedDataSetup) is what writes
       // these fields for real.
       //
-      // profileComplete: true is set on every submit (not just onboarding)
-      // so an incomplete-but-loaded doc - reachable via routing alone, since
-      // mode is derived from loadState.status without checking
-      // profileComplete - heals on the next save instead of bouncing the
-      // user back to /profile in a loop.
+      // Stamp profileComplete: true here so an incomplete-but-loaded doc -
+      // which mode now treats as onboarding (mode keys off profileComplete,
+      // not mere doc existence) - heals into a complete profile on submit
+      // instead of leaving the user stuck on /profile. Only onboarding reaches
+      // this code; edit mode saves via auto-save and exits via "Done".
       await updateProfile({
         ...profilePartial,
         profileComplete: true,

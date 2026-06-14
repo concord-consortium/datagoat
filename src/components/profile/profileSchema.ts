@@ -9,10 +9,10 @@ import { z } from "zod";
 // gets a numeric keypad on iOS/Android without losing copy/paste); the schema
 // coerces the string to a number so the writer hands typed data to Firestore.
 
-// Validates a numeric string from an <input type="number">. type="number"
-// inputs surface their value as a string (RHF default), so we coerce +
-// range-check here. HTML min/max is bypassed by paste, autofill, and
-// devtools, so the schema is the only enforcement seam.
+// Validates a numeric string from a type="text" + inputMode="numeric" input.
+// Text inputs surface their value as a string (RHF default), so we coerce +
+// range-check here. The pattern / maxLength hints on the inputs are bypassed
+// by paste, autofill, and devtools, so the schema is the only enforcement seam.
 const numericString = (
   label: string,
   opts: { min: number; max: number; integer?: boolean },

@@ -129,6 +129,15 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
                 ) : (
                   <Link
                     to={to}
+                    // Seed backTo so the Profile screen's "Done" button can
+                    // return the user where they came from (its only nav is a
+                    // plain exit now that the form auto-saves). Other routes
+                    // carry their own back semantics, so this is Profile-only.
+                    state={
+                      to === "/profile" && pathname !== "/profile"
+                        ? { backTo: pathname }
+                        : undefined
+                    }
                     className={clsx(css.navItem, isActive && css.active)}
                     aria-current={isActive ? "page" : undefined}
                     onClick={handleNavigate}

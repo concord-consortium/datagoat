@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
 
@@ -175,5 +180,42 @@ describe("HamburgerMenu narrowed isOnboarding derivation", () => {
     expect(
       screen.getByText(/complete your tracked data setup/i),
     ).toBeInTheDocument();
+  });
+});
+
+function BackToProbe() {
+  const loc = useLocation();
+  const backTo = (loc.state as { backTo?: string } | null)?.backTo;
+  return <div data-testid="backto">{backTo ?? "none"}</div>;
+}
+
+describe("HamburgerMenu seeds backTo on the Profile link", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ctx.loadState = { status: "loaded", profile: makeProfile() };
+  });
+
+  function renderMenuAt(pathname: string) {
+    render(
+      <MemoryRouter initialEntries={[pathname]}>
+        <HamburgerMenu open onClose={() => {}} />
+        <Routes>
+          <Route path="/profile" element={<BackToProbe />} />
+          <Route path="*" element={<div />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  it("Profile link carries the current path as backTo so 'Done' can return there", () => {
+    renderMenuAt("/dashboard");
+    fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
+    expect(screen.getByTestId("backto")).toHaveTextContent("/dashboard");
+  });
+
+  it("does not set backTo when already on the Profile screen", () => {
+    renderMenuAt("/profile");
+    fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
+    expect(screen.getByTestId("backto")).toHaveTextContent("none");
   });
 });

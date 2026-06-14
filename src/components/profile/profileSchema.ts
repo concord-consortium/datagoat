@@ -11,10 +11,12 @@ import { z } from "zod";
 // profileAutosavePartial) coerce it to a number via Number() before writing
 // the typed value to Firestore.
 
-// Validates a numeric string from a type="text" + inputMode="numeric" input.
-// Text inputs surface their value as a string (RHF default), so we coerce +
-// range-check here. The pattern / maxLength hints on the inputs are bypassed
-// by paste, autofill, and devtools, so the schema is the only enforcement seam.
+// Validates a numeric string from a type="text" + inputMode="numeric"/"decimal"
+// input. The value arrives as a string (RHF default); we range-check it here by
+// parsing with Number() inside refine(), but the schema stays a z.string() - the
+// callers coerce to a number before the Firestore write. The pattern / maxLength
+// hints on the inputs are bypassed by paste, autofill, and devtools, so the
+// schema is the only enforcement seam.
 const numericString = (
   label: string,
   opts: { min: number; max: number; integer?: boolean },

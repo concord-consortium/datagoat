@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 import type { ProfileLoadState, UserProfile } from "../../types/profile";
@@ -91,6 +97,29 @@ function renderForm() {
   );
 }
 
+// Same as renderForm but returns the render result (for unmount handling).
+function renderFormHandle() {
+  return render(
+    <MemoryRouter initialEntries={["/profile"]}>
+      <Routes>
+        <Route path="/profile" element={<ProfileForm />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+// Render at /profile with a seeded location state (e.g. backTo from the
+// hamburger), so the edit-mode "Done" button has an origin to return to.
+function renderFormWithState(state?: { backTo?: string }) {
+  render(
+    <MemoryRouter initialEntries={[{ pathname: "/profile", state }]}>
+      <Routes>
+        <Route path="/profile" element={<ProfileForm />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe("ProfileForm mode derivation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -110,12 +139,27 @@ describe("ProfileForm mode derivation", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders edit mode when loadState is loaded with no welcome and Save button", () => {
+  it("renders edit mode when loadState is loaded with no welcome and a Done button", () => {
     ctx.loadState = { status: "loaded", profile: makeProfile() };
     renderForm();
     expect(screen.queryByText(/welcome to datagoat/i)).toBeNull();
     expect(
-      screen.getByRole("button", { name: /save/i }),
+      screen.getByRole("button", { name: /^done$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("stays in onboarding mode when a doc exists but profileComplete is false", () => {
+    // Auto-save creates the profile doc before the user finishes, so doc
+    // existence alone must not flip onboarding -> edit. profileComplete is
+    // the real gate.
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({ profileComplete: false }),
+    };
+    renderForm();
+    expect(screen.getByText(/welcome to datagoat/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /set up your tracked data/i }),
     ).toBeInTheDocument();
   });
 
@@ -186,44 +230,65 @@ describe("ProfileForm submit", () => {
     });
   });
 
-  it("edit submit calls both writes and navigates to /dashboard", async () => {
+  it("edit mode shows a 'Done' button that returns to the origin (state.backTo)", async () => {
+    ctx.loadState = { status: "loaded", profile: makeProfile() };
+    // Saving is automatic now, so the bottom button is a plain exit, not a
+    // Save. It returns the user to wherever they came from.
+    renderFormWithState({ backTo: "/health" });
+
+    expect(screen.queryByRole("button", { name: /^save$/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+
+    await waitFor(() => {
+      expect(ctx.navigateMock).toHaveBeenCalledWith("/health");
+    });
+  });
+
+  it("edit mode 'Done' falls back to /dashboard when there is no origin", async () => {
     ctx.loadState = { status: "loaded", profile: makeProfile() };
     renderForm();
 
-    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
 
     await waitFor(() => {
-      expect(ctx.firebaseUpdateProfileMock).toHaveBeenCalled();
-      expect(ctx.updateProfileMock).toHaveBeenCalled();
       expect(ctx.navigateMock).toHaveBeenCalledWith("/dashboard");
     });
   });
 
-  it("edit submit always writes profileComplete: true so an incomplete doc heals on save", async () => {
+  it("a loaded-but-incomplete doc is onboarding; submit writes profileComplete and proceeds to tracking", async () => {
     ctx.loadState = {
       status: "loaded",
       profile: makeProfile({ profileComplete: false }),
     };
     renderForm();
 
-    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    // Incomplete doc -> onboarding mode (the prefilled fields are valid), so
+    // the action is the onboarding button, which still heals profileComplete.
+    fireEvent.click(
+      screen.getByRole("button", { name: /set up your tracked data/i }),
+    );
 
     await waitFor(() => {
       expect(ctx.updateProfileMock).toHaveBeenCalledWith(
         expect.objectContaining({ profileComplete: true }),
       );
-      expect(ctx.navigateMock).toHaveBeenCalledWith("/dashboard");
+      expect(ctx.navigateMock).toHaveBeenCalledWith("/setup/tracking");
     });
   });
 
   it("renders a form-level error and does not navigate when the Firestore write rejects", async () => {
-    ctx.loadState = { status: "loaded", profile: makeProfile() };
+    // The button-press write path lives in onboarding now (edit mode's "Done"
+    // is a plain exit), so drive the reject through the onboarding submit.
+    ctx.loadState = { status: "missing" };
     (ctx.updateProfileMock as unknown as Mock).mockRejectedValueOnce(
       new Error("permission-denied"),
     );
     renderForm();
+    fillRequiredOnboardingFields();
 
-    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /set up your tracked data/i }),
+    );
 
     await waitFor(() => {
       expect(ctx.logErrorMock).toHaveBeenCalledWith(
@@ -282,6 +347,106 @@ describe("ProfileForm a11y", () => {
     expect(document.activeElement).toBe(
       document.getElementById("profile-age"),
     );
+  });
+});
+
+describe("ProfileForm auto-save", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ctx.user = {
+      uid: "u1",
+      email: "u@example.com",
+      displayName: "Existing Name",
+    };
+    ctx.loadState = { status: "missing" };
+  });
+
+  it("auto-saves the valid subset after the debounce interval", async () => {
+    vi.useFakeTimers();
+    try {
+      renderForm();
+      fillRequiredOnboardingFields();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(ctx.updateProfileMock).toHaveBeenCalled();
+      const arg = (ctx.updateProfileMock as Mock).mock.calls.at(-1)?.[0];
+      expect(arg).toMatchObject({
+        fullName: "Test Athlete",
+        age: 18,
+        heightFt: 5,
+        heightIn: 9,
+        weight: 150,
+        gender: "male",
+      });
+      // Auto-save must never mark the profile complete - that's the
+      // proceed button's job, only when the whole form validates.
+      expect(arg).not.toHaveProperty("profileComplete");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not auto-save on initial mount (no user edits yet)", async () => {
+    vi.useFakeTimers();
+    try {
+      renderForm();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(ctx.updateProfileMock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps in-progress edits when a later snapshot loads (seed only once)", () => {
+    ctx.loadState = { status: "missing" };
+    // Fresh element each render so React can't bail out on reference equality -
+    // ProfileForm must actually re-render and read the updated loadState.
+    const ui = () => (
+      <MemoryRouter initialEntries={["/profile"]}>
+        <Routes>
+          <Route path="/profile" element={<ProfileForm />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const { rerender } = render(ui());
+    setInputById("profile-fullname", "In Progress Name");
+    // Simulate auto-save having created the doc: the snapshot now resolves to
+    // a loaded (still-incomplete) profile carrying a different stored name.
+    ctx.loadState = {
+      status: "loaded",
+      profile: makeProfile({
+        fullName: "Stored Name",
+        profileComplete: false,
+      }),
+    };
+    act(() => {
+      rerender(ui());
+    });
+    // The user's unsaved edit must survive - the form must not re-seed from
+    // the inbound snapshot.
+    expect(document.getElementById("profile-fullname")).toHaveValue(
+      "In Progress Name",
+    );
+  });
+
+  it("flushes a pending auto-save when the form unmounts", async () => {
+    vi.useFakeTimers();
+    try {
+      const { unmount } = renderFormHandle();
+      setInputById("profile-fullname", "Navigated Away");
+      // Unmount before the debounce fires (simulating a hamburger nav).
+      act(() => {
+        unmount();
+      });
+      expect(ctx.updateProfileMock).toHaveBeenCalled();
+      const arg = (ctx.updateProfileMock as Mock).mock.calls.at(-1)?.[0];
+      expect(arg).toMatchObject({ fullName: "Navigated Away" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

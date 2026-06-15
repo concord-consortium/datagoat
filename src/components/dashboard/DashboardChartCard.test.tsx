@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -26,11 +26,29 @@ const ctx = vi.hoisted(() => ({
       trackingSetupComplete: true,
     } as UserProfile,
   } as ProfileLoadState,
+  updateProfile: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../../contexts/UserContext", () => ({
-  useUser: () => ({ loadState: ctx.loadState }),
+  useUser: () => ({
+    loadState: ctx.loadState,
+    updateProfile: ctx.updateProfile,
+  }),
 }));
+
+// Convenience: set the loaded profile's persisted dashboard picks for a
+// single test, then restore the default afterward via the returned reset.
+function setProfile(partial: Partial<UserProfile>) {
+  const loaded = ctx.loadState as Extract<
+    ProfileLoadState,
+    { status: "loaded" }
+  >;
+  const original = loaded.profile;
+  loaded.profile = { ...original, ...partial };
+  return () => {
+    loaded.profile = original;
+  };
+}
 
 import { DashboardChartCard } from "./DashboardChartCard";
 
@@ -214,5 +232,247 @@ describe("DashboardChartCard", () => {
       "Health metric",
     );
     expect(label).toBeTruthy();
+  });
+});
+
+// DGT-64: the dashboard should remember which graph (metric) and time
+// range the user picked per section, restoring them on reload and
+// persisting changes to the profile doc.
+describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
+  let resetProfile: (() => void) | null = null;
+
+  beforeEach(() => {
+    ctx.updateProfile.mockClear();
+  });
+  afterEach(() => {
+    resetProfile?.();
+    resetProfile = null;
+  });
+
+  function getActiveRange(container: HTMLElement): string {
+    const pressed = container.querySelector(
+      '[role="group"] button[aria-pressed="true"]',
+    );
+    // textContent is e.g. "30d (Last 30 days)"; the leading token is the key.
+    return pressed?.textContent?.trim().split(" ")[0] ?? "";
+  }
+
+  it("restores the persisted metric instead of defaulting to the first tracked", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { metric: "sleepTime" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    // Without persistence this would seed to "hydration" (first tracked).
+    expect(getSelect(container).value).toBe("sleepTime");
+    expect(getSvgTitle(container)).toBe("Total Sleep Time");
+  });
+
+  it("restores the persisted time range instead of defaulting to 7d", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "30d" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getActiveRange(container)).toBe("30d");
+  });
+
+  it("falls back to the first tracked metric when the persisted metric is no longer tracked", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { metric: "sleepTime" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getSelect(container).value).toBe("hydration");
+    expect(getSvgTitle(container)).toBe("Hydration");
+  });
+
+  it("ignores an unknown persisted range and falls back to 7d", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "bogus" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getActiveRange(container)).toBe("7d");
+  });
+
+  it("rejects an Object.prototype key as a persisted range (own-property guard)", () => {
+    // "toString" is inherited on every object, so an `in` check would
+    // wrongly accept it; TIME_RANGE_DAYS["toString"] is a function, not
+    // a day count. Must fall back to 7d.
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "toString" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getActiveRange(container)).toBe("7d");
+  });
+
+  it("persists the metric pick to the profile when the dropdown changes", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    // The write carries the full section (both picks from live local
+    // state), so the sibling range "7d" rides along with the new metric.
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: { health: { metric: "sleepTime", range: "7d" } },
+    });
+  });
+
+  it("persists the time-range pick to the profile when a range button is clicked", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    const btn = within(container)
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith("30d"));
+    if (!btn) throw new Error("30d range button not found");
+    await user.click(btn);
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: { health: { metric: "hydration", range: "30d" } },
+    });
+  });
+
+  it("preserves the section's other pick when persisting a change", async () => {
+    // A pre-existing persisted range must survive a metric change (and
+    // vice versa) - the write merges into the section's existing pick.
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "30d" } },
+    });
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: { health: { range: "30d", metric: "sleepTime" } },
+    });
+  });
+
+  it("writes only the changed section, leaving siblings to Firestore merge", async () => {
+    // A change to the health card must not re-send a persisted
+    // performance/competition pick living on the same doc field. The
+    // snapshot is stale (updateProfile doesn't optimistically update it),
+    // and setDoc(merge:true) deep-merges nested maps, so re-sending a
+    // sibling section would clobber a concurrent change made on that
+    // card. The write must carry ONLY the changed section; the others
+    // are preserved server-side by the merge.
+    resetProfile = setProfile({
+      dashboardCharts: { competition: { metric: "goals" } },
+    });
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: {
+        health: { metric: "sleepTime", range: "7d" },
+      },
+    });
+  });
+
+  it("does not re-send a sibling section, so a concurrent cross-section change can't be clobbered", async () => {
+    // Regression for the cross-section race: two cards share one stale
+    // profile snapshot. If the competition card re-sent the snapshot's
+    // health pick, a health change made just before (not yet reflected
+    // in the snapshot) would be reverted by setDoc(merge:true). The
+    // competition write must therefore contain only the competition
+    // section and never mention health.
+    resetProfile = setProfile({
+      dashboardCharts: { health: { metric: "hydration", range: "7d" } },
+    });
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="competition"
+        trackedMetricIds={["goals"]}
+        competitionEntries={[]}
+      />,
+    );
+    const btn = within(container)
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith("30d"));
+    if (!btn) throw new Error("30d range button not found");
+    await user.click(btn);
+    // Exact-match: the payload contains only the competition section, so
+    // `health` is provably absent and cannot clobber a concurrent change.
+    expect(ctx.updateProfile).toHaveBeenLastCalledWith({
+      dashboardCharts: {
+        competition: { metric: "goals", range: "30d" },
+      },
+    });
+  });
+
+  it("sources the sibling pick from live local state, not the stale snapshot", async () => {
+    // Regression for the metric-then-range race: updateProfile does not
+    // optimistically update loadState.profile, so a second change before
+    // the snapshot lands must still carry the first change. Because the
+    // mock never feeds the write back into ctx.loadState, `savedChart`
+    // stays empty across both changes - so if the range write sourced
+    // its sibling from savedChart it would omit/clobber the metric. It
+    // must instead come from live local state (the just-picked metric).
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    const btn = within(container)
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith("30d"));
+    if (!btn) throw new Error("30d range button not found");
+    await user.click(btn);
+    // The range write must preserve the just-picked metric "sleepTime".
+    expect(ctx.updateProfile).toHaveBeenLastCalledWith({
+      dashboardCharts: { health: { metric: "sleepTime", range: "30d" } },
+    });
   });
 });

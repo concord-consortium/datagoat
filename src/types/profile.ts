@@ -1,6 +1,18 @@
 export type Gender = "male" | "female" | "non-binary" | "unspecified";
 export type AthleteType = "endurance" | "strength";
 
+// Persisted per-section dashboard graph picks (DGT-64). Both fields are
+// optional: a card writes only the leaf the user just changed, and seeds
+// its local state from whichever leaves are present, falling back to the
+// first tracked metric / "7d" otherwise. `range` is stored as a plain
+// string (not TimeRangeKey) so this type stays decoupled from the
+// dashboard component; the card validates it against the known keys on
+// read and ignores a stale/unknown value.
+export interface DashboardChartSettings {
+  metric?: string;
+  range?: string;
+}
+
 export interface UserProfile {
   version: number;
   fullName: string;
@@ -23,6 +35,14 @@ export interface UserProfile {
   // today) or [] depending on the call site.
   trackedPerformanceMetrics?: string[];
   trackedCompetitionMetrics: string[];
+  // Per-section dashboard graph picks (DGT-64). Optional, like the
+  // tracked* arrays: absent on existing/newly-created docs, written
+  // lazily the first time the user changes a card's metric or range.
+  dashboardCharts?: {
+    health?: DashboardChartSettings;
+    performance?: DashboardChartSettings;
+    competition?: DashboardChartSettings;
+  };
   profileComplete: boolean;
   trackingSetupComplete: boolean;
 }

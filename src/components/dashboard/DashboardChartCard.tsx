@@ -45,7 +45,10 @@ import css from "./DashboardChartCard.module.css";
 // profile doc) back to a TimeRangeKey, ignoring stale/unknown values
 // from an older build so the card falls back to the default.
 function isTimeRangeKey(value: string | undefined): value is TimeRangeKey {
-  return value !== undefined && value in TIME_RANGE_DAYS;
+  // Own-property check, not `in`: `in` would accept inherited keys like
+  // "toString"/"constructor", and TIME_RANGE_DAYS["toString"] is a
+  // function, not a day count - which would break chart slicing.
+  return value !== undefined && Object.hasOwn(TIME_RANGE_DAYS, value);
 }
 
 interface DashboardChartCardProps {

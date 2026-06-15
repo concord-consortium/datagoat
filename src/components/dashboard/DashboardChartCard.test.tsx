@@ -316,6 +316,23 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
     expect(getActiveRange(container)).toBe("7d");
   });
 
+  it("rejects an Object.prototype key as a persisted range (own-property guard)", () => {
+    // "toString" is inherited on every object, so an `in` check would
+    // wrongly accept it; TIME_RANGE_DAYS["toString"] is a function, not
+    // a day count. Must fall back to 7d.
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "toString" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getActiveRange(container)).toBe("7d");
+  });
+
   it("persists the metric pick to the profile when the dropdown changes", async () => {
     const user = userEvent.setup();
     const { container } = render(

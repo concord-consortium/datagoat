@@ -14,6 +14,28 @@
      this transparent so the .speedLines decoration shows through. */
 }
 
+/* Teal top-of-screen wash behind the header — port of the prototype's
+   .phone::before. The subtle .headerZone::before below layers on top of
+   this; together they give the auth header its teal gradient. z-index: 0
+   keeps it above the transparent .shell background but below the header
+   content (.headerZone, z-index: 2) and the speed-lines. */
+.shell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 260px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 90, 115, 0.7) 0%,
+    rgba(0, 70, 90, 0.45) 45%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Diagonal speed-lines decoration — port of prototype's .speed-lines.
    Mounted INSIDE .headerZone (not at .shell level) so the headerZone's
    overflow:hidden clips the bottom of the SVG flush with the top of the

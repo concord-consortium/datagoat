@@ -76,7 +76,7 @@ export function EmailVerification() {
           <p className={authCss.authSubtext}>
             We had trouble sending the verification email
             {email ? <> to <strong className={css.recipientEmail}>{email}</strong></> : null}.
-            Tap Resend to try again.
+            Tap Resend Link to try again.
           </p>
         ) : (
           <p className={authCss.authSubtext}>
@@ -101,11 +101,11 @@ export function EmailVerification() {
 
         <button
           type="button"
-          className={`${buttons.ctaBtn} ${buttons.ctaBtnSecondary}`}
+          className={css.resendBtn}
           onClick={handleResend}
           disabled={resending}
         >
-          {resending ? "Sending..." : "Resend Link"}
+          {resending ? "Resending link…" : "Resend Link"}
         </button>
 
         {resendError && (

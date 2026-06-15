@@ -50,7 +50,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
 
     return (
       <div className={fields.fieldWrap}>
-        <div className={css.labelRow}>
+        <div className={fields.labelRow}>
           <label className={fields.fieldLabel} htmlFor={id}>
             {label}
             {required && (

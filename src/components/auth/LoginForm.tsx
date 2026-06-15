@@ -29,10 +29,11 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
+    mode: "onChange",
   });
 
   function handleLinked(user: User) {
@@ -120,9 +121,9 @@ export function LoginForm() {
           <button
             type="submit"
             className={buttons.ctaBtn}
-            disabled={isSubmitting || oauthBusy}
+            disabled={isSubmitting || oauthBusy || !isValid}
           >
-            Log In
+            Sign In
           </button>
         </form>
 

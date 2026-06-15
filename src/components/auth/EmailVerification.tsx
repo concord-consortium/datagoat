@@ -25,7 +25,7 @@ export function EmailVerification() {
     setResendError("");
     if (!auth.currentUser) {
       setResendError(
-        "You're not signed in. Return to log in and try again.",
+        "You're not signed in. Return to sign in and try again.",
       );
       return;
     }

@@ -24,6 +24,7 @@ vi.mock("../../contexts/UserContext", () => ({
 }));
 
 import { ProtectedRoute, OnboardingRoute } from "./ProtectedRoute";
+import { markReturningUser } from "./returningUser";
 
 function renderRoute(
   guard: ReactNode,
@@ -39,6 +40,7 @@ function renderRoute(
         <Route path="/profile" element={<div>PROFILE</div>} />
         <Route path="/setup/tracking" element={<div>TRACKING</div>} />
         <Route path="/login" element={<div>LOGIN</div>} />
+        <Route path="/signup" element={<div>SIGNUP</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -47,6 +49,8 @@ function renderRoute(
 describe("ProtectedRoute", () => {
   beforeEach(() => {
     retryMock.mockClear();
+    // The returning-user flag is device-local (localStorage); isolate cases.
+    localStorage.clear();
   });
 
   it("renders <Loading /> when loadState.status is 'loading' (does not redirect)", () => {
@@ -151,12 +155,23 @@ describe("ProtectedRoute", () => {
     expect(screen.queryByText("CHILD")).toBeNull();
   });
 
-  it("redirects to /login when no auth user", () => {
+  it("redirects first-time visitors to /signup when no auth user", () => {
+    ctx.user = null;
+    ctx.loading = false;
+    ctx.loadState = { status: "loading" };
+    renderRoute(<ProtectedRoute />);
+    expect(screen.getByText("SIGNUP")).toBeInTheDocument();
+    expect(screen.queryByText("LOGIN")).toBeNull();
+  });
+
+  it("redirects returning visitors to /login when no auth user", () => {
+    markReturningUser();
     ctx.user = null;
     ctx.loading = false;
     ctx.loadState = { status: "loading" };
     renderRoute(<ProtectedRoute />);
     expect(screen.getByText("LOGIN")).toBeInTheDocument();
+    expect(screen.queryByText("SIGNUP")).toBeNull();
   });
 
   it("renders the retry UI on 'error' kind 'subscription' (does NOT redirect to /profile)", () => {

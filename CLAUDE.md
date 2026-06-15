@@ -191,3 +191,8 @@ The app column width and height are controlled by media queries in `src/index.cs
 - No em dashes - use regular hyphens.
 - `APP_VERSION` and `APP_VERSION_DESC` constants in `App.tsx` control the version footer.
 
+## Git conventions
+
+- **Multi-line commit messages and PR bodies: write the text to a temp file and pass it with `-F`** (`git commit -F <file>`, `gh pr create --body-file <file>`). Do NOT use heredocs (`$(cat <<'EOF' ... )`) - they fail to parse in this environment, especially when chained with `&&` or when the body contains apostrophes/`<...>`. Going straight to a file avoids the retry every time.
+- Commit subjects follow Conventional Commits with the Jira key suffixed in brackets: `fix(profile): start required selects unselected [DGT-39]`.
+

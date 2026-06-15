@@ -137,6 +137,9 @@ export function ProfileForm() {
     const values = pendingValues.current;
     pendingValues.current = null;
     if (!values) return;
+    // Safe to fire-and-forget: every write goes through the same setDoc on the
+    // same doc/SDK instance, and Firestore queues same-client mutations in
+    // issue order, so a stale autosave can't land after a later submit/Done.
     void updateProfileRef.current(profileAutosavePartial(values)).catch((err) =>
       logError(err, { stage: "profileForm.autosave" }),
     );

@@ -149,15 +149,20 @@ export function DashboardChartCard({
   // The section's payload is built from *live local state* (metric.id +
   // range), with `patch` overriding the just-changed field — NOT from
   // `savedChart`. updateProfile doesn't optimistically update
-  // loadState.profile, so `savedChart` lags a Firestore round-trip;
-  // sourcing the sibling from it would let a metric-then-range change
-  // (before the snapshot lands) write back the stale metric and clobber
-  // the pick. The top-level spread carries the *other* sections through
-  // (and Firestore's setDoc(merge:true) deep-merges them regardless).
+  // loadState.profile, so the snapshot lags a Firestore round-trip;
+  // sourcing a value from it would let a later change (before the
+  // snapshot lands) write back stale data and clobber the newer pick.
+  //
+  // We write ONLY this section, never spreading `profile.dashboardCharts`
+  // for the others: that snapshot is equally stale, and since
+  // updateProfile uses setDoc(merge:true) — which deep-merges nested
+  // maps — re-sending the sibling sections would clobber a concurrent
+  // change made on another card (the common "pick a graph for each
+  // section in turn" path). Omitting them leaves them untouched on the
+  // server.
   const persistChart = (patch: DashboardChartSettings) => {
     void updateProfile({
       dashboardCharts: {
-        ...profile?.dashboardCharts,
         [type]: { metric: metric?.id, range, ...patch },
       },
     });

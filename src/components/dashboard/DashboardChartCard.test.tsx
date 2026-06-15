@@ -389,9 +389,14 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
     });
   });
 
-  it("merges the pick alongside other sections' persisted picks", async () => {
-    // A change to the health card must not clobber a persisted
-    // performance/competition pick living on the same doc field.
+  it("writes only the changed section, leaving siblings to Firestore merge", async () => {
+    // A change to the health card must not re-send a persisted
+    // performance/competition pick living on the same doc field. The
+    // snapshot is stale (updateProfile doesn't optimistically update it),
+    // and setDoc(merge:true) deep-merges nested maps, so re-sending a
+    // sibling section would clobber a concurrent change made on that
+    // card. The write must carry ONLY the changed section; the others
+    // are preserved server-side by the merge.
     resetProfile = setProfile({
       dashboardCharts: { competition: { metric: "goals" } },
     });
@@ -406,8 +411,39 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
     await user.selectOptions(getSelect(container), "sleepTime");
     expect(ctx.updateProfile).toHaveBeenCalledWith({
       dashboardCharts: {
-        competition: { metric: "goals" },
         health: { metric: "sleepTime", range: "7d" },
+      },
+    });
+  });
+
+  it("does not re-send a sibling section, so a concurrent cross-section change can't be clobbered", async () => {
+    // Regression for the cross-section race: two cards share one stale
+    // profile snapshot. If the competition card re-sent the snapshot's
+    // health pick, a health change made just before (not yet reflected
+    // in the snapshot) would be reverted by setDoc(merge:true). The
+    // competition write must therefore contain only the competition
+    // section and never mention health.
+    resetProfile = setProfile({
+      dashboardCharts: { health: { metric: "hydration", range: "7d" } },
+    });
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="competition"
+        trackedMetricIds={["goals"]}
+        competitionEntries={[]}
+      />,
+    );
+    const btn = within(container)
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith("30d"));
+    if (!btn) throw new Error("30d range button not found");
+    await user.click(btn);
+    // Exact-match: the payload contains only the competition section, so
+    // `health` is provably absent and cannot clobber a concurrent change.
+    expect(ctx.updateProfile).toHaveBeenLastCalledWith({
+      dashboardCharts: {
+        competition: { metric: "goals", range: "30d" },
       },
     });
   });

@@ -343,8 +343,10 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
       />,
     );
     await user.selectOptions(getSelect(container), "sleepTime");
+    // The write carries the full section (both picks from live local
+    // state), so the sibling range "7d" rides along with the new metric.
     expect(ctx.updateProfile).toHaveBeenCalledWith({
-      dashboardCharts: { health: { metric: "sleepTime" } },
+      dashboardCharts: { health: { metric: "sleepTime", range: "7d" } },
     });
   });
 
@@ -363,7 +365,7 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
     if (!btn) throw new Error("30d range button not found");
     await user.click(btn);
     expect(ctx.updateProfile).toHaveBeenCalledWith({
-      dashboardCharts: { health: { range: "30d" } },
+      dashboardCharts: { health: { metric: "hydration", range: "30d" } },
     });
   });
 
@@ -405,8 +407,36 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
     expect(ctx.updateProfile).toHaveBeenCalledWith({
       dashboardCharts: {
         competition: { metric: "goals" },
-        health: { metric: "sleepTime" },
+        health: { metric: "sleepTime", range: "7d" },
       },
+    });
+  });
+
+  it("sources the sibling pick from live local state, not the stale snapshot", async () => {
+    // Regression for the metric-then-range race: updateProfile does not
+    // optimistically update loadState.profile, so a second change before
+    // the snapshot lands must still carry the first change. Because the
+    // mock never feeds the write back into ctx.loadState, `savedChart`
+    // stays empty across both changes - so if the range write sourced
+    // its sibling from savedChart it would omit/clobber the metric. It
+    // must instead come from live local state (the just-picked metric).
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    const btn = within(container)
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith("30d"));
+    if (!btn) throw new Error("30d range button not found");
+    await user.click(btn);
+    // The range write must preserve the just-picked metric "sleepTime".
+    expect(ctx.updateProfile).toHaveBeenLastCalledWith({
+      dashboardCharts: { health: { metric: "sleepTime", range: "30d" } },
     });
   });
 });

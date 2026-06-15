@@ -135,25 +135,33 @@ export function DashboardChartCard({
   );
   const demoMode = useDemoMode();
 
-  // Persist this card's pick to the profile doc. Fire-and-forget,
-  // matching the metric-toggle writes on /setup/tracking: the pick is
-  // already applied locally via setState, so a failed write only costs
-  // persistence across reloads, not the current interaction. The spread
-  // preserves the other sections' picks and this section's other field.
-  const persistChart = (patch: DashboardChartSettings) => {
-    void updateProfile({
-      dashboardCharts: {
-        ...profile?.dashboardCharts,
-        [type]: { ...savedChart, ...patch },
-      },
-    });
-  };
-
   // metric is undefined when no metrics are tracked — handled by the
   // empty-state return below. Don't fall back to allMetrics[0]; that
   // would produce a chart for an untracked metric while the picker
   // stays empty.
   const metric = tracked.find((m) => m.id === selectedMetricId) ?? tracked[0];
+
+  // Persist this card's pick to the profile doc. Fire-and-forget,
+  // matching the metric-toggle writes on /setup/tracking: the pick is
+  // already applied locally via setState, so a failed write only costs
+  // persistence across reloads, not the current interaction.
+  //
+  // The section's payload is built from *live local state* (metric.id +
+  // range), with `patch` overriding the just-changed field — NOT from
+  // `savedChart`. updateProfile doesn't optimistically update
+  // loadState.profile, so `savedChart` lags a Firestore round-trip;
+  // sourcing the sibling from it would let a metric-then-range change
+  // (before the snapshot lands) write back the stale metric and clobber
+  // the pick. The top-level spread carries the *other* sections through
+  // (and Firestore's setDoc(merge:true) deep-merges them regardless).
+  const persistChart = (patch: DashboardChartSettings) => {
+    void updateProfile({
+      dashboardCharts: {
+        ...profile?.dashboardCharts,
+        [type]: { metric: metric?.id, range, ...patch },
+      },
+    });
+  };
 
   const series = useChartSeries({
     type,

@@ -8,6 +8,7 @@ import {
   rangeDescriptionPhrase,
   type TimeRangeKey,
 } from "./TimeRangePicker";
+import type { DashboardChartSettings } from "../../types/profile";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
@@ -39,6 +40,13 @@ import {
 import { useChartSeries } from "../../charts/useChartSeries";
 import { useDemoMode } from "../../contexts/DemoModeContext";
 import css from "./DashboardChartCard.module.css";
+
+// Narrow a persisted range string (stored loosely as `string` on the
+// profile doc) back to a TimeRangeKey, ignoring stale/unknown values
+// from an older build so the card falls back to the default.
+function isTimeRangeKey(value: string | undefined): value is TimeRangeKey {
+  return value !== undefined && value in TIME_RANGE_DAYS;
+}
 
 interface DashboardChartCardProps {
   type: "health" | "performance" | "competition";
@@ -72,7 +80,7 @@ export function DashboardChartCard({
       : type === "performance"
         ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
         : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
-  const { loadState } = useUser();
+  const { loadState, updateProfile } = useUser();
   const { metrics: allCustom } = useCustomMetrics();
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const profileKey = profile
@@ -109,11 +117,34 @@ export function DashboardChartCard({
     return out;
   }, [allMetrics, allCustom, type, trackedMetricIds]);
 
+  // Seed both picks from the persisted profile doc (DGT-64) so they
+  // survive reload. ProtectedRoute guarantees the profile is loaded
+  // before the dashboard mounts, so this initializer reliably sees the
+  // saved values on first render. A stale persisted metric id (no
+  // longer tracked) falls through to `tracked[0]` at the `metric`
+  // lookup below; an unknown range string falls back to "7d".
+  const savedChart = profile?.dashboardCharts?.[type];
   const [selectedMetricId, setSelectedMetricId] = useState<string>(
-    tracked[0]?.id ?? "",
+    savedChart?.metric ?? tracked[0]?.id ?? "",
   );
-  const [range, setRange] = useState<TimeRangeKey>("7d");
+  const [range, setRange] = useState<TimeRangeKey>(
+    isTimeRangeKey(savedChart?.range) ? savedChart.range : "7d",
+  );
   const demoMode = useDemoMode();
+
+  // Persist this card's pick to the profile doc. Fire-and-forget,
+  // matching the metric-toggle writes on /setup/tracking: the pick is
+  // already applied locally via setState, so a failed write only costs
+  // persistence across reloads, not the current interaction. The spread
+  // preserves the other sections' picks and this section's other field.
+  const persistChart = (patch: DashboardChartSettings) => {
+    void updateProfile({
+      dashboardCharts: {
+        ...profile?.dashboardCharts,
+        [type]: { ...savedChart, ...patch },
+      },
+    });
+  };
 
   // metric is undefined when no metrics are tracked — handled by the
   // empty-state return below. Don't fall back to allMetrics[0]; that
@@ -191,7 +222,10 @@ export function DashboardChartCard({
             labelVisuallyHidden
             options={selectOptions}
             value={metric.id}
-            onChange={(e) => setSelectedMetricId(e.target.value)}
+            onChange={(e) => {
+              setSelectedMetricId(e.target.value);
+              persistChart({ metric: e.target.value });
+            }}
           />
         </div>
       </div>
@@ -208,7 +242,10 @@ export function DashboardChartCard({
       />
       <TimeRangePicker
         value={range}
-        onChange={setRange}
+        onChange={(next) => {
+          setRange(next);
+          persistChart({ range: next });
+        }}
         ariaLabel={`${metric.name} time range`}
       />
     </div>

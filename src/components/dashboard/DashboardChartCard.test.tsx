@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -26,11 +26,29 @@ const ctx = vi.hoisted(() => ({
       trackingSetupComplete: true,
     } as UserProfile,
   } as ProfileLoadState,
+  updateProfile: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../../contexts/UserContext", () => ({
-  useUser: () => ({ loadState: ctx.loadState }),
+  useUser: () => ({
+    loadState: ctx.loadState,
+    updateProfile: ctx.updateProfile,
+  }),
 }));
+
+// Convenience: set the loaded profile's persisted dashboard picks for a
+// single test, then restore the default afterward via the returned reset.
+function setProfile(partial: Partial<UserProfile>) {
+  const loaded = ctx.loadState as Extract<
+    ProfileLoadState,
+    { status: "loaded" }
+  >;
+  const original = loaded.profile;
+  loaded.profile = { ...original, ...partial };
+  return () => {
+    loaded.profile = original;
+  };
+}
 
 import { DashboardChartCard } from "./DashboardChartCard";
 
@@ -214,5 +232,164 @@ describe("DashboardChartCard", () => {
       "Health metric",
     );
     expect(label).toBeTruthy();
+  });
+});
+
+// DGT-64: the dashboard should remember which graph (metric) and time
+// range the user picked per section, restoring them on reload and
+// persisting changes to the profile doc.
+describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
+  let resetProfile: (() => void) | null = null;
+
+  beforeEach(() => {
+    ctx.updateProfile.mockClear();
+  });
+  afterEach(() => {
+    resetProfile?.();
+    resetProfile = null;
+  });
+
+  function getActiveRange(container: HTMLElement): string {
+    const pressed = container.querySelector(
+      '[role="group"] button[aria-pressed="true"]',
+    );
+    // textContent is e.g. "30d (Last 30 days)"; the leading token is the key.
+    return pressed?.textContent?.trim().split(" ")[0] ?? "";
+  }
+
+  it("restores the persisted metric instead of defaulting to the first tracked", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { metric: "sleepTime" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    // Without persistence this would seed to "hydration" (first tracked).
+    expect(getSelect(container).value).toBe("sleepTime");
+    expect(getSvgTitle(container)).toBe("Total Sleep Time");
+  });
+
+  it("restores the persisted time range instead of defaulting to 7d", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "30d" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getActiveRange(container)).toBe("30d");
+  });
+
+  it("falls back to the first tracked metric when the persisted metric is no longer tracked", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { metric: "sleepTime" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getSelect(container).value).toBe("hydration");
+    expect(getSvgTitle(container)).toBe("Hydration");
+  });
+
+  it("ignores an unknown persisted range and falls back to 7d", () => {
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "bogus" } },
+    });
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    expect(getActiveRange(container)).toBe("7d");
+  });
+
+  it("persists the metric pick to the profile when the dropdown changes", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: { health: { metric: "sleepTime" } },
+    });
+  });
+
+  it("persists the time-range pick to the profile when a range button is clicked", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration"]}
+        healthEntries={[]}
+      />,
+    );
+    const btn = within(container)
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith("30d"));
+    if (!btn) throw new Error("30d range button not found");
+    await user.click(btn);
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: { health: { range: "30d" } },
+    });
+  });
+
+  it("preserves the section's other pick when persisting a change", async () => {
+    // A pre-existing persisted range must survive a metric change (and
+    // vice versa) - the write merges into the section's existing pick.
+    resetProfile = setProfile({
+      dashboardCharts: { health: { range: "30d" } },
+    });
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: { health: { range: "30d", metric: "sleepTime" } },
+    });
+  });
+
+  it("merges the pick alongside other sections' persisted picks", async () => {
+    // A change to the health card must not clobber a persisted
+    // performance/competition pick living on the same doc field.
+    resetProfile = setProfile({
+      dashboardCharts: { competition: { metric: "goals" } },
+    });
+    const user = userEvent.setup();
+    const { container } = render(
+      <DashboardChartCard
+        type="health"
+        trackedMetricIds={["hydration", "sleepTime"]}
+        healthEntries={[]}
+      />,
+    );
+    await user.selectOptions(getSelect(container), "sleepTime");
+    expect(ctx.updateProfile).toHaveBeenCalledWith({
+      dashboardCharts: {
+        competition: { metric: "goals" },
+        health: { metric: "sleepTime" },
+      },
+    });
   });
 });

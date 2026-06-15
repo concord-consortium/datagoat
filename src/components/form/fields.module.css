@@ -173,6 +173,14 @@
   border-color: var(--accent);
 }
 
+/* Placeholder state: mute the "Select …" trigger text until a real option
+   is chosen, mirroring the prototype's .custom-select-trigger.placeholder
+   (-> --subtext). Keyed off the absence of .hasValue, so no extra class is
+   needed; a real selection restores the base --text colour. */
+.fieldSelect:not(.hasValue) {
+  color: var(--subtext);
+}
+
 .fieldSelect.fieldError {
   border-color: #E5484D;
   box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.18);

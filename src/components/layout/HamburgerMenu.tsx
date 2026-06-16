@@ -165,7 +165,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
             <span className={css.navItemIcon}>
               <LogoutIcon />
             </span>
-            Log Out
+            Sign Out
           </button>
         </li>
       </ul>

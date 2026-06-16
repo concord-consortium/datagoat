@@ -73,6 +73,9 @@
 :root {
   /* Color tokens (from prototype 2026-04-27) */
   --bg:        #080A0E;
+  /* Page surround behind the centered column on desktop / larger touch
+     devices (phones run full-bleed, so the surround is never visible there). */
+  --surround:  #1a1a2e;
   --surface:   #0F1318;
   --surface2:  #161B22;
   --border:    #4A5D78;
@@ -137,7 +140,16 @@ body {
   height: 100dvh;
 }
 
-@media (min-width: 1024px) {
+/* "Framed" treatment: desktop (any width, primary pointer is a mouse) plus
+   larger touch devices (tablets). Phones get full-bleed. Width alone is the
+   wrong signal for "this is a phone" - a narrow desktop window is still a
+   desktop - so gate on pointer first, then size only for coarse pointers.
+   This is the breakpoint that restores the lost top margin on narrow
+   desktop/tablet windows (DGT-47). */
+@media (pointer: fine), (pointer: coarse) and (min-width: 768px) {
+  body {
+    background: var(--surround);
+  }
   #root {
     display: flex;
     align-items: center;

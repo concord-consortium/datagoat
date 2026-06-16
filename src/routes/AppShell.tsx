@@ -265,15 +265,18 @@ function AppShellInner() {
           )}
         </header>
       )}
-      {/* tabIndex={0} keeps DGT-6's keyboard-scroll affordance: keyboard
-          users can Tab onto <main> and use arrow / PgUp / PgDn / Home /
-          End to scroll. tabIndex={0} is also programmatically focusable
-          (.focus()), so the skip-link's focus advance still works.
-          tabIndex={-1} would break the scroll affordance. */}
+      {/* tabIndex={-1}: <main> is programmatically focusable (so the
+          skip-link's .focus() advance and the empty-page fallback still
+          work) but is NOT a sequential tab stop. Per DGT-47, tabbing onto
+          the whole scrollable container was flagged as noise - a focus ring
+          around the entire page on every Tab - so it's removed from the tab
+          order. This reverses DGT-6's "Tab onto <main> to arrow-scroll"
+          affordance; keyboard users still scroll by focusing any control
+          inside the page (the focusin auto-scroll keeps them in view). */}
       <main
         id="main-content"
         ref={mainRef}
-        tabIndex={0}
+        tabIndex={-1}
         className={css.main}
       >
         {/* VerificationBanner mounts as the first child of <main> per spec.

@@ -35,10 +35,15 @@
   z-index: 0;
 }
 
-@media (min-width: 1024px) {
+/* Framed treatment: shorter centered column with rounded corners on
+   desktop / larger touch devices. Gate matches index.css's #root centering
+   and surround so the column, its margin, and the page background all switch
+   together. Phones stay full-bleed (square corners, full height). */
+@media (pointer: fine), (pointer: coarse) and (min-width: 768px) {
   .app {
     height: 95vh;
     height: 95dvh;
+    border-radius: 12px;
   }
 }
 
@@ -48,5 +53,8 @@
     max-width: none;
     height: 100vh;
     height: 100dvh;
+    /* Landscape phones can be wide enough to match the framed gate above;
+       force full-bleed square corners back. */
+    border-radius: 0;
   }
 }

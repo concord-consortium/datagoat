@@ -3,24 +3,15 @@
    per the conversion's CSS Module convention they're camelCased here so JSX
    can reference them as `css.profileWelcome` without bracket access. */
 
-/* .screen-content - prototype line 1025
-   padding: 20px 24px 100px (the 100px bottom keeps the last form row clear
-   of the iOS browser chrome / on-screen keyboard). */
+/* .screen-content - prototype line 1025. Bottom reduced from the
+   prototype's 100px to 20px (DGT-47: the bottom gap was excessive across
+   all scrollable screens); kept in sync with the other screens. */
 .screenContent {
-  padding: 20px 24px 100px;
+  padding: 20px 24px 20px;
 }
 .screenContent > *:last-child,
 .screenContent > *:last-child > *:last-child {
   margin-bottom: 0;
-}
-/* The 100px bottom padding clears the iOS browser chrome / on-screen
-   keyboard on touch devices. A fine-pointer device (desktop/laptop) has no
-   such chrome, so the prototype drops it (.phone.desktop-mode -> 30px);
-   match that here to avoid an excessive gap below the Set Up button. */
-@media (pointer: fine) {
-  .screenContent {
-    padding-bottom: 30px;
-  }
 }
 
 /* "Signed in as ..." read-only account context above the form. No

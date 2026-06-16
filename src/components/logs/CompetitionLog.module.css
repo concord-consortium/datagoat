@@ -2,7 +2,7 @@
 
 /* .screen-content + .date-nav padding adjustment - prototype line 1031. */
 .screenContent {
-  padding: 20px 24px 100px;
+  padding: 20px 24px 20px;
 }
 .dateNavSibling + .screenContent {
   padding-top: 10px;

@@ -7,10 +7,10 @@
    declaratively from the metric registry. */
 
 .detailScreen {
-  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
-     100px bottom for the iOS Safari home-bar gap. The screen-level
-     wrapper applies it once; inner sections don't add their own. */
-  padding: 20px 24px 100px;
+  /* Padding mirrors .screen-content - 20px top, 24px sides. Bottom reduced
+     from the prototype's 100px to 20px (DGT-47). The screen-level wrapper
+     applies it once; inner sections don't add their own. */
+  padding: 20px 24px 20px;
 }
 
 /* Shown while the CustomMetrics Firestore snapshot is in flight on a

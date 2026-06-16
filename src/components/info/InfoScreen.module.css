@@ -5,9 +5,10 @@
    for inline definitions) into camelCased CSS Modules. */
 
 .infoContent {
-  /* Padding mirrors .screen-content (line 1025) - 20px top, 24px sides,
-     100px bottom for the iOS Safari home-bar gap. */
-  padding: 20px 24px 100px;
+  /* Padding mirrors .screen-content - 20px top, 24px sides. Bottom reduced
+     from the prototype's 100px to 20px (DGT-47: the home-bar gap was
+     excessive); kept in sync with the log screens' .screenContent. */
+  padding: 20px 24px 20px;
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;

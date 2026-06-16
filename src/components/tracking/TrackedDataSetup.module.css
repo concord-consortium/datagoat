@@ -3,7 +3,7 @@
 
 /* .screen-content - prototype line 1025 */
 .screenContent {
-  padding: 20px 24px 100px;
+  padding: 20px 24px 20px;
 }
 .screenContent > *:last-child,
 .screenContent > *:last-child > *:last-child {

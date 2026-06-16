@@ -247,7 +247,7 @@ describe("LoginForm", () => {
     renderWithRouter(<LoginForm />, { initialEntries: ["/login"] });
     await user.type(screen.getByLabelText(/^email/i), "u@example.com");
     await user.type(screen.getByLabelText(/^password/i), "secret123");
-    await user.click(screen.getByRole("button", { name: /^log in$/i }));
+    await user.click(screen.getByRole("button", { name: /^sign in$/i }));
     await waitFor(() => {
       expect(signInWithEmailAndPasswordMock).toHaveBeenCalledWith(
         {},

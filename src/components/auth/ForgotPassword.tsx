@@ -114,7 +114,7 @@ export function ForgotPassword() {
               className={authCss.authSwitchBtn}
               onClick={() => navigate("/login")}
             >
-              Return to log in
+              Return to sign in
             </button>
           </p>
         </div>

@@ -1,4 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Facebook">
-  <circle cx="24" cy="24" r="24" fill="#1877F2"/>
-  <path fill="#FFFFFF" d="M27.4 25.3h4.2l.7-5.4h-4.9v-3.4c0-1.6.4-2.6 2.7-2.6h2.9V9.1c-.5-.1-2.2-.2-4.2-.2-4.1 0-7 2.5-7 7.1v3.9h-4.7v5.4h4.7v13.8h5.6V25.3z"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>facebook-logo</title>
+    <defs>
+        <path d="M0,0 L24,0 L24,24 L0,24 L0,0 Z" id="path-1"></path>
+    </defs>
+    <g id="facebook-logo" stroke="none" fill="none" xlink:href="#path-1" fill-rule="evenodd" stroke-width="1">
+        <g id="Group" transform="translate(1, 1)">
+            <circle id="Oval" fill="#FFFFFF" cx="11" cy="11" r="11"></circle>
+            <path d="M22,11 C22,4.9247 17.0753,0 11,0 C4.9247,0 0,4.9247 0,11 C0,16.4901 4.0227,21.0408 9.2818,21.8658 L9.2818,14.1801 L6.4878,14.1801 L6.4878,11 L9.2818,11 L9.2818,8.5767 C9.2818,5.8201 10.923,4.2977 13.4365,4.2977 C14.6388,4.2977 15.8983,4.5122 15.8983,4.5122 L15.8983,7.2182 L14.5123,7.2182 C13.145,7.2182 12.7193,8.0663 12.7193,8.9375 L12.7193,11 L15.7696,11 L15.2823,14.179 L12.7193,14.179 L12.7193,21.8658 C17.9773,21.0408 22,16.4901 22,11 Z" id="Path" fill="#1877F2"></path>
+        </g>
+    </g>
 </svg>

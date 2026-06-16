@@ -25,7 +25,7 @@ export function EmailVerification() {
     setResendError("");
     if (!auth.currentUser) {
       setResendError(
-        "You're not signed in. Return to log in and try again.",
+        "You're not signed in. Return to sign in and try again.",
       );
       return;
     }
@@ -76,7 +76,7 @@ export function EmailVerification() {
           <p className={authCss.authSubtext}>
             We had trouble sending the verification email
             {email ? <> to <strong className={css.recipientEmail}>{email}</strong></> : null}.
-            Tap Resend to try again.
+            Tap Resend Link to try again.
           </p>
         ) : (
           <p className={authCss.authSubtext}>
@@ -101,11 +101,11 @@ export function EmailVerification() {
 
         <button
           type="button"
-          className={`${buttons.ctaBtn} ${buttons.ctaBtnSecondary}`}
+          className={css.resendBtn}
           onClick={handleResend}
           disabled={resending}
         >
-          {resending ? "Sending..." : "Resend Link"}
+          {resending ? "Resending link…" : "Resend Link"}
         </button>
 
         {resendError && (

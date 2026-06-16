@@ -21,3 +21,63 @@
   font-size: 16px;
   margin: 12px 0 0;
 }
+
+/* Resend Link button — port of the prototype's #resend-verify-btn, which
+   uses the neutral social-btn look (not the teal CTA) sitting 12px below
+   Continue. Mirrored locally rather than importing SocialButtons.module.css
+   to honor the per-component CSS-module convention. */
+.resendBtn {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 12px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-base) var(--ease-default),
+    box-shadow var(--dur-base) var(--ease-default),
+    transform var(--dur-tap) var(--ease-default);
+}
+
+.resendBtn:hover {
+  border-color: var(--accent);
+}
+
+.resendBtn:active {
+  transform: scale(0.98);
+}
+
+.resendBtn:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.resendBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.resendBtn:disabled {
+  border-color: var(--border);
+  color: var(--subtext);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resendBtn {
+    transition: none;
+  }
+  .resendBtn:active {
+    transform: none;
+  }
+}

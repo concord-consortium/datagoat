@@ -52,10 +52,11 @@ export function SignupForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: { email: "", password: "" },
+    mode: "onChange",
   });
 
   function handleLinked(user: User) {
@@ -153,7 +154,7 @@ export function SignupForm() {
           <button
             type="submit"
             className={buttons.ctaBtn}
-            disabled={isSubmitting || oauthBusy}
+            disabled={isSubmitting || oauthBusy || !isValid}
           >
             Create Account
           </button>
@@ -172,7 +173,7 @@ export function SignupForm() {
             className={authCss.authSwitchBtn}
             onClick={() => navigate("/login")}
           >
-            Log in
+            Sign in
           </button>
         </p>
       </div>

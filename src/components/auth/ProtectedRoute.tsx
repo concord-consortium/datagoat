@@ -3,6 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
 import { Loading } from "../Loading";
 import { ProfileLoadError } from "./ProfileLoadError";
+import { authLandingPath } from "./returningUser";
 
 // Tri-state ProfileLoadState gate per requirements:
 //   loading -> render <Loading />, never redirect (or returning users get
@@ -32,7 +33,7 @@ export function ProtectedRoute({
   const { user, loading } = useAuth();
   const { loadState, retry } = useUser();
   if (loading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={authLandingPath()} replace />;
   if (loadState.status === "loading") return <Loading />;
   if (loadState.status === "error")
     return <ProfileLoadError onRetry={retry} kind={loadState.kind} />;
@@ -55,7 +56,7 @@ export function OnboardingRoute() {
   const { user, loading } = useAuth();
   const { loadState, retry } = useUser();
   if (loading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={authLandingPath()} replace />;
   if (loadState.status === "loading") return <Loading />;
   if (loadState.status === "error")
     return <ProfileLoadError onRetry={retry} kind={loadState.kind} />;

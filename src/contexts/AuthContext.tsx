@@ -9,6 +9,7 @@ import {
 import { onAuthStateChanged, signOut as firebaseSignOut, type User } from "firebase/auth";
 import { auth } from "../firebase";
 import { isEmailVerifiedOrTrustedProvider } from "../components/auth/authProviders";
+import { markReturningUser } from "../components/auth/returningUser";
 
 interface AuthContextValue {
   user: User | null;
@@ -29,6 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
+      // Once a user has authenticated on this device, they're a returning
+      // visitor: subsequent unauthenticated landings go to /login, not /signup.
+      if (u) markReturningUser();
       setUser(u);
       setLoading(false);
     });

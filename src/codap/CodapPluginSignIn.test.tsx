@@ -87,9 +87,9 @@ describe("CodapPluginSignIn", () => {
     await waitFor(() => expect(signInWithProviderMock).toHaveBeenCalledTimes(1));
     expect(signOutMock).not.toHaveBeenCalled();
     expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
-    const loginBtn = screen.getByRole("button", { name: /^sign in$/i });
-    expect(loginBtn).toBeInTheDocument();
-    await waitFor(() => expect(loginBtn).not.toBeDisabled());
+    const signInBtn = screen.getByRole("button", { name: /^sign in$/i });
+    expect(signInBtn).toBeInTheDocument();
+    await waitFor(() => expect(signInBtn).not.toBeDisabled());
   });
 
   it("OAuth success with unverified email (no trusted provider) signs back out and shows the verify notice", async () => {

@@ -27,6 +27,13 @@ export interface RouteMeta {
   // Prototype's #metric-detail-screen + info screens both have a back
   // button in their section-heading (HTML around line 4394, 4410).
   backTo?: string;
+  // When set, AppShell makes <main> a sequential tab stop (tabIndex={0})
+  // so keyboard-only users can Tab onto the scroll container and
+  // arrow-scroll. Opt-in for pure-text screens (About, Info topics) that
+  // have NO focusable control inside the scroll area - elsewhere <main>
+  // stays tabIndex={-1} per DGT-47 (no focus ring around the whole page).
+  // See the <main> comment in AppShell for the full rationale.
+  scrollFocusable?: boolean;
 }
 
 // Static path -> meta. Dynamic paths (metric detail, info, add-metric)
@@ -64,6 +71,9 @@ const STATIC: Record<string, RouteMeta> = {
   "/about": {
     title: "About",
     icon: <InfoCircleIcon />,
+    // Pure body text, no focusable control inside <main> - make the
+    // scroll container Tab-focusable so keyboard users can arrow-scroll.
+    scrollFocusable: true,
   },
 };
 
@@ -270,24 +280,30 @@ const PATTERNS: Array<{
       // Match the prototype's per-screen heading text (HTML lines 4410,
       // 4434, 4450). Unknown topic returns null - InfoScreen issues
       // <Navigate replace /> to /profile (the entry point).
+      // Info topics are pure body text with no focusable control inside
+      // <main>, so each is scrollFocusable (see /about above + the <main>
+      // comment in AppShell).
       switch (params.topic) {
         case "athlete-type":
           return {
             title: "Athlete Type",
             icon: <InfoCircleIcon />,
             backTo: "/profile",
+            scrollFocusable: true,
           };
         case "gender":
           return {
             title: "Gender",
             icon: <InfoCircleIcon />,
             backTo: "/profile",
+            scrollFocusable: true,
           };
         case "comp-term":
           return {
             title: "Competition Term",
             icon: <InfoCircleIcon />,
             backTo: "/profile",
+            scrollFocusable: true,
           };
         default:
           return null;

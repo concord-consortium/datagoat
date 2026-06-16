@@ -68,8 +68,7 @@
 }
 
 .resendBtn:disabled {
-  border-color: var(--border);
-  color: var(--subtext);
+  opacity: 0.35;
   cursor: not-allowed;
 }
 

@@ -3,7 +3,7 @@
 /* .screen-content - prototype line 1025; override from line 1031 says
    the .date-nav + .screen-content pair gets padding-top: 10px. */
 .screenContent {
-  padding: 20px 24px 100px;
+  padding: 20px 24px 20px;
 }
 .dateNavSibling + .screenContent {
   padding-top: 10px;

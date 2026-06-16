@@ -204,7 +204,7 @@ export function CodapPluginSignIn() {
           className={buttons.ctaBtn}
           disabled={isSubmitting || oauthBusy}
         >
-          Log In
+          Sign In
         </button>
       </form>
 

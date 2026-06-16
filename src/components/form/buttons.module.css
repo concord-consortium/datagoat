@@ -50,8 +50,7 @@
 }
 
 .ctaBtn:disabled {
-  background: var(--border);
-  color: var(--subtext);
+  opacity: 0.35;
   cursor: not-allowed;
   filter: none;
   transform: none;
@@ -77,8 +76,7 @@
 }
 
 .ctaBtnSecondary:disabled {
-  border-color: var(--border);
-  color: var(--subtext);
+  opacity: 0.35;
   cursor: not-allowed;
   filter: none;
   transform: none;
@@ -137,8 +135,7 @@
 }
 
 .setupBtn:disabled {
-  background: var(--border);
-  color: var(--subtext);
+  opacity: 0.35;
   cursor: not-allowed;
   filter: none;
   transform: none;

@@ -87,9 +87,9 @@ describe("CodapPluginSignIn", () => {
     await waitFor(() => expect(signInWithProviderMock).toHaveBeenCalledTimes(1));
     expect(signOutMock).not.toHaveBeenCalled();
     expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
-    const loginBtn = screen.getByRole("button", { name: /^log in$/i });
-    expect(loginBtn).toBeInTheDocument();
-    await waitFor(() => expect(loginBtn).not.toBeDisabled());
+    const signInBtn = screen.getByRole("button", { name: /^sign in$/i });
+    expect(signInBtn).toBeInTheDocument();
+    await waitFor(() => expect(signInBtn).not.toBeDisabled());
   });
 
   it("OAuth success with unverified email (no trusted provider) signs back out and shows the verify notice", async () => {
@@ -172,7 +172,7 @@ describe("CodapPluginSignIn", () => {
     render(<CodapPluginSignIn />);
     await user.type(screen.getByLabelText(/^email/i), "u@example.com");
     await user.type(screen.getByLabelText(/^password/i), "secret123");
-    await user.click(screen.getByRole("button", { name: /^log in$/i }));
+    await user.click(screen.getByRole("button", { name: /^sign in$/i }));
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
     expect(
       screen.getByText(/please verify your email/i),
@@ -187,13 +187,13 @@ describe("CodapPluginSignIn", () => {
     render(<CodapPluginSignIn />);
     await user.type(screen.getByLabelText(/^email/i), "u@example.com");
     await user.type(screen.getByLabelText(/^password/i), "secret123");
-    await user.click(screen.getByRole("button", { name: /^log in$/i }));
+    await user.click(screen.getByRole("button", { name: /^sign in$/i }));
     await waitFor(() =>
       expect(signInWithEmailAndPasswordMock).toHaveBeenCalledTimes(1),
     );
     expect(signOutMock).not.toHaveBeenCalled();
     expect(screen.queryByText(/please verify your email/i)).not.toBeInTheDocument();
-    const stillThere = screen.getByRole("button", { name: /^log in$/i });
+    const stillThere = screen.getByRole("button", { name: /^sign in$/i });
     expect(stillThere).toBeInTheDocument();
     await waitFor(() => expect(stillThere).not.toBeDisabled());
   });

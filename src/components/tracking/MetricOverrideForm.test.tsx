@@ -45,11 +45,14 @@ vi.mock("../../contexts/UserContext", () => ({
   }),
 }));
 
+import { setDoc } from "firebase/firestore";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { MetricOverridesProvider } from "../../contexts/MetricOverridesContext";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { ADDABLE_PERFORMANCE } from "../../metrics/addableMetrics";
 import type { MetricOverride } from "../../types/metricOverrides";
+
+const mockedSetDoc = vi.mocked(setDoc);
 
 const leanMass = HEALTH_METRICS.find((m) => m.id === "leanMass")!;
 const hydration = HEALTH_METRICS.find((m) => m.id === "hydration")!;
@@ -182,6 +185,51 @@ describe("MetricOverrideForm", () => {
     await waitFor(() =>
       expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
     );
+  });
+
+  it("seeds the schedule editor from the built-in default", () => {
+    // leanMass ships as yearly (count 2); the editor should reflect it.
+    renderForm(leanMass);
+    expect((screen.getByLabelText("Schedule") as HTMLSelectElement).value).toBe(
+      "yearly",
+    );
+  });
+
+  it("writes a schedule override when the user changes it", async () => {
+    mockedSetDoc.mockClear();
+    renderForm(leanMass);
+    fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "75" },
+    });
+    fireEvent.change(screen.getByLabelText("Schedule"), {
+      target: { value: "weekly" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
+    );
+    // count (2) is preserved from the built-in default when only the
+    // period changes.
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ schedule: { period: "weekly", count: 2 } }),
+      expect.anything(),
+    );
+  });
+
+  it("does not write a schedule override when it matches the default", async () => {
+    mockedSetDoc.mockClear();
+    renderForm(leanMass);
+    fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "75" },
+    });
+    // Schedule untouched (still yearly x2 = the built-in default).
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
+    );
+    const payload = mockedSetDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect("schedule" in payload).toBe(false);
   });
 
   it("starts with blank y-axis fields when no override exists", () => {

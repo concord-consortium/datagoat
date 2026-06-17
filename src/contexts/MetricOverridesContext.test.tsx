@@ -33,6 +33,7 @@ vi.mock("./AuthContext", () => ({
 import {
   MetricOverridesProvider,
   useMetricOverrides,
+  fromDoc,
   type MetricOverridePatch,
 } from "./MetricOverridesContext";
 import { getMetricOverride, setMetricOverrides } from "../charts/metricChartConfig";
@@ -168,5 +169,53 @@ describe("MetricOverridesProvider", () => {
     expect("goalRaw" in payload).toBe(false);
     expect("yTopRaw" in payload).toBe(false);
     expect(payload.yBottomRaw).toBe(0);
+  });
+
+  it("saveOverride writes a schedule object when supplied", async () => {
+    setDocSpy.mockClear();
+    const save = captureSave();
+    await save()("leanMass", { schedule: { period: "weekly", count: 2 } });
+    const [, payload] = setDocSpy.mock.calls[0] as unknown as [
+      unknown,
+      Record<string, unknown>,
+    ];
+    expect(payload.schedule).toEqual({ period: "weekly", count: 2 });
+  });
+
+  it("saveOverride writes deleteField() for a null schedule (revert to default)", async () => {
+    setDocSpy.mockClear();
+    const save = captureSave();
+    await save()("leanMass", { schedule: null });
+    const [, payload] = setDocSpy.mock.calls[0] as unknown as [
+      unknown,
+      Record<string, unknown>,
+    ];
+    expect(payload.schedule).toBe(DELETE_SENTINEL);
+  });
+
+  it("saveOverride omits schedule entirely when undefined (no touch)", async () => {
+    setDocSpy.mockClear();
+    const save = captureSave();
+    await save()("leanMass", { goalRaw: 80 });
+    const [, payload] = setDocSpy.mock.calls[0] as unknown as [
+      unknown,
+      Record<string, unknown>,
+    ];
+    expect("schedule" in payload).toBe(false);
+  });
+});
+
+describe("MetricOverridesContext.fromDoc", () => {
+  it("reads a well-formed schedule override", () => {
+    const o = fromDoc("leanMass", { ownerId: "u1", schedule: { period: "monthly" } });
+    expect(o.schedule).toEqual({ period: "monthly" });
+  });
+
+  it("reads an absent or malformed schedule as undefined", () => {
+    expect(fromDoc("leanMass", { ownerId: "u1" }).schedule).toBeUndefined();
+    expect(
+      fromDoc("leanMass", { ownerId: "u1", schedule: { period: "weekly-ish" } })
+        .schedule,
+    ).toBeUndefined();
   });
 });

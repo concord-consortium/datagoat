@@ -1,3 +1,5 @@
+import type { MetricSchedule } from "./metricSchedule";
+
 export type CustomMetricType = "health" | "performance" | "competition";
 
 // `inputType` is orthogonal to `primitive`. Today numeric metrics render
@@ -46,6 +48,13 @@ export interface CustomMetricDef {
 
   inputType: CustomMetricInputType;
   referenceUrl: string;
+
+  // How often entries are expected. Optional so custom metrics created
+  // before this field existed keep loading; absent => irregular via
+  // resolveSchedule (no migration). User-editable on the custom-metric
+  // form like any other field.
+  schedule?: MetricSchedule;
+
   createdAt: number;
   updatedAt: number;
 }

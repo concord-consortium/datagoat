@@ -29,6 +29,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "20–200 ms",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "pain",
@@ -44,6 +45,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     levels: ordinalRange(0, 10),
     estimatedRange: "0–10",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "perceivedExertion",
@@ -60,6 +62,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     levels: ordinalRange(0, 10),
     estimatedRange: "0–10",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "perceivedFatigue",
@@ -76,6 +79,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     levels: ordinalRange(1, 5),
     estimatedRange: "1–5",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "readiness",
@@ -92,6 +96,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     levels: ordinalRange(1, 10),
     estimatedRange: "1–10",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "soreness",
@@ -108,6 +113,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     levels: ordinalRange(1, 5),
     estimatedRange: "1–5",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "overuseInjurySymptoms",
@@ -120,6 +126,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
       "Self-reported symptoms of overuse injury (numeric severity / occurrence).",
     inputType: "numeric",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
 ];
 
@@ -195,6 +202,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "4–15 min",
     whenCollected: "Quarterly",
+    // Quarterly == 4x per year.
+    schedule: { period: "yearly", count: 4 },
   },
   {
     id: "tenMeterSprint",
@@ -208,6 +217,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "1–3 sec",
     whenCollected: "Quarterly",
+    // Quarterly == 4x per year.
+    schedule: { period: "yearly", count: 4 },
   },
   {
     id: "fortyYardDash",
@@ -221,6 +232,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "4.2–10 sec",
     whenCollected: "Quarterly",
+    // Quarterly == 4x per year.
+    schedule: { period: "yearly", count: 4 },
   },
   {
     id: "averageVelocity",
@@ -244,6 +257,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "1–21 levels",
     whenCollected: "Quarterly",
+    // Quarterly == 4x per year.
+    schedule: { period: "yearly", count: 4 },
   },
   {
     id: "deceleration",
@@ -321,6 +336,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "100–350 cm",
     whenCollected: "Quarterly",
+    // Quarterly == 4x per year.
+    schedule: { period: "yearly", count: 4 },
   },
   {
     id: "upwardAcceleration",
@@ -344,6 +361,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "1–50 in",
     whenCollected: "Quarterly",
+    // Quarterly == 4x per year.
+    schedule: { period: "yearly", count: 4 },
   },
 ];
 

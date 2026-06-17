@@ -26,6 +26,10 @@ import type {
   CustomMetricLevel,
   CustomMetricPrimitive,
 } from "../types/customMetrics";
+import {
+  parseStoredSchedule,
+  scheduleToFirestore,
+} from "../types/metricSchedule";
 import { mintCustomMetricId } from "../utils/customMetricId";
 import {
   customDefToChartConfig,
@@ -148,6 +152,7 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
     avgDecimals: data.avgDecimals == null ? undefined : Number(data.avgDecimals),
     levels: readLevels(data.levels),
     referenceUrl: String(data.referenceUrl ?? ""),
+    schedule: parseStoredSchedule(data.schedule),
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
   };
@@ -276,6 +281,9 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;
       if (def.avgDecimals !== undefined) writePayload.avgDecimals = def.avgDecimals;
       if (levelsForWrite !== undefined) writePayload.levels = levelsForWrite;
+      if (def.schedule !== undefined) {
+        writePayload.schedule = scheduleToFirestore(def.schedule);
+      }
       await setDoc(ref, writePayload);
       return def;
     },

@@ -5,6 +5,7 @@ import type {
   CustomMetricLevel,
   CustomMetricPrimitive,
 } from "./customMetrics";
+import type { MetricSchedule } from "./metricSchedule";
 
 describe("CustomMetricDef", () => {
   it("accepts a numeric primitive without levels", () => {
@@ -53,5 +54,22 @@ describe("CustomMetricDef", () => {
   it("allows nominal levels with omitted value", () => {
     const lvl: CustomMetricLevel = { label: "Red", color: "#f00" };
     expectTypeOf(lvl.value).toEqualTypeOf<number | undefined>();
+  });
+
+  it("carries an optional schedule (absent => irregular at resolve time)", () => {
+    const def: CustomMetricDef = {
+      id: "c_c",
+      ownerId: "u1",
+      name: "Body Fat %",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "%",
+      inputType: "numeric",
+      referenceUrl: "",
+      schedule: { period: "monthly" },
+      createdAt: 0,
+      updatedAt: 0,
+    };
+    expectTypeOf(def.schedule).toEqualTypeOf<MetricSchedule | undefined>();
   });
 });

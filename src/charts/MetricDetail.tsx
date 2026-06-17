@@ -18,7 +18,9 @@ import {
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
+import { useMetricOverrides } from "../contexts/MetricOverridesContext";
 import type { CustomMetricDef } from "../types/customMetrics";
+import { formatSchedule, resolveSchedule } from "../types/metricSchedule";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
 import { getCompTermPlural } from "../data/competitionTerms";
@@ -71,6 +73,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
         ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
         : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
   const { metrics: allCustom, loading: customsLoading } = useCustomMetrics();
+  const { getOverride } = useMetricOverrides();
   // Match the route's :type so a health URL doesn't resolve a
   // competition-typed custom metric (and vice versa) — without the
   // metricType filter, MetricDetail would render but read from the
@@ -144,6 +147,12 @@ export function MetricDetail({ type }: MetricDetailProps) {
   }
 
   const goalLine = lookupGoalLine(metric.id, profileKey);
+  // Effective schedule: the user's per-metric override, else the metric's
+  // own (built-in default or custom-def) schedule, else irregular.
+  const effectiveSchedule = resolveSchedule(
+    metric.schedule,
+    getOverride(metric.id)?.schedule,
+  );
 
   const average = computeAverage(series, {
     nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,
@@ -244,6 +253,11 @@ export function MetricDetail({ type }: MetricDetailProps) {
           <div className={css.metricDescription}>{metric.whenCollected}</div>
         </>
       )}
+
+      <h2 className={css.infoSectionHeading}>Schedule</h2>
+      <div className={css.metricDescription}>
+        {formatSchedule(effectiveSchedule)}
+      </div>
 
       {metric.references && metric.references.length > 0 && (
         <>
@@ -406,6 +420,7 @@ function customAsMetricDefinition(
     description: "",
     inputType: def.inputType,
     learnMoreUrl: def.referenceUrl || undefined,
+    schedule: def.schedule,
   };
 }
 

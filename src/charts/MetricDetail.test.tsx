@@ -205,3 +205,20 @@ describe("MetricDetail — custom-metric handling", () => {
     ).toBeNull();
   });
 });
+
+describe("MetricDetail — schedule display", () => {
+  it("shows a built-in metric's resolved schedule", () => {
+    // leanMass is yearly x2 -> "2× yearly", distinct from its
+    // whenCollected prose ("2–3×/year").
+    renderAt("/health/leanMass", "health");
+    expect(screen.getByText("Schedule")).toBeInTheDocument();
+    expect(screen.getByText("2× yearly")).toBeInTheDocument();
+  });
+
+  it("shows Irregular for a custom metric with no schedule", () => {
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
+    customMetricsMock.loading = false;
+    renderAt("/health/c_w", "health");
+    expect(screen.getByText("Irregular")).toBeInTheDocument();
+  });
+});

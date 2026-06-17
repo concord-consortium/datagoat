@@ -140,6 +140,51 @@ describe("CustomMetricsContext.fromDoc", () => {
       }),
     ).toThrow();
   });
+
+  it("reads a well-formed schedule", () => {
+    const def = fromDoc("c_s", {
+      ownerId: "u1",
+      name: "Weigh-in",
+      metricType: "health",
+      primitive: "numeric",
+      inputType: "numeric",
+      referenceUrl: "",
+      schedule: { period: "weekly", count: 2 },
+    });
+    expect(def.schedule).toEqual({ period: "weekly", count: 2 });
+  });
+
+  it("omits count when absent in the stored schedule", () => {
+    const def = fromDoc("c_s2", {
+      ownerId: "u1",
+      name: "Weigh-in",
+      metricType: "health",
+      primitive: "numeric",
+      inputType: "numeric",
+      referenceUrl: "",
+      schedule: { period: "monthly" },
+    });
+    expect(def.schedule).toEqual({ period: "monthly" });
+  });
+
+  it("treats an absent or malformed schedule as undefined (=> irregular)", () => {
+    const base = {
+      ownerId: "u1",
+      name: "Legacy",
+      metricType: "health" as const,
+      primitive: "numeric" as const,
+      inputType: "numeric" as const,
+      referenceUrl: "",
+    };
+    expect(fromDoc("c_a1", base).schedule).toBeUndefined();
+    expect(
+      fromDoc("c_a2", { ...base, schedule: { period: "fortnightly" } })
+        .schedule,
+    ).toBeUndefined();
+    expect(
+      fromDoc("c_a3", { ...base, schedule: "daily" }).schedule,
+    ).toBeUndefined();
+  });
 });
 
 describe("CustomMetricsContext (Firestore-backed)", () => {
@@ -173,6 +218,25 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
       expect(result.current.metrics[0].name).toBe("5K Time");
     });
     expect(firestoreState.setDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("addMetric persists a schedule when supplied", async () => {
+    const { result } = renderHook(() => useCustomMetrics(), { wrapper });
+    await act(async () => {
+      await result.current.addMetric({
+        name: "Body Fat %",
+        metricType: "health",
+        primitive: "numeric",
+        inputType: "numeric",
+        unit: "%",
+        referenceUrl: "",
+        schedule: { period: "monthly" },
+      });
+    });
+    await waitFor(() => {
+      expect(result.current.metrics).toHaveLength(1);
+      expect(result.current.metrics[0].schedule).toEqual({ period: "monthly" });
+    });
   });
 
   it("updateMetric patches the doc and reflects via subscription", async () => {

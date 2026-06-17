@@ -189,7 +189,7 @@ function BackToProbe() {
   return <div data-testid="backto">{backTo ?? "none"}</div>;
 }
 
-describe("HamburgerMenu seeds backTo on the Profile link", () => {
+describe("HamburgerMenu Profile link does not seed backTo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ctx.loadState = { status: "loaded", profile: makeProfile() };
@@ -207,23 +207,13 @@ describe("HamburgerMenu seeds backTo on the Profile link", () => {
     );
   }
 
-  it("Profile link carries the current path as backTo so 'Done' can return there", () => {
+  it("Profile is a top-level destination: it shows no back-arrow, so the menu seeds no backTo", () => {
+    // Profile is a hamburger peer of About / the logs, not a hierarchical
+    // subpage, so it falls through to the Home button rather than a
+    // contextual back-arrow (the back chevron is reserved for true subpages
+    // with a fixed parent, e.g. metric detail -> log).
     renderMenuAt("/dashboard");
     fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
-    expect(screen.getByTestId("backto")).toHaveTextContent("/dashboard");
-  });
-
-  it("does not set backTo when already on the Profile screen", () => {
-    renderMenuAt("/profile");
-    fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
     expect(screen.getByTestId("backto")).toHaveTextContent("none");
-  });
-
-  it("preserves the current query string in backTo (so ?date=… survives)", () => {
-    renderMenuAt("/competition?date=2026-06-10");
-    fireEvent.click(screen.getByRole("link", { name: /^profile$/i }));
-    expect(screen.getByTestId("backto")).toHaveTextContent(
-      "/competition?date=2026-06-10",
-    );
   });
 });

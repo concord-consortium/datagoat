@@ -265,7 +265,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
       {
         id: "c_x",
         ownerId: "u1",
-        name: "Mood",
+        name: "My Mood",
         metricType: "health",
         primitive: "ordinal",
         inputType: "radio",
@@ -326,7 +326,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
       {
         id: "c_x",
         ownerId: "u1",
-        name: "Mood",
+        name: "My Mood",
         metricType: "health",
         primitive: "ordinal",
         inputType: "radio",
@@ -608,7 +608,7 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Mood");
+    await user.type(screen.getByLabelText(/^name$/i), "My Mood");
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
     // Two seeded rows + one Add row click → three rows, matching the
     // Low/Mid/High shape this test exercises.
@@ -817,6 +817,121 @@ describe("CustomMetricForm (auto-track on create)", () => {
     expect(call?.trackedHealthMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
+  });
+});
+
+describe("CustomMetricForm (duplicate-name validation)", () => {
+  it("warns and disables Save when the name matches a built-in metric", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument();
+    expect(
+      (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  it("matches built-in names case-insensitively", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "hYdRaTiOn");
+
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument();
+  });
+
+  it("fills the field with the (2) suffix and re-enables Save when the user insists", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+    await user.click(
+      screen.getByRole("button", { name: /use .*hydration \(2\).* instead/i }),
+    );
+
+    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe(
+      "Hydration (2)",
+    );
+    expect(screen.queryByText(/already exists/i)).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await waitFor(() => {
+      expect(screen.getByText("back to tracking setup")).toBeInTheDocument();
+    });
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ name: "Hydration (2)" }),
+    );
+  });
+
+  it("does not warn for a name that collides with nothing", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Stretch Minutes");
+
+    expect(screen.queryByText(/already exists/i)).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it("does not warn in edit mode when the metric keeps its own name", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "My Recovery Score",
+      metricType: "health",
+      primitive: "numeric",
+      inputType: "numeric",
+      unit: "",
+      goalRaw: 5,
+      yTopRaw: 10,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+
+    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe(
+      "My Recovery Score",
+    );
+    expect(screen.queryByText(/already exists/i)).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it("warns in edit mode when renamed onto another existing name", async () => {
+    const user = userEvent.setup();
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "My Recovery Score",
+      metricType: "health",
+      primitive: "numeric",
+      inputType: "numeric",
+      unit: "",
+      goalRaw: 5,
+      yTopRaw: 10,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+
+    await user.clear(screen.getByLabelText(/^name$/i));
+    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument();
   });
 });
 

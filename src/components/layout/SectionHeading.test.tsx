@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ComponentProps } from "react";
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -7,7 +8,7 @@ import { SectionHeading } from "./SectionHeading";
 import { NavMenuProvider } from "../../contexts/NavMenuContext";
 import css from "./SectionHeading.module.css";
 
-function renderHeading(props: Partial<React.ComponentProps<typeof SectionHeading>>) {
+function renderHeading(props: Partial<ComponentProps<typeof SectionHeading>>) {
   render(
     <MemoryRouter>
       <NavMenuProvider>

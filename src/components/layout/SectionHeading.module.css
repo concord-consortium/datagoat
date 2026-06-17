@@ -107,6 +107,14 @@
 .navHomeBtn { left: 12px; }
 .navMenuBtn { right: 12px; }
 
+/* Onboarding-gated Home button: dim to 0.35 per spec (matches the
+   prototype's disabled-control convention and the hamburger's gated
+   Dashboard row) and make it non-interactive. */
+.navHomeBtnDisabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 /* Mute the icon inside chrome buttons - matches prototype line
    1197-1199 where `.nav-home-btn svg` and `.nav-menu-btn svg` use
    `color: var(--subtext)`. */

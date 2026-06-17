@@ -13,6 +13,18 @@ vi.mock("../contexts/AuthContext", () => ({
   useAuth: () => ({ user: null, loading: false }),
 }));
 
+// AppShell reads loadState via useOnboardingGate to decide whether the Home
+// button is disabled. A fully-onboarded state keeps it enabled (the default
+// the existing chrome/focus assertions expect).
+vi.mock("../contexts/UserContext", () => ({
+  useUser: () => ({
+    loadState: {
+      status: "loaded",
+      profile: { profileComplete: true, trackingSetupComplete: true },
+    },
+  }),
+}));
+
 vi.mock("../components/dashboard/DashboardHeaderSlide", () => ({
   DashboardHeaderSlide: () => <div data-testid="dashboard-header-slide" />,
 }));

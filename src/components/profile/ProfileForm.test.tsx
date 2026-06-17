@@ -108,18 +108,6 @@ function renderFormHandle() {
   );
 }
 
-// Render at /profile with a seeded location state (e.g. backTo from the
-// hamburger), so the edit-mode "Done" button has an origin to return to.
-function renderFormWithState(state?: { backTo?: string }) {
-  render(
-    <MemoryRouter initialEntries={[{ pathname: "/profile", state }]}>
-      <Routes>
-        <Route path="/profile" element={<ProfileForm />} />
-      </Routes>
-    </MemoryRouter>,
-  );
-}
-
 describe("ProfileForm mode derivation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -151,13 +139,16 @@ describe("ProfileForm mode derivation", () => {
     );
   });
 
-  it("renders edit mode when loadState is loaded with no welcome and a Done button", () => {
+  it("renders edit mode with no welcome and no bottom action button", () => {
+    // Saving is automatic in edit mode, so there is no submit/Done button -
+    // return users leave via the back-arrow / Home / hamburger chrome.
     ctx.loadState = { status: "loaded", profile: makeProfile() };
     renderForm();
     expect(screen.queryByText(/welcome to datagoat/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^done$/i })).toBeNull();
     expect(
-      screen.getByRole("button", { name: /^done$/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /set up your tracked data/i }),
+    ).toBeNull();
   });
 
   it("stays in onboarding mode when a doc exists but profileComplete is false", () => {
@@ -242,29 +233,54 @@ describe("ProfileForm submit", () => {
     });
   });
 
-  it("edit mode shows a 'Done' button that returns to the origin (state.backTo)", async () => {
+  it("keeps the onboarding button while the submit write is in flight (no edit-mode flash)", async () => {
+    // The authoritative onboarding write flips profileComplete true, and the
+    // optimistic snapshot re-derives mode -> "edit" while the form is still
+    // mounted (before navigate() runs). The button must not flash away mid-
+    // submit, so it stays mounted as long as the submit is in flight.
+    ctx.loadState = { status: "missing" };
+    let resolveWrite!: () => void;
+    (ctx.updateProfileMock as unknown as Mock).mockImplementationOnce(
+      () =>
+        new Promise<undefined>((res) => {
+          resolveWrite = () => res(undefined);
+        }),
+    );
+    // Fresh element per render so React re-renders (doesn't remount) and RHF's
+    // isSubmitting survives across the snapshot-driven loadState change.
+    const ui = () => (
+      <MemoryRouter initialEntries={["/profile"]}>
+        <Routes>
+          <Route path="/profile" element={<ProfileForm />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const { rerender } = render(ui());
+
+    fillRequiredOnboardingFields();
+    fireEvent.click(
+      screen.getByRole("button", { name: /set up your tracked data/i }),
+    );
+
+    // Submit is in flight once updateProfile is called (the write is pending).
+    await waitFor(() => expect(ctx.updateProfileMock).toHaveBeenCalled());
+
+    // Simulate the optimistic snapshot completing the profile mid-write.
     ctx.loadState = { status: "loaded", profile: makeProfile() };
-    // Saving is automatic now, so the bottom button is a plain exit, not a
-    // Save. It returns the user to wherever they came from.
-    renderFormWithState({ backTo: "/health" });
-
-    expect(screen.queryByRole("button", { name: /^save$/i })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
-
-    await waitFor(() => {
-      expect(ctx.navigateMock).toHaveBeenCalledWith("/health");
+    act(() => {
+      rerender(ui());
     });
-  });
 
-  it("edit mode 'Done' falls back to /dashboard when there is no origin", async () => {
-    ctx.loadState = { status: "loaded", profile: makeProfile() };
-    renderForm();
+    // The onboarding button is still present despite mode having flipped.
+    expect(
+      screen.getByRole("button", { name: /set up your tracked data/i }),
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
-
-    await waitFor(() => {
-      expect(ctx.navigateMock).toHaveBeenCalledWith("/dashboard");
+    // Let the write resolve so navigation proceeds (cleanup).
+    await act(async () => {
+      resolveWrite();
     });
+    expect(ctx.navigateMock).toHaveBeenCalledWith("/setup/tracking");
   });
 
   it("a loaded-but-incomplete doc is onboarding; submit writes profileComplete and proceeds to tracking", async () => {

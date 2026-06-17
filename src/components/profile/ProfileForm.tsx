@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useAuth } from "../../contexts/AuthContext";
@@ -34,7 +34,6 @@ import css from "./ProfileForm.module.css";
 // Firestore write - the Firestore profile is canonical.
 export function ProfileForm() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { loadState, updateProfile } = useUser();
   const [formError, setFormError] = useState("");
@@ -236,16 +235,6 @@ export function ProfileForm() {
       logError(err, { stage: "profileForm.updateProfile", mode });
       setFormError("Couldn't save your profile. Please try again.");
     }
-  }
-
-  // Edit-mode exit: saving is automatic, so "Done" simply returns the user to
-  // wherever they came from. The hamburger seeds location.state.backTo when it
-  // links here; with no known origin (deep link / refresh) we fall back to the
-  // dashboard so the user is never stranded on the screen.
-  function handleDone() {
-    flushAutosave();
-    const backTo = (location.state as { backTo?: string } | null)?.backTo;
-    navigate(backTo ?? "/dashboard");
   }
 
   return (
@@ -470,23 +459,21 @@ export function ProfileForm() {
           {...register("competitionTerm")}
         />
 
-        {mode === "onboarding" ? (
+        {/* Edit mode has no bottom action button: saving is automatic, so
+            return users leave via the back-arrow / Home / hamburger chrome
+            (the old "Done" button was a redundant exit affordance).
+
+            `|| isSubmitting` keeps the onboarding button mounted through the
+            submit: the authoritative write flips profileComplete true via the
+            optimistic snapshot (mode -> "edit") before navigate() unmounts the
+            form, which would otherwise flash this button away mid-submit. */}
+        {(mode === "onboarding" || isSubmitting) && (
           <button
             type="submit"
             className={buttons.setupBtn}
             disabled={isSubmitting}
           >
             Set Up Your Tracked Data
-          </button>
-        ) : (
-          // Saving is automatic in edit mode, so this is a plain exit, not a
-          // submit - it returns the user to where they came from.
-          <button
-            type="button"
-            className={buttons.setupBtn}
-            onClick={handleDone}
-          >
-            Done
           </button>
         )}
 

@@ -204,7 +204,11 @@ function AppShellInner() {
 
     document.addEventListener("focusin", onFocusIn);
     return () => document.removeEventListener("focusin", onFocusIn);
-  }, []);
+    // Re-run on isAuthRoute change: auth routes render no <main>, so a
+    // session that first loads on an auth route mounts this effect with a
+    // null mainRef and bails. Re-running when the route leaves the auth
+    // section attaches the listener once <main> exists.
+  }, [isAuthRoute]);
 
   function handleSkipLinkClick(e: MouseEvent<HTMLAnchorElement>) {
     // Suppress the browser's anchor jump so #main-content doesn't end up

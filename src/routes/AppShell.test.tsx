@@ -44,6 +44,19 @@ function renderShell(initialEntry: string, content: ReactNode) {
   );
 }
 
+function renderAuthShell(initialEntry: string, content: ReactNode) {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/login" element={content} />
+          <Route path="/verify-email" element={content} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 function fakeRect(partial: Partial<DOMRect>): DOMRect {
   const base = {
     top: 0,
@@ -85,6 +98,27 @@ describe("AppShell", () => {
       expect(document.activeElement).toBe(
         screen.getByRole("button", { name: "First content focusable" }),
       );
+    });
+  });
+
+  describe("auth routes (AuthLayout owns the landmark)", () => {
+    it("does not render AppShell's own <main>/skip-link on /login", () => {
+      // DGT-47: auth routes nest AuthLayout, which supplies the single
+      // <main id="main-content"> + skip link. AppShell must not emit a
+      // second one - duplicate id="main-content" made the auth skip link's
+      // anchor jump ring the whole page. The stubbed route content here has
+      // no main-content, so any main-content present would be AppShell's.
+      renderAuthShell("/login", <div data-testid="auth-content">login</div>);
+      expect(document.getElementById("main-content")).toBeNull();
+      expect(
+        screen.queryByRole("link", { name: /skip to main content/i }),
+      ).toBeNull();
+      expect(screen.getByTestId("auth-content")).toBeInTheDocument();
+    });
+
+    it("still syncs document.title via AUTH_TITLES on /login", () => {
+      renderAuthShell("/login", <div>login</div>);
+      expect(document.title).toBe("Sign In | DataGOAT");
     });
   });
 

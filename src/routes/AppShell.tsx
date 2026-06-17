@@ -10,6 +10,7 @@ import { useCustomMetrics } from "../contexts/CustomMetricsContext";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
 import { OverlayProvider } from "../contexts/OverlayContext";
 import { resolveRouteMeta, type RouteLocationState } from "./routeMeta";
+import { focusFirstContentControl } from "../components/common/skipLink";
 import common from "../components/common.module.css";
 import css from "./AppShell.module.css";
 
@@ -35,31 +36,6 @@ const AUTH_TITLES: Record<string, string> = {
   "/verify-email": "Verify Email",
 };
 
-// Skip-link target excludes section-heading chrome buttons (per spec,
-// prototype HTML around line 5453). Skip-link target is <main>, but if
-// SectionHeading buttons sit at the top of <main>, focus may walk into
-// them on the next Tab; the load-bearing behavior is to advance past
-// them to the first content focusable.
-//
-// Match on `data-skip-link-exclude` rather than CSS Module class names -
-// CSS Modules hash the class names ("_navMenuBtn_a5cf63"), so the raw
-// kebab-case selectors that worked in the prototype's vanilla JS would
-// never match here. The data attribute is stable across modules.
-const SKIP_LINK_EXCLUDED_ATTR = "data-skip-link-exclude";
-
-// Single selector for the skip-link focus advance: filters out
-// excluded chrome buttons inline, and skips disabled form controls
-// (calling .focus() on a disabled element silently no-ops, which would
-// strand focus on the skip link).
-const SKIP_LINK_TARGET_SELECTOR = [
-  `a[href]:not([${SKIP_LINK_EXCLUDED_ATTR}])`,
-  `button:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
-  `input:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
-  `select:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
-  `textarea:not([${SKIP_LINK_EXCLUDED_ATTR}]):not([disabled])`,
-  `[tabindex]:not([tabindex="-1"]):not([${SKIP_LINK_EXCLUDED_ATTR}])`,
-].join(", ");
-
 export function AppShell() {
   // NavMenuProvider hosts the open/close state so non-menu components
   // (DashboardHeaderSlide) can pause the carousel while the menu is open.
@@ -78,7 +54,6 @@ function AppShellInner() {
   const { user } = useAuth();
   const { pathname, state: locationState } = useLocation();
   const isAuthRoute = AUTH_PATHS.has(pathname);
-  const showHeader = !isAuthRoute;
   // /dashboard renders DashboardHeaderSlide (the wordmark<->motivation
   // carousel) instead of the static AppHeader. Both render inside the
   // AppShell's <header> element - OUTSIDE <main> - so the brand chrome
@@ -235,12 +210,33 @@ function AppShellInner() {
     // Suppress the browser's anchor jump so #main-content doesn't end up
     // in the URL, then advance focus to the first content focusable -
     // skipping SectionHeading chrome buttons (.nav-menu-btn /
-    // .nav-home-btn / .back-nav-btn) which carry SKIP_LINK_EXCLUDED_ATTR.
+    // .nav-home-btn / .back-nav-btn) which carry data-skip-link-exclude.
     e.preventDefault();
-    const main = mainRef.current;
-    if (!main) return;
-    const first = main.querySelector<HTMLElement>(SKIP_LINK_TARGET_SELECTOR);
-    (first ?? main).focus();
+    focusFirstContentControl(mainRef.current);
+  }
+
+  const outlet = (
+    <Outlet
+      context={{
+        menuOpen,
+        toggleMenu: () => setMenuOpen(!menuOpen),
+      }}
+    />
+  );
+
+  // Auth routes nest AuthLayout, which supplies the single
+  // <main id="main-content"> + its own skip link. AppShell renders only a
+  // plain scroll wrapper here (same .main box, so layout is unchanged) -
+  // emitting a second <main>/skip-link would duplicate id="main-content",
+  // and the auth skip link's anchor jump would then resolve to AppShell's
+  // outer <main> and ring the whole page (DGT-47). VerificationBanner and
+  // HamburgerMenu render nothing on auth routes, so they're omitted too.
+  if (isAuthRoute) {
+    return (
+      <div className={css.shell}>
+        <div className={css.main}>{outlet}</div>
+      </div>
+    );
   }
 
   return (
@@ -252,19 +248,18 @@ function AppShellInner() {
       >
         Skip to main content
       </a>
-      {showHeader && (
-        <header className={css.header}>
-          {isDashboard ? <DashboardHeaderSlide /> : <AppHeader />}
-          {routeMeta && (
-            <SectionHeading
-              title={routeMeta.title}
-              icon={routeMeta.icon}
-              showHome={routeMeta.showHome}
-              backTo={routeMeta.backTo}
-            />
-          )}
-        </header>
-      )}
+      {/* Auth routes return early above, so the header always renders here. */}
+      <header className={css.header}>
+        {isDashboard ? <DashboardHeaderSlide /> : <AppHeader />}
+        {routeMeta && (
+          <SectionHeading
+            title={routeMeta.title}
+            icon={routeMeta.icon}
+            showHome={routeMeta.showHome}
+            backTo={routeMeta.backTo}
+          />
+        )}
+      </header>
       {/* tabIndex: <main> is always programmatically focusable (so the
           skip-link's .focus() advance and the empty-page fallback still
           work). Whether it's ALSO a sequential tab stop depends on the
@@ -301,12 +296,7 @@ function AppShellInner() {
             the new uid - otherwise an account switch within the same
             SPA session would inherit the previous uid's dismissal. */}
         <VerificationBanner key={user?.uid ?? "anon"} />
-        <Outlet
-          context={{
-            menuOpen,
-            toggleMenu: () => setMenuOpen(!menuOpen),
-          }}
-        />
+        {outlet}
         {/* Mounted inside <main> so the Dialog's absolute-positioned
             backdrop scopes to the content area below the AppHeader,
             matching the prototype's "menu drops below the section

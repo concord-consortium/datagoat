@@ -167,9 +167,10 @@ export function ProfileForm() {
 
   async function onSubmit(values: ProfileFormValues) {
     if (!user) return;
-    // Only onboarding submits. Edit mode saves continuously via auto-save and
-    // leaves via the "Done" button, so a stray Enter keypress must not write
-    // or navigate.
+    // Only onboarding submits. Edit mode persists via auto-save and has no
+    // submit action, so the <form> below swaps in a preventDefault handler
+    // there and a stray Enter never reaches this function; this guard is
+    // belt-and-suspenders.
     if (mode === "edit") return;
     setFormError("");
     // The authoritative write below supersedes any pending auto-save; cancel
@@ -255,7 +256,18 @@ export function ProfileForm() {
         </p>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      {/* Edit mode has no submit action (auto-save persists, no submit
+          button), so swap in a preventDefault handler there. It stops the
+          browser's implicit Enter-submit, which would otherwise flip
+          isSubmitting true for a tick and flash the onboarding button. */}
+      <form
+        onSubmit={
+          mode === "onboarding"
+            ? handleSubmit(onSubmit)
+            : (e) => e.preventDefault()
+        }
+        noValidate
+      >
         <TextField
           id="profile-fullname"
           label="Full Name"
@@ -460,13 +472,15 @@ export function ProfileForm() {
         />
 
         {/* Edit mode has no bottom action button: saving is automatic, so
-            return users leave via the back-arrow / Home / hamburger chrome
-            (the old "Done" button was a redundant exit affordance).
+            return users leave via the Home button or hamburger menu (the old
+            "Done" button was a redundant exit affordance).
 
             `|| isSubmitting` keeps the onboarding button mounted through the
             submit: the authoritative write flips profileComplete true via the
             optimistic snapshot (mode -> "edit") before navigate() unmounts the
-            form, which would otherwise flash this button away mid-submit. */}
+            form, which would otherwise flash this button away mid-submit. Edit
+            mode can't set isSubmitting (the form preventDefaults above), so
+            this only ever fires during an onboarding submit. */}
         {(mode === "onboarding" || isSubmitting) && (
           <button
             type="submit"

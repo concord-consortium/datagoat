@@ -141,7 +141,7 @@ describe("ProfileForm mode derivation", () => {
 
   it("renders edit mode with no welcome and no bottom action button", () => {
     // Saving is automatic in edit mode, so there is no submit/Done button -
-    // return users leave via the back-arrow / Home / hamburger chrome.
+    // return users leave via the Home button or hamburger menu.
     ctx.loadState = { status: "loaded", profile: makeProfile() };
     renderForm();
     expect(screen.queryByText(/welcome to datagoat/i)).toBeNull();

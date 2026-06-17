@@ -41,4 +41,11 @@ describe("suggestUniqueName", () => {
       "Hydration (2)",
     );
   });
+
+  it("does not emit a leading space when the base is empty (numeric-only name)", () => {
+    // "(2)" strips to an empty base; the candidate must be "(3)" (not
+    // " (3)"), so that after the form trims on submit it no longer
+    // collides with the taken "(2)".
+    expect(suggestUniqueName("(2)", new Set(["(2)"]))).toBe("(3)");
+  });
 });

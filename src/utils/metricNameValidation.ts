@@ -22,7 +22,10 @@ const TRAILING_SUFFIX = /\s*\(\d+\)\s*$/;
 export function suggestUniqueName(desired: string, taken: Set<string>): string {
   const base = desired.trim().replace(TRAILING_SUFFIX, "");
   for (let k = 2; ; k++) {
-    const candidate = `${base} (${k})`;
+    // Omit the leading space when the base is empty (e.g. the desired
+    // name was only a numeric suffix like "(2)"), so the candidate
+    // survives the form's submit-time trim without re-colliding.
+    const candidate = base ? `${base} (${k})` : `(${k})`;
     if (!taken.has(normalizeMetricName(candidate))) {
       return candidate;
     }

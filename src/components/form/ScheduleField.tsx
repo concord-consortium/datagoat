@@ -74,7 +74,7 @@ export function ScheduleField({
         <TextField
           id={`${idPrefix}-count`}
           label={`Times per ${
-            periodic ? PERIOD_NOUN[value.period as keyof typeof PERIOD_NOUN] : ""
+            value.period === "irregular" ? "" : PERIOD_NOUN[value.period]
           }`}
           type="number"
           inputMode="numeric"

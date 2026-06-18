@@ -29,6 +29,7 @@ import type {
 import {
   parseStoredSchedule,
   scheduleToFirestore,
+  type MetricSchedule,
 } from "../types/metricSchedule";
 import { mintCustomMetricId } from "../utils/customMetricId";
 import {
@@ -312,7 +313,13 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
         if (k === "createdAt" || k === "updatedAt") continue;
-        if (v !== undefined) cleaned[k] = v;
+        if (v === undefined) continue;
+        // Route schedule through the same normalizer the create path
+        // uses, so update writes apply identical rules (drop count for
+        // irregular / non-positive-integer) and never persist a nested
+        // undefined count.
+        cleaned[k] =
+          k === "schedule" ? scheduleToFirestore(v as MetricSchedule) : v;
       }
       cleaned.updatedAt = serverTimestamp();
       await updateDoc(ref, cleaned);

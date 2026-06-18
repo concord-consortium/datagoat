@@ -265,6 +265,36 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     await waitFor(() => expect(result.current.metrics[0].name).toBe("y"));
   });
 
+  it("updateMetric normalizes a schedule patch through scheduleToFirestore", async () => {
+    const { result } = renderHook(() => useCustomMetrics(), { wrapper });
+    let id = "";
+    await act(async () => {
+      const def = await result.current.addMetric({
+        name: "x",
+        metricType: "health",
+        primitive: "numeric",
+        inputType: "numeric",
+        referenceUrl: "",
+      });
+      id = def.id;
+    });
+    await waitFor(() => expect(result.current.metrics).toHaveLength(1));
+
+    await act(async () => {
+      // A stray count on an irregular schedule must be dropped on write,
+      // matching the create path (not written through as-is).
+      await result.current.updateMetric(id, {
+        schedule: { period: "irregular", count: 5 },
+      });
+    });
+
+    const lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
+      string,
+      unknown
+    >;
+    expect(lastPatch.schedule).toEqual({ period: "irregular" });
+  });
+
   it("deleteMetric removes the doc and reflects via subscription", async () => {
     const { result } = renderHook(() => useCustomMetrics(), { wrapper });
     let id = "";

@@ -76,6 +76,24 @@ describe("parseStoredSchedule", () => {
     expect(parseStoredSchedule({ period: "fortnightly" })).toBeUndefined();
     expect(parseStoredSchedule({ count: 3 })).toBeUndefined();
   });
+
+  it("drops a non-positive-integer count (0, negative, fractional)", () => {
+    expect(parseStoredSchedule({ period: "daily", count: 0 })).toEqual({
+      period: "daily",
+    });
+    expect(parseStoredSchedule({ period: "daily", count: -3 })).toEqual({
+      period: "daily",
+    });
+    expect(parseStoredSchedule({ period: "daily", count: 2.5 })).toEqual({
+      period: "daily",
+    });
+  });
+
+  it("ignores count for an irregular period", () => {
+    expect(parseStoredSchedule({ period: "irregular", count: 5 })).toEqual({
+      period: "irregular",
+    });
+  });
 });
 
 describe("schedulesEqual", () => {
@@ -107,5 +125,20 @@ describe("scheduleToFirestore", () => {
     const out = scheduleToFirestore({ period: "weekly", count: 2 });
     expect(out).toEqual({ period: "weekly", count: 2 });
     expect("count" in scheduleToFirestore({ period: "daily" })).toBe(false);
+  });
+
+  it("never writes a count for an irregular schedule", () => {
+    expect(scheduleToFirestore({ period: "irregular", count: 5 })).toEqual({
+      period: "irregular",
+    });
+  });
+
+  it("drops a non-positive-integer count rather than persisting it", () => {
+    expect(scheduleToFirestore({ period: "daily", count: 2.5 })).toEqual({
+      period: "daily",
+    });
+    expect(scheduleToFirestore({ period: "daily", count: 0 })).toEqual({
+      period: "daily",
+    });
   });
 });

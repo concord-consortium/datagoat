@@ -54,6 +54,23 @@ const SCHEDULE_PERIODS: readonly SchedulePeriod[] = [
   "irregular",
 ];
 
+// Canonicalize a count for a given period. Count is meaningful only for
+// periodic schedules and only as a positive integer; anything else
+// (irregular period, 0, negative, fractional, non-finite) collapses to
+// an absent count, which downstream treats as "once per period". Applied
+// at both trust boundaries (reading from and writing to Firestore) so a
+// corrupt or hand-edited doc can't surface as e.g. "2.5× daily".
+function normalizedCount(
+  period: SchedulePeriod,
+  count: unknown,
+): number | undefined {
+  if (period === "irregular") return undefined;
+  if (typeof count === "number" && Number.isInteger(count) && count >= 1) {
+    return count;
+  }
+  return undefined;
+}
+
 // Read a schedule out of an untrusted Firestore value. Lenient by
 // design: a missing field, a legacy doc written before schedule existed,
 // or a malformed value all read as undefined, which resolveSchedule
@@ -66,9 +83,8 @@ export function parseStoredSchedule(raw: unknown): MetricSchedule | undefined {
     return undefined;
   }
   const schedule: MetricSchedule = { period: row.period as SchedulePeriod };
-  if (typeof row.count === "number" && Number.isFinite(row.count)) {
-    schedule.count = row.count;
-  }
+  const count = normalizedCount(schedule.period, row.count);
+  if (count !== undefined) schedule.count = count;
   return schedule;
 }
 
@@ -88,7 +104,8 @@ export function scheduleToFirestore(
   schedule: MetricSchedule,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { period: schedule.period };
-  if (schedule.count !== undefined) out.count = schedule.count;
+  const count = normalizedCount(schedule.period, schedule.count);
+  if (count !== undefined) out.count = count;
   return out;
 }
 

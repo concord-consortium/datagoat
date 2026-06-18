@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { SelectField, type SelectOption } from "./SelectField";
 import { TextField } from "./TextField";
 import { If } from "../common/If";
-import type {
-  MetricSchedule,
-  SchedulePeriod,
+import {
+  normalizedCount,
+  type MetricSchedule,
+  type SchedulePeriod,
 } from "../../types/metricSchedule";
 import css from "./ScheduleField.module.css";
 
@@ -30,9 +32,17 @@ const PERIOD_NOUN: Record<Exclude<SchedulePeriod, "irregular">, string> = {
   yearly: "year",
 };
 
+// Coerce the count text buffer to the canonical positive integer the
+// schedule will carry; blank / fractional / zero / negative all become 1.
+// Uses the shared normalizedCount rule so the editor agrees with the
+// Firestore boundaries, the formatter, and equality.
+function countFromText(period: SchedulePeriod, text: string): number {
+  return normalizedCount(period, Number(text)) ?? 1;
+}
+
 // Controlled editor for a MetricSchedule: a period dropdown plus a
 // "times per <period>" count that appears only for periodic schedules
-// (irregular has no count). Basic v1 UI — the richer multi-frequency
+// (irregular has no count). Basic v1 UI - the richer multi-frequency
 // design (DGT-54 stretch goal) can replace it without touching callers.
 export function ScheduleField({
   value,
@@ -40,26 +50,35 @@ export function ScheduleField({
   idPrefix = "schedule",
 }: ScheduleFieldProps) {
   const periodic = value.period !== "irregular";
-  const count = value.count ?? 1;
+  // Local text buffer for the count input. Owning the raw string (rather
+  // than deriving it from value.count every render) lets the user clear
+  // the field and type freely without each keystroke snapping back to a
+  // normalized number, and it preserves the last count across an
+  // irregular round-trip (the schedule object drops count while the
+  // period is irregular).
+  const [countText, setCountText] = useState(String(value.count ?? 1));
 
   function handlePeriodChange(next: SchedulePeriod) {
     if (next === "irregular") {
       onChange({ period: "irregular" });
     } else {
-      onChange({ period: next, count });
+      // Restore the count from the buffer so switching away from and back
+      // to a periodic schedule doesn't silently reset it to 1.
+      onChange({ period: next, count: countFromText(next, countText) });
     }
   }
 
   function handleCountChange(raw: string) {
+    setCountText(raw);
     if (value.period === "irregular") return;
-    // Accept only a positive integer; anything else (blank, fractional,
-    // zero, negative) falls back to 1 — no silent rounding — to match the
-    // schedule normalization rules.
-    const n = Number(raw);
-    onChange({
-      period: value.period,
-      count: Number.isInteger(n) && n >= 1 ? n : 1,
-    });
+    onChange({ period: value.period, count: countFromText(value.period, raw) });
+  }
+
+  // On blur, reflect the canonical value back into the field so an empty
+  // or invalid in-progress entry resolves to the count actually stored.
+  function handleCountBlur() {
+    if (value.period === "irregular") return;
+    setCountText(String(countFromText(value.period, countText)));
   }
 
   return (
@@ -69,9 +88,7 @@ export function ScheduleField({
         label="Schedule"
         options={PERIOD_OPTIONS}
         value={value.period}
-        onChange={(e) =>
-          handlePeriodChange(e.target.value as SchedulePeriod)
-        }
+        onChange={(e) => handlePeriodChange(e.target.value as SchedulePeriod)}
       />
       <If condition={periodic}>
         <TextField
@@ -83,8 +100,9 @@ export function ScheduleField({
           inputMode="numeric"
           min={1}
           step={1}
-          value={String(count)}
+          value={countText}
           onChange={(e) => handleCountChange(e.target.value)}
+          onBlur={handleCountBlur}
         />
       </If>
     </div>

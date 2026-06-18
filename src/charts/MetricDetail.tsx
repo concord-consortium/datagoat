@@ -41,6 +41,7 @@ import {
 import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { useChartSeries } from "./useChartSeries";
 import { useDemoMode } from "../contexts/DemoModeContext";
+import { If } from "../components/common/If";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -149,10 +150,16 @@ export function MetricDetail({ type }: MetricDetailProps) {
   const goalLine = lookupGoalLine(metric.id, profileKey);
   // Effective schedule: the user's per-metric override, else the metric's
   // own (built-in default or custom-def) schedule, else irregular.
-  const effectiveSchedule = resolveSchedule(
-    metric.schedule,
-    getOverride(metric.id)?.schedule,
-  );
+  const overrideSchedule = getOverride(metric.id)?.schedule;
+  const effectiveSchedule = resolveSchedule(metric.schedule, overrideSchedule);
+  // Only surface the structured Schedule line when it adds information
+  // beyond the prose "When / How Many Times Collected" section: i.e. the
+  // user has overridden it, or there is no whenCollected prose (custom
+  // metrics). Never for irregular - there is no cadence to show, and most
+  // performance/competition built-ins would otherwise read "Irregular".
+  const showSchedule =
+    effectiveSchedule.period !== "irregular" &&
+    (overrideSchedule !== undefined || !metric.whenCollected);
 
   const average = computeAverage(series, {
     nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,
@@ -254,10 +261,12 @@ export function MetricDetail({ type }: MetricDetailProps) {
         </>
       )}
 
-      <h2 className={css.infoSectionHeading}>Schedule</h2>
-      <div className={css.metricDescription}>
-        {formatSchedule(effectiveSchedule)}
-      </div>
+      <If condition={showSchedule}>
+        <h2 className={css.infoSectionHeading}>Schedule</h2>
+        <div className={css.metricDescription}>
+          {formatSchedule(effectiveSchedule)}
+        </div>
+      </If>
 
       {metric.references && metric.references.length > 0 && (
         <>

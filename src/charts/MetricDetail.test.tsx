@@ -206,19 +206,34 @@ describe("MetricDetail — custom-metric handling", () => {
   });
 });
 
-describe("MetricDetail — schedule display", () => {
-  it("shows a built-in metric's resolved schedule", () => {
-    // leanMass is yearly x2 -> "2× yearly", distinct from its
-    // whenCollected prose ("2–3×/year").
-    renderAt("/health/leanMass", "health");
+describe("MetricDetail - schedule display", () => {
+  it("shows the structured schedule for a custom metric (no whenCollected prose)", () => {
+    customMetricsMock.metrics = [
+      {
+        ...customDef("c_s", "Body Fat", "health"),
+        schedule: { period: "weekly", count: 2 },
+      },
+    ];
+    customMetricsMock.loading = false;
+    renderAt("/health/c_s", "health");
     expect(screen.getByText("Schedule")).toBeInTheDocument();
-    expect(screen.getByText("2× yearly")).toBeInTheDocument();
+    expect(screen.getByText("2× Weekly")).toBeInTheDocument();
   });
 
-  it("shows Irregular for a custom metric with no schedule", () => {
+  it("omits the redundant Schedule line for a built-in already described by When Collected", () => {
+    // leanMass ships whenCollected prose and has no override, so the
+    // structured Schedule line would just duplicate it - it is suppressed.
+    renderAt("/health/leanMass", "health");
+    expect(screen.queryByText("Schedule")).toBeNull();
+    expect(
+      screen.getByText("When / How Many Times Collected"),
+    ).toBeInTheDocument();
+  });
+
+  it("omits the Schedule line for a metric with no cadence (irregular)", () => {
     customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     customMetricsMock.loading = false;
     renderAt("/health/c_w", "health");
-    expect(screen.getByText("Irregular")).toBeInTheDocument();
+    expect(screen.queryByText("Schedule")).toBeNull();
   });
 });

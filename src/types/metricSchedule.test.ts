@@ -40,10 +40,10 @@ describe("formatSchedule", () => {
     expect(formatSchedule({ period: "weekly", count: 1 })).toBe("Weekly");
   });
 
-  it("prefixes a multiple count with the period", () => {
-    expect(formatSchedule({ period: "daily", count: 3 })).toBe("3× daily");
-    expect(formatSchedule({ period: "weekly", count: 2 })).toBe("2× weekly");
-    expect(formatSchedule({ period: "yearly", count: 2 })).toBe("2× yearly");
+  it("prefixes a multiple count with the capitalized period label", () => {
+    expect(formatSchedule({ period: "daily", count: 3 })).toBe("3× Daily");
+    expect(formatSchedule({ period: "weekly", count: 2 })).toBe("2× Weekly");
+    expect(formatSchedule({ period: "yearly", count: 2 })).toBe("2× Yearly");
   });
 
   it("labels irregular regardless of count", () => {
@@ -55,6 +55,11 @@ describe("formatSchedule", () => {
     expect(formatSchedule({ period: "daily", count: 2.5 })).toBe("Daily");
     expect(formatSchedule({ period: "daily", count: 0 })).toBe("Daily");
     expect(formatSchedule({ period: "weekly", count: -3 })).toBe("Weekly");
+  });
+
+  it("uses consistent casing between single- and multi-count labels", () => {
+    expect(formatSchedule({ period: "yearly" })).toBe("Yearly");
+    expect(formatSchedule({ period: "yearly", count: 2 })).toBe("2× Yearly");
   });
 });
 

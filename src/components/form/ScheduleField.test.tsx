@@ -51,4 +51,13 @@ describe("ScheduleField", () => {
     });
     expect(onChange).toHaveBeenCalledWith({ period: "weekly", count: 4 });
   });
+
+  it("falls back to 1 for a non-positive-integer count (no rounding)", () => {
+    const { onChange } = renderField({ period: "weekly", count: 3 });
+    fireEvent.change(screen.getByRole("spinbutton"), {
+      target: { value: "2.5" },
+    });
+    // 2.5 is rejected (not floored to 2) -> falls back to 1.
+    expect(onChange).toHaveBeenCalledWith({ period: "weekly", count: 1 });
+  });
 });

@@ -52,10 +52,13 @@ export function ScheduleField({
 
   function handleCountChange(raw: string) {
     if (value.period === "irregular") return;
-    const n = Math.floor(Number(raw));
+    // Accept only a positive integer; anything else (blank, fractional,
+    // zero, negative) falls back to 1 — no silent rounding — to match the
+    // schedule normalization rules.
+    const n = Number(raw);
     onChange({
       period: value.period,
-      count: Number.isFinite(n) && n >= 1 ? n : 1,
+      count: Number.isInteger(n) && n >= 1 ? n : 1,
     });
   }
 

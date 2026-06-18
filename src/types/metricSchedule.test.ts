@@ -50,6 +50,12 @@ describe("formatSchedule", () => {
     expect(formatSchedule({ period: "irregular" })).toBe("Irregular");
     expect(formatSchedule({ period: "irregular", count: 5 })).toBe("Irregular");
   });
+
+  it("treats a non-positive-integer count as once per period", () => {
+    expect(formatSchedule({ period: "daily", count: 2.5 })).toBe("Daily");
+    expect(formatSchedule({ period: "daily", count: 0 })).toBe("Daily");
+    expect(formatSchedule({ period: "weekly", count: -3 })).toBe("Weekly");
+  });
 });
 
 describe("parseStoredSchedule", () => {

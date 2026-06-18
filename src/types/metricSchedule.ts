@@ -122,7 +122,10 @@ const PERIOD_LABEL: Record<SchedulePeriod, string> = {
 // period ("2× weekly"). Irregular ignores count.
 export function formatSchedule(schedule: MetricSchedule): string {
   if (schedule.period === "irregular") return PERIOD_LABEL.irregular;
-  const count = schedule.count ?? 1;
+  // Normalize so an invalid in-memory count (e.g. 2.5 from transient
+  // form state) can't render as "2.5× daily" — matches the rules applied
+  // at the Firestore boundaries.
+  const count = normalizedCount(schedule.period, schedule.count) ?? 1;
   if (count > 1) return `${count}× ${schedule.period}`;
   return PERIOD_LABEL[schedule.period];
 }

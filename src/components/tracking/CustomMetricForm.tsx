@@ -200,7 +200,11 @@ function defaultScheduleForType(
   return type === "health" ? { period: "daily" } : { period: "irregular" };
 }
 
-const EMPTY_DRAFT: DraftState = {
+// Schedule is omitted here: every construction site supplies it
+// explicitly (new metrics via defaultScheduleForType(type), edits via
+// resolveSchedule(editing.schedule)), so a literal here would be dead and
+// could contradict defaultScheduleForType for non-health types.
+const EMPTY_DRAFT: Omit<DraftState, "schedule"> = {
   topLevel: "numeric",
   name: "",
   inputType: "numeric",
@@ -211,7 +215,6 @@ const EMPTY_DRAFT: DraftState = {
   avgDecimals: "1",
   referenceUrl: "",
   levels: [],
-  schedule: { period: "daily" },
 };
 
 // Outer gate. Resolves the route's :type and :metricId, waits for the

@@ -10,34 +10,12 @@ import {
   ADDABLE_PERFORMANCE,
   ADDABLE_COMPETITION,
 } from "../../metrics/addableMetrics";
-import type { MetricDefinition } from "../../metrics/types";
-import type { CustomMetricDef } from "../../types/customMetrics";
+import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
 import { TrackedMetricsTable } from "./TrackedMetricsTable";
 import DashboardIcon from "@/icons/dashboard.svg?react";
 import buttons from "../form/buttons.module.css";
 import css from "./TrackedMetricsTable.module.css";
 import screenCss from "./TrackedDataSetup.module.css";
-
-// Adapt a CustomMetricDef into the MetricDefinition shape that
-// TrackedMetricsTable / SortableMetricRow render. Optional / built-in
-// fields (whoCollects, howCollected, description) stay empty — they
-// aren't read on this page.
-function customAsMetricDefinition(
-  def: CustomMetricDef,
-  type: "health" | "performance" | "competition",
-): MetricDefinition {
-  return {
-    id: def.id,
-    name: def.name,
-    unit: def.unit ?? "",
-    displayUnit: def.unit ?? "",
-    type,
-    whoCollects: "",
-    howCollected: "",
-    description: "",
-    inputType: def.inputType,
-  };
-}
 
 export function TrackedDataSetup() {
   const navigate = useNavigate();

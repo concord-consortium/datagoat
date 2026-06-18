@@ -19,7 +19,7 @@ import {
 import type { MetricDefinition } from "../metrics/types";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
 import { useMetricOverrides } from "../contexts/MetricOverridesContext";
-import type { CustomMetricDef } from "../types/customMetrics";
+import { customAsMetricDefinition } from "../metrics/customMetricDefinition";
 import { formatSchedule, resolveSchedule } from "../types/metricSchedule";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
@@ -80,12 +80,12 @@ export function MetricDetail({ type }: MetricDetailProps) {
   // metricType filter, MetricDetail would render but read from the
   // wrong entry map, producing an empty/misleading chart instead of
   // the "not found → Navigate back" branch below.
+  const customMatch = allCustom.find(
+    (m) => m.id === metricId && m.metricType === type,
+  );
   const metric: MetricDefinition | undefined =
     allMetrics.find((m) => m.id === metricId) ??
-    customAsMetricDefinition(
-      allCustom.find((m) => m.id === metricId && m.metricType === type),
-      type,
-    );
+    (customMatch ? customAsMetricDefinition(customMatch, type) : undefined);
   // Wait for the custom-metrics snapshot before deciding an unknown id
   // should redirect — otherwise a deep-link or refresh on
   // /health/c_xyz bounces back to the log before the snapshot
@@ -403,34 +403,6 @@ function renderMultiline(text: string) {
       {p}
     </p>
   ));
-}
-
-// Adapt a CustomMetricDef into the MetricDefinition shape MetricDetail
-// renders. The empty whoCollects/howCollected/description strings flow
-// through renderMultiline's "Coming soon" fallback. `references` is
-// intentionally absent — built-ins use it for an editorial reading
-// list, which doesn't have a custom-authored equivalent. The user-
-// supplied `referenceUrl` maps onto `learnMoreUrl`, which the existing
-// "Learn more about <name>" link already gates on (so an empty string
-// doesn't render the link).
-function customAsMetricDefinition(
-  def: CustomMetricDef | undefined,
-  type: "health" | "performance" | "competition",
-): MetricDefinition | undefined {
-  if (!def) return undefined;
-  return {
-    id: def.id,
-    name: def.name,
-    unit: def.unit ?? "",
-    displayUnit: def.unit ?? "",
-    type,
-    whoCollects: "",
-    howCollected: "",
-    description: "",
-    inputType: def.inputType,
-    learnMoreUrl: def.referenceUrl || undefined,
-    schedule: def.schedule,
-  };
 }
 
 function composeDescription(

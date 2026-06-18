@@ -82,7 +82,10 @@ export function ScheduleField({
   }
 
   return (
-    <div className={css.row}>
+    // role="group" ties the period select and its count together for
+    // assistive tech, so the "Times per <period>" field is announced as
+    // part of the schedule rather than a stray, separately-labelled input.
+    <div className={css.row} role="group" aria-label="Metric schedule">
       <SelectField
         id={`${idPrefix}-period`}
         label="Schedule"

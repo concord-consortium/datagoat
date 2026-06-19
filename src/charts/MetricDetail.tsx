@@ -155,11 +155,14 @@ export function MetricDetail({ type }: MetricDetailProps) {
   // Only surface the structured Schedule line when it adds information
   // beyond the prose "When / How Many Times Collected" section: i.e. the
   // user has overridden it, or there is no whenCollected prose (custom
-  // metrics). Never for irregular - there is no cadence to show, and most
+  // metrics). An override always shows — including an Irregular override of
+  // a built-in, which otherwise leaves the stale "Daily" prose as the only
+  // (now wrong) cadence on the page. Absent an override, irregular is
+  // suppressed: there is no cadence to show, and most
   // performance/competition built-ins would otherwise read "Irregular".
   const showSchedule =
-    effectiveSchedule.period !== "irregular" &&
-    (overrideSchedule !== undefined || !metric.whenCollected);
+    overrideSchedule !== undefined ||
+    (effectiveSchedule.period !== "irregular" && !metric.whenCollected);
 
   const average = computeAverage(series, {
     nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,

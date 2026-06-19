@@ -6,7 +6,7 @@
 // snapshot resolves. Both paths were added in commits 65028ce and
 // f6600b8 and aren't covered by the in-place chart-engine tests.
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   MemoryRouter,
@@ -93,6 +93,19 @@ vi.mock("../contexts/DataContext", () => ({
 vi.mock("../contexts/DemoModeContext", () => ({
   useDemoMode: () => false,
 }));
+
+const metricOverridesMock = vi.hoisted(() => ({
+  getOverride: vi.fn(() => undefined as unknown),
+}));
+vi.mock("../contexts/MetricOverridesContext", async () => {
+  const actual = await vi.importActual<
+    typeof import("../contexts/MetricOverridesContext")
+  >("../contexts/MetricOverridesContext");
+  return {
+    ...actual,
+    useMetricOverrides: () => metricOverridesMock,
+  };
+});
 
 import { MetricDetail } from "./MetricDetail";
 
@@ -207,6 +220,10 @@ describe("MetricDetail — custom-metric handling", () => {
 });
 
 describe("MetricDetail - schedule display", () => {
+  beforeEach(() => {
+    metricOverridesMock.getOverride.mockReturnValue(undefined);
+  });
+
   it("shows the structured schedule for a custom metric (no whenCollected prose)", () => {
     customMetricsMock.metrics = [
       {
@@ -235,5 +252,17 @@ describe("MetricDetail - schedule display", () => {
     customMetricsMock.loading = false;
     renderAt("/health/c_w", "health");
     expect(screen.queryByText("Schedule")).toBeNull();
+  });
+
+  it("surfaces an Irregular override of a built-in (else the stale prose is the only cadence shown)", () => {
+    // leanMass ships "Daily"-ish whenCollected prose; a user override to
+    // Irregular must still appear as a Schedule line, otherwise the page
+    // shows only the now-wrong prose with no sign of the override.
+    metricOverridesMock.getOverride.mockReturnValue({
+      schedule: { period: "irregular" },
+    });
+    renderAt("/health/leanMass", "health");
+    expect(screen.getByText("Schedule")).toBeInTheDocument();
+    expect(screen.getByText("Irregular")).toBeInTheDocument();
   });
 });

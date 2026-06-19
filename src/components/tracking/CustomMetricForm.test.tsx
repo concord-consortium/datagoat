@@ -4,10 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("firebase/firestore", () => ({
   collection: () => ({}),
   doc: (_db: unknown, _col: string, id: string) => ({ id }),
-  onSnapshot: (_q: unknown, listener: (snap: { forEach: (cb: (d: unknown) => void) => void }) => void) => {
+  // vi.fn so a single test can override it (mockImplementationOnce) to
+  // subscribe without emitting — keeping the provider in loading state.
+  // The default fires the listener synchronously so every other test
+  // settles to loading=false immediately.
+  onSnapshot: vi.fn((_q: unknown, listener: (snap: { forEach: (cb: (d: unknown) => void) => void }) => void) => {
     listener({ forEach: () => {} });
     return () => {};
-  },
+  }),
   query: () => ({}),
   serverTimestamp: () => ({ toMillis: () => Date.now() }),
   setDoc: vi.fn(async () => {}),
@@ -79,7 +83,10 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { setDoc as mockedSetDoc } from "firebase/firestore";
+import {
+  onSnapshot as mockedOnSnapshot,
+  setDoc as mockedSetDoc,
+} from "firebase/firestore";
 import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
 import { MetricOverridesProvider } from "../../contexts/MetricOverridesContext";
 import type { CustomMetricDef } from "../../types/customMetrics";
@@ -907,6 +914,25 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
       (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
         .disabled,
     ).toBe(false);
+  });
+
+  it("gates create mode behind loading so the duplicate check can't run against a partial name set", () => {
+    // Make onSnapshot subscribe but never emit, so the provider stays in
+    // loading state (mirrors a deep-link/hard-refresh before the first
+    // Firestore snapshot lands). Without the create-path loading gate the
+    // body would mount with `existingNames` built only from the
+    // synchronous built-ins — missing the user's own metrics — and let a
+    // self-duplicate save through (addMetric checks id, not name).
+    (mockedOnSnapshot as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      () => () => {},
+    );
+    renderAt("/add-metric/health/new");
+
+    // The form must not be mounted while loading; a Loading placeholder
+    // shows instead, so there's no Save path to bypass the dup check.
+    expect(screen.queryByLabelText(/^name$/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^save$/i })).toBeNull();
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
   it("warns in edit mode when renamed onto another existing name", async () => {

@@ -281,6 +281,17 @@ export function CustomMetricForm() {
     return <CustomMetricFormBody type={type} editing={editing} />;
   }
 
+  // Create path. Gate on the custom-metric snapshot the same way the edit
+  // path does: the body's duplicate-name guard builds its `existingNames`
+  // set from `metrics`, which is empty until the first snapshot lands. A
+  // deep-link/hard-refresh onto /add-metric/:type/new before that window
+  // closes would otherwise check a new name only against the synchronous
+  // built-ins — missing the user's own custom metrics — and addMetric
+  // re-checks id uniqueness, never name, so a self-duplicate could be
+  // saved with no warning and no fallback.
+  if (loading) {
+    return <p className={css.loading}>Loading…</p>;
+  }
   return <CustomMetricFormBody type={type} editing={undefined} />;
 }
 

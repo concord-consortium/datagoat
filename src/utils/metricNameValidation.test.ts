@@ -9,6 +9,13 @@ describe("normalizeMetricName", () => {
   it("is case-insensitive", () => {
     expect(normalizeMetricName("HYDRATION")).toBe("hydration");
   });
+
+  it("collapses internal whitespace runs to a single space", () => {
+    // "Lap  Time" (double space) and "Lap Time" must normalize alike so
+    // they're flagged as duplicates of each other.
+    expect(normalizeMetricName("Lap  Time")).toBe("lap time");
+    expect(normalizeMetricName("Lap\tTime")).toBe("lap time");
+  });
 });
 
 describe("suggestUniqueName", () => {
@@ -39,6 +46,15 @@ describe("suggestUniqueName", () => {
   it("trims the desired name before suffixing", () => {
     expect(suggestUniqueName("  Hydration  ", new Set(["hydration"]))).toBe(
       "Hydration (2)",
+    );
+  });
+
+  it("collapses internal whitespace in the suggested name", () => {
+    // "Lap  Time" (double space) collides with the canonical "lap time";
+    // the suggestion must be the canonical "Lap Time (2)", not a
+    // double-spaced "Lap  Time (2)".
+    expect(suggestUniqueName("Lap  Time", new Set(["lap time"]))).toBe(
+      "Lap Time (2)",
     );
   });
 

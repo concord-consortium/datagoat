@@ -7,6 +7,7 @@ import { HamburgerMenu } from "../components/layout/HamburgerMenu";
 import { VerificationBanner } from "../components/auth/VerificationBanner";
 import { useAuth } from "../contexts/AuthContext";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
+import { useOnboardingGate } from "../hooks/useOnboardingGate";
 import { NavMenuProvider, useNavMenu } from "../contexts/NavMenuContext";
 import { OverlayProvider } from "../contexts/OverlayContext";
 import { resolveRouteMeta, type RouteLocationState } from "./routeMeta";
@@ -94,6 +95,11 @@ function AppShellInner() {
       ? (locationState as RouteLocationState)
       : null;
   const routeMeta = resolveRouteMeta(pathname, customs, safeLocationState);
+  // During onboarding the Dashboard is unreachable, so the section heading's
+  // Home button is shown disabled rather than appearing clickable but bouncing
+  // back to /profile. Same reachability source as the hamburger's gated items.
+  const { isReachable } = useOnboardingGate();
+  const homeDisabled = !isReachable("/dashboard");
   const mainRef = useRef<HTMLElement | null>(null);
 
   // WCAG 2.4.2 (Page Titled): keep document.title in sync with the active
@@ -270,7 +276,10 @@ function AppShellInner() {
       >
         Skip to main content
       </a>
-      {/* Auth routes return early above, so the header always renders here. */}
+      {/* Auth routes return early above, so the header always renders here.
+          homeDisabled comes from main's onboarding-gate work (DGT-39): the
+          SectionHeading Home button is dimmed and non-interactive while the
+          Dashboard is unreachable during onboarding. */}
       <header className={css.header}>
         {isDashboard ? <DashboardHeaderSlide /> : <AppHeader />}
         {routeMeta && (
@@ -279,6 +288,7 @@ function AppShellInner() {
             icon={routeMeta.icon}
             showHome={routeMeta.showHome}
             backTo={routeMeta.backTo}
+            homeDisabled={homeDisabled}
           />
         )}
       </header>

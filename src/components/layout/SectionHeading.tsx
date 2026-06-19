@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import clsx from "clsx";
 import { useNavMenu } from "../../contexts/NavMenuContext";
 import BackChevron from "@/icons/back-chevron.svg?react";
 import HomeIcon from "@/icons/home.svg?react";
@@ -12,6 +13,11 @@ interface SectionHeadingProps {
   backTo?: string;
   onBack?: () => void;
   showHome?: boolean;
+  // During onboarding the Dashboard is unreachable (ProtectedRoute bounces the
+  // user back), so the Home button must look and behave as disabled rather than
+  // appearing clickable but doing nothing. Mirrors the hamburger's gated
+  // Dashboard item.
+  homeDisabled?: boolean;
 }
 
 // SectionHeading consumes NavMenuContext directly so the home + back
@@ -24,6 +30,7 @@ export function SectionHeading({
   backTo,
   onBack,
   showHome = true,
+  homeDisabled = false,
 }: SectionHeadingProps) {
   const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
   const closeMenu = () => {
@@ -72,17 +79,33 @@ export function SectionHeading({
         {icon && <span className={css.iconSlot}>{icon}</span>}
         <span className={css.titleText}>{title}</span>
       </h1>
-      {showHome && !(backTo || onBack) && (
-        <Link
-          to="/dashboard"
-          className={css.navHomeBtn}
-          aria-label="Home"
-          onClick={closeMenu}
-          data-skip-link-exclude
-        >
-          <HomeIcon />
-        </Link>
-      )}
+      {showHome &&
+        !(backTo || onBack) &&
+        (homeDisabled ? (
+          // Non-interactive, dimmed stand-in for the Home link. aria-disabled
+          // (not the disabled attr, which only applies to form controls)
+          // conveys the state; pointer-events:none + no tabIndex keep it
+          // unclickable and out of the tab order.
+          <span
+            role="link"
+            aria-disabled="true"
+            aria-label="Home"
+            className={clsx(css.navHomeBtn, css.navHomeBtnDisabled)}
+            data-skip-link-exclude
+          >
+            <HomeIcon />
+          </span>
+        ) : (
+          <Link
+            to="/dashboard"
+            className={css.navHomeBtn}
+            aria-label="Home"
+            onClick={closeMenu}
+            data-skip-link-exclude
+          >
+            <HomeIcon />
+          </Link>
+        ))}
       <button
         type="button"
         className={css.navMenuBtn}

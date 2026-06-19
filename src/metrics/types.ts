@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import type { CustomMetricLevel } from "../types/customMetrics";
+import type { MetricSchedule } from "../types/metricSchedule";
 
 export type MetricType = "health" | "performance" | "competition";
 export type MetricInputType =
@@ -52,4 +53,10 @@ export interface MetricDefinition {
   // each level carries `{ label, value }`. Reuses CustomMetricLevel so
   // built-ins and customs share the same OrdinalRadioGroup renderer.
   levels?: CustomMetricLevel[];
+  // How often entries are expected (drives reminders / "done for the
+  // day" in a follow-up). Omitted => irregular (no cadence). Mirrors the
+  // verbatim `whenCollected` prose as a structured value: "Daily" =>
+  // { period: "daily" }, "Quarterly" => { period: "yearly", count: 4 },
+  // "2-3x/year" => { period: "yearly", count: 2 }. A user can override it.
+  schedule?: MetricSchedule;
 }

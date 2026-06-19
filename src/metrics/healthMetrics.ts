@@ -43,6 +43,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     ],
     estimatedRange: "8 levels (pale yellow → dark yellow/amber)",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "sleepTime",
@@ -74,6 +75,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     ],
     estimatedRange: "4–12 hours/night",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "sleepEfficiency",
@@ -106,6 +108,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     ],
     estimatedRange: "0–100%",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "protein",
@@ -133,6 +136,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     ],
     estimatedRange: "0.6–3 g/kg/day (0.3–1.4 g/lb/day)",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "relativeProteinIntake",
@@ -146,6 +150,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     inputType: "numeric",
     estimatedRange: "0.6–3 g/kg/day",
     whenCollected: "Daily (auto)",
+    schedule: { period: "daily" },
   },
   {
     id: "leanMass",
@@ -164,6 +169,10 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     learnMoreUrl: "https://acsm.org/education-resources/books/fitness-assessment-manual/",
     estimatedRange: "30–130 kg (66–287 lbs)",
     whenCollected: "2–3×/year",
+    // "2-3x/year" is a regular (if infrequent) cadence, not ad-hoc, so
+    // it's yearly (count 2) rather than irregular - a single count can't
+    // express the "2-3" range; 2 is the conservative floor.
+    schedule: { period: "yearly", count: 2 },
   },
   {
     id: "availability",
@@ -180,6 +189,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     learnMoreUrl: "https://pubmed.ncbi.nlm.nih.gov/32362281/",
     estimatedRange: "0–100%",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
   {
     id: "mood",
@@ -196,5 +206,6 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     levels: MOOD_LEVELS,
     estimatedRange: "1–5",
     whenCollected: "Daily",
+    schedule: { period: "daily" },
   },
 ];

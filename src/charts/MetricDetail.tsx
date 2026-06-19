@@ -18,7 +18,9 @@ import {
 } from "../metrics/addableMetrics";
 import type { MetricDefinition } from "../metrics/types";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
-import type { CustomMetricDef } from "../types/customMetrics";
+import { useMetricOverrides } from "../contexts/MetricOverridesContext";
+import { customAsMetricDefinition } from "../metrics/customMetricDefinition";
+import { formatSchedule, resolveSchedule } from "../types/metricSchedule";
 import { DEFAULT_PROFILE_KEY } from "../data/profileVariants";
 import { resolveGoalText } from "../data/metricGoals";
 import { getCompTermPlural } from "../data/competitionTerms";
@@ -39,6 +41,7 @@ import {
 import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { useChartSeries } from "./useChartSeries";
 import { useDemoMode } from "../contexts/DemoModeContext";
+import { If } from "../components/common/If";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
 
@@ -71,17 +74,18 @@ export function MetricDetail({ type }: MetricDetailProps) {
         ? [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE]
         : [...COMPETITION_METRICS, ...ADDABLE_COMPETITION];
   const { metrics: allCustom, loading: customsLoading } = useCustomMetrics();
+  const { getOverride } = useMetricOverrides();
   // Match the route's :type so a health URL doesn't resolve a
   // competition-typed custom metric (and vice versa) — without the
   // metricType filter, MetricDetail would render but read from the
   // wrong entry map, producing an empty/misleading chart instead of
   // the "not found → Navigate back" branch below.
+  const customMatch = allCustom.find(
+    (m) => m.id === metricId && m.metricType === type,
+  );
   const metric: MetricDefinition | undefined =
     allMetrics.find((m) => m.id === metricId) ??
-    customAsMetricDefinition(
-      allCustom.find((m) => m.id === metricId && m.metricType === type),
-      type,
-    );
+    (customMatch ? customAsMetricDefinition(customMatch, type) : undefined);
   // Wait for the custom-metrics snapshot before deciding an unknown id
   // should redirect — otherwise a deep-link or refresh on
   // /health/c_xyz bounces back to the log before the snapshot
@@ -144,6 +148,21 @@ export function MetricDetail({ type }: MetricDetailProps) {
   }
 
   const goalLine = lookupGoalLine(metric.id, profileKey);
+  // Effective schedule: the user's per-metric override, else the metric's
+  // own (built-in default or custom-def) schedule, else irregular.
+  const overrideSchedule = getOverride(metric.id)?.schedule;
+  const effectiveSchedule = resolveSchedule(metric.schedule, overrideSchedule);
+  // Only surface the structured Schedule line when it adds information
+  // beyond the prose "When / How Many Times Collected" section: i.e. the
+  // user has overridden it, or there is no whenCollected prose (custom
+  // metrics). An override always shows — including an Irregular override of
+  // a built-in, which otherwise leaves the stale "Daily" prose as the only
+  // (now wrong) cadence on the page. Absent an override, irregular is
+  // suppressed: there is no cadence to show, and most
+  // performance/competition built-ins would otherwise read "Irregular".
+  const showSchedule =
+    overrideSchedule !== undefined ||
+    (effectiveSchedule.period !== "irregular" && !metric.whenCollected);
 
   const average = computeAverage(series, {
     nullsCountAsZero: getMetricChartConfig(metric.id).nullsCountAsZero,
@@ -244,6 +263,13 @@ export function MetricDetail({ type }: MetricDetailProps) {
           <div className={css.metricDescription}>{metric.whenCollected}</div>
         </>
       )}
+
+      <If condition={showSchedule}>
+        <h2 className={css.infoSectionHeading}>Schedule</h2>
+        <div className={css.metricDescription}>
+          {formatSchedule(effectiveSchedule)}
+        </div>
+      </If>
 
       {metric.references && metric.references.length > 0 && (
         <>
@@ -380,33 +406,6 @@ function renderMultiline(text: string) {
       {p}
     </p>
   ));
-}
-
-// Adapt a CustomMetricDef into the MetricDefinition shape MetricDetail
-// renders. The empty whoCollects/howCollected/description strings flow
-// through renderMultiline's "Coming soon" fallback. `references` is
-// intentionally absent — built-ins use it for an editorial reading
-// list, which doesn't have a custom-authored equivalent. The user-
-// supplied `referenceUrl` maps onto `learnMoreUrl`, which the existing
-// "Learn more about <name>" link already gates on (so an empty string
-// doesn't render the link).
-function customAsMetricDefinition(
-  def: CustomMetricDef | undefined,
-  type: "health" | "performance" | "competition",
-): MetricDefinition | undefined {
-  if (!def) return undefined;
-  return {
-    id: def.id,
-    name: def.name,
-    unit: def.unit ?? "",
-    displayUnit: def.unit ?? "",
-    type,
-    whoCollects: "",
-    howCollected: "",
-    description: "",
-    inputType: def.inputType,
-    learnMoreUrl: def.referenceUrl || undefined,
-  };
 }
 
 function composeDescription(

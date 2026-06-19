@@ -36,6 +36,11 @@ import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 import type { MetricOverride } from "../types/metricOverrides";
 import {
+  parseStoredSchedule,
+  scheduleToFirestore,
+  type MetricSchedule,
+} from "../types/metricSchedule";
+import {
   setMetricOverrides,
   type MetricOverrideFields,
 } from "../charts/metricChartConfig";
@@ -53,6 +58,10 @@ export type MetricOverridePatch = {
   goalRaw?: number;
   yTopRaw?: number | null;
   yBottomRaw?: number | null;
+  // MetricSchedule: set the override. null: clear it (revert to the
+  // metric's own schedule, via Firestore deleteField). undefined / omitted:
+  // leave the stored field untouched.
+  schedule?: MetricSchedule | null;
 };
 
 interface MetricOverridesValue {
@@ -116,6 +125,7 @@ export function fromDoc(
     goalRaw: finiteOrUndefined(data.goalRaw),
     yTopRaw: finiteOrUndefined(data.yTopRaw),
     yBottomRaw: finiteOrUndefined(data.yBottomRaw),
+    schedule: parseStoredSchedule(data.schedule),
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
   };
@@ -225,6 +235,12 @@ export function MetricOverridesProvider({
         payload.yBottomRaw = deleteField();
       } else if (Number.isFinite(patch.yBottomRaw)) {
         payload.yBottomRaw = patch.yBottomRaw;
+      }
+      // schedule: object => set; null => clear (deleteField); undefined => skip.
+      if (patch.schedule === null) {
+        payload.schedule = deleteField();
+      } else if (patch.schedule !== undefined) {
+        payload.schedule = scheduleToFirestore(patch.schedule);
       }
       // Stamp createdAt only on first write so a later save doesn't
       // reset it (merge:true would otherwise overwrite it every time).

@@ -144,6 +144,35 @@ describe("CustomMetricForm (create)", () => {
     );
   });
 
+  it("persists a schedule, defaulting a new health metric to daily", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Weigh-in");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ schedule: { period: "daily" } }),
+    );
+  });
+
+  it("persists the schedule the user chooses in the editor", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/name/i), "Weigh-in");
+    await user.selectOptions(screen.getByLabelText("Schedule"), "weekly");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ schedule: { period: "weekly", count: 1 } }),
+    );
+  });
+
   it("persists a valid Reference URL when provided", async () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");

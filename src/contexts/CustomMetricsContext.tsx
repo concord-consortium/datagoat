@@ -26,6 +26,11 @@ import type {
   CustomMetricLevel,
   CustomMetricPrimitive,
 } from "../types/customMetrics";
+import {
+  parseStoredSchedule,
+  scheduleToFirestore,
+  type MetricSchedule,
+} from "../types/metricSchedule";
 import { mintCustomMetricId } from "../utils/customMetricId";
 import {
   customDefToChartConfig,
@@ -148,6 +153,7 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
     avgDecimals: data.avgDecimals == null ? undefined : Number(data.avgDecimals),
     levels: readLevels(data.levels),
     referenceUrl: String(data.referenceUrl ?? ""),
+    schedule: parseStoredSchedule(data.schedule),
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
   };
@@ -276,6 +282,9 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;
       if (def.avgDecimals !== undefined) writePayload.avgDecimals = def.avgDecimals;
       if (levelsForWrite !== undefined) writePayload.levels = levelsForWrite;
+      if (def.schedule !== undefined) {
+        writePayload.schedule = scheduleToFirestore(def.schedule);
+      }
       await setDoc(ref, writePayload);
       return def;
     },
@@ -304,7 +313,13 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
         if (k === "createdAt" || k === "updatedAt") continue;
-        if (v !== undefined) cleaned[k] = v;
+        if (v === undefined) continue;
+        // Route schedule through the same normalizer the create path
+        // uses, so update writes apply identical rules (drop count for
+        // irregular / non-positive-integer) and never persist a nested
+        // undefined count.
+        cleaned[k] =
+          k === "schedule" ? scheduleToFirestore(v as MetricSchedule) : v;
       }
       cleaned.updatedAt = serverTimestamp();
       await updateDoc(ref, cleaned);

@@ -11,6 +11,8 @@
 // metric goals/axes, but the override shape (partial goal + axis
 // fields) is generic and could later apply to custom metrics too.
 // Avoid `builtin` in identifiers to keep that door open.
+import type { MetricSchedule } from "./metricSchedule";
+
 export interface MetricOverride {
   id: string;
   ownerId: string;
@@ -18,6 +20,9 @@ export interface MetricOverride {
   goalRaw?: number;
   yTopRaw?: number;
   yBottomRaw?: number;
+  // Per-user override of the metric's schedule (built-in default or
+  // custom-def value). Absent => fall back to the metric's own schedule.
+  schedule?: MetricSchedule;
   // ms epoch; provider-managed via server timestamps.
   createdAt: number;
   updatedAt: number;

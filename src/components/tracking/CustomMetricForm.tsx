@@ -15,9 +15,11 @@ import {
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
+import { ScheduleField } from "../form/ScheduleField";
 import radioCss from "../form/RadioGroup.module.css";
 import { CustomMetricLevelsEditor } from "./CustomMetricLevelsEditor";
 import { If } from "../common/If";
+import { resolveSchedule, type MetricSchedule } from "../../types/metricSchedule";
 import type {
   CustomMetricDef,
   CustomMetricInputType,
@@ -186,9 +188,23 @@ interface DraftState {
   avgDecimals: string;
   referenceUrl: string;
   levels: CustomMetricLevel[];
+  schedule: MetricSchedule;
 }
 
-const EMPTY_DRAFT: DraftState = {
+// New-metric schedule default mirrors the built-in policy: health is
+// daily, performance/competition are event/test-driven (irregular). The
+// user can change it in the editor before saving.
+function defaultScheduleForType(
+  type: AuthorableCustomMetricType,
+): MetricSchedule {
+  return type === "health" ? { period: "daily" } : { period: "irregular" };
+}
+
+// Schedule is omitted here: every construction site supplies it
+// explicitly (new metrics via defaultScheduleForType(type), edits via
+// resolveSchedule(editing.schedule)), so a literal here would be dead and
+// could contradict defaultScheduleForType for non-health types.
+const EMPTY_DRAFT: Omit<DraftState, "schedule"> = {
   topLevel: "numeric",
   name: "",
   inputType: "numeric",
@@ -298,10 +314,14 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     competition.status === "loaded" ? competition.entries : [];
 
   const [draft, setDraft] = useState<DraftState>(() => {
-    if (!editing) return EMPTY_DRAFT;
+    if (!editing) {
+      return { ...EMPTY_DRAFT, schedule: defaultScheduleForType(type) };
+    }
     const topLevel = inferTopLevel(editing);
     return {
       topLevel,
+      // Seed from the saved schedule; absent (legacy doc) => irregular.
+      schedule: resolveSchedule(editing.schedule),
       name: editing.name,
       inputType: editing.inputType,
       unit: editing.unit ?? "",
@@ -401,6 +421,9 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       setError(err instanceof Error ? err.message : "Invalid form.");
       return;
     }
+    // Schedule is orthogonal to the primitive/levels validation in
+    // buildPayload, so it's attached here rather than threaded through.
+    payload.schedule = draft.schedule;
 
     try {
       if (editing) {
@@ -647,6 +670,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         inputMode="url"
         value={draft.referenceUrl}
         onChange={(e) => update("referenceUrl", e.target.value)}
+      />
+
+      <ScheduleField
+        idPrefix="cm-schedule"
+        value={draft.schedule}
+        onChange={(s) => update("schedule", s)}
       />
 
       {error && <p className={css.error}>{error}</p>}

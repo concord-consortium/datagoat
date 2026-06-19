@@ -15,6 +15,12 @@ import { getCompTermPlural } from "../../data/competitionTerms";
 import { goalDeterminationText, resolveGoalText } from "../../data/metricGoals";
 import { If } from "../common/If";
 import { TextField } from "../form/TextField";
+import { ScheduleField } from "../form/ScheduleField";
+import {
+  resolveSchedule,
+  schedulesEqual,
+  type MetricSchedule,
+} from "../../types/metricSchedule";
 import type { MetricDefinition } from "../../metrics/types";
 import css from "./CustomMetricForm.module.css";
 
@@ -67,6 +73,12 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
   );
   const [yBottomRaw, setYBottomRaw] = useState<string>(
     existing?.yBottomRaw !== undefined ? String(existing.yBottomRaw) : "",
+  );
+  // Effective schedule: the user's override, else the metric's built-in
+  // default, else irregular. Edited locally; on save we only persist an
+  // override when it differs from the built-in default (otherwise clear).
+  const [schedule, setSchedule] = useState<MetricSchedule>(() =>
+    resolveSchedule(metric.schedule, existing?.schedule),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -130,6 +142,15 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
       // stops shadowing the base config.
       if (existing?.yTopRaw !== undefined) patch.yTopRaw = null;
       if (existing?.yBottomRaw !== undefined) patch.yBottomRaw = null;
+    }
+
+    // Schedule: only override when it differs from the metric's built-in
+    // default. Matching the default clears any prior override (so the
+    // metric tracks future default changes) rather than pinning it.
+    if (schedulesEqual(schedule, resolveSchedule(metric.schedule))) {
+      if (existing?.schedule !== undefined) patch.schedule = null;
+    } else {
+      patch.schedule = schedule;
     }
 
     try {
@@ -203,6 +224,12 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
           onChange={(e) => setYBottomRaw(e.target.value)}
         />
       </div>
+
+      <ScheduleField
+        idPrefix="mo-schedule"
+        value={schedule}
+        onChange={setSchedule}
+      />
 
       {error && <p className={css.error}>{error}</p>}
 

@@ -120,6 +120,22 @@ describe("AppShell", () => {
       renderAuthShell("/login", <div>login</div>);
       expect(document.title).toBe("Sign In | DataGOAT");
     });
+
+    it("treats a trailing-slash auth URL (/login/) as an auth route", () => {
+      // RR v7 route-matches /login/ to the /login route, but
+      // useLocation().pathname keeps the trailing slash. Without pathname
+      // normalization, AUTH_PATHS.has("/login/") is false, so AppShell
+      // re-emits its own <main id="main-content">/skip-link on top of
+      // AuthLayout's - reopening the duplicate-landmark bug this PR fixes -
+      // and AUTH_TITLES misses, dropping the title to the bare brand.
+      renderAuthShell("/login/", <div data-testid="auth-content">login</div>);
+      expect(document.getElementById("main-content")).toBeNull();
+      expect(
+        screen.queryByRole("link", { name: /skip to main content/i }),
+      ).toBeNull();
+      expect(document.title).toBe("Sign In | DataGOAT");
+      expect(screen.getByTestId("auth-content")).toBeInTheDocument();
+    });
   });
 
   describe("focusin auto-scroll", () => {

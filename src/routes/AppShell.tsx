@@ -36,6 +36,20 @@ const AUTH_TITLES: Record<string, string> = {
   "/verify-email": "Verify Email",
 };
 
+// React Router v7 route-matches trailing-slash URLs (/login/) to their
+// slash-less routes, but useLocation().pathname preserves the trailing
+// slash. Strip it (except root "/") so the exact-match AUTH_PATHS /
+// AUTH_TITLES lookups - and the isDashboard / routeMeta checks - stay
+// slash-insensitive. Without this, a hand-typed or bookmarked /login/
+// misses AUTH_PATHS, AppShell re-emits its own <main id="main-content">
+// on top of AuthLayout's, and the duplicate landmark DGT-47 removed
+// returns (plus the title falls back to the bare brand). Collapses
+// repeated trailing slashes too.
+function normalizePathname(pathname: string): string {
+  const stripped = pathname.replace(/\/+$/, "");
+  return stripped === "" ? "/" : stripped;
+}
+
 export function AppShell() {
   // NavMenuProvider hosts the open/close state so non-menu components
   // (DashboardHeaderSlide) can pause the carousel while the menu is open.
@@ -52,7 +66,11 @@ export function AppShell() {
 function AppShellInner() {
   const { isOpen: menuOpen, setIsOpen: setMenuOpen } = useNavMenu();
   const { user } = useAuth();
-  const { pathname, state: locationState } = useLocation();
+  const { pathname: rawPathname, state: locationState } = useLocation();
+  // Shadow pathname with its normalized form so every pathname-keyed
+  // check below (isAuthRoute, isDashboard, AUTH_TITLES, resolveRouteMeta,
+  // the scroll-reset effect) is slash-insensitive in one place.
+  const pathname = normalizePathname(rawPathname);
   const isAuthRoute = AUTH_PATHS.has(pathname);
   // /dashboard renders DashboardHeaderSlide (the wordmark<->motivation
   // carousel) instead of the static AppHeader. Both render inside the

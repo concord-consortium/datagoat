@@ -10,7 +10,12 @@
 // no-ops, which would strand focus on the skip link). Fall back to <main>
 // itself only when it has no focusable content (pure-text screens).
 
-export const SKIP_LINK_EXCLUDED_ATTR = "data-skip-link-exclude";
+// Internal to this module: the selector below is the only consumer.
+// Components that mark chrome to skip apply the `data-skip-link-exclude`
+// literal directly in their JSX (a literal attribute reads cleaner in
+// markup than a computed key), so this constant intentionally isn't
+// exported.
+const SKIP_LINK_EXCLUDED_ATTR = "data-skip-link-exclude";
 
 // Match on `data-skip-link-exclude` rather than CSS Module class names -
 // CSS Modules hash class names ("_navMenuBtn_a5cf63"), so the raw

@@ -56,6 +56,19 @@ function renderShell(initialEntry: string, content: ReactNode) {
   );
 }
 
+function renderAuthShell(initialEntry: string, content: ReactNode) {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/login" element={content} />
+          <Route path="/verify-email" element={content} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 function fakeRect(partial: Partial<DOMRect>): DOMRect {
   const base = {
     top: 0,
@@ -100,6 +113,43 @@ describe("AppShell", () => {
     });
   });
 
+  describe("auth routes (AuthLayout owns the landmark)", () => {
+    it("does not render AppShell's own <main>/skip-link on /login", () => {
+      // DGT-47: auth routes nest AuthLayout, which supplies the single
+      // <main id="main-content"> + skip link. AppShell must not emit a
+      // second one - duplicate id="main-content" made the auth skip link's
+      // anchor jump ring the whole page. The stubbed route content here has
+      // no main-content, so any main-content present would be AppShell's.
+      renderAuthShell("/login", <div data-testid="auth-content">login</div>);
+      expect(document.getElementById("main-content")).toBeNull();
+      expect(
+        screen.queryByRole("link", { name: /skip to main content/i }),
+      ).toBeNull();
+      expect(screen.getByTestId("auth-content")).toBeInTheDocument();
+    });
+
+    it("still syncs document.title via AUTH_TITLES on /login", () => {
+      renderAuthShell("/login", <div>login</div>);
+      expect(document.title).toBe("Sign In | DataGOAT");
+    });
+
+    it("treats a trailing-slash auth URL (/login/) as an auth route", () => {
+      // RR v7 route-matches /login/ to the /login route, but
+      // useLocation().pathname keeps the trailing slash. Without pathname
+      // normalization, AUTH_PATHS.has("/login/") is false, so AppShell
+      // re-emits its own <main id="main-content">/skip-link on top of
+      // AuthLayout's - reopening the duplicate-landmark bug this PR fixes -
+      // and AUTH_TITLES misses, dropping the title to the bare brand.
+      renderAuthShell("/login/", <div data-testid="auth-content">login</div>);
+      expect(document.getElementById("main-content")).toBeNull();
+      expect(
+        screen.queryByRole("link", { name: /skip to main content/i }),
+      ).toBeNull();
+      expect(document.title).toBe("Sign In | DataGOAT");
+      expect(screen.getByTestId("auth-content")).toBeInTheDocument();
+    });
+  });
+
   describe("focusin auto-scroll", () => {
     it("calls main.scrollBy with positive top when the focused element sits below main's rect", () => {
       renderShell("/test", <button type="button">Far below</button>);
@@ -124,6 +174,52 @@ describe("AppShell", () => {
       expect(scrollBy).toHaveBeenCalledTimes(1);
       const arg = scrollBy.mock.calls[0][0] as ScrollToOptions;
       expect(arg.top).toBeGreaterThan(0);
+    });
+
+    it("attaches the listener after navigating from an auth route to a content route", async () => {
+      // Regression for PR #35: the focusin effect has [] deps and bails when
+      // mainRef.current is null. Auth routes render no AppShell <main>, so a
+      // session that first loads on /login mounted the effect with a null
+      // ref. The listener must still attach once a content route renders
+      // <main> - hence isAuthRoute is in the effect deps.
+      const user = userEvent.setup();
+      render(
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route
+                path="/login"
+                element={
+                  <Link to="/test" data-testid="go-content">
+                    To content
+                  </Link>
+                }
+              />
+              <Route
+                path="/test"
+                element={<button type="button">Far below</button>}
+              />
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      await user.click(screen.getByTestId("go-content"));
+
+      const main = document.getElementById("main-content")!;
+      const target = screen.getByRole("button", { name: "Far below" });
+      vi.spyOn(main, "getBoundingClientRect").mockReturnValue(
+        fakeRect({ top: 0, bottom: 500, height: 500, width: 320, right: 320 }),
+      );
+      vi.spyOn(target, "getBoundingClientRect").mockReturnValue(
+        fakeRect({ top: 600, bottom: 650, height: 50, width: 100, right: 100, y: 600 }),
+      );
+      const scrollBy = vi.fn();
+      main.scrollBy = scrollBy as unknown as Element["scrollBy"];
+
+      fireEvent.focusIn(target);
+
+      expect(scrollBy).toHaveBeenCalledTimes(1);
     });
 
     it("does NOT scroll when the focused element sits inside a [role=dialog]", () => {

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useRef, type MouseEvent, type ReactNode } from "react";
+import { focusFirstContentControl } from "../common/skipLink";
 import common from "../common.module.css";
 import css from "./AuthLayout.module.css";
 
@@ -20,9 +21,23 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ heading, children }: AuthLayoutProps) {
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  function handleSkipLinkClick(e: MouseEvent<HTMLAnchorElement>) {
+    // Suppress the browser's anchor jump (which would land focus on the
+    // tabIndex={-1} <main> and ring the whole page) and instead advance
+    // focus to the first form control inside <main> - see DGT-47.
+    e.preventDefault();
+    focusFirstContentControl(mainRef.current);
+  }
+
   return (
     <div className={css.shell}>
-      <a className={common.skipLink} href="#main-content">
+      <a
+        className={common.skipLink}
+        href="#main-content"
+        onClick={handleSkipLinkClick}
+      >
         Skip to main content
       </a>
 
@@ -66,6 +81,7 @@ export function AuthLayout({ heading, children }: AuthLayoutProps) {
       <main
         className={css.contentBlock}
         id="main-content"
+        ref={mainRef}
         tabIndex={-1}
       >
         <h1 className={css.authHeading}>{heading}</h1>

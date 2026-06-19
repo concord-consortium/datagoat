@@ -222,7 +222,8 @@ export function ProfileForm() {
       // which mode now treats as onboarding (mode keys off profileComplete,
       // not mere doc existence) - heals into a complete profile on submit
       // instead of leaving the user stuck on /profile. Only onboarding reaches
-      // this code; edit mode saves via auto-save and exits via "Done".
+      // this code; edit mode saves via auto-save and exits via the Home button
+      // or hamburger menu.
       await updateProfile({
         ...profilePartial,
         profileComplete: true,

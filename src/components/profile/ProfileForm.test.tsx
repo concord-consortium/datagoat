@@ -305,8 +305,8 @@ describe("ProfileForm submit", () => {
   });
 
   it("renders a form-level error and does not navigate when the Firestore write rejects", async () => {
-    // The button-press write path lives in onboarding now (edit mode's "Done"
-    // is a plain exit), so drive the reject through the onboarding submit.
+    // The button-press write path lives in onboarding now (edit mode has no
+    // bottom action button), so drive the reject through the onboarding submit.
     ctx.loadState = { status: "missing" };
     (ctx.updateProfileMock as unknown as Mock).mockRejectedValueOnce(
       new Error("permission-denied"),

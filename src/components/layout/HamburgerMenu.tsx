@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import { Dialog } from "../common/Dialog";
 import { useAuth } from "../../contexts/AuthContext";
-import { useUser } from "../../contexts/UserContext";
+import { useOnboardingGate } from "../../hooks/useOnboardingGate";
 import HomeIcon from "@/icons/home.svg?react";
 import CalendarIcon from "@/icons/calendar.svg?react";
 import StopwatchIcon from "@/icons/stopwatch.svg?react";
@@ -36,45 +36,9 @@ const ITEMS: MenuItem[] = [
 
 export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
   const { signOut } = useAuth();
-  const { loadState } = useUser();
-  const { pathname, search, hash } = useLocation();
+  const { phase, isOnboarding, isReachable } = useOnboardingGate();
+  const { pathname } = useLocation();
   const gateHintId = useId();
-
-  // Narrowed onboarding gate per spec:
-  //   loading      -> phase='ready' (showing all items briefly is the
-  //                   right failure mode; menu lives in AppShell, outside
-  //                   ProtectedRoute, so this branch fires during the
-  //                   brief Firestore-fetch window on cold start. A flash
-  //                   of disabled items would be more disruptive than a
-  //                   flash of unlocked items.)
-  //   missing      -> phase='pre-profile' (new user; only /profile reachable)
-  //   loaded       -> phase reflects the next incomplete onboarding step
-  //                   so the user can reach the page they need to finish.
-  //                   /setup/tracking unlocks once profileComplete is true,
-  //                   even before trackingSetupComplete - otherwise a
-  //                   partway-onboarded user can't reach the page they
-  //                   need to finish onboarding.
-  const phase: "ready" | "pre-profile" | "pre-tracking" =
-    loadState.status === "missing"
-      ? "pre-profile"
-      : loadState.status === "loaded"
-        ? !loadState.profile.profileComplete
-          ? "pre-profile"
-          : !loadState.profile.trackingSetupComplete
-            ? "pre-tracking"
-            : "ready"
-        : "ready";
-  const isOnboarding = phase !== "ready";
-
-  function isReachable(to: string): boolean {
-    if (!isOnboarding) return true;
-    if (to === "/profile") return true;
-    if (to === "/setup/tracking" && phase === "pre-tracking") return true;
-    // About is version info + credits; it has no profile / tracking
-    // prerequisite, so let users reach it from the menu even mid-onboarding.
-    if (to === "/about") return true;
-    return false;
-  }
 
   const gateHint =
     phase === "pre-tracking"
@@ -129,17 +93,6 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
                 ) : (
                   <Link
                     to={to}
-                    // Seed backTo so the Profile screen's "Done" button can
-                    // return the user where they came from (its only nav is a
-                    // plain exit now that the form auto-saves). Include search +
-                    // hash so query-derived views (e.g. /competition?date=…)
-                    // are preserved. Other routes carry their own back
-                    // semantics, so this is Profile-only.
-                    state={
-                      to === "/profile" && pathname !== "/profile"
-                        ? { backTo: `${pathname}${search}${hash}` }
-                        : undefined
-                    }
                     className={clsx(css.navItem, isActive && css.active)}
                     aria-current={isActive ? "page" : undefined}
                     onClick={handleNavigate}

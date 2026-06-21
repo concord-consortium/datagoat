@@ -4,10 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("firebase/firestore", () => ({
   collection: () => ({}),
   doc: (_db: unknown, _col: string, id: string) => ({ id }),
-  onSnapshot: (_q: unknown, listener: (snap: { forEach: (cb: (d: unknown) => void) => void }) => void) => {
+  // vi.fn so a single test can override it (mockImplementationOnce) to
+  // subscribe without emitting — keeping the provider in loading state.
+  // The default fires the listener synchronously so every other test
+  // settles to loading=false immediately.
+  onSnapshot: vi.fn((_q: unknown, listener: (snap: { forEach: (cb: (d: unknown) => void) => void }) => void) => {
     listener({ forEach: () => {} });
     return () => {};
-  },
+  }),
   query: () => ({}),
   serverTimestamp: () => ({ toMillis: () => Date.now() }),
   setDoc: vi.fn(async () => {}),
@@ -79,7 +83,10 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { setDoc as mockedSetDoc } from "firebase/firestore";
+import {
+  onSnapshot as mockedOnSnapshot,
+  setDoc as mockedSetDoc,
+} from "firebase/firestore";
 import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
 import { MetricOverridesProvider } from "../../contexts/MetricOverridesContext";
 import type { CustomMetricDef } from "../../types/customMetrics";
@@ -294,7 +301,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
       {
         id: "c_x",
         ownerId: "u1",
-        name: "Mood",
+        name: "My Mood",
         metricType: "health",
         primitive: "ordinal",
         inputType: "radio",
@@ -355,7 +362,7 @@ describe("CustomMetricForm (edit confirmation)", () => {
       {
         id: "c_x",
         ownerId: "u1",
-        name: "Mood",
+        name: "My Mood",
         metricType: "health",
         primitive: "ordinal",
         inputType: "radio",
@@ -637,7 +644,7 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Mood");
+    await user.type(screen.getByLabelText(/^name$/i), "My Mood");
     await user.click(screen.getByRole("radio", { name: /categorical/i }));
     // Two seeded rows + one Add row click → three rows, matching the
     // Low/Mid/High shape this test exercises.
@@ -846,6 +853,140 @@ describe("CustomMetricForm (auto-track on create)", () => {
     expect(call?.trackedHealthMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
+  });
+});
+
+describe("CustomMetricForm (duplicate-name validation)", () => {
+  it("warns and disables Save when the name matches a built-in metric", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument();
+    expect(
+      (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  it("matches built-in names case-insensitively", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "hYdRaTiOn");
+
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument();
+  });
+
+  it("fills the field with the (2) suffix and re-enables Save when the user insists", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+    await user.click(
+      screen.getByRole("button", { name: /use .*hydration \(2\).* instead/i }),
+    );
+
+    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe(
+      "Hydration (2)",
+    );
+    expect(screen.queryByText(/already exists/i)).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await waitFor(() => {
+      expect(screen.getByText("back to tracking setup")).toBeInTheDocument();
+    });
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ name: "Hydration (2)" }),
+    );
+  });
+
+  it("does not warn for a name that collides with nothing", async () => {
+    const user = userEvent.setup();
+    renderAt("/add-metric/health/new");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Stretch Minutes");
+
+    expect(screen.queryByText(/already exists/i)).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it("does not warn in edit mode when the metric keeps its own name", () => {
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "My Recovery Score",
+      metricType: "health",
+      primitive: "numeric",
+      inputType: "numeric",
+      unit: "",
+      goalRaw: 5,
+      yTopRaw: 10,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+
+    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe(
+      "My Recovery Score",
+    );
+    expect(screen.queryByText(/already exists/i)).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: /^save$/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it("gates create mode behind loading so the duplicate check can't run against a partial name set", () => {
+    // Make onSnapshot subscribe but never emit, so the provider stays in
+    // loading state (mirrors a deep-link/hard-refresh before the first
+    // Firestore snapshot lands). Without the create-path loading gate the
+    // body would mount with `existingNames` built only from the
+    // synchronous built-ins — missing the user's own metrics — and let a
+    // self-duplicate save through (addMetric checks id, not name).
+    (mockedOnSnapshot as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      () => () => {},
+    );
+    renderAt("/add-metric/health/new");
+
+    // The form must not be mounted while loading; a Loading placeholder
+    // shows instead, so there's no Save path to bypass the dup check.
+    expect(screen.queryByLabelText(/^name$/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^save$/i })).toBeNull();
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+  });
+
+  it("warns in edit mode when renamed onto another existing name", async () => {
+    const user = userEvent.setup();
+    renderEditForm("health", {
+      id: "c_x",
+      ownerId: "u1",
+      name: "My Recovery Score",
+      metricType: "health",
+      primitive: "numeric",
+      inputType: "numeric",
+      unit: "",
+      goalRaw: 5,
+      yTopRaw: 10,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+
+    await user.clear(screen.getByLabelText(/^name$/i));
+    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument();
   });
 });
 

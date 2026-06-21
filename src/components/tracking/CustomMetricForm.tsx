@@ -1,9 +1,13 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { useData } from "../../contexts/DataContext";
 import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
+import {
+  normalizeMetricName,
+  suggestUniqueName,
+} from "../../utils/metricNameValidation";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
@@ -293,6 +297,17 @@ export function CustomMetricForm() {
     return <CustomMetricFormBody type={type} editing={editing} />;
   }
 
+  // Create path. Gate on the custom-metric snapshot the same way the edit
+  // path does: the body's duplicate-name guard builds its `existingNames`
+  // set from `metrics`, which is empty until the first snapshot lands. A
+  // deep-link/hard-refresh onto /add-metric/:type/new before that window
+  // closes would otherwise check a new name only against the synchronous
+  // built-ins — missing the user's own custom metrics — and addMetric
+  // re-checks id uniqueness, never name, so a self-duplicate could be
+  // saved with no warning and no fallback.
+  if (loading) {
+    return <p className={css.loading}>Loading…</p>;
+  }
   return <CustomMetricFormBody type={type} editing={undefined} />;
 }
 
@@ -303,7 +318,7 @@ interface BodyProps {
 
 function CustomMetricFormBody({ type, editing }: BodyProps) {
   const navigate = useNavigate();
-  const { addMetric, updateMetric, deleteMetric } = useCustomMetrics();
+  const { metrics, addMetric, updateMetric, deleteMetric } = useCustomMetrics();
   const { health, performance, competition } = useData();
   const { loadState, updateProfile, setTrackedMetrics } = useUser();
   const healthEntries =
@@ -342,6 +357,36 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     };
   });
   const [error, setError] = useState<string | null>(null);
+
+  // The set of names a new/edited metric must not collide with: every
+  // built-in default (on + addable, all three types) plus the user's own
+  // custom metrics, normalized for case-insensitive comparison. The
+  // metric being edited is excluded so re-saving it without a rename
+  // doesn't flag its own name as a duplicate.
+  const existingNames = useMemo(() => {
+    const set = new Set<string>();
+    const addAll = (defs: readonly { name: string }[]) => {
+      for (const d of defs) set.add(normalizeMetricName(d.name));
+    };
+    addAll(HEALTH_METRICS);
+    addAll(PERFORMANCE_METRICS);
+    addAll(COMPETITION_METRICS);
+    addAll(ADDABLE_HEALTH);
+    addAll(ADDABLE_PERFORMANCE);
+    addAll(ADDABLE_COMPETITION);
+    for (const m of metrics) {
+      if (m.id === editing?.id) continue;
+      set.add(normalizeMetricName(m.name));
+    }
+    return set;
+  }, [metrics, editing]);
+
+  const trimmedName = draft.name.trim();
+  const isDuplicateName =
+    trimmedName !== "" && existingNames.has(normalizeMetricName(trimmedName));
+  const suggestedName = isDuplicateName
+    ? suggestUniqueName(trimmedName, existingNames)
+    : null;
 
   function switchTopLevel(next: TopLevelKind) {
     setDraft((prev) => {
@@ -385,6 +430,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     }
     if (trimmed.length > NAME_MAX) {
       setError(`Name must be ${NAME_MAX} characters or fewer.`);
+      return;
+    }
+    // Save is disabled while a collision warning is showing; this guards
+    // the Enter-key / stale-state path so a duplicate name can never be
+    // persisted without the user resolving it.
+    if (isDuplicateName) {
       return;
     }
     const referenceUrl = draft.referenceUrl.trim();
@@ -603,6 +654,23 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         onChange={(e) => update("name", e.target.value)}
       />
 
+      <If condition={isDuplicateName}>
+        <div className={css.nameWarning} role="alert">
+          <p className={css.nameWarningText}>
+            A metric named "{trimmedName}" already exists.
+          </p>
+          <button
+            type="button"
+            className={css.nameWarningAction}
+            onClick={() => {
+              if (suggestedName) update("name", suggestedName);
+            }}
+          >
+            Use "{suggestedName}" instead
+          </button>
+        </div>
+      </If>
+
       <If condition={draft.topLevel !== "numeric"}>
         <div className={css.levelsBlock}>
           <label className={css.fieldLabel}>Levels</label>
@@ -689,7 +757,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             Delete
           </button>
         )}
-        <button type="submit" className={css.primary}>
+        <button type="submit" className={css.primary} disabled={isDuplicateName}>
           Save
         </button>
       </div>

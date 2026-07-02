@@ -51,7 +51,7 @@ export interface MetricDefinition {
   whenCollected?: string;
   // Required when inputType === "ordinal". Ordered ascending by value;
   // each level carries `{ label, value }`. Reuses CustomMetricLevel so
-  // built-ins and customs share the same OrdinalRadioGroup renderer.
+  // built-ins and customs share the same ScaleCards renderer.
   levels?: CustomMetricLevel[];
   // How often entries are expected (drives reminders / "done for the
   // day" in a follow-up). Omitted => irregular (no cadence). Mirrors the

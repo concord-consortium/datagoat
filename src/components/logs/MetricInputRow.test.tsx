@@ -179,24 +179,24 @@ function renderOrdinal(initial: number | undefined = undefined) {
 }
 
 describe("MetricInputRow Ordinal", () => {
-  it("renders one radio per level with the label as visible text", () => {
+  it("renders one card per level with the label as visible text", () => {
     renderOrdinal();
-    expect(screen.getByRole("radio", { name: /^low$/i })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /^mid$/i })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /^high$/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^low$/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^mid$/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^high$/i })).toBeTruthy();
   });
 
-  it("marks the selected level via checked", () => {
+  it("marks the selected level via aria-pressed", () => {
     renderOrdinal(3);
     expect(
-      (screen.getByRole("radio", { name: /^mid$/i }) as HTMLInputElement).checked,
-    ).toBe(true);
+      screen.getByRole("button", { name: /^mid$/i }).getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 
   it("fires onChange with the numeric value when a level is clicked", async () => {
     const user = userEvent.setup();
     const { onChange } = renderOrdinal();
-    await user.click(screen.getByRole("radio", { name: /^high$/i }));
+    await user.click(screen.getByRole("button", { name: /^high$/i }));
     expect(onChange).toHaveBeenCalledWith(5);
   });
 });

@@ -136,7 +136,7 @@ function buildPayload(
     throw new Error("Each level needs a numeric value.");
   }
   if (levels.length < 2) {
-    throw new Error("Categorical metrics need at least two levels.");
+    throw new Error("Scale metrics need at least two levels.");
   }
   const values = levels.map((l) => l.value as number);
   if (new Set(values).size !== values.length) {
@@ -631,7 +631,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             checked={draft.topLevel === "categorical"}
             onChange={() => switchTopLevel("categorical")}
           />
-          Categorical
+          Scale
         </label>
         <label className={css.typeOption}>
           <input
@@ -673,7 +673,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
 
       <If condition={draft.topLevel !== "numeric"}>
         <div className={css.levelsBlock}>
-          <label className={css.fieldLabel}>Levels</label>
+          <label className={css.fieldLabel}>Scale levels</label>
           <CustomMetricLevelsEditor
             levels={effectiveLevels}
             onChange={(next) => update("levels", next)}

@@ -1,0 +1,87 @@
+/* Colored-card picker for scale metrics (mood, hydration, custom ordinal
+   scales). Card visuals are ported from the hydration ColorScale
+   (MetricInputRow.module.css). Exact dimensions/typography are refined in the
+   DGT-76 visual-token pass against the design mockup. */
+
+.scaleCards {
+  --card-gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+/* One row of cards. justify-content: center so a shorter second row (the
+   smaller "half" when the count is odd) centers under the top row at the
+   same card width rather than stretching to fill. */
+.cardRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--card-gap);
+}
+
+/* Every card is the same width, sized to fit `--per-row` across the row (the
+   larger/top row when wrapped). --per-row is set inline on .scaleCards and
+   inherited here. */
+.card {
+  flex: 0 0 auto;
+  width: calc((100% - (var(--per-row) - 1) * var(--card-gap)) / var(--per-row));
+  min-height: 52px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  transition:
+    border-color var(--dur-quick) var(--ease-default),
+    transform var(--dur-tap) var(--ease-default);
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+/* Teal circular checkmark badge, centered on the top edge of the selected
+   card (per the mockup). */
+.card.selected::after {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.43' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E")
+      center / 14px 14px no-repeat,
+    #0F2E31;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+  .card:hover {
+    transform: none;
+  }
+}

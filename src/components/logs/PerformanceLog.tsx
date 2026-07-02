@@ -14,7 +14,8 @@ import {
 } from "../../utils/dates";
 import { emptyPerformanceEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
-import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { ScaleCards } from "./ScaleCards";
+import { resolveScaleColors } from "../../data/scaleColors";
 import css from "./PerformanceLog.module.css";
 
 // Mirrors CompetitionLog. Performance entries share the same map
@@ -170,8 +171,9 @@ export function PerformanceLog() {
                               ? live
                               : undefined;
                           return (
-                            <OrdinalRadioGroup
+                            <ScaleCards
                               levels={customDef.levels}
+                              colors={resolveScaleColors({ metricId: metric.id, levels: customDef.levels })}
                               value={ordinalValue}
                               onChange={(next) =>
                                 setMetricValue(metric.id, String(next))

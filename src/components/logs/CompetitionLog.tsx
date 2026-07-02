@@ -15,7 +15,8 @@ import {
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
-import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { ScaleCards } from "./ScaleCards";
+import { resolveScaleColors } from "../../data/scaleColors";
 import css from "./CompetitionLog.module.css";
 
 export function CompetitionLog() {
@@ -192,7 +193,7 @@ export function CompetitionLog() {
                       // Built-in ordinal metrics (currently
                       // winningPercentage) carry their levels on the
                       // registry entry. Render the tile selector via
-                      // OrdinalRadioGroup, same renderer customs use.
+                      // ScaleCards, same renderer customs use.
                       if (
                         builtInDef?.inputType === "ordinal" &&
                         builtInDef.levels
@@ -202,8 +203,9 @@ export function CompetitionLog() {
                             ? live
                             : undefined;
                         return (
-                          <OrdinalRadioGroup
+                          <ScaleCards
                             levels={builtInDef.levels}
+                            colors={resolveScaleColors({ metricId: metric.id, levels: builtInDef.levels })}
                             value={ordinalValue}
                             onChange={(next) =>
                               setMetricValue(metric.id, String(next))
@@ -221,8 +223,9 @@ export function CompetitionLog() {
                             ? live
                             : undefined;
                         return (
-                          <OrdinalRadioGroup
+                          <ScaleCards
                             levels={customDef.levels}
+                            colors={resolveScaleColors({ metricId: metric.id, levels: customDef.levels })}
                             value={ordinalValue}
                             onChange={(next) =>
                               setMetricValue(metric.id, String(next))

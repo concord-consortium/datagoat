@@ -104,16 +104,34 @@ formatDecimalToTime(value: number, layout): string   // "5:30", "1:23:45", "5.30
 ```
 
 Parsing rules:
-- Each field is numeric-only, **except the largest field accepts a decimal** (the
-  shorthand). E.g. `h:mm` sleep: hours field takes `8` or `8.6`; minutes field
-  takes a `0–59` integer.
-- If the largest field carries a decimal, smaller fields are disabled/ignored for
-  that entry — you enter either `8.6` *or* `8` + `36`, never both. Prevents the
-  `8.6` + `40min` ambiguity.
+- **Which fields accept a decimal:**
+  - A **seconds** field always accepts a decimal — race times are recorded to
+    tenths/hundredths (`36.54`). Seconds is the finest unit, so there is nothing
+    finer to cascade into.
+  - The **coarsest** field accepts a decimal as a shorthand (`8.6` hours, or `5.5`
+    minutes when minutes is the coarsest field in `m:ss`), as long as every finer
+    field is empty.
+  - Every **other** field (a minutes or hours field that is neither seconds nor
+    the coarsest) is **integer-only**.
+- **Normalize on blur.** When a field loses focus, the row runs its fields through
+  `parseTimeToDecimal → formatDecimalToFields`, which cascades a coarser decimal
+  down into the finer fields: `8.5h` → `8` / `30`; `8.6h` → `8` / `36`; `5.5min`
+  (`m:ss`) → `5` / `30`. The remainder lands in the finest field — kept as a
+  decimal when that field is seconds (`8.615h` → `8` / `36` / `54`, and fractional
+  seconds are preserved), or rounded when the finest field is minutes (`h:mm`:
+  `8.61h` → `8` / `37`). No fields are disabled; the decimal just resolves itself
+  into the split. Storage is unchanged (it stays the same decimal in the coarsest
+  unit); normalization only reshapes what the fields show.
+- **Reject an ambiguous mix.** A decimal in a **non-finest** field *while a finer
+  field already holds a value* (hours `8.5` with minutes `40`; or `m:ss` minutes
+  `5.5` with seconds `20`) is ambiguous. `parseTimeToDecimal` returns `null` and
+  the row shows an inline error asking for a whole number in that field. A decimal
+  in the seconds field is never ambiguous (nothing is finer), so it's always
+  accepted.
 - A colon pasted into a field (`8:40`) is parsed and split across the fields, so
   `08:40` / `8:40` are valid entries per the ticket.
-- Minutes/seconds clamp to `0–59` with inline validation using the existing
-  field-error style.
+- Minutes clamp to a `0–59` integer; seconds clamp to `[0, 60)` allowing decimals
+  (`59.9`), with inline validation using the existing field-error style.
 - Unparseable/empty → returns `null` (no value), matching today's
   `Number()`→`NaN` drop path so no corrupt value is stored.
 
@@ -224,8 +242,10 @@ the layout system supports all of the above regardless.)
 ## Error handling
 
 Reuses existing field-error patterns; no corrupt writes.
-- Minutes/seconds outside `0–59` → inline field error; nothing stored.
-- Largest-field decimal present → smaller fields disabled with a hint.
+- Minutes outside `0–59`, or seconds outside `[0, 60)` → inline field error;
+  nothing stored.
+- Coarser-field decimal normalizes into the split on blur; a decimal in a
+  non-finest field while a finer field is already set → inline error (ambiguous).
 - Colon pasted into a field → parsed and split across fields.
 - Unparseable/empty → treated as no-value (matches today's `NaN` drop path).
 
@@ -233,10 +253,13 @@ Reuses existing field-error patterns; no corrupt writes.
 
 - `timeValue` util — `normalizeTimeUnit`/`resolveTimeLayout` (including the
   `hr/night` suffix and the unmappable→`null` case); parse/format round-trips
-  across all four layouts; decimal shorthand; colon paste; `0`/`59` boundaries;
-  empty; unparseable.
-- `TimeInput` component; `MetricInputRow` time branch; redisplay (stored decimal
-  → seeded fields).
+  across all four layouts; coarser-field decimal shorthand and blur-cascade
+  (`8.5h`→`8:30`, `8.61h`→`8:37` rounded-at-minutes, `8.615h`→`8:36:54` with
+  fractional seconds preserved); sub-second seconds (`36.54`); ambiguous-mix
+  rejection; colon paste; minute `0–59` and seconds `[0,60)` boundaries; empty;
+  unparseable.
+- `TimeInput` component (blur normalization; per-field decimal rules); redisplay
+  (stored decimal → seeded fields); `MetricInputRow` time branch.
 - `CustomMetricForm` — Time sub-format, canonical unit + precision, time
   goal/y-axis, edit-confirm on `timePrecision`/unit change.
 - `MetricOverrideForm` — time goal/y-axis parse round-trip.

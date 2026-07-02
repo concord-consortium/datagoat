@@ -212,9 +212,9 @@ const SEC_PER: Record<TimeUnit, number> = { h: 3600, m: 60, s: 1 };
 export function normalizeTimeUnit(unit: string | undefined): TimeUnit | null {
   if (!unit) return null;
   const token = unit.trim().toLowerCase().split(/[^a-z]/)[0];
-  if (token === "h" || token === "hr" || token === "hour" || token === "hours") return "h";
-  if (token === "m" || token === "min" || token === "minute" || token === "minutes") return "m";
-  if (token === "s" || token === "sec" || token === "second" || token === "seconds") return "s";
+  if (["h", "hr", "hour", "hours"].includes(token)) return "h";
+  if (["m", "min", "minute", "minutes"].includes(token)) return "m";
+  if (["s", "sec", "second", "seconds"].includes(token)) return "s";
   return null;
 }
 

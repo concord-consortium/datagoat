@@ -9,6 +9,9 @@ import clsx from "clsx";
 import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
+import { TimeInput } from "./TimeInput";
+import { resolveTimeLayout } from "../../utils/timeValue";
+import { getMetricChartConfig } from "../../charts/metricChartConfig";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
@@ -79,15 +82,24 @@ export function MetricInputRow(props: MetricInputRowProps) {
         )}
       </td>
       <td>
-        {props.inputType === "numeric" && (
-          <NumericInput
-            metric={metric}
-            value={props.value}
-            onChange={props.onChange}
-            labelledBy={nameId}
-            allowNegative={props.allowNegative}
-          />
-        )}
+        {props.inputType === "numeric" &&
+          (resolveTimeLayout(metric) ? (
+            <TimeInput
+              metric={metric}
+              value={props.value}
+              onChange={props.onChange}
+              labelledBy={nameId}
+              secondsDecimals={getMetricChartConfig(metric.id).avgDecimals ?? 2}
+            />
+          ) : (
+            <NumericInput
+              metric={metric}
+              value={props.value}
+              onChange={props.onChange}
+              labelledBy={nameId}
+              allowNegative={props.allowNegative}
+            />
+          ))}
         {props.inputType === "colorScale" && (
           <ColorScale
             metric={metric}

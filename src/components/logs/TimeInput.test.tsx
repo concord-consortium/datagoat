@@ -15,7 +15,7 @@ const SLEEP: MetricDefinition = {
   description: "",
   inputType: "numeric",
   timePrecision: "m",
-} as MetricDefinition;
+};
 
 function setup(value = "") {
   const onChange = vi.fn();

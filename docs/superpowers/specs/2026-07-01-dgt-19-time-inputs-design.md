@@ -57,22 +57,50 @@ there is **no data migration** — existing values are reinterpreted identically
 and `CustomMetricDef` (`src/types/customMetrics.ts`):
 
 ```ts
-timeFormat?: "h:mm" | "m:ss" | "h:mm:ss" | "s"
+timePrecision?: "h" | "m" | "s"   // finest field required; coarsest derived from the metric's unit
 ```
 
-The presence of `timeFormat` is the discriminator that makes a numeric metric a
-"time" metric. It drives which fields render, the parse, the redisplay, and the
+A time layout needs two boundaries — the coarsest field and the finest. The
+**coarsest is already the metric's unit** (the stored unit from the table above),
+so we only add the **finest** as `timePrecision`. The pair is unique across every
+layout we support:
+
+| coarsest (`unit`/`displayUnit`) | `timePrecision` | derived layout |
+|---------------------------------|-----------------|----------------|
+| `hr`                            | `m`             | `h:mm`         |
+| `hr`                            | `s`             | `h:mm:ss`      |
+| `min`                           | `s`             | `m:ss`         |
+| `sec`                           | `s`             | `s`            |
+
+The presence of `timePrecision` is the discriminator that makes a numeric metric
+a "time" metric. It drives which fields render, the parse, the redisplay, and the
 chart formatter. Absent → today's plain numeric behavior, untouched.
+
+**Coarsest-unit derivation.** A small `normalizeTimeUnit(metric)` maps the metric's
+unit to `"h" | "m" | "s"` — `hr`/`hour`/`h → h`, `min`/`m → m`, `sec`/`s → s` —
+tolerating a rate suffix (`hr/night`) and preferring the cleaner `displayUnit`
+(`"hr"`) over `unit` (`"hr/night"`). It returns `null` when a unit can't be
+mapped; the only cost of deriving the coarsest from a display string rather than
+an explicit enum. To keep this reliable for custom metrics, the custom-metric
+form sets the unit to a canonical `hr`/`min`/`sec` when Format = Time (rather than
+free-form), so a custom time metric always normalizes.
 
 ### 2. Parse/format utility
 
 New `src/utils/timeValue.ts` — the single source of truth, consumed by input,
-redisplay, goals, and charts:
+redisplay, goals, and charts. A `TimeLayout` (`{ coarsest, precision }`) is
+resolved once per metric from its unit + `timePrecision`, and the parse/format
+functions take that layout:
 
 ```ts
-parseTimeToDecimal(fields: { h?: string; m?: string; s?: string }, format): number | null
-formatDecimalToFields(value: number, format): { h?: string; m?: string; s?: string }
-formatDecimalToTime(value: number, format): string   // "5:30", "1:23:45", "5.30"
+type TimeUnit = "h" | "m" | "s"
+type TimeLayout = { coarsest: TimeUnit; precision: TimeUnit }   // coarsest ≥ precision
+
+normalizeTimeUnit(metric): TimeUnit | null           // unit/displayUnit → h|m|s
+resolveTimeLayout(metric): TimeLayout | null         // null when not a time metric / unit unmappable
+parseTimeToDecimal(fields: { h?: string; m?: string; s?: string }, layout): number | null
+formatDecimalToFields(value: number, layout): { h?: string; m?: string; s?: string }
+formatDecimalToTime(value: number, layout): string   // "5:30", "1:23:45", "5.30"
 ```
 
 Parsing rules:
@@ -92,17 +120,17 @@ Parsing rules:
 ### 3. Input widget
 
 New `src/components/logs/TimeInput.tsx` renders N sub-fields separated by `:`,
-driven by `timeFormat`. Wired into `MetricInputRow.tsx` as a new branch (new
+driven by the resolved `TimeLayout`. Wired into `MetricInputRow.tsx` as a new branch (new
 entry in the `MetricInputRowProps` union). It uses its own per-field filtering
 rather than `useNumericLocalString`, so the numeric path (whose regex rejects
 `:`) is left untouched.
 
-Redisplay: on load, `formatDecimalToFields(stored, format)` seeds the sub-fields;
+Redisplay: on load, `formatDecimalToFields(stored, layout)` seeds the sub-fields;
 `8.6667` → `8` / `40`, not `8.6667`.
 
 Storage write: `HealthLog.tsx` (`setNumericField` / `setCustomMetric`) and the
 competition/performance logs parse via `parseTimeToDecimal` when the metric has a
-`timeFormat`, storing the resulting decimal number.
+`timePrecision`, storing the resulting decimal number.
 
 ### 4. Custom-metric UI
 
@@ -110,32 +138,37 @@ Time is a **sub-format of Numeric**, not a new top-level type, so the top-level
 chooser (Numeric / Categorical / Y/N) is unchanged and the entire numeric save
 path (`buildPayload` numeric branch, goal, y-axis, average) is reused.
 
-When **Numeric** is selected, add a **Format** control:
+When **Numeric** is selected, add a **Format** control. Since the layout is
+`(unit, timePrecision)`, the author picks a canonical **Unit** (coarsest) and a
+**Precision** (finest, ≤ unit):
 
 ```
 Format:  ( ) Number   ( ) Time
-         └ when Time:  Granularity: [ h:mm ▼ ]   ( h:mm | m:ss | h:mm:ss | s )
+         └ when Time:  Unit: [ hr ▼ ] ( hr | min | sec )   Precision: [ min ▼ ] ( ≤ Unit )
 ```
 
 When Format = Time:
-- The free-form **Unit** input is hidden and auto-derived from granularity
-  (`h:mm`/`h:mm:ss` → `hr`, `m:ss` → `min`, `s` → `sec`).
+- The **Unit** control replaces the free-form unit input with a canonical
+  `hr`/`min`/`sec` select, so the metric always `normalizeTimeUnit`s. **Precision**
+  is constrained to units ≤ Unit (`hr` → `min`/`sec`; `min` → `sec`; `sec` → `sec`).
 - **Goal** and **Y-axis top/bottom** render as `TimeInput`s.
 - The **Decimals** field is greyed (like Y/N today) — a time average formats via
-  `formatDecimalToTime`, not a decimal count. Seconds-only (`s`) is the
-  exception: it keeps Decimals for sub-second precision.
-- `CustomMetricDef` gains `timeFormat?`; `buildPayload` sets it and derives `unit`.
-- Edit-confirmation guard: changing `timeFormat` (like changing unit/inputType)
-  prompts when entries exist, since it reinterprets stored numbers.
+  `formatDecimalToTime`, not a decimal count. Precision `s` (seconds-only, i.e.
+  Unit = `sec`) is the exception: it keeps Decimals for sub-second precision.
+- `CustomMetricDef` gains `timePrecision?`; `buildPayload` sets it and the
+  canonical `unit`.
+- Edit-confirmation guard: changing `timePrecision` or the (canonical) `unit`
+  (like changing unit/inputType today) prompts when entries exist, since it
+  reinterprets stored numbers.
 
-`customDefToChartConfig` reads the time formatter from `timeFormat` the same way
-built-ins do, so custom time metrics chart correctly with no extra branch.
+`customDefToChartConfig` resolves the `TimeLayout` from `timePrecision` + unit the
+same way built-ins do, so custom time metrics chart correctly with no extra branch.
 
 ### 5. Built-in goals, y-axis & charts
 
-**Charts** (`src/charts/metricChartConfig.ts`): for a metric with `timeFormat`,
-`formatValue` becomes a time formatter built from that format (replacing
-`fmtRaw`). Everything downstream funnels through `formatValue` —
+**Charts** (`src/charts/metricChartConfig.ts`): for a metric with `timePrecision`,
+`formatValue` becomes a time formatter built from the resolved `TimeLayout`
+(replacing `fmtRaw`). Everything downstream funnels through `formatValue` —
 `chartSeries.formatMetricValue`, `Axes` y-labels, `AverageBadge`,
 `GoalLineAndBadge` — so axis ticks, average, and goal-line badge all render as
 `5:30` / `1:23:45` with no per-consumer changes.
@@ -147,33 +180,44 @@ built-ins do, so custom time metrics chart correctly with no extra branch.
   with the goal line low. Time formatting is orthogonal to axis direction.
 
 **Built-in goals** (`src/components/tracking/MetricOverrideForm.tsx`): `goalRaw`,
-`yTopRaw`, `yBottomRaw` render as `TimeInput`s when the metric has `timeFormat`,
+`yTopRaw`, `yBottomRaw` render as `TimeInput`s when the metric has `timePrecision`,
 parsed via the util (replacing the `Number()`-only path). Storage stays `number`.
 The recommended-goal *copy* in `src/data/metricGoals.ts` stays plain text.
 
-**Initial built-in `timeFormat` assignments** (refine during planning):
+All four layouts are first-class, including **`h:mm:ss`** — long-distance events
+(marathon, half-marathon) require hours+minutes+seconds and are supported via
+unit `hr` + `timePrecision` `s`.
 
-| Metric                            | format    |
-|-----------------------------------|-----------|
-| `sleepTime`                       | `h:mm`    |
-| `oneMileRun`                      | `m:ss`    |
-| competition `times`               | `m:ss` (revisit if marathon-class events need `h:mm:ss`) |
-| `tenMeterSprint`, `fortyYardDash` | `s`       |
+**Initial built-in `timePrecision` assignments** (refine during planning). The
+coarsest comes from the existing unit, so only `timePrecision` is added; where an
+event needs hours the unit is `hr`:
+
+| Metric                            | unit (coarsest) | `timePrecision` | layout     |
+|-----------------------------------|-----------------|-----------------|------------|
+| `sleepTime`                       | `hr`            | `m`             | `h:mm`     |
+| `oneMileRun`                      | `min`           | `s`             | `m:ss`     |
+| competition `times` (short events)| `min`           | `s`             | `m:ss`     |
+| marathon / half-marathon          | `hr`            | `s`             | `h:mm:ss`  |
+| `tenMeterSprint`, `fortyYardDash` | `sec`           | `s`             | `s`        |
+
+(How the competition-event metrics are modeled — a single generic `times` vs.
+per-event metrics carrying their own unit/precision — is settled during planning;
+the layout system supports all of the above regardless.)
 
 ## Affected files
 
 - `src/utils/timeValue.ts` — **new** parse/format util.
 - `src/components/logs/TimeInput.tsx` — **new** multi-field time input.
-- `src/metrics/types.ts` — add `timeFormat?` to `MetricDefinition`.
+- `src/metrics/types.ts` — add `timePrecision?` to `MetricDefinition`.
 - `src/metrics/healthMetrics.ts`, `competitionMetrics.ts`, `addableMetrics.ts` —
-  set `timeFormat` on time metrics.
+  set `timePrecision` on time metrics.
 - `src/components/logs/MetricInputRow.tsx` — new time branch + props variant.
 - `src/components/logs/HealthLog.tsx` (and competition/performance logs) —
   parse/redisplay via the util.
-- `src/types/customMetrics.ts` — add `timeFormat?` to `CustomMetricDef`.
-- `src/components/tracking/CustomMetricForm.tsx` — Format control, derived unit,
-  time goal/y-axis, edit-confirm on `timeFormat` change.
-- `src/metrics/customMetricDefinition.ts` — carry `timeFormat` through the adapter.
+- `src/types/customMetrics.ts` — add `timePrecision?` to `CustomMetricDef`.
+- `src/components/tracking/CustomMetricForm.tsx` — Format control (canonical unit
+  + precision), time goal/y-axis, edit-confirm on `timePrecision`/unit change.
+- `src/metrics/customMetricDefinition.ts` — carry `timePrecision` through the adapter.
 - `src/components/tracking/MetricOverrideForm.tsx` — time-aware goal/y-axis inputs.
 - `src/charts/metricChartConfig.ts` — time `formatValue`; custom time formatter.
 
@@ -187,12 +231,14 @@ Reuses existing field-error patterns; no corrupt writes.
 
 ## Testing
 
-- `timeValue` util — parse/format round-trips across all four formats; decimal
-  shorthand; colon paste; `0`/`59` boundaries; empty; unparseable.
+- `timeValue` util — `normalizeTimeUnit`/`resolveTimeLayout` (including the
+  `hr/night` suffix and the unmappable→`null` case); parse/format round-trips
+  across all four layouts; decimal shorthand; colon paste; `0`/`59` boundaries;
+  empty; unparseable.
 - `TimeInput` component; `MetricInputRow` time branch; redisplay (stored decimal
   → seeded fields).
-- `CustomMetricForm` — Time sub-format, derived unit, time goal/y-axis,
-  edit-confirm on `timeFormat` change.
+- `CustomMetricForm` — Time sub-format, canonical unit + precision, time
+  goal/y-axis, edit-confirm on `timePrecision`/unit change.
 - `MetricOverrideForm` — time goal/y-axis parse round-trip.
 - Chart config — `formatValue` emits time strings; average formats as time.
 - Verify with `npm run build` / `tsc -b` (build mode, not `--noEmit`); eyeball

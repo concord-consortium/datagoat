@@ -878,6 +878,85 @@ git commit -m "feat(dgt-19): mark built-in time metrics; thread timePrecision to
 
 ---
 
+### Task 4b: Route time metrics in Competition + Performance logs
+
+**Why this exists:** `CompetitionLog` and `PerformanceLog` do NOT use `MetricInputRow` (only `HealthLog` does). They render their own `<tr>` rows and use the shared `CompetitionMetricInput` (a thin `useNumericLocalString` wrapper). So the Task-3 routing never reaches the competition/performance time metrics (`times`, `oneMileRun`, `tenMeterSprint`, `fortyYardDash`). This task adds the same time-vs-numeric decision in those two logs.
+
+**Files:**
+- Modify: `src/components/logs/CompetitionLog.tsx` (record-cell render, ~lines 240-251)
+- Modify: `src/components/logs/PerformanceLog.tsx` (record-cell render, ~lines 183-196)
+- Test: `src/components/logs/CompetitionLog.test.tsx` and `src/components/logs/PerformanceLog.test.tsx` (extend)
+
+**Interfaces:**
+- Consumes: `TimeInput` (Task 2), `resolveTimeLayout` (Task 1), `customAsMetricDefinition` (Task 4, now forwards `timePrecision`), `getMetricChartConfig` (existing). Both logs already have `builtInById` and `customById` maps in scope.
+- Produces: no new exports. A built-in time metric (`oneMileRun`, `tenMeterSprint`, `fortyYardDash`, `times`) and custom time metrics of these types render `TimeInput` in their logs.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `src/components/logs/CompetitionLog.test.tsx` a test asserting the `times` row renders 2 inputs (m:ss) after Task 4's annotation. Follow the file's existing render harness (it already mounts `CompetitionLog` with providers). Concrete contract:
+```tsx
+it("renders competition 'times' as a two-field time input", () => {
+  const { container } = renderCompetitionLog();      // file's existing harness
+  const row = container.querySelector('[data-metric-row="times"]') ?? container;
+  // times is m:ss -> two inputs; a non-time metric like 'goals' stays single.
+  expect(row.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+});
+```
+Append the analogous test to `src/components/logs/PerformanceLog.test.tsx` for `oneMileRun` (m:ss, 2 inputs) and, if convenient, `tenMeterSprint` (single seconds input, 1 input). Match each file's existing harness rather than inventing a new one; the contract is the input count per metric.
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `npm test -- src/components/logs/CompetitionLog.test.tsx src/components/logs/PerformanceLog.test.tsx`
+Expected: FAIL — those rows currently render one `CompetitionMetricInput`.
+
+- [ ] **Step 3: Add time routing in both logs**
+
+Add imports to BOTH `CompetitionLog.tsx` and `PerformanceLog.tsx`:
+```ts
+import { TimeInput } from "./TimeInput";
+import { resolveTimeLayout } from "../../utils/timeValue";
+import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
+import { getMetricChartConfig } from "../../charts/metricChartConfig";
+import type { MetricDefinition } from "../../metrics/types";
+```
+In `CompetitionLog.tsx`, in the record-cell IIFE, AFTER the ordinal/nominal guards and BEFORE the `return <CompetitionMetricInput .../>` (the `builtInDef` const already exists at ~line 161; `customDef` too):
+```tsx
+                      const timeMeta: MetricDefinition | undefined =
+                        builtInDef ??
+                        (customDef
+                          ? customAsMetricDefinition(customDef, "competition")
+                          : undefined);
+                      if (timeMeta && resolveTimeLayout(timeMeta)) {
+                        return (
+                          <TimeInput
+                            metric={timeMeta}
+                            value={stringValue}
+                            onChange={(raw) => setMetricValue(metric.id, raw)}
+                            labelledBy={nameCellId}
+                            secondsDecimals={getMetricChartConfig(metric.id).avgDecimals ?? 2}
+                          />
+                        );
+                      }
+```
+In `PerformanceLog.tsx`, do the same, but first add `const builtInDef = builtInById.get(metric.id);` at the top of the record-cell IIFE (the file currently only reads `customDef` there), and use `"performance"` in the `customAsMetricDefinition` call.
+
+Optionally add `data-metric-row={metric.id}` to each row's `<tr>` (or an existing wrapper) if the tests key on it; otherwise scope the test by the metric's link text.
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `npm test -- src/components/logs/CompetitionLog.test.tsx src/components/logs/PerformanceLog.test.tsx`
+Expected: PASS. Then `npm test` for the full suite.
+
+- [ ] **Step 5: Typecheck + commit**
+
+Run: `npm run build`
+```bash
+git add src/components/logs/CompetitionLog.tsx src/components/logs/PerformanceLog.tsx src/components/logs/CompetitionLog.test.tsx src/components/logs/PerformanceLog.test.tsx
+git commit -m "feat(dgt-19): route time metrics in competition + performance logs [DGT-19]"
+```
+
+---
+
 ### Task 5: Chart formatting for time metrics
 
 **Files:**

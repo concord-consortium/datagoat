@@ -57,6 +57,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     description:
       "Total amount of time spent asleep during a sleep period, typically measured from sleep onset to final awakening, expressed in minutes or hours.",
     inputType: "numeric",
+    timePrecision: "m",
     Icon: SleepTimeIcon,
     learnMoreUrl: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6267703/",
     references: [

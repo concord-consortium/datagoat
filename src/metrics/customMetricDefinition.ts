@@ -24,5 +24,6 @@ export function customAsMetricDefinition(
     inputType: def.inputType,
     learnMoreUrl: def.referenceUrl || undefined,
     schedule: def.schedule,
+    timePrecision: def.timePrecision,
   };
 }

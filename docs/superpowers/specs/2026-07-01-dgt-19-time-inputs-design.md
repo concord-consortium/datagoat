@@ -99,9 +99,14 @@ type TimeLayout = { coarsest: TimeUnit; precision: TimeUnit }   // coarsest ≥ 
 normalizeTimeUnit(metric): TimeUnit | null           // unit/displayUnit → h|m|s
 resolveTimeLayout(metric): TimeLayout | null         // null when not a time metric / unit unmappable
 parseTimeToDecimal(fields: { h?: string; m?: string; s?: string }, layout): number | null
-formatDecimalToFields(value: number, layout): { h?: string; m?: string; s?: string }
-formatDecimalToTime(value: number, layout): string   // "5:30", "1:23:45", "5.30"
+formatDecimalToFields(value: number, layout, secondsDecimals): { h?: string; m?: string; s?: string }
+formatDecimalToTime(value: number, layout, secondsDecimals): string   // "5:30", "1:23:45", "5:23.45"
 ```
+
+`secondsDecimals` (the metric's `avgDecimals`) controls how many decimal places
+the **seconds** component renders — `0` → `5:23`, `1` → `5:23.4`, `2` → `5:23.45`.
+It only applies when the layout's finest field is seconds; for `h:mm` (finest =
+minutes) there is no seconds component and it is ignored.
 
 Parsing rules:
 - **Which fields accept a decimal:**
@@ -170,9 +175,10 @@ When Format = Time:
   `hr`/`min`/`sec` select, so the metric always `normalizeTimeUnit`s. **Precision**
   is constrained to units ≤ Unit (`hr` → `min`/`sec`; `min` → `sec`; `sec` → `sec`).
 - **Goal** and **Y-axis top/bottom** render as `TimeInput`s.
-- The **Decimals** field is greyed (like Y/N today) — a time average formats via
-  `formatDecimalToTime`, not a decimal count. Precision `s` (seconds-only, i.e.
-  Unit = `sec`) is the exception: it keeps Decimals for sub-second precision.
+- The **Decimals** field's meaning shifts to **seconds decimal places** for any
+  layout whose finest field is seconds (`m:ss`, `h:mm:ss`, `s`) — it stays live
+  and feeds `secondsDecimals` (`0` → `5:23`, `2` → `5:23.45`). It is greyed only
+  when precision is `m` (`h:mm`, e.g. sleep), where there is no seconds component.
 - `CustomMetricDef` gains `timePrecision?`; `buildPayload` sets it and the
   canonical `unit`.
 - Edit-confirmation guard: changing `timePrecision` or the (canonical) `unit`
@@ -191,9 +197,12 @@ same way built-ins do, so custom time metrics chart correctly with no extra bran
 `GoalLineAndBadge` — so axis ticks, average, and goal-line badge all render as
 `5:30` / `1:23:45` with no per-consumer changes.
 
-- The time formatter ignores `toFixed`/`avgDecimals` and formats the decimal mean
-  directly via `formatDecimalToTime`. Averaging still happens on the decimal
-  values (correct — they are decimals in one unit).
+- The time formatter formats the decimal mean via `formatDecimalToTime` rather
+  than `toFixed`: hours/minutes render as integer components, and `avgDecimals`
+  is repurposed as `secondsDecimals` — the number of decimal places on the
+  **seconds** component (so a `m:ss`/`h:mm:ss`/`s` average shows `5:23.4`, while an
+  `h:mm` average has no seconds and ignores it). Averaging still happens on the
+  decimal values (correct — they are decimals in one unit).
 - No auto-inversion for "lower is better" time metrics; the axis stays ascending
   with the goal line low. Time formatting is orthogonal to axis direction.
 
@@ -255,9 +264,10 @@ Reuses existing field-error patterns; no corrupt writes.
   `hr/night` suffix and the unmappable→`null` case); parse/format round-trips
   across all four layouts; coarser-field decimal shorthand and blur-cascade
   (`8.5h`→`8:30`, `8.61h`→`8:37` rounded-at-minutes, `8.615h`→`8:36:54` with
-  fractional seconds preserved); sub-second seconds (`36.54`); ambiguous-mix
-  rejection; colon paste; minute `0–59` and seconds `[0,60)` boundaries; empty;
-  unparseable.
+  fractional seconds preserved); sub-second seconds (`36.54`); `secondsDecimals`
+  rendering (`0`/`1`/`2` → `5:23` / `5:23.4` / `5:23.45`, and ignored for `h:mm`);
+  ambiguous-mix rejection; colon paste; minute `0–59` and seconds `[0,60)`
+  boundaries; empty; unparseable.
 - `TimeInput` component (blur normalization; per-field decimal rules); redisplay
   (stored decimal → seeded fields); `MetricInputRow` time branch.
 - `CustomMetricForm` — Time sub-format, canonical unit + precision, time

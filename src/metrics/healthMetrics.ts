@@ -7,17 +7,17 @@ import LeanMassIcon from "@/icons/metric-lean-mass.svg?react";
 import AvailabilityIcon from "@/icons/metric-availability.svg?react";
 
 // Mood is a 5-option ordinal scale (1=worst, 5=best), shown as blue cards with
-// a sad->happy emoji per card. The emoji is the visible card label (and its
-// screen-reader accessible name); the stored value stays numeric 1..5. Card
-// colors come from the fixed MOOD_HEXES built-in palette (see data/scaleColors);
-// ScaleCards renders them. Defining levels in module scope keeps the registry
-// entry below readable.
+// a sad->happy outline face icon per card (see icons/MoodFace). The `label`
+// words are the screen-reader accessible name for each card; the stored value
+// stays numeric 1..5. Card colors come from the fixed MOOD_HEXES built-in
+// palette (see data/scaleColors). Defining levels in module scope keeps the
+// registry entry below readable.
 const MOOD_LEVELS = [
-  { label: "😞", value: 1 },
-  { label: "🙁", value: 2 },
-  { label: "😐", value: 3 },
-  { label: "🙂", value: 4 },
-  { label: "😄", value: 5 },
+  { label: "Very sad", value: 1 },
+  { label: "Sad", value: 2 },
+  { label: "Neutral", value: 3 },
+  { label: "Happy", value: 4 },
+  { label: "Very happy", value: 5 },
 ];
 
 // Strings ported verbatim from the 2026-04-27 prototype's metricDetails

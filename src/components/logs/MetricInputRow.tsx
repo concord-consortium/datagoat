@@ -7,6 +7,7 @@ import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { ScaleCards } from "./ScaleCards";
 import { resolveScaleColors } from "../../data/scaleColors";
+import { MoodFace } from "../../icons/MoodFace";
 import css from "./MetricInputRow.module.css";
 
 interface BaseProps {
@@ -117,6 +118,16 @@ export function MetricInputRow(props: MetricInputRowProps) {
             value={props.value}
             onChange={props.onChange}
             labelledBy={nameId}
+            // Mood shows an outline face icon per card; the level word is the
+            // card's accessible name (the icon itself is decorative).
+            renderLabel={
+              metric.id === "mood"
+                ? (level) => <MoodFace value={level.value ?? 3} />
+                : undefined
+            }
+            ariaLabelFormat={
+              metric.id === "mood" ? (_i, _n, level) => level.label : undefined
+            }
           />
         )}
       </td>

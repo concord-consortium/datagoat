@@ -25,8 +25,11 @@
 .card {
   flex: 0 0 auto;
   width: calc((100% - (var(--per-row) - 1) * var(--card-gap)) / var(--per-row));
-  min-height: 52px;
-  border-radius: 8px;
+  /* Match the original hydration card box: 32px visual height, 44px touch
+     target, 4px corners, 6px gap (see --card-gap above). */
+  height: 32px;
+  min-height: 44px;
+  border-radius: 4px;
   border: 1.5px solid var(--border);
   cursor: pointer;
   position: relative;
@@ -34,7 +37,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
   appearance: none;
   -webkit-appearance: none;
@@ -58,14 +61,13 @@
   box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
 }
 
-/* Teal circular checkmark badge, centered on the top edge of the selected
-   card (per the mockup). */
+/* Teal circular checkmark badge over the top-left corner of the selected
+   card (matching the original hydration picker). */
 .card.selected::after {
   content: '';
   position: absolute;
-  top: -11px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -7px;
+  left: -7px;
   width: 22px;
   height: 22px;
   border: 1.5px solid var(--accent);

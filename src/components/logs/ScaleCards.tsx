@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import type { CSSProperties, KeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import clsx from "clsx";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { readableTextOn } from "../../data/scaleColors";
@@ -15,9 +15,12 @@ export interface ScaleCardsProps {
   onChange: (next: number) => void;
   // id of the element naming this group (for aria-labelledby).
   labelledBy: string;
-  // Accessible name per card. Needed when the visible label is non-descriptive
-  // (e.g. mood emoji). Defaults to hydration's "${i+1} of ${n}".
+  // Accessible name per card. Needed when the visible content is non-textual
+  // (e.g. mood face icons) or non-descriptive.
   ariaLabelFormat?: (index: number, count: number, level: CustomMetricLevel) => string;
+  // Custom visible card content (e.g. an icon). Defaults to `level.label` text.
+  // When this renders non-text content, provide `ariaLabelFormat` for the name.
+  renderLabel?: (level: CustomMetricLevel, index: number) => ReactNode;
 }
 
 // Up to this many cards render in a single row; more wrap to two rows.
@@ -35,6 +38,7 @@ export function ScaleCards({
   onChange,
   labelledBy,
   ariaLabelFormat,
+  renderLabel,
 }: ScaleCardsProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const n = levels.length;
@@ -117,7 +121,7 @@ export function ScaleCards({
                   onClick={() => select(index)}
                   onKeyDown={(e) => onKeyDown(e, index)}
                 >
-                  {level.label}
+                  {renderLabel ? renderLabel(level, index) : level.label}
                 </button>
               );
             })}

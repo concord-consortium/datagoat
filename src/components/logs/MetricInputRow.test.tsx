@@ -200,3 +200,44 @@ describe("MetricInputRow Ordinal", () => {
     expect(onChange).toHaveBeenCalledWith(5);
   });
 });
+
+const MOOD_FACE_LEVELS: CustomMetricLevel[] = [
+  { label: "Very sad", value: 1 },
+  { label: "Neutral", value: 3 },
+  { label: "Very happy", value: 5 },
+];
+
+const MOOD_BUILTIN: MetricDefinition = {
+  id: "mood",
+  name: "Mood",
+  unit: "",
+  type: "health",
+  whoCollects: "",
+  howCollected: "",
+  description: "",
+  inputType: "ordinal",
+};
+
+describe("MetricInputRow Mood face icons", () => {
+  it("renders a face-icon card whose accessible name is the level word", () => {
+    render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <MetricInputRow
+              inputType="ordinal"
+              metric={MOOD_BUILTIN}
+              levels={MOOD_FACE_LEVELS}
+              value={undefined}
+              onChange={vi.fn()}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    const happy = screen.getByRole("button", { name: /very happy/i });
+    // The visible content is a decorative face icon (svg), not text.
+    expect(happy.querySelector("svg")).toBeTruthy();
+    expect(happy.textContent).toBe("");
+  });
+});

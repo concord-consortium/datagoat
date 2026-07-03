@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 const navigateSpy = vi.fn();
@@ -58,6 +58,8 @@ const leanMass = HEALTH_METRICS.find((m) => m.id === "leanMass")!;
 const hydration = HEALTH_METRICS.find((m) => m.id === "hydration")!;
 const availability = HEALTH_METRICS.find((m) => m.id === "availability")!;
 const fortyYardDash = ADDABLE_PERFORMANCE.find((m) => m.id === "fortyYardDash")!;
+const oneRepMaxBench = ADDABLE_PERFORMANCE.find((m) => m.id === "oneRepMaxBench")!;
+const sleepTime = HEALTH_METRICS.find((m) => m.id === "sleepTime")!;
 
 function renderForm(metric = leanMass, overrides: MetricOverride[] = []) {
   return render(
@@ -259,6 +261,52 @@ describe("MetricOverrideForm", () => {
   });
 });
 
+describe("MetricOverrideForm — time metric", () => {
+  beforeEach(() => {
+    navigateSpy.mockClear();
+    mockedSetDoc.mockClear();
+  });
+
+  it("renders the goal as a time input (multiple fields) for a time metric", () => {
+    renderForm(sleepTime);
+    const goal = screen.getByTestId("mo-goal");
+    expect(goal.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders the goal as a single number input for a non-time metric", () => {
+    renderForm(leanMass);
+    expect(screen.getByLabelText("Goal")).toHaveAttribute("type", "number");
+  });
+
+  it("renders the y-axis bounds as time inputs for a time metric", () => {
+    renderForm(sleepTime);
+    const top = screen.getByTestId("mo-ytop");
+    const bottom = screen.getByTestId("mo-ybot");
+    expect(top.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+    expect(bottom.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("round-trips a 7h30m goal entry to decimal 7.5 on save", async () => {
+    renderForm(sleepTime);
+    const goal = within(screen.getByTestId("mo-goal"));
+    fireEvent.change(goal.getByLabelText("Total Sleep Time h"), {
+      target: { value: "7" },
+    });
+    fireEvent.change(goal.getByLabelText("Total Sleep Time m"), {
+      target: { value: "30" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
+    );
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ goalRaw: 7.5 }),
+      expect.anything(),
+    );
+  });
+});
+
 describe("MetricOverrideForm — performance metric", () => {
   beforeEach(() => {
     navigateSpy.mockClear();
@@ -279,19 +327,47 @@ describe("MetricOverrideForm — performance metric", () => {
   });
 
   it("uses the perf CONFIG bounds as y-axis placeholders", () => {
-    renderForm(fortyYardDash);
-    // fortyYardDash: from-sheet bounds 4.2..10 (sec).
+    // oneRepMaxBench has no timePrecision, so it still renders the
+    // plain number TextField y-axis fields with base-config
+    // placeholders (fortyYardDash is a time metric - see the DGT-19
+    // "performance metric — time" describe block below).
+    renderForm(oneRepMaxBench);
     expect(
       (screen.getByLabelText(/^Y-axis top/) as HTMLInputElement).placeholder,
-    ).toBe("10");
+    ).toBe("250");
     expect(
       (screen.getByLabelText(/^Y-axis bottom/) as HTMLInputElement).placeholder,
-    ).toBe("4.2");
+    ).toBe("0");
   });
 
   it("saves a valid perf override and navigates back", async () => {
-    renderForm(fortyYardDash);
+    renderForm(oneRepMaxBench);
     fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "4.5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(navigateSpy).toHaveBeenCalledWith("/setup/tracking"),
+    );
+  });
+});
+
+describe("MetricOverrideForm — performance metric with seconds-only timePrecision", () => {
+  beforeEach(() => {
+    navigateSpy.mockClear();
+  });
+
+  it("renders fortyYardDash's Goal as a (single-field) time input, not a plain number field", () => {
+    renderForm(fortyYardDash);
+    const goal = screen.getByTestId("mo-goal");
+    expect(goal.querySelector("input")).not.toBeNull();
+    expect(goal.querySelector('input[type="number"]')).toBeNull();
+  });
+
+  it("saves a valid fortyYardDash override via its time input and navigates back", async () => {
+    renderForm(fortyYardDash);
+    const goal = within(screen.getByTestId("mo-goal"));
+    fireEvent.change(goal.getByLabelText("40-Yard Dash s"), {
       target: { value: "4.5" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

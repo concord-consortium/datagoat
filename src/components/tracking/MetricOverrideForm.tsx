@@ -16,6 +16,8 @@ import { goalDeterminationText, resolveGoalText } from "../../data/metricGoals";
 import { If } from "../common/If";
 import { TextField } from "../form/TextField";
 import { ScheduleField } from "../form/ScheduleField";
+import { TimeInput } from "../logs/TimeInput";
+import { resolveTimeLayout } from "../../utils/timeValue";
 import {
   resolveSchedule,
   schedulesEqual,
@@ -38,6 +40,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
 
   const existing = getOverride(metric.id);
   const base = getBaseMetricChartConfig(metric.id);
+  const isTime = resolveTimeLayout(metric) !== null;
   const profileKey = profile
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(
         profile.athleteType,
@@ -192,37 +195,79 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
         <p className={css.hint}>Recommended goal: {goalText}.</p>
       </If>
 
-      <TextField
-        id="mo-goal"
-        label="Goal"
-        type="number"
-        inputMode="decimal"
-        step="any"
-        value={goalRaw}
-        onChange={(e) => setGoalRaw(e.target.value)}
-      />
+      {isTime ? (
+        <div data-testid="mo-goal">
+          <label className={css.fieldLabel} id="mo-goal-label">
+            Goal
+          </label>
+          <TimeInput
+            metric={metric}
+            value={goalRaw}
+            onChange={setGoalRaw}
+            labelledBy="mo-goal-label"
+          />
+        </div>
+      ) : (
+        <TextField
+          id="mo-goal"
+          label="Goal"
+          type="number"
+          inputMode="decimal"
+          step="any"
+          value={goalRaw}
+          onChange={(e) => setGoalRaw(e.target.value)}
+        />
+      )}
 
       <div className={css.row}>
-        <TextField
-          id="mo-ytop"
-          label="Y-axis top (optional)"
-          type="number"
-          inputMode="decimal"
-          step="any"
-          value={yTopRaw}
-          placeholder={String(base.yTopRaw)}
-          onChange={(e) => setYTopRaw(e.target.value)}
-        />
-        <TextField
-          id="mo-ybot"
-          label="Y-axis bottom (optional)"
-          type="number"
-          inputMode="decimal"
-          step="any"
-          value={yBottomRaw}
-          placeholder={String(base.yBottomRaw)}
-          onChange={(e) => setYBottomRaw(e.target.value)}
-        />
+        {isTime ? (
+          <div data-testid="mo-ytop">
+            <label className={css.fieldLabel} id="mo-ytop-label">
+              Y-axis top (optional)
+            </label>
+            <TimeInput
+              metric={metric}
+              value={yTopRaw}
+              onChange={setYTopRaw}
+              labelledBy="mo-ytop-label"
+            />
+          </div>
+        ) : (
+          <TextField
+            id="mo-ytop"
+            label="Y-axis top (optional)"
+            type="number"
+            inputMode="decimal"
+            step="any"
+            value={yTopRaw}
+            placeholder={String(base.yTopRaw)}
+            onChange={(e) => setYTopRaw(e.target.value)}
+          />
+        )}
+        {isTime ? (
+          <div data-testid="mo-ybot">
+            <label className={css.fieldLabel} id="mo-ybot-label">
+              Y-axis bottom (optional)
+            </label>
+            <TimeInput
+              metric={metric}
+              value={yBottomRaw}
+              onChange={setYBottomRaw}
+              labelledBy="mo-ybot-label"
+            />
+          </div>
+        ) : (
+          <TextField
+            id="mo-ybot"
+            label="Y-axis bottom (optional)"
+            type="number"
+            inputMode="decimal"
+            step="any"
+            value={yBottomRaw}
+            placeholder={String(base.yBottomRaw)}
+            onChange={(e) => setYBottomRaw(e.target.value)}
+          />
+        )}
       </div>
 
       <ScheduleField

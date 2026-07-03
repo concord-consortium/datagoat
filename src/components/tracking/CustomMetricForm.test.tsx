@@ -497,7 +497,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
 
 // Thin wrapper that renders the create form for a given metric type.
 // Mirrors renderAt but with a more descriptive name for the new tests.
-function renderCreateForm(type: "health" | "competition") {
+function renderCreateForm(type: "health" | "competition" | "performance") {
   renderAt(`/add-metric/${type}/new`);
 }
 
@@ -1039,6 +1039,39 @@ describe("CustomMetricForm (performance)", () => {
     expect(call?.trackedPerformanceMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
+  });
+
+  it("saves a time custom metric with timePrecision and a canonical unit", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("performance");
+
+    await user.type(screen.getByLabelText(/^name$/i), "400m Time");
+    // Numeric is selected by default; switch the Format sub-choice to Time.
+    await user.click(screen.getByRole("radio", { name: /^time$/i }));
+    await user.selectOptions(screen.getByLabelText(/^unit$/i), "min");
+    await user.selectOptions(screen.getByLabelText(/^precision$/i), "s");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.timePrecision).toBe("s");
+    expect(payload.unit).toBe("min");
+    expect(payload.primitive).toBe("numeric");
+  });
+
+  it("omits timePrecision for a plain Number metric (proves the field is conditional)", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("performance");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Plain Sprint Count");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload).not.toHaveProperty("timePrecision");
+    expect(payload.primitive).toBe("numeric");
   });
 
   it("routes a built-in perf metric id (oneRepMaxBench) to MetricOverrideForm", () => {

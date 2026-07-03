@@ -147,6 +147,16 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
     // `String(null)` surface as the literal `"null"` in the UI and
     // `Number(null) === 0` mask a stale-zero in numeric fields.
     unit: data.unit == null ? undefined : String(data.unit),
+    // Explicit comparisons (not `.includes`) so TS narrows to TimeUnit
+    // without a cast; anything that isn't a real time unit reads as
+    // undefined, so a stray value can't turn a plain numeric metric into
+    // a time metric.
+    timePrecision:
+      data.timePrecision === "h" ||
+      data.timePrecision === "m" ||
+      data.timePrecision === "s"
+        ? data.timePrecision
+        : undefined,
     goalRaw: data.goalRaw == null ? undefined : Number(data.goalRaw),
     yTopRaw: data.yTopRaw == null ? undefined : Number(data.yTopRaw),
     yBottomRaw: data.yBottomRaw == null ? undefined : Number(data.yBottomRaw),
@@ -277,6 +287,7 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
         updatedAt: serverTimestamp(),
       };
       if (def.unit !== undefined) writePayload.unit = def.unit;
+      if (def.timePrecision !== undefined) writePayload.timePrecision = def.timePrecision;
       if (def.goalRaw !== undefined) writePayload.goalRaw = def.goalRaw;
       if (def.yTopRaw !== undefined) writePayload.yTopRaw = def.yTopRaw;
       if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;

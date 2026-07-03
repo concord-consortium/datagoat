@@ -56,7 +56,7 @@ export function Bars({ data, goalRaw, config, yScale, geom }: BarsProps) {
         // using fmtRaw). Matches what `formatMetricValue` does for
         // SR descriptions and what AverageBadge does for badges.
         const decimals = config.avgDecimals ?? 1;
-        const rounded = Number(d.value.toFixed(decimals));
+        const rounded = config.timeLayout ? d.value : Number(d.value.toFixed(decimals));
         const valueLabel = config.unit
           ? `${config.formatValue(rounded)} ${config.unit}`
           : config.formatValue(rounded);

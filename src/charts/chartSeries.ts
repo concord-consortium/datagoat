@@ -56,6 +56,7 @@ export function lookupGoalLine(
 //   formatMetricValue("hydration", 3)          → "3"
 export function formatMetricValue(metricId: string, raw: number): string {
   const config = getMetricChartConfig(metricId);
+  if (config.timeLayout) return config.formatValue(raw); // no pre-round, no unit suffix
   const decimals = config.avgDecimals ?? 1;
   const rounded = Number(raw.toFixed(decimals));
   const formatted = config.formatValue(rounded);

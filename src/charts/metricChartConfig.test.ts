@@ -7,6 +7,7 @@ import {
   setMetricOverrides,
   setCustomChartConfigs,
 } from "./metricChartConfig";
+import { formatMetricValue } from "./chartSeries";
 import type { CustomMetricDef } from "../types/customMetrics";
 
 function customDef(overrides: Partial<CustomMetricDef> = {}): CustomMetricDef {
@@ -62,9 +63,9 @@ describe("getMetricChartConfig", () => {
     expect(c.formatValue(3.4)).toBe("3.4");
   });
 
-  it("formats sleepTime in raw hours", () => {
+  it("formats sleepTime as h:mm (time metric)", () => {
     const c = getMetricChartConfig("sleepTime");
-    expect(c.formatValue(7.5)).toBe("7.5");
+    expect(c.formatValue(7.5)).toBe("7:30");
     expect(c.yTopRaw).toBe(10);
     expect(c.yBottomRaw).toBe(0);
   });
@@ -275,12 +276,15 @@ describe("metric overrides overlay", () => {
 });
 
 describe("getMetricChartConfig — performance built-ins", () => {
-  it("returns from-sheet bounds for fortyYardDash with sec unit", () => {
+  it("returns from-sheet bounds for fortyYardDash as a seconds time metric", () => {
     const c = getMetricChartConfig("fortyYardDash");
     expect(c.chartType).toBe("bar");
     expect(c.yBottomRaw).toBe(4.2);
     expect(c.yTopRaw).toBe(10);
-    expect(c.unit).toBe("sec");
+    // Seconds-precision time metric: unit suffix is dropped in favor of
+    // timeLayout-driven formatting (no colon needed for seconds-only).
+    expect(c.unit).toBeUndefined();
+    expect(c.timeLayout).toEqual({ coarsest: "s", precision: "s" });
     expect(c.inverted).toBeFalsy();
     // Time metrics: ascending axis, goal sits low on the chart.
   });
@@ -299,10 +303,10 @@ describe("getMetricChartConfig — performance built-ins", () => {
     expect(c.unit).toBeUndefined();
   });
 
-  it("formats perf values without a unit suffix (unit appended by chart)", () => {
+  it("formats oneMileRun as m:ss with no unit suffix (time metric)", () => {
     const c = getMetricChartConfig("oneMileRun");
-    expect(c.formatValue(4.5)).toBe("4.5");
-    expect(c.unit).toBe("min");
+    expect(c.formatValue(4.5)).toBe("4:30");
+    expect(c.unit).toBeUndefined();
   });
 
   it("marks time-based perf metrics lowerIsBetter, others not", () => {
@@ -312,6 +316,33 @@ describe("getMetricChartConfig — performance built-ins", () => {
     // Higher-is-better perf metrics leave it unset.
     expect(getMetricChartConfig("verticalJump").lowerIsBetter).toBeFalsy();
     expect(getMetricChartConfig("oneRepMaxBench").lowerIsBetter).toBeFalsy();
+  });
+});
+
+describe("time metric chart formatting", () => {
+  it("sleepTime formats as h:mm with no unit suffix", () => {
+    const c = getMetricChartConfig("sleepTime");
+    expect(c.timeLayout).toEqual({ coarsest: "h", precision: "m" });
+    expect(c.unit).toBeUndefined();
+    expect(c.formatValue(8.5)).toBe("8:30");
+    expect(formatMetricValue("sleepTime", 8.5)).toBe("8:30");
+  });
+
+  it("oneMileRun formats as m:ss", () => {
+    const c = getMetricChartConfig("oneMileRun");
+    expect(c.formatValue(5.5)).toBe("5:30");
+  });
+
+  it("a custom time metric formats via its layout and secondsDecimals", () => {
+    const c = customDefToChartConfig({
+      id: "cx", ownerId: "u", name: "400m", metricType: "performance",
+      primitive: "numeric", inputType: "numeric",
+      unit: "min", timePrecision: "s", avgDecimals: 1,
+      goalRaw: 1, yTopRaw: 2, yBottomRaw: 0, referenceUrl: "",
+      createdAt: 0, updatedAt: 0,
+    });
+    expect(c.timeLayout).toEqual({ coarsest: "m", precision: "s" });
+    expect(c.formatValue(1 + 3.45 / 60)).toBe("1:03.5");
   });
 });
 

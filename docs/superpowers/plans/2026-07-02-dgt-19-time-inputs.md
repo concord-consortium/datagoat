@@ -1153,6 +1153,7 @@ git commit -m "feat(dgt-19): format time metrics on charts via timeLayout [DGT-1
 
 **Files:**
 - Modify: `src/components/tracking/CustomMetricForm.tsx` (Format control, canonical unit + precision, Decimals greying, `buildPayload`, edit-confirm)
+- Modify: `src/contexts/CustomMetricsContext.tsx` (persistence gap found during execution: `addMetric`'s `writePayload` whitelist and `fromFirestore` reader both omit `timePrecision`, so a new custom time metric loses it on first save/reload — add write + validated read)
 - Test: `src/components/tracking/CustomMetricForm.test.tsx` (extend)
 
 **Interfaces:**

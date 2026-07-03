@@ -711,9 +711,9 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
               value={draft.timeUnit}
               onChange={(e) => {
                 const u = e.target.value as "hr" | "min" | "sec";
-                // Keep precision <= unit: hr allows m/s, min allows s,
-                // sec forces s.
-                const p = u === "sec" ? "s" : draft.timePrecision;
+                // Keep precision <= unit: only hr allows a precision
+                // choice (m or s); min and sec force s.
+                const p = u === "hr" ? draft.timePrecision : "s";
                 setDraft((prev) => ({ ...prev, timeUnit: u, timePrecision: p }));
               }}
             >

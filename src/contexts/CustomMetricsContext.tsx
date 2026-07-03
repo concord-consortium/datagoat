@@ -10,6 +10,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   query,
@@ -331,6 +332,12 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
         // undefined count.
         cleaned[k] =
           k === "schedule" ? scheduleToFirestore(v as MetricSchedule) : v;
+      }
+      // A numeric metric saved without timePrecision (Format toggled Time
+      // -> Number) must clear any previously stored value, not leave it
+      // stale.
+      if (patch.timePrecision === undefined) {
+        cleaned.timePrecision = deleteField();
       }
       cleaned.updatedAt = serverTimestamp();
       await updateDoc(ref, cleaned);

@@ -1074,6 +1074,29 @@ describe("CustomMetricForm (performance)", () => {
     expect(payload.primitive).toBe("numeric");
   });
 
+  it("clamps precision to seconds when switching Unit from hr to min (DGT-19 finding 1)", async () => {
+    // Regression: the Unit onChange only clamped precision when switching
+    // TO "sec" (`u === "sec" ? "s" : draft.timePrecision`). Going from
+    // Unit=hr/Precision=minutes to Unit=min left precision="m", an invalid
+    // min+m combo (min's only valid precision is seconds) that would
+    // desync the Precision <select> and persist a bad payload.
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("performance");
+
+    await user.type(screen.getByLabelText(/^name$/i), "Marathon Time");
+    await user.click(screen.getByRole("radio", { name: /^time$/i }));
+    await user.selectOptions(screen.getByLabelText(/^unit$/i), "hr");
+    await user.selectOptions(screen.getByLabelText(/^precision$/i), "m");
+    await user.selectOptions(screen.getByLabelText(/^unit$/i), "min");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.timePrecision).toBe("s");
+    expect(payload.unit).toBe("min");
+  });
+
   it("routes a built-in perf metric id (oneRepMaxBench) to MetricOverrideForm", () => {
     renderAt("/add-metric/performance/oneRepMaxBench");
     // MetricOverrideForm shows Name and Unit disabled. Unit reads the

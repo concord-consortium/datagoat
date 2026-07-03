@@ -70,6 +70,35 @@ describe("MetricBarChart — integration", () => {
     ).toBe(1);
   });
 
+  it("does not pre-round the average for time metrics (sub-minute precision)", () => {
+    // sleepTime is a time metric (h:mm). A true average of 5.283 hours is
+    // 5h 16.98m, which rounds to "5:17". Pre-rounding averageRaw to the
+    // metric's coarse avgDecimals (1) before formatting would yield 5.3
+    // hours -> "5:18" instead. The average badge must show the raw,
+    // unrounded value so formatValue's own seconds/minutes rounding is
+    // the only rounding that happens.
+    const { container } = renderInSvg(
+      <MetricBarChart
+        metricId="sleepTime"
+        data={[
+          { date: "2026-05-05", value: 5 },
+          { date: "2026-05-06", value: 6 },
+        ]}
+        averageRaw={5.283}
+        rangeKey="7d"
+        width={320}
+        height={180}
+      />,
+    );
+    const txts = Array.from(container.querySelectorAll("text")).map(
+      (t) => t.textContent,
+    );
+    expect(txts.some((t) => t?.includes("Avg") && t?.includes("5:17"))).toBe(
+      true,
+    );
+    expect(txts.some((t) => t?.includes("5:18"))).toBe(false);
+  });
+
   it("uses the inverted y-scale for hydration", () => {
     // Hydration: low raw = "good" displayed at top.
     const { container } = renderInSvg(

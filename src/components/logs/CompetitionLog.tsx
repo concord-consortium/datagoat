@@ -16,6 +16,11 @@ import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { TimeInput } from "./TimeInput";
+import { resolveTimeLayout } from "../../utils/timeValue";
+import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
+import { getMetricChartConfig } from "../../charts/metricChartConfig";
+import type { MetricDefinition } from "../../metrics/types";
 import css from "./CompetitionLog.module.css";
 
 export function CompetitionLog() {
@@ -238,6 +243,24 @@ export function CompetitionLog() {
                       // empty cell so users can't log a number against
                       // a label-valued metric.
                       if (customDef?.primitive === "nominal") return null;
+                      const timeMeta: MetricDefinition | undefined =
+                        builtInDef ??
+                        (customDef
+                          ? customAsMetricDefinition(customDef, "competition")
+                          : undefined);
+                      if (timeMeta && resolveTimeLayout(timeMeta)) {
+                        return (
+                          <TimeInput
+                            metric={timeMeta}
+                            value={stringValue}
+                            onChange={(raw) => setMetricValue(metric.id, raw)}
+                            labelledBy={nameCellId}
+                            secondsDecimals={
+                              getMetricChartConfig(metric.id).avgDecimals ?? 2
+                            }
+                          />
+                        );
+                      }
                       return (
                         <CompetitionMetricInput
                           metricId={metric.id}

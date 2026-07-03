@@ -213,6 +213,28 @@ describe("CompetitionLog ordinal custom metric", () => {
   });
 });
 
+describe("CompetitionLog time metrics", () => {
+  it("renders the 'times' metric as a multi-field time input", () => {
+    renderAt("/competition");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("Times"),
+    );
+    expect(row).toBeDefined();
+    expect(
+      row!.querySelectorAll("input").length,
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it("still renders a non-time metric like 'goals' as a single input", () => {
+    renderAt("/competition");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("Points/Goals"),
+    );
+    expect(row).toBeDefined();
+    expect(row!.querySelectorAll("input").length).toBe(1);
+  });
+});
+
 describe("CompetitionLog optimistic state via real DataContext", () => {
   beforeEach(() => {
     ctx.useLightweightMocks = false;

@@ -15,6 +15,11 @@ import {
 import { emptyPerformanceEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { TimeInput } from "./TimeInput";
+import { resolveTimeLayout } from "../../utils/timeValue";
+import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
+import { getMetricChartConfig } from "../../charts/metricChartConfig";
+import type { MetricDefinition } from "../../metrics/types";
 import css from "./PerformanceLog.module.css";
 
 // Mirrors CompetitionLog. Performance entries share the same map
@@ -160,6 +165,7 @@ export function PerformanceLog() {
                     </td>
                     <td className={css.colRecord}>
                       {(() => {
+                        const builtInDef = builtInById.get(metric.id);
                         const customDef = customById.get(metric.id);
                         if (
                           customDef?.primitive === "ordinal" &&
@@ -181,6 +187,24 @@ export function PerformanceLog() {
                           );
                         }
                         if (customDef?.primitive === "nominal") return null;
+                        const timeMeta: MetricDefinition | undefined =
+                          builtInDef ??
+                          (customDef
+                            ? customAsMetricDefinition(customDef, "performance")
+                            : undefined);
+                        if (timeMeta && resolveTimeLayout(timeMeta)) {
+                          return (
+                            <TimeInput
+                              metric={timeMeta}
+                              value={stringValue}
+                              onChange={(raw) => setMetricValue(metric.id, raw)}
+                              labelledBy={nameCellId}
+                              secondsDecimals={
+                                getMetricChartConfig(metric.id).avgDecimals ?? 2
+                              }
+                            />
+                          );
+                        }
                         return (
                           <CompetitionMetricInput
                             metricId={metric.id}

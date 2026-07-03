@@ -271,6 +271,40 @@ describe("PerformanceLog metric resolution", () => {
   });
 });
 
+describe("PerformanceLog time metrics", () => {
+  it("renders 'oneMileRun' as a multi-field time input", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedPerformanceMetrics: ["oneMileRun"],
+      },
+    };
+    renderAt("/performance");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("1-Mile Run"),
+    );
+    expect(row).toBeDefined();
+    expect(row!.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders 'tenMeterSprint' as a single seconds input", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedPerformanceMetrics: ["tenMeterSprint"],
+      },
+    };
+    renderAt("/performance");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("10-Meter Sprint"),
+    );
+    expect(row).toBeDefined();
+    expect(row!.querySelectorAll("input").length).toBe(1);
+  });
+});
+
 describe("PerformanceLog writes", () => {
   it("typing into a numeric metric calls setPerformanceEntry per keystroke", () => {
     ctx.loadState = {

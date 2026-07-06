@@ -16,6 +16,7 @@ import {
   ADDABLE_HEALTH,
   ADDABLE_PERFORMANCE,
 } from "../../metrics/addableMetrics";
+import { YN_LEVELS } from "../../metrics/yesNo";
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
@@ -36,11 +37,6 @@ const NAME_MAX = 128;
 type AuthorableCustomMetricType = "health" | "performance" | "competition";
 
 type TopLevelKind = "numeric" | "categorical" | "yn";
-
-const YN_LEVELS: CustomMetricLevel[] = [
-  { label: "No", value: 0 },
-  { label: "Yes", value: 1 },
-];
 
 function deriveLevelRangeDisplay(
   levels: CustomMetricLevel[],

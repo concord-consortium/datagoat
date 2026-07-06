@@ -6,6 +6,7 @@ import { NumericInput } from "./NumericInput";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { ScaleCards } from "./ScaleCards";
+import { LevelRadioGroup } from "./LevelRadioGroup";
 import { resolveScaleColors } from "../../data/scaleColors";
 import { MoodFace } from "../../icons/MoodFace";
 import css from "./MetricInputRow.module.css";
@@ -48,11 +49,20 @@ export interface OrdinalMetricInputRowProps extends BaseProps {
   onChange: (next: number) => void;
 }
 
+export interface RadioMetricInputRowProps extends BaseProps {
+  // Plain radio group (e.g. Yes/No metrics) rather than the scale-card picker.
+  inputType: "radio";
+  levels: CustomMetricLevel[];
+  value: number | undefined;
+  onChange: (next: number) => void;
+}
+
 export type MetricInputRowProps =
   | NumericMetricInputRowProps
   | ColorScaleMetricInputRowProps
   | TreeMetricInputRowProps
-  | OrdinalMetricInputRowProps;
+  | OrdinalMetricInputRowProps
+  | RadioMetricInputRowProps;
 
 // Single row for a tracked health metric. Switches on metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
@@ -128,6 +138,14 @@ export function MetricInputRow(props: MetricInputRowProps) {
             ariaLabelFormat={
               metric.id === "mood" ? (_i, _n, level) => level.label : undefined
             }
+          />
+        )}
+        {props.inputType === "radio" && (
+          <LevelRadioGroup
+            levels={props.levels}
+            value={props.value}
+            onChange={props.onChange}
+            labelledBy={nameId}
           />
         )}
       </td>

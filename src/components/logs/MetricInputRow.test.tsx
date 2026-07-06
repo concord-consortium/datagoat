@@ -218,6 +218,33 @@ const MOOD_BUILTIN: MetricDefinition = {
   inputType: "ordinal",
 };
 
+describe("MetricInputRow radio (Yes/No)", () => {
+  it("renders radio buttons for inputType='radio'", () => {
+    render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <MetricInputRow
+              inputType="radio"
+              metric={MOOD_METRIC}
+              levels={[
+                { label: "No", value: 0 },
+                { label: "Yes", value: 1 },
+              ]}
+              value={undefined}
+              onChange={vi.fn()}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("radio", { name: /^no$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^yes$/i })).toBeTruthy();
+    // Not the scale-card picker.
+    expect(screen.queryByRole("button", { name: /^no$/i })).toBeNull();
+  });
+});
+
 describe("MetricInputRow Mood face icons", () => {
   it("renders a face-icon card whose accessible name is the level word", () => {
     render(

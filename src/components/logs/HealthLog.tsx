@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
 import { MetricInputRow } from "./MetricInputRow";
+import { isYesNoLevels } from "../../metrics/yesNo";
 import rowCss from "./MetricInputRow.module.css";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
@@ -331,11 +332,11 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
-                      inputType="ordinal"
+                      inputType={isYesNoLevels(def.levels) ? "radio" : "ordinal"}
                       metric={adaptCustom(def)}
                       levels={def.levels}
                       value={ordinalValue}
-                      onChange={(next) => {
+                      onChange={(next: number) => {
                         setCustomMetric(id, String(next));
                       }}
                       detailHref={`/health/${id}`}

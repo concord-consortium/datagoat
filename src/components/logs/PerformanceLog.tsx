@@ -15,7 +15,9 @@ import {
 import { emptyPerformanceEntry } from "../../types/data";
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { ScaleCards } from "./ScaleCards";
+import { LevelRadioGroup } from "./LevelRadioGroup";
 import { resolveScaleColors } from "../../data/scaleColors";
+import { isYesNoLevels } from "../../metrics/yesNo";
 import css from "./PerformanceLog.module.css";
 
 // Mirrors CompetitionLog. Performance entries share the same map
@@ -170,7 +172,16 @@ export function PerformanceLog() {
                             typeof live === "number" && Number.isFinite(live)
                               ? live
                               : undefined;
-                          return (
+                          return isYesNoLevels(customDef.levels) ? (
+                            <LevelRadioGroup
+                              levels={customDef.levels}
+                              value={ordinalValue}
+                              onChange={(next) =>
+                                setMetricValue(metric.id, String(next))
+                              }
+                              labelledBy={nameCellId}
+                            />
+                          ) : (
                             <ScaleCards
                               levels={customDef.levels}
                               colors={resolveScaleColors({ metricId: metric.id, levels: customDef.levels })}

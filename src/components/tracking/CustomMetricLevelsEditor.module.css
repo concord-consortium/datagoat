@@ -96,12 +96,29 @@
 .table input[type="color"] {
   width: 44px;
   height: 44px;
-  padding: 2px;
+  padding: 0;
   border: 1.5px solid #546888;
   border-radius: 6px;
   background: var(--surface2);
+  overflow: hidden;
   cursor: pointer;
   transition: border-color var(--dur-base) var(--ease-default);
+}
+
+/* Make the color swatch fill the rounded picker box (browsers inset the
+   swatch and paint square corners by default, leaving gaps). */
+.table input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.table input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.table input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
 }
 
 .table input[type="color"]:hover {
@@ -127,7 +144,8 @@
   border-radius: 6px;
   background: var(--surface2);
   color: var(--subtext);
-  font-size: 18px;
+  font-size: 26px;
+  line-height: 1;
   font-family: var(--font-body);
   cursor: pointer;
   display: flex;

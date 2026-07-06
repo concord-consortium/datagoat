@@ -344,6 +344,23 @@ describe("time metric chart formatting", () => {
     expect(c.timeLayout).toEqual({ coarsest: "m", precision: "s" });
     expect(c.formatValue(1 + 3.45 / 60)).toBe("1:03.5");
   });
+
+  it("seconds-precision built-ins (fortyYardDash) keep sub-second precision, matching the log input's avgDecimals", () => {
+    // Regression: competitionConfig/performanceConfig used to hardcode
+    // timeFormatValue(layout, 0), which rounded 4.55s to "5" on every
+    // chart surface while the log input (which reads avgDecimals ?? 2)
+    // kept 2 decimals — input and chart disagreed.
+    const c = getMetricChartConfig("fortyYardDash");
+    expect(c.avgDecimals).toBe(2);
+    expect(c.formatValue(4.55)).toBe("4.55");
+    expect(formatMetricValue("fortyYardDash", 4.55)).toBe("4.55");
+  });
+
+  it("oneMileRun keeps a tenths-of-a-second precision on the seconds field", () => {
+    const c = getMetricChartConfig("oneMileRun");
+    expect(c.formatValue(4.5)).toBe("4:30");
+    expect(c.formatValue(4 + 30.5 / 60)).toBe("4:30.5");
+  });
 });
 
 // Tiny seedable PRNG so the random-generator tests are deterministic.

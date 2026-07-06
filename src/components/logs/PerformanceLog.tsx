@@ -18,6 +18,7 @@ import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
 import { TimeInput } from "./TimeInput";
 import { resolveTimeLayout } from "../../utils/timeValue";
 import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
+import { formatMetricValue } from "../../charts/chartSeries";
 import { getMetricChartConfig } from "../../charts/metricChartConfig";
 import type { MetricDefinition } from "../../metrics/types";
 import css from "./PerformanceLog.module.css";
@@ -152,9 +153,15 @@ export function PerformanceLog() {
                       : "";
                 const filled = stringValue !== "";
                 const nameCellId = `${nameIdBase}-${metric.id}`;
+                const totalDisplay =
+                  getMetricChartConfig(metric.id).timeLayout &&
+                  typeof live === "number" &&
+                  Number.isFinite(live)
+                    ? formatMetricValue(metric.id, live)
+                    : stringValue;
                 return (
                   <tr key={metric.id}>
-                    <td className={css.colTotal}>{filled ? stringValue : ""}</td>
+                    <td className={css.colTotal}>{filled ? totalDisplay : ""}</td>
                     <td id={nameCellId} className={css.colMetric}>
                       <Link
                         to={`/performance/${metric.id}`}

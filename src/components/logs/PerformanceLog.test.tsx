@@ -305,6 +305,37 @@ describe("PerformanceLog time metrics", () => {
   });
 });
 
+describe("PerformanceLog Latest column for time metrics", () => {
+  it("shows a formatted time (not the raw decimal) in the Latest cell for 'oneMileRun'", () => {
+    // Regression: the Latest cell used to render String(live) even for
+    // time metrics, so a stored 4.5 (4m30s) showed "4.5" instead of "4:30".
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedPerformanceMetrics: ["oneMileRun"],
+      },
+    };
+    ctx.performance = {
+      status: "loaded",
+      entries: [
+        {
+          version: 1,
+          date: TODAY_ISO,
+          metrics: { oneMileRun: 4.5 },
+        },
+      ],
+    };
+    renderAt("/performance");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("1-Mile Run"),
+    );
+    expect(row).toBeDefined();
+    const latestCell = row!.querySelector("td");
+    expect(latestCell?.textContent).toBe("4:30");
+  });
+});
+
 describe("PerformanceLog writes", () => {
   it("typing into a numeric metric calls setPerformanceEntry per keystroke", () => {
     ctx.loadState = {

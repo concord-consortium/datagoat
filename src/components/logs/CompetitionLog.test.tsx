@@ -235,6 +235,31 @@ describe("CompetitionLog time metrics", () => {
   });
 });
 
+describe("CompetitionLog Total column for time metrics", () => {
+  it("shows a formatted time (not the raw decimal) in the Total cell for the 'times' metric", () => {
+    // Regression: the Total cell used to render String(total) even for
+    // time metrics, so a stored 5.5 (5m30s) showed "5.5" instead of "5:30".
+    ctx.competition = {
+      status: "loaded",
+      entries: [
+        {
+          version: 1,
+          date: TODAY_ISO,
+          metrics: { times: 5.5 },
+        },
+      ],
+    };
+    renderAt("/competition");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("Times"),
+    );
+    expect(row).toBeDefined();
+    const totalCell = row!.querySelector("td");
+    expect(totalCell?.textContent).toContain(":");
+    expect(totalCell?.textContent).not.toBe("5.5");
+  });
+});
+
 describe("CompetitionLog optimistic state via real DataContext", () => {
   beforeEach(() => {
     ctx.useLightweightMocks = false;

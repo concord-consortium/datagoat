@@ -19,6 +19,7 @@ import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
 import { TimeInput } from "./TimeInput";
 import { resolveTimeLayout } from "../../utils/timeValue";
 import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
+import { formatMetricValue } from "../../charts/chartSeries";
 import { getMetricChartConfig } from "../../charts/metricChartConfig";
 import type { MetricDefinition } from "../../metrics/types";
 import css from "./CompetitionLog.module.css";
@@ -178,7 +179,12 @@ export function CompetitionLog() {
                 totalCell = rate === undefined ? "" : `${rate}%`;
               } else {
                 const total = competitionTotal(entries, metric.id);
-                totalCell = total === undefined ? "" : String(total);
+                totalCell =
+                  total === undefined
+                    ? ""
+                    : getMetricChartConfig(metric.id).timeLayout
+                      ? formatMetricValue(metric.id, total)
+                      : String(total);
               }
 
               return (

@@ -336,6 +336,12 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       // A numeric metric saved without timePrecision (Format toggled Time
       // -> Number) must clear any previously stored value, not leave it
       // stale.
+      //
+      // Invariant: this is safe only because the sole current caller of
+      // updateMetric always sends a full buildPayload (every field, not a
+      // sparse patch). A future partial-patch caller that omits
+      // timePrecision for reasons unrelated to the Format toggle would
+      // silently wipe a time metric's precision here.
       if (patch.timePrecision === undefined) {
         cleaned.timePrecision = deleteField();
       }

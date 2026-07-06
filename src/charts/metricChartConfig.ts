@@ -178,6 +178,7 @@ function competitionConfig(
   yTopRaw: number,
   unit?: string,
   timePrecision?: "h" | "m" | "s",
+  secondsDecimals: number = 0,
 ): MetricChartConfig {
   const layout = timePrecision ? resolveTimeLayout({ unit, timePrecision }) : null;
   return {
@@ -185,9 +186,10 @@ function competitionConfig(
     yTopRaw,
     yBottomRaw,
     // No goalRaw — competition goals haven't been content-defined.
-    formatValue: layout ? timeFormatValue(layout, 0) : fmtRaw,
+    formatValue: layout ? timeFormatValue(layout, secondsDecimals) : fmtRaw,
     unit: layout ? undefined : unit,
     timeLayout: layout ?? undefined,
+    ...(layout ? { avgDecimals: secondsDecimals } : {}),
     random: (rng) => randomInt(rng, yBottomRaw, yTopRaw),
   };
 }
@@ -234,6 +236,7 @@ function performanceConfig(
   unit?: string,
   lowerIsBetter?: boolean,
   timePrecision?: "h" | "m" | "s",
+  secondsDecimals: number = 0,
 ): MetricChartConfig {
   const layout = timePrecision ? resolveTimeLayout({ unit, timePrecision }) : null;
   return {
@@ -242,9 +245,10 @@ function performanceConfig(
     yBottomRaw,
     lowerIsBetter,
     // No goalRaw — perf goals are user-set per the DGT-51 sheet.
-    formatValue: layout ? timeFormatValue(layout, 0) : fmtRaw,
+    formatValue: layout ? timeFormatValue(layout, secondsDecimals) : fmtRaw,
     unit: layout ? undefined : unit,
     timeLayout: layout ?? undefined,
+    ...(layout ? { avgDecimals: secondsDecimals } : {}),
     // randomFloat (rather than randomInt) — perf ranges include
     // non-integer bounds (e.g. fortyYardDash 4.2..10). Rounded to 1
     // decimal so demo values match the chart's typical avgDecimals.
@@ -266,11 +270,11 @@ const CONFIG: Record<string, MetricChartConfig> = {
   yards: competitionConfig(0, 200),
   tackles: competitionConfig(0, 10),
   scores: competitionConfig(0, 100),
-  times: competitionConfig(0, 60, "min", "s"),
+  times: competitionConfig(0, 60, "min", "s", 1),
   // Performance — from sheet (time metrics pass lowerIsBetter)
-  oneMileRun: performanceConfig(4, 15, "min", true, "s"),         // from sheet
-  tenMeterSprint: performanceConfig(1, 3, "sec", true, "s"),      // from sheet
-  fortyYardDash: performanceConfig(4.2, 10, "sec", true, "s"),    // from sheet
+  oneMileRun: performanceConfig(4, 15, "min", true, "s", 1),         // from sheet
+  tenMeterSprint: performanceConfig(1, 3, "sec", true, "s", 2),      // from sheet
+  fortyYardDash: performanceConfig(4.2, 10, "sec", true, "s", 2),    // from sheet
   beepTest: performanceConfig(1, 21, "levels"),              // from sheet
   standingBroadJump: performanceConfig(100, 350, "cm"),      // from sheet
   verticalJump: performanceConfig(1, 50, "in"),              // from sheet

@@ -148,6 +148,7 @@ function buildPayload(
   return {
     name: trimmedName,
     metricType: type,
+    unit: draft.unit.trim(),
     primitive: "ordinal",
     inputType: "radio",
     levels: levels.map((l) => {
@@ -581,7 +582,6 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  const unitDisabled = draft.topLevel !== "numeric";
   const goalDisabled = draft.topLevel === "yn";
   const yAxisDisabled = draft.topLevel !== "numeric";
   // Y/N's only possible values are 0 and 1, so the decimals setting
@@ -609,6 +609,44 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
 
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
+      <TextField
+        id="cm-name"
+        label="Metric Name"
+        value={draft.name}
+        maxLength={NAME_MAX}
+        onChange={(e) => update("name", e.target.value)}
+      />
+
+      <If condition={isDuplicateName}>
+        <div className={css.nameWarning} role="alert">
+          <p className={css.nameWarningText}>
+            A metric named "{trimmedName}" already exists.
+          </p>
+          <button
+            type="button"
+            className={css.nameWarningAction}
+            onClick={() => {
+              if (suggestedName) update("name", suggestedName);
+            }}
+          >
+            Use "{suggestedName}" instead
+          </button>
+        </div>
+      </If>
+
+      <TextField
+        id="cm-unit"
+        label="Unit (optional)"
+        value={draft.unit}
+        onChange={(e) => update("unit", e.target.value)}
+      />
+
+      <ScheduleField
+        idPrefix="cm-schedule"
+        value={draft.schedule}
+        onChange={(s) => update("schedule", s)}
+      />
+
       <fieldset className={css.typeChooser}>
         <legend className={css.typeChooserLegend}>Type</legend>
         <label className={css.typeOption}>
@@ -646,49 +684,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         </label>
       </fieldset>
 
-      <TextField
-        id="cm-name"
-        label="Name"
-        value={draft.name}
-        maxLength={NAME_MAX}
-        onChange={(e) => update("name", e.target.value)}
-      />
-
-      <If condition={isDuplicateName}>
-        <div className={css.nameWarning} role="alert">
-          <p className={css.nameWarningText}>
-            A metric named "{trimmedName}" already exists.
-          </p>
-          <button
-            type="button"
-            className={css.nameWarningAction}
-            onClick={() => {
-              if (suggestedName) update("name", suggestedName);
-            }}
-          >
-            Use "{suggestedName}" instead
-          </button>
-        </div>
-      </If>
-
-      <If condition={draft.topLevel !== "numeric"}>
+      <If condition={draft.topLevel === "categorical"}>
         <div className={css.levelsBlock}>
           <label className={css.fieldLabel}>Scale levels</label>
           <CustomMetricLevelsEditor
             levels={effectiveLevels}
             onChange={(next) => update("levels", next)}
-            readOnly={draft.topLevel === "yn"}
           />
         </div>
       </If>
-
-      <TextField
-        id="cm-unit"
-        label="Unit (optional)"
-        value={draft.unit}
-        disabled={unitDisabled}
-        onChange={(e) => update("unit", e.target.value)}
-      />
 
       <TextField
         id="cm-goal"
@@ -738,12 +742,6 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         inputMode="url"
         value={draft.referenceUrl}
         onChange={(e) => update("referenceUrl", e.target.value)}
-      />
-
-      <ScheduleField
-        idPrefix="cm-schedule"
-        value={draft.schedule}
-        onChange={(s) => update("schedule", s)}
       />
 
       {error && <p className={css.error}>{error}</p>}

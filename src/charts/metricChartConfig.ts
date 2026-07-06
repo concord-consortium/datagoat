@@ -270,9 +270,9 @@ const CONFIG: Record<string, MetricChartConfig> = {
   yards: competitionConfig(0, 200),
   tackles: competitionConfig(0, 10),
   scores: competitionConfig(0, 100),
-  times: competitionConfig(0, 60, "min", "s", 1),
+  times: competitionConfig(0, 60, "min", "s", 2),
   // Performance — from sheet (time metrics pass lowerIsBetter)
-  oneMileRun: performanceConfig(4, 15, "min", true, "s", 1),         // from sheet
+  oneMileRun: performanceConfig(4, 15, "min", true, "s", 2),         // from sheet
   tenMeterSprint: performanceConfig(1, 3, "sec", true, "s", 2),      // from sheet
   fortyYardDash: performanceConfig(4.2, 10, "sec", true, "s", 2),    // from sheet
   beepTest: performanceConfig(1, 21, "levels"),              // from sheet

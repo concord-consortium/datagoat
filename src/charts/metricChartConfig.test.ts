@@ -356,10 +356,11 @@ describe("time metric chart formatting", () => {
     expect(formatMetricValue("fortyYardDash", 4.55)).toBe("4.55");
   });
 
-  it("oneMileRun keeps a tenths-of-a-second precision on the seconds field", () => {
+  it("oneMileRun keeps a hundredths-of-a-second precision on the seconds field", () => {
     const c = getMetricChartConfig("oneMileRun");
+    expect(c.avgDecimals).toBe(2);
     expect(c.formatValue(4.5)).toBe("4:30");
-    expect(c.formatValue(4 + 30.5 / 60)).toBe("4:30.5");
+    expect(c.formatValue(4 + 30.5 / 60)).toBe("4:30.50");
   });
 });
 

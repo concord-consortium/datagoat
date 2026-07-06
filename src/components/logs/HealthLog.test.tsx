@@ -282,8 +282,8 @@ describe("HealthLog time metric row", () => {
       ],
     };
     renderAt("/health");
-    const hField = inputForMetric("Total Sleep Time h");
-    const mField = inputForMetric("Total Sleep Time m");
+    const hField = inputForMetric("Total Sleep Time hr");
+    const mField = inputForMetric("Total Sleep Time min");
     expect(hField.value).toBe("8");
     expect(mField.value).toBe("30");
   });

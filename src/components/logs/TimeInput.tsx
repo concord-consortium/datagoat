@@ -22,7 +22,10 @@ export interface TimeInputProps {
   secondsDecimals?: number;
 }
 
-const UNIT_LABEL: Record<TimeUnit, string> = { h: "h", m: "m", s: "s" };
+// Visible + accessible unit labels. The prototype labels each field with
+// its unit ("hr" / "min") rather than separating fields with a colon, and
+// repeats the unit as gray placeholder text inside the empty field.
+const UNIT_LABEL: Record<TimeUnit, string> = { h: "hr", m: "min", s: "sec" };
 
 const AMBIGUOUS_ERROR =
   "Enter a whole number in the larger field, or use the smaller field.";
@@ -107,22 +110,21 @@ export function TimeInput({
   return (
     <div>
       <div className={css.timeInput} role="group" aria-labelledby={labelledBy}>
-        {units.map((unit, i) => (
+        {units.map((unit) => (
           <span key={unit} className={css.unitGroup}>
-            {i > 0 && (
-              <span className={css.sep} aria-hidden="true">
-                :
-              </span>
-            )}
             <input
               type="text"
               inputMode="decimal"
               className={clsx(css.field, (fields[unit] ?? "") !== "" && css.hasValue)}
               value={fields[unit] ?? ""}
+              placeholder={UNIT_LABEL[unit]}
               aria-label={`${metric.name} ${UNIT_LABEL[unit]}`}
               onChange={(e) => update(unit, e.target.value)}
               onBlur={normalizeOnBlur}
             />
+            <span className={css.fieldUnit} aria-hidden="true">
+              {UNIT_LABEL[unit]}
+            </span>
           </span>
         ))}
       </div>

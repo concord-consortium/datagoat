@@ -1,7 +1,7 @@
 .timeInput {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
 }
 
 .field {
@@ -20,6 +20,11 @@
   appearance: none;
 }
 
+.field::placeholder {
+  color: var(--subtext);
+  opacity: 1;
+}
+
 .field.hasValue {
   border-color: rgba(0, 179, 192, 0.4);
 }
@@ -35,11 +40,12 @@
   gap: 6px;
 }
 
-.sep {
+.fieldUnit {
   font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--subtext);
+  white-space: nowrap;
 }
 
 .error {

@@ -289,10 +289,10 @@ describe("MetricOverrideForm — time metric", () => {
   it("round-trips a 7h30m goal entry to decimal 7.5 on save", async () => {
     renderForm(sleepTime);
     const goal = within(screen.getByTestId("mo-goal"));
-    fireEvent.change(goal.getByLabelText("Total Sleep Time h"), {
+    fireEvent.change(goal.getByLabelText("Total Sleep Time hr"), {
       target: { value: "7" },
     });
-    fireEvent.change(goal.getByLabelText("Total Sleep Time m"), {
+    fireEvent.change(goal.getByLabelText("Total Sleep Time min"), {
       target: { value: "30" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -367,7 +367,7 @@ describe("MetricOverrideForm — performance metric with seconds-only timePrecis
   it("saves a valid fortyYardDash override via its time input and navigates back", async () => {
     renderForm(fortyYardDash);
     const goal = within(screen.getByTestId("mo-goal"));
-    fireEvent.change(goal.getByLabelText("40-Yard Dash s"), {
+    fireEvent.change(goal.getByLabelText("40-Yard Dash sec"), {
       target: { value: "4.5" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

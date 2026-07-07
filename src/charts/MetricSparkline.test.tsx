@@ -19,12 +19,12 @@ describe("MetricSparkline", () => {
     expect(container.querySelectorAll("rect")).toHaveLength(5);
   });
 
-  it("renders the two axis lines and no bars for an all-null series", () => {
+  it("renders the x-axis baseline and no bars for an all-null series", () => {
     const { container } = render(
       <MetricSparkline metricId="hydration" data={series([null, null, null])} />,
     );
     expect(container.querySelectorAll("rect")).toHaveLength(0);
-    expect(container.querySelectorAll("line")).toHaveLength(2); // y + x axis
+    expect(container.querySelectorAll("line")).toHaveLength(1); // x-axis only (no y-axis)
   });
 
   it("renders an svg for an inverted metric (hydration) without throwing", () => {

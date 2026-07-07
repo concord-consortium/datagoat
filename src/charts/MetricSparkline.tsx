@@ -23,16 +23,16 @@ export function MetricSparkline({
   metricId,
   data,
   goalRaw,
-  width = 56,
-  height = 22,
+  width = 30,
+  height = 16,
 }: MetricSparklineProps) {
   const config = getMetricChartConfig(metricId);
 
-  // Leave a few px on the left/bottom for the tiny axis lines.
-  const M_LEFT = 3;
-  const M_RIGHT = 1;
-  const M_TOP = 2;
-  const M_BOTTOM = 3;
+  // No y-axis; leave a couple px at the bottom for the x-axis baseline.
+  const M_LEFT = 0;
+  const M_RIGHT = 0;
+  const M_TOP = 1;
+  const M_BOTTOM = 2;
   const geom: ChartGeom = {
     plotLeft: M_LEFT,
     plotTop: M_TOP,
@@ -62,14 +62,6 @@ export function MetricSparkline({
       height={height}
       aria-hidden="true"
     >
-      <line
-        className={css.axis}
-        x1={geom.plotLeft}
-        y1={geom.plotTop}
-        x2={geom.plotLeft}
-        y2={geom.plotBottom}
-        vectorEffect="non-scaling-stroke"
-      />
       <line
         className={css.axis}
         x1={geom.plotLeft}

@@ -291,10 +291,10 @@ describe("MetricOverrideForm — time metric", () => {
     const goal = within(screen.getByTestId("mo-goal"));
     // An ambiguous 8.5hr + 40min entry never propagates to goalRaw; the
     // form must refuse to save the stale last-committed value.
-    fireEvent.change(goal.getByLabelText("Total Sleep Time min"), {
+    fireEvent.change(goal.getByLabelText("Goal Total Sleep Time min"), {
       target: { value: "40" },
     });
-    fireEvent.change(goal.getByLabelText("Total Sleep Time hr"), {
+    fireEvent.change(goal.getByLabelText("Goal Total Sleep Time hr"), {
       target: { value: "8.5" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -310,18 +310,39 @@ describe("MetricOverrideForm — time metric", () => {
     // the unit-label fallback - restoring the default hint time metrics
     // lost.
     expect(
-      (top.getByLabelText("Total Sleep Time hr") as HTMLInputElement)
+      (top.getByLabelText("Y-axis top (optional) Total Sleep Time hr") as HTMLInputElement)
         .placeholder,
     ).toMatch(/^\d/);
+  });
+
+  it("gives each time field a distinct accessible name across Goal / Y-axis fields", () => {
+    renderForm(sleepTime);
+    // The three TimeInputs share one metric; the field-label prefix keeps
+    // their per-unit inputs distinguishable for screen readers.
+    expect(
+      within(screen.getByTestId("mo-goal")).getByLabelText(
+        "Goal Total Sleep Time hr",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("mo-ytop")).getByLabelText(
+        "Y-axis top (optional) Total Sleep Time hr",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("mo-ybot")).getByLabelText(
+        "Y-axis bottom (optional) Total Sleep Time hr",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("round-trips a 7h30m goal entry to decimal 7.5 on save", async () => {
     renderForm(sleepTime);
     const goal = within(screen.getByTestId("mo-goal"));
-    fireEvent.change(goal.getByLabelText("Total Sleep Time hr"), {
+    fireEvent.change(goal.getByLabelText("Goal Total Sleep Time hr"), {
       target: { value: "7" },
     });
-    fireEvent.change(goal.getByLabelText("Total Sleep Time min"), {
+    fireEvent.change(goal.getByLabelText("Goal Total Sleep Time min"), {
       target: { value: "30" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -396,7 +417,7 @@ describe("MetricOverrideForm — performance metric with seconds-only timePrecis
   it("saves a valid fortyYardDash override via its time input and navigates back", async () => {
     renderForm(fortyYardDash);
     const goal = within(screen.getByTestId("mo-goal"));
-    fireEvent.change(goal.getByLabelText("40-Yard Dash sec"), {
+    fireEvent.change(goal.getByLabelText("Goal 40-Yard Dash sec"), {
       target: { value: "4.5" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

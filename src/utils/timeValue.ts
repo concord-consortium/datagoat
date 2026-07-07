@@ -9,7 +9,8 @@ export interface TimeFields {
   s?: string;
 }
 
-// Ordering: coarser units have a smaller rank. h(0) > m(1) > s(2).
+// Ordering by rank: h(0) < m(1) < s(2). A smaller rank is a coarser unit,
+// so h is coarsest and s is finest.
 const RANK: Record<TimeUnit, number> = { h: 0, m: 1, s: 2 };
 const SEC_PER: Record<TimeUnit, number> = { h: 3600, m: 60, s: 1 };
 // Coarse -> fine, indexable by RANK.

@@ -75,6 +75,7 @@ function OverrideField({
           labelledBy={labelId}
           placeholderValue={placeholderValue}
           onErrorChange={onErrorChange}
+          labelPrefix={label}
         />
       </div>
     );

@@ -31,6 +31,10 @@ export interface TimeInputProps {
   // block submit while an in-progress entry is invalid instead of
   // silently saving the last-committed (stale) value.
   onErrorChange?: (hasError: boolean) => void;
+  // Prepended to each sub-field's accessible name. When several TimeInputs
+  // share one metric (Goal / Y-axis top / Y-axis bottom in the override
+  // form), this keeps their per-field names distinct for screen readers.
+  labelPrefix?: string;
 }
 
 // Visible + accessible unit labels. The prototype labels each field with
@@ -61,6 +65,7 @@ export function TimeInput({
   secondsDecimals = 2,
   placeholderValue,
   onErrorChange,
+  labelPrefix,
 }: TimeInputProps) {
   const layout = resolveTimeLayout(metric);
   const [fields, setFields] = useState<TimeFields>(() => seed(value, layout, secondsDecimals));
@@ -186,7 +191,9 @@ export function TimeInput({
               className={clsx(css.field, (fields[unit] ?? "") !== "" && css.hasValue)}
               value={fields[unit] ?? ""}
               placeholder={placeholderFields?.[unit] ?? UNIT_LABEL[unit]}
-              aria-label={`${metric.name} ${UNIT_LABEL[unit]}`}
+              aria-label={[labelPrefix, metric.name, UNIT_LABEL[unit]]
+                .filter(Boolean)
+                .join(" ")}
               onChange={(e) =>
                 update(
                   unit,

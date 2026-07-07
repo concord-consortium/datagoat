@@ -166,6 +166,23 @@ describe("TimeInput seconds/minutes range error", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("associates the sub-fields with the error via aria-invalid/aria-describedby", () => {
+    const { container } = render(
+      <TimeInput metric={MILE} value="" onChange={vi.fn()} labelledBy="lbl" />,
+    );
+    const [, s] = container.querySelectorAll("input");
+    // Valid state: not flagged invalid, no error element.
+    expect(s.getAttribute("aria-invalid")).toBe("false");
+    expect(container.querySelector("#lbl-error")).toBeNull();
+    // Invalid entry: fields point to the error alert, which carries the id.
+    fireEvent.change(s, { target: { value: "75" } });
+    expect(s.getAttribute("aria-invalid")).toBe("true");
+    expect(s.getAttribute("aria-describedby")).toBe("lbl-error");
+    const alert = container.querySelector("#lbl-error");
+    expect(alert).not.toBeNull();
+    expect(alert?.getAttribute("role")).toBe("alert");
+  });
+
   it("shows the range message for a colon paste with an out-of-range piece", () => {
     const onChange = vi.fn();
     const { container } = render(

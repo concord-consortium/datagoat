@@ -190,6 +190,8 @@ export function TimeInput({
     setFields(formatDecimalToFields(parsed, layout!, secondsDecimals));
   }
 
+  const errorId = `${labelledBy}-error`;
+
   return (
     <div>
       <div className={css.timeInput} role="group" aria-labelledby={labelledBy}>
@@ -204,6 +206,8 @@ export function TimeInput({
               aria-label={[labelPrefix, metric.name, UNIT_LABEL[unit]]
                 .filter(Boolean)
                 .join(" ")}
+              aria-invalid={error !== null}
+              aria-describedby={error !== null ? errorId : undefined}
               onChange={(e) =>
                 update(
                   unit,
@@ -226,7 +230,7 @@ export function TimeInput({
         ))}
       </div>
       <If condition={error !== null}>
-        <div className={css.error} role="alert">
+        <div id={errorId} className={css.error} role="alert">
           {error}
         </div>
       </If>

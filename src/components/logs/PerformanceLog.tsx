@@ -16,6 +16,7 @@ import { emptyPerformanceEntry } from "../../types/data";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
 import { isTimeMetric, LogRecordInput } from "./LogRecordInput";
 import { formatMetricValue } from "../../charts/chartSeries";
+import { useChartConfigSync } from "../../charts/metricChartConfig";
 import css from "./PerformanceLog.module.css";
 
 // Mirrors CompetitionLog. Performance entries share the same map
@@ -29,6 +30,12 @@ export function PerformanceLog() {
   const { performance, setPerformanceEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
   const nameIdBase = useId();
+  // Re-render when the custom-metric chart-config overlay updates. The
+  // overlay is populated in a post-commit effect, so without this a custom
+  // time metric's row would render numeric on first paint (isTimeMetric /
+  // the summary formatter read getMetricChartConfig) until the next
+  // unrelated re-render.
+  useChartConfigSync();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {

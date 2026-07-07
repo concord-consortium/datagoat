@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/react";
+import { render, fireEvent, screen, act } from "@testing-library/react";
 import {
   MemoryRouter,
   Routes,
@@ -76,6 +76,10 @@ vi.mock("../../firebase", () => ({ db: {} }));
 vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
 import { PerformanceLog } from "./PerformanceLog";
+import {
+  customDefToChartConfig,
+  setCustomChartConfigs,
+} from "../../charts/metricChartConfig";
 import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 
 const TODAY_ISO = toISO(dateAtOffset(HISTORY));
@@ -379,5 +383,51 @@ describe("PerformanceLog writes", () => {
     expect(ctx.setPerformanceEntryMock).toHaveBeenCalledWith(TODAY_ISO, {
       metrics: { oneRepMaxBench: undefined },
     });
+  });
+});
+
+describe("PerformanceLog custom time metric overlay reactivity", () => {
+  const CUSTOM_TIME: CustomMetricDef = {
+    id: "c_time",
+    ownerId: "u1",
+    name: "Plank Hold",
+    metricType: "performance",
+    primitive: "numeric",
+    inputType: "numeric",
+    unit: "min",
+    timePrecision: "s",
+    goalRaw: 1,
+    yTopRaw: 5,
+    yBottomRaw: 0,
+    avgDecimals: 2,
+    referenceUrl: "",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+
+  it("re-renders a custom time metric as a time input once the chart-config overlay syncs", () => {
+    // The overlay is populated post-commit, so the row is numeric on first
+    // paint; the log must subscribe (useChartConfigSync) so it flips to the
+    // time input when the overlay syncs rather than staying numeric.
+    setCustomChartConfigs({});
+    ctx.customMetrics = [CUSTOM_TIME];
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedPerformanceMetrics: ["c_time"] },
+    };
+    renderAt("/performance");
+
+    const findRow = () =>
+      Array.from(document.querySelectorAll("tr")).find((r) =>
+        r.textContent?.includes("Plank Hold"),
+      )!;
+    expect(findRow().querySelectorAll("input").length).toBe(1); // numeric, overlay stale
+
+    act(() => {
+      setCustomChartConfigs({ [CUSTOM_TIME.id]: customDefToChartConfig(CUSTOM_TIME) });
+    });
+    expect(findRow().querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+
+    setCustomChartConfigs({}); // reset module overlay for other tests
   });
 });

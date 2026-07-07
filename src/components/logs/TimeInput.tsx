@@ -86,7 +86,13 @@ export function TimeInput({
     const same =
       (parent === null && current === null) ||
       (parent !== null && current !== null && Math.abs(parent - current) < 1e-9);
-    if (!same) setFields(seed(value, layout, secondsDecimals));
+    if (!same) {
+      // The parent value is authoritative here (cross-tab edit, reset, or
+      // a log switching dates), so reseed and drop any stale local error
+      // from the previous entry rather than letting it linger.
+      setFields(seed(value, layout, secondsDecimals));
+      applyError(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 

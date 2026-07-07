@@ -195,4 +195,34 @@ describe("TimeInput seconds/minutes range error", () => {
     expect(container.textContent).not.toMatch(/whole number/i);
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("clears a stale error when the parent value changes externally", () => {
+    const onErrorChange = vi.fn();
+    const { container, rerender } = render(
+      <TimeInput
+        metric={MILE}
+        value=""
+        onChange={vi.fn()}
+        labelledBy="lbl"
+        onErrorChange={onErrorChange}
+      />,
+    );
+    const [, s] = container.querySelectorAll("input");
+    fireEvent.change(s, { target: { value: "75" } }); // invalid, error shows
+    expect(container.querySelector("#lbl-error")).not.toBeNull();
+    expect(onErrorChange).toHaveBeenLastCalledWith(true);
+
+    // Parent pushes a new authoritative value (e.g. a log switching dates).
+    rerender(
+      <TimeInput
+        metric={MILE}
+        value="2.5"
+        onChange={vi.fn()}
+        labelledBy="lbl"
+        onErrorChange={onErrorChange}
+      />,
+    );
+    expect(container.querySelector("#lbl-error")).toBeNull();
+    expect(onErrorChange).toHaveBeenLastCalledWith(false);
+  });
 });

@@ -43,6 +43,9 @@ interface OverrideFieldProps {
   // (the base config bound the user is overriding). Omitted for the
   // always-prefilled Goal field.
   placeholderValue?: number;
+  // Time branch only: seconds precision for the TimeInput, so the override
+  // fields match the precision the logs and charts use for the metric.
+  secondsDecimals?: number;
   // Time branch only: notified when the in-progress entry's validity flips.
   onErrorChange?: (hasError: boolean) => void;
 }
@@ -59,6 +62,7 @@ function OverrideField({
   value,
   onChange,
   placeholderValue,
+  secondsDecimals,
   onErrorChange,
 }: OverrideFieldProps) {
   if (isTime) {
@@ -74,6 +78,7 @@ function OverrideField({
           onChange={onChange}
           labelledBy={labelId}
           placeholderValue={placeholderValue}
+          secondsDecimals={secondsDecimals}
           onErrorChange={onErrorChange}
           labelPrefix={label}
         />
@@ -279,6 +284,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
         label="Goal"
         value={goalRaw}
         onChange={setGoalRaw}
+        secondsDecimals={base.avgDecimals ?? 2}
         onErrorChange={(hasError) => setTimeFieldError("mo-goal", hasError)}
       />
 
@@ -291,6 +297,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
           value={yTopRaw}
           onChange={setYTopRaw}
           placeholderValue={base.yTopRaw}
+          secondsDecimals={base.avgDecimals ?? 2}
           onErrorChange={(hasError) => setTimeFieldError("mo-ytop", hasError)}
         />
         <OverrideField
@@ -301,6 +308,7 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
           value={yBottomRaw}
           onChange={setYBottomRaw}
           placeholderValue={base.yBottomRaw}
+          secondsDecimals={base.avgDecimals ?? 2}
           onErrorChange={(hasError) => setTimeFieldError("mo-ybot", hasError)}
         />
       </div>

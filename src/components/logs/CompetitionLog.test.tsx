@@ -102,6 +102,10 @@ vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
 import { CompetitionLog } from "./CompetitionLog";
 import { DataProvider } from "../../contexts/DataContext";
+import {
+  customDefToChartConfig,
+  setCustomChartConfigs,
+} from "../../charts/metricChartConfig";
 import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 
 const TODAY_ISO = toISO(dateAtOffset(HISTORY));
@@ -283,5 +287,52 @@ describe("CompetitionLog optimistic state via real DataContext", () => {
     );
     const totalCell = updatedRow?.querySelector("td");
     expect(totalCell?.textContent).toBe("3");
+  });
+});
+
+describe("CompetitionLog custom time metric overlay reactivity", () => {
+  const CUSTOM_TIME: CustomMetricDef = {
+    id: "c_time",
+    ownerId: "u1",
+    name: "Lap Time",
+    metricType: "competition",
+    primitive: "numeric",
+    inputType: "numeric",
+    unit: "min",
+    timePrecision: "s",
+    goalRaw: 1,
+    yTopRaw: 5,
+    yBottomRaw: 0,
+    avgDecimals: 2,
+    referenceUrl: "",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+
+  it("re-renders a custom time metric as a time input once the chart-config overlay syncs", () => {
+    // The custom-metric chart-config overlay is populated by a post-commit
+    // effect, so on first paint it's stale and the row renders numeric. The
+    // log must subscribe (useChartConfigSync) so it re-renders to the time
+    // input when the overlay syncs, instead of staying numeric.
+    setCustomChartConfigs({}); // overlay not yet synced
+    ctx.customMetrics = [CUSTOM_TIME];
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedCompetitionMetrics: ["c_time"] },
+    };
+    renderAt("/competition");
+
+    const findRow = () =>
+      Array.from(document.querySelectorAll("tr")).find((r) =>
+        r.textContent?.includes("Lap Time"),
+      )!;
+    expect(findRow().querySelectorAll("input").length).toBe(1); // numeric, overlay stale
+
+    act(() => {
+      setCustomChartConfigs({ [CUSTOM_TIME.id]: customDefToChartConfig(CUSTOM_TIME) });
+    });
+    expect(findRow().querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+
+    setCustomChartConfigs({}); // reset module overlay for other tests
   });
 });

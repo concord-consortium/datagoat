@@ -1,9 +1,13 @@
-/* Stack the period select and its "times per …" count vertically so the
-   period dropdown occupies its own full-width row; the count sits on the row
-   below when the schedule is periodic. Both SelectField and TextField render a
-   full-width `fieldWrap` <div>, so no per-child sizing is needed. */
+/* Lay the period select and the "times per …" count side by side, per the
+   design prototype. Both SelectField and TextField render a `fieldWrap` <div>
+   as their outer element, so the direct-child rule makes them share the row
+   evenly. When the count is hidden (irregular schedule) the lone select takes
+   the full width. */
 .row {
   display: flex;
-  flex-direction: column;
   gap: 12px;
+}
+
+.row > div {
+  flex: 1;
 }

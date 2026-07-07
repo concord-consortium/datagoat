@@ -165,4 +165,17 @@ describe("TimeInput seconds/minutes range error", () => {
     expect(container.textContent).not.toMatch(/whole number/i);
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("shows the range message for a colon paste with an out-of-range piece", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <TimeInput metric={MILE} value="" onChange={onChange} labelledBy="lbl" />,
+    );
+    fireEvent.change(container.querySelectorAll("input")[0], {
+      target: { value: "1:75" },
+    });
+    expect(container.textContent).toMatch(/less than 60/i);
+    expect(container.textContent).not.toMatch(/whole number/i);
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

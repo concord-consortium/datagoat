@@ -132,7 +132,17 @@ export function TimeInput({
     const parsed = parseClockString(raw, layout!);
     if (parsed === null) {
       setFields({ ...fields, [unit]: raw });
-      applyError(AMBIGUOUS_ERROR);
+      // A finer piece (anything after the first) is a whole 0-59 field, so
+      // one at 60+ is a range violation; show that message rather than the
+      // generic ambiguity one, matching the per-field path.
+      const outOfRange = raw
+        .split(":")
+        .slice(1)
+        .some((piece) => {
+          const n = Number(piece.trim());
+          return Number.isFinite(n) && n >= 60;
+        });
+      applyError(outOfRange ? RANGE_ERROR : AMBIGUOUS_ERROR);
       return;
     }
     applyError(null);

@@ -772,6 +772,60 @@ describe("CustomMetricForm — edit-mode inference", () => {
     expect((screen.getByRole("radio", { name: /numeric/i }) as HTMLInputElement).checked).toBe(true);
   });
 
+  it("seeds a canonical time unit when a time metric's stored unit is non-canonical", () => {
+    renderEditForm("health", {
+      id: "c_t",
+      ownerId: "u1",
+      name: "Sleep",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "hr/night",
+      timePrecision: "m",
+      goalRaw: 8,
+      yTopRaw: 12,
+      yBottomRaw: 0,
+      avgDecimals: 0,
+      inputType: "numeric",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    // Format opens on Time (timePrecision present); the Unit select must
+    // hold a valid canonical value mapped from "hr/night", not the raw
+    // stored string (which would blank the control and warn).
+    const unitSelect = screen
+      .getByRole("option", { name: "hr" })
+      .closest("select") as HTMLSelectElement;
+    expect(unitSelect.value).toBe("hr");
+  });
+
+  it("defaults the time unit to min when a non-time metric is switched to Time", async () => {
+    const user = userEvent.setup();
+    renderEditForm("health", {
+      id: "c_k",
+      ownerId: "u1",
+      name: "Body Weight",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "kg",
+      goalRaw: 70,
+      yTopRaw: 100,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      inputType: "numeric",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    await user.click(screen.getByRole("radio", { name: /time/i }));
+    const unitSelect = screen
+      .getByRole("option", { name: "hr" })
+      .closest("select") as HTMLSelectElement;
+    // "kg" is not a canonical time unit, so the select falls back to min
+    // rather than receiving an invalid value.
+    expect(unitSelect.value).toBe("min");
+  });
+
   it("opens with Y/N selected for an ordinal metric with the canonical No/Yes levels", () => {
     renderEditForm("health", {
       id: "c_x",

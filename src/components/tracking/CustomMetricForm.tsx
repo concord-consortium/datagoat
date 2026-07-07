@@ -4,6 +4,7 @@ import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { useData } from "../../contexts/DataContext";
 import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
+import { normalizeTimeUnit } from "../../utils/timeValue";
 import {
   normalizeMetricName,
   suggestUniqueName,
@@ -187,6 +188,21 @@ function isAuthorableType(t: string | undefined): t is AuthorableCustomMetricTyp
   return t === "health" || t === "performance" || t === "competition";
 }
 
+// Map a stored unit to the canonical time-unit the <select> understands,
+// defaulting to "min". Guards the draft seed against a non-canonical or
+// corrupted stored unit (e.g. "hr/night", "kg") reaching the select as an
+// invalid value, which would blank the control and warn.
+function canonicalTimeUnit(unit: string | undefined): "hr" | "min" | "sec" {
+  switch (normalizeTimeUnit(unit)) {
+    case "h":
+      return "hr";
+    case "s":
+      return "sec";
+    default:
+      return "min";
+  }
+}
+
 interface DraftState {
   topLevel: TopLevelKind;
   name: string;
@@ -359,7 +375,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       // canonical unit and precision come straight from the saved def
       // (the free-form Unit field is disabled and ignored for time).
       numericFormat: editing.timePrecision ? "time" : "number",
-      timeUnit: (editing.unit as "hr" | "min" | "sec" | undefined) ?? "min",
+      timeUnit: canonicalTimeUnit(editing.unit),
       timePrecision: editing.timePrecision === "m" ? "m" : "s",
       goalRaw: String(editing.goalRaw ?? 0),
       yTopRaw: String(editing.yTopRaw ?? 0),

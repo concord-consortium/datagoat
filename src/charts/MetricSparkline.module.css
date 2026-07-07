@@ -1,0 +1,8 @@
+.sparkline {
+  display: block;
+}
+
+.axis {
+  stroke: var(--border);
+  stroke-width: 1;
+}

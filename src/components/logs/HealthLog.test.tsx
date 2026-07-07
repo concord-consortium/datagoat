@@ -112,7 +112,8 @@ vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
 import { HealthLog } from "./HealthLog";
 import { DataProvider } from "../../contexts/DataContext";
-import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
+import { emptyHealthEntry } from "../../types/data";
+import { dateAtOffset, HISTORY, toISO, isoAtDaysAgo } from "../../utils/dates";
 
 const TODAY_ISO = toISO(dateAtOffset(HISTORY));
 
@@ -311,6 +312,32 @@ describe("HealthLog chip reactivity to tracked-metric changes", () => {
         .querySelector("[data-chip-state]")
         ?.getAttribute("data-chip-state"),
     ).toBe("some");
+  });
+});
+
+describe("HealthLog summary column (sparkline + average)", () => {
+  it("renders a sparkline in the leftmost Avg cell of metric rows", () => {
+    renderAt("/health");
+    const svgs = document.querySelectorAll("tbody tr td:first-child svg");
+    expect(svgs.length).toBeGreaterThan(0);
+  });
+
+  it("shows the 7-day average for a metric with recent data", () => {
+    ctx.health = {
+      status: "loaded",
+      entries: [
+        { ...emptyHealthEntry(isoAtDaysAgo(0)), hydration: 4 },
+        { ...emptyHealthEntry(isoAtDaysAgo(1)), hydration: 2 },
+      ],
+    };
+    renderAt("/health");
+    const avgCell = screen
+      .getByRole("link", { name: /hydration/i })
+      .closest("tr")!
+      .querySelector("td:first-child")!;
+    // Sparkline present, and the (4+2)/2 = 3 average shows (not the "—" dash).
+    expect(avgCell.querySelector("svg")).toBeTruthy();
+    expect(avgCell.textContent).toContain("3");
   });
 });
 

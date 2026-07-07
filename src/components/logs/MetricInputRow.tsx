@@ -12,6 +12,7 @@ import { NumericInput } from "./NumericInput";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { MetricSparkline } from "../../charts/MetricSparkline";
 import css from "./MetricInputRow.module.css";
 
 import { HYDRATION_HEXES } from "../../data/hydrationColors";
@@ -23,6 +24,10 @@ interface BaseProps {
   avgLabel?: string;
   // Detail link target (e.g., "/health/hydration").
   detailHref?: string;
+  // Optional 7-day summary shown in the leftmost cell (Health entry page): a
+  // mini bar sparkline (goal-colored via `sparklineGoal`) above the average.
+  sparklineData?: Array<{ date: string; value: number | null }>;
+  sparklineGoal?: number;
 }
 
 export interface NumericMetricInputRowProps extends BaseProps {
@@ -62,12 +67,21 @@ export type MetricInputRowProps =
 
 // Single row for a tracked health metric. Switches on metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
-  const { metric, avgLabel, detailHref } = props;
+  const { metric, avgLabel, detailHref, sparklineData, sparklineGoal } = props;
   const nameId = useId();
   return (
     <tr className={css.metricInputRow}>
       <td>
-        <div className={css.trackCell}>{avgLabel ?? "—"}</div>
+        <div className={css.trackCell}>
+          {sparklineData && (
+            <MetricSparkline
+              metricId={metric.id}
+              data={sparklineData}
+              goalRaw={sparklineGoal}
+            />
+          )}
+          <span className={css.avgValue}>{avgLabel ?? "—"}</span>
+        </div>
       </td>
       <td id={nameId} className={css.metricName}>
         {detailHref ? (

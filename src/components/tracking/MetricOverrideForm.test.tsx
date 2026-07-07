@@ -286,6 +286,35 @@ describe("MetricOverrideForm — time metric", () => {
     expect(bottom.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("blocks Save while a time field holds an invalid entry", async () => {
+    renderForm(sleepTime);
+    const goal = within(screen.getByTestId("mo-goal"));
+    // An ambiguous 8.5hr + 40min entry never propagates to goalRaw; the
+    // form must refuse to save the stale last-committed value.
+    fireEvent.change(goal.getByLabelText("Total Sleep Time min"), {
+      target: { value: "40" },
+    });
+    fireEvent.change(goal.getByLabelText("Total Sleep Time hr"), {
+      target: { value: "8.5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText(/fix the highlighted time fields/i)).toBeInTheDocument();
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it("shows the base y-axis bound as a placeholder on time fields", () => {
+    renderForm(sleepTime);
+    const top = within(screen.getByTestId("mo-ytop"));
+    // The coarsest sub-field's placeholder is the base bound's value, not
+    // the unit-label fallback - restoring the default hint time metrics
+    // lost.
+    expect(
+      (top.getByLabelText("Total Sleep Time hr") as HTMLInputElement)
+        .placeholder,
+    ).toMatch(/^\d/);
+  });
+
   it("round-trips a 7h30m goal entry to decimal 7.5 on save", async () => {
     renderForm(sleepTime);
     const goal = within(screen.getByTestId("mo-goal"));

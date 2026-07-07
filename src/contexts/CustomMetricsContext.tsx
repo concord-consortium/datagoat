@@ -54,11 +54,17 @@ interface CustomMetricsValue {
   // on write, Firestore Timestamp on read). They're omitted from the
   // patch shape so a future caller can't accidentally overwrite them
   // and destabilize ordering. The provider stamps `updatedAt` itself.
+  // A field set to `null` in the patch is an explicit request to clear
+  // (delete) it; an absent field is left untouched. `timePrecision` uses
+  // this to drop precision when a metric's Format toggles Time -> Number.
   updateMetric: (
     id: string,
     patch: Partial<
-      Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">
-    >,
+      Omit<
+        CustomMetricDef,
+        "id" | "ownerId" | "createdAt" | "updatedAt" | "timePrecision"
+      >
+    > & { timePrecision?: CustomMetricDef["timePrecision"] | null },
   ) => Promise<void>;
   deleteMetric: (id: string) => Promise<void>;
   getMetric: (id: string) => CustomMetricDef | undefined;
@@ -325,25 +331,22 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
         if (k === "createdAt" || k === "updatedAt") continue;
+        // Absent (undefined) -> leave the stored field untouched.
         if (v === undefined) continue;
+        // Explicit null -> delete the field (e.g. clearing timePrecision
+        // when Format toggles Time -> Number). Driven by the caller's
+        // intent, not inferred from a missing key, so a future partial
+        // patch can't wipe a field by omission.
+        if (v === null) {
+          cleaned[k] = deleteField();
+          continue;
+        }
         // Route schedule through the same normalizer the create path
         // uses, so update writes apply identical rules (drop count for
         // irregular / non-positive-integer) and never persist a nested
         // undefined count.
         cleaned[k] =
           k === "schedule" ? scheduleToFirestore(v as MetricSchedule) : v;
-      }
-      // A numeric metric saved without timePrecision (Format toggled Time
-      // -> Number) must clear any previously stored value, not leave it
-      // stale.
-      //
-      // Invariant: this is safe only because the sole current caller of
-      // updateMetric always sends a full buildPayload (every field, not a
-      // sparse patch). A future partial-patch caller that omits
-      // timePrecision for reasons unrelated to the Format toggle would
-      // silently wipe a time metric's precision here.
-      if (patch.timePrecision === undefined) {
-        cleaned.timePrecision = deleteField();
       }
       cleaned.updatedAt = serverTimestamp();
       await updateDoc(ref, cleaned);

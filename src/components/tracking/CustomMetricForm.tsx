@@ -537,7 +537,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             return;
           }
         }
-        await updateMetric(editing.id, { ...payload });
+        // Pass timePrecision explicitly: a value keeps it, `null` clears
+        // it (Format toggled Time -> Number). buildPayload omits the key
+        // for non-time metrics, so the ?? null makes that clear intent
+        // explicit rather than relying on updateMetric inferring deletion
+        // from an absent key.
+        await updateMetric(editing.id, {
+          ...payload,
+          timePrecision: payload.timePrecision ?? null,
+        });
       } else {
         const def = await addMetric(payload);
         // Auto-track the newly created metric. Appending to the existing

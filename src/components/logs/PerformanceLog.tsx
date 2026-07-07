@@ -13,14 +13,9 @@ import {
   toISO,
 } from "../../utils/dates";
 import { emptyPerformanceEntry } from "../../types/data";
-import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
-import { TimeInput } from "./TimeInput";
-import { resolveTimeLayout } from "../../utils/timeValue";
-import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
+import { isTimeMetric, LogRecordInput } from "./LogRecordInput";
 import { formatMetricValue } from "../../charts/chartSeries";
-import { getMetricChartConfig } from "../../charts/metricChartConfig";
-import type { MetricDefinition } from "../../metrics/types";
 import css from "./PerformanceLog.module.css";
 
 // Mirrors CompetitionLog. Performance entries share the same map
@@ -154,7 +149,7 @@ export function PerformanceLog() {
                 const filled = stringValue !== "";
                 const nameCellId = `${nameIdBase}-${metric.id}`;
                 const totalDisplay =
-                  getMetricChartConfig(metric.id).timeLayout &&
+                  isTimeMetric(metric.id) &&
                   typeof live === "number" &&
                   Number.isFinite(live)
                     ? formatMetricValue(metric.id, live)
@@ -194,34 +189,17 @@ export function PerformanceLog() {
                           );
                         }
                         if (customDef?.primitive === "nominal") return null;
-                        const timeMeta: MetricDefinition | undefined =
-                          builtInDef ??
-                          (customDef
-                            ? customAsMetricDefinition(customDef, "performance")
-                            : undefined);
-                        if (timeMeta && resolveTimeLayout(timeMeta)) {
-                          return (
-                            <TimeInput
-                              metric={timeMeta}
-                              value={stringValue}
-                              onChange={(raw) => setMetricValue(metric.id, raw)}
-                              labelledBy={nameCellId}
-                              secondsDecimals={
-                                getMetricChartConfig(metric.id).avgDecimals ?? 2
-                              }
-                            />
-                          );
-                        }
                         return (
-                          <CompetitionMetricInput
+                          <LogRecordInput
                             metricId={metric.id}
-                            labelledBy={nameCellId}
+                            metricType="performance"
+                            builtInDef={builtInDef}
+                            customDef={customDef}
                             value={stringValue}
                             filled={filled}
                             onChange={(raw) => setMetricValue(metric.id, raw)}
-                            allowNegative={
-                              (customDef?.yBottomRaw ?? 0) < 0
-                            }
+                            labelledBy={nameCellId}
+                            allowNegative={(customDef?.yBottomRaw ?? 0) < 0}
                           />
                         );
                       })()}

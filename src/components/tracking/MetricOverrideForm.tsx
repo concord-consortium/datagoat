@@ -30,6 +30,69 @@ interface MetricOverrideFormProps {
   metric: MetricDefinition;
 }
 
+interface OverrideFieldProps {
+  metric: MetricDefinition;
+  isTime: boolean;
+  // Doubles as the field id (number branch) and testid (time branch);
+  // the time label derives its id as `${id}-label`.
+  id: string;
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  // Current effective value shown as placeholder when the field is blank
+  // (the base config bound the user is overriding). Omitted for the
+  // always-prefilled Goal field.
+  placeholderValue?: number;
+  // Time branch only: notified when the in-progress entry's validity flips.
+  onErrorChange?: (hasError: boolean) => void;
+}
+
+// One labelled editable field for the override form. Time metrics render
+// the multi-field TimeInput; everything else renders a plain number
+// TextField. Extracted so the Goal / Y-axis-top / Y-axis-bottom trio
+// stays in sync instead of being three copy-pasted branches.
+function OverrideField({
+  metric,
+  isTime,
+  id,
+  label,
+  value,
+  onChange,
+  placeholderValue,
+  onErrorChange,
+}: OverrideFieldProps) {
+  if (isTime) {
+    const labelId = `${id}-label`;
+    return (
+      <div data-testid={id}>
+        <label className={css.fieldLabel} id={labelId}>
+          {label}
+        </label>
+        <TimeInput
+          metric={metric}
+          value={value}
+          onChange={onChange}
+          labelledBy={labelId}
+          placeholderValue={placeholderValue}
+          onErrorChange={onErrorChange}
+        />
+      </div>
+    );
+  }
+  return (
+    <TextField
+      id={id}
+      label={label}
+      type="number"
+      inputMode="decimal"
+      step="any"
+      value={value}
+      placeholder={placeholderValue !== undefined ? String(placeholderValue) : undefined}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
 // Edit form for a built-in metric: only the goal and the chart y-axis
 // bounds are editable. Everything else is shown disabled / read-only.
 export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
@@ -84,9 +147,22 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
     resolveSchedule(metric.schedule, existing?.schedule),
   );
   const [error, setError] = useState<string | null>(null);
+  // Per-field flag for TimeInputs holding an in-progress invalid entry.
+  // Those entries never propagate to goalRaw/yTopRaw/yBottomRaw, so
+  // without this the form would save the last-committed (stale) value
+  // while the user sees a different, error-flagged entry.
+  const [timeFieldErrors, setTimeFieldErrors] = useState<
+    Record<string, boolean>
+  >({});
+  const setTimeFieldError = (id: string, hasError: boolean) =>
+    setTimeFieldErrors((prev) => ({ ...prev, [id]: hasError }));
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (Object.values(timeFieldErrors).some(Boolean)) {
+      setError("Please fix the highlighted time fields before saving.");
+      return;
+    }
     if (goalRaw.trim() === "") {
       setError("Goal is required.");
       return;
@@ -195,79 +271,37 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
         <p className={css.hint}>Recommended goal: {goalText}.</p>
       </If>
 
-      {isTime ? (
-        <div data-testid="mo-goal">
-          <label className={css.fieldLabel} id="mo-goal-label">
-            Goal
-          </label>
-          <TimeInput
-            metric={metric}
-            value={goalRaw}
-            onChange={setGoalRaw}
-            labelledBy="mo-goal-label"
-          />
-        </div>
-      ) : (
-        <TextField
-          id="mo-goal"
-          label="Goal"
-          type="number"
-          inputMode="decimal"
-          step="any"
-          value={goalRaw}
-          onChange={(e) => setGoalRaw(e.target.value)}
-        />
-      )}
+      <OverrideField
+        metric={metric}
+        isTime={isTime}
+        id="mo-goal"
+        label="Goal"
+        value={goalRaw}
+        onChange={setGoalRaw}
+        onErrorChange={(hasError) => setTimeFieldError("mo-goal", hasError)}
+      />
 
       <div className={css.row}>
-        {isTime ? (
-          <div data-testid="mo-ytop">
-            <label className={css.fieldLabel} id="mo-ytop-label">
-              Y-axis top (optional)
-            </label>
-            <TimeInput
-              metric={metric}
-              value={yTopRaw}
-              onChange={setYTopRaw}
-              labelledBy="mo-ytop-label"
-            />
-          </div>
-        ) : (
-          <TextField
-            id="mo-ytop"
-            label="Y-axis top (optional)"
-            type="number"
-            inputMode="decimal"
-            step="any"
-            value={yTopRaw}
-            placeholder={String(base.yTopRaw)}
-            onChange={(e) => setYTopRaw(e.target.value)}
-          />
-        )}
-        {isTime ? (
-          <div data-testid="mo-ybot">
-            <label className={css.fieldLabel} id="mo-ybot-label">
-              Y-axis bottom (optional)
-            </label>
-            <TimeInput
-              metric={metric}
-              value={yBottomRaw}
-              onChange={setYBottomRaw}
-              labelledBy="mo-ybot-label"
-            />
-          </div>
-        ) : (
-          <TextField
-            id="mo-ybot"
-            label="Y-axis bottom (optional)"
-            type="number"
-            inputMode="decimal"
-            step="any"
-            value={yBottomRaw}
-            placeholder={String(base.yBottomRaw)}
-            onChange={(e) => setYBottomRaw(e.target.value)}
-          />
-        )}
+        <OverrideField
+          metric={metric}
+          isTime={isTime}
+          id="mo-ytop"
+          label="Y-axis top (optional)"
+          value={yTopRaw}
+          onChange={setYTopRaw}
+          placeholderValue={base.yTopRaw}
+          onErrorChange={(hasError) => setTimeFieldError("mo-ytop", hasError)}
+        />
+        <OverrideField
+          metric={metric}
+          isTime={isTime}
+          id="mo-ybot"
+          label="Y-axis bottom (optional)"
+          value={yBottomRaw}
+          onChange={setYBottomRaw}
+          placeholderValue={base.yBottomRaw}
+          onErrorChange={(hasError) => setTimeFieldError("mo-ybot", hasError)}
+        />
       </div>
 
       <ScheduleField

@@ -303,12 +303,12 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     expect(lastPatch.schedule).toEqual({ period: "irregular" });
   });
 
-  it("updateMetric clears a stale timePrecision via deleteField when the patch omits it (DGT-19 finding 2)", async () => {
-    // Regression: a Time metric edited back to plain Number sends a
-    // patch/payload without timePrecision. The old strip-undefined loop
-    // dropped the key entirely instead of clearing it, so updateDoc never
-    // told Firestore to remove the stale value - it stayed stored, and
-    // re-opening the edit form would re-infer Format=Time.
+  it("updateMetric clears timePrecision via deleteField only when the patch passes it as null", async () => {
+    // Format toggled Time -> Number: the caller signals the clear
+    // explicitly with timePrecision: null. An absent key must NOT delete
+    // (so a future partial patch can't wipe a time metric's precision by
+    // omission); an explicit null deletes the stale stored value so
+    // re-opening the edit form no longer re-infers Format=Time.
     const { result } = renderHook(() => useCustomMetrics(), { wrapper });
     let id = "";
     await act(async () => {
@@ -329,12 +329,25 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
     });
     await waitFor(() => expect(result.current.metrics).toHaveLength(1));
 
-    // Format toggled Time -> Number: the patch carries no timePrecision.
+    // Omitting timePrecision leaves it untouched (no deleteField).
     await act(async () => {
       await result.current.updateMetric(id, { name: "400m Time", unit: "min" });
     });
+    let lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
+      string,
+      unknown
+    >;
+    expect("timePrecision" in lastPatch).toBe(false);
 
-    const lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
+    // Passing null explicitly clears it.
+    await act(async () => {
+      await result.current.updateMetric(id, {
+        name: "400m Time",
+        unit: "min",
+        timePrecision: null,
+      });
+    });
+    lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
       string,
       unknown
     >;

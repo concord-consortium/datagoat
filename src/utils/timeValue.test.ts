@@ -3,6 +3,8 @@ import {
   normalizeTimeUnit,
   resolveTimeLayout,
   parseTimeToDecimal,
+  parseClockString,
+  hasTimeRangeError,
   formatDecimalToFields,
   formatDecimalToTime,
   isAllEmpty,
@@ -129,5 +131,44 @@ describe("formatDecimalToTime", () => {
   it("renders a seconds-only layout without a colon", () => {
     expect(formatDecimalToTime(5.3, SEC, 1)).toBe("5.3");
     expect(formatDecimalToTime(5, SEC, 0)).toBe("5");
+  });
+  it("keeps the configured seconds precision in a seconds-only layout", () => {
+    // Trailing zeros must survive: 2.50 must not collapse to "2.5" and
+    // 3.00 must not collapse to "3", so sprint times read consistently.
+    expect(formatDecimalToTime(2.5, SEC, 2)).toBe("2.50");
+    expect(formatDecimalToTime(3, SEC, 2)).toBe("3.00");
+  });
+});
+
+describe("parseClockString", () => {
+  it("right-aligns pieces to the precision unit for composite layouts", () => {
+    expect(parseClockString("8:40", MSS)).toBeCloseTo(8 + 40 / 60, 6); // 8m40s
+    expect(parseClockString("8:40", HMM)).toBeCloseTo(8 + 40 / 60, 6); // 8h40m
+    expect(parseClockString("1:23:45", HMS)).toBeCloseTo(
+      1 + 23 / 60 + 45 / 3600,
+      6,
+    );
+  });
+  it("reads a stopwatch paste into a seconds-only metric as m:s", () => {
+    // "1:30" must become 90 seconds, not silently truncate to 1.
+    expect(parseClockString("1:30", SEC)).toBeCloseTo(90, 6);
+  });
+  it("rejects non-clock strings, over-long pastes, and out-of-range fields", () => {
+    expect(parseClockString("90", SEC)).toBeNull(); // no colon
+    expect(parseClockString("1:2:3:4", HMS)).toBeNull(); // too many pieces
+    expect(parseClockString("1:75", MSS)).toBeNull(); // seconds >= 60
+    expect(parseClockString("1:5.5", MSS)).toBeNull(); // fractional non-leading
+    expect(parseClockString("1:", MSS)).toBeNull(); // empty piece
+  });
+});
+
+describe("hasTimeRangeError", () => {
+  it("flags an out-of-range non-coarsest field", () => {
+    expect(hasTimeRangeError({ m: "5", s: "75" }, MSS)).toBe(true);
+    expect(hasTimeRangeError({ h: "8", m: "60" }, HMM)).toBe(true);
+  });
+  it("does not flag in-range fields or a large coarsest field", () => {
+    expect(hasTimeRangeError({ m: "5", s: "45" }, MSS)).toBe(false);
+    expect(hasTimeRangeError({ s: "75" }, SEC)).toBe(false); // seconds is coarsest here
   });
 });

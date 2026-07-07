@@ -266,8 +266,8 @@ describe("PerformanceLog metric resolution", () => {
       },
     };
     renderAt("/performance");
-    expect(screen.getByRole("button", { name: /^low$/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^high$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^low$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^high$/i })).toBeTruthy();
   });
 });
 

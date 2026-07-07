@@ -28,9 +28,12 @@ const MAX_SINGLE_ROW = 5;
 
 // A colored-card picker for "scale" metrics (mood, hydration, custom ordinal
 // scales). Ports hydration's keyboard/a11y contract: role=radiogroup, one tab
-// stop, Arrow keys advance-and-fire (no wrap), number keys jump, focus follows
-// selection. Keyboard nav is index-based and maps index -> level.value, so
-// non-contiguous values (e.g. 10/20/30) work.
+// stop, Arrow keys advance-and-fire (no wrap), focus follows selection. Arrow
+// nav is index-based (maps index -> level.value), so non-contiguous values
+// (e.g. 10/20/30) work. Digit keys select per `valueMode` (see below): when the
+// cards visibly show their numbers a digit picks the card printed with it;
+// otherwise (icons, word labels, sparse values) it picks the k-th card by
+// position.
 export function ScaleCards({
   levels,
   colors,
@@ -49,6 +52,25 @@ export function ScaleCards({
   const selectedIndex =
     value === undefined ? -1 : levels.findIndex((l) => l.value === value);
   const noSelection = selectedIndex === -1;
+
+  // Digit-key behavior is chosen once per scale, keyed on what the card *shows*
+  // rather than its stored value -- a digit shortcut only makes sense when the
+  // user can see that number on the card. "Value mode" (a digit selects the card
+  // printed with it) requires both:
+  //   (a) every card renders its value as visible text -- no icon (`renderLabel`)
+  //       and `label === String(value)`; and
+  //   (b) at least one value is a single digit (0-9) a key can express.
+  // Otherwise digits act as 1-indexed card positions. That covers mood's icon
+  // cards, word-labelled custom scales (Low/Mid/High), and sparse numeric values
+  // (10/20/30) -- in all of which the printed content isn't a typable digit.
+  const showsItsNumber = (l: CustomMetricLevel) =>
+    l.value !== undefined && l.label === String(l.value);
+  const valueMode =
+    !renderLabel &&
+    levels.every(showsItsNumber) &&
+    levels.some(
+      (l) => l.value !== undefined && Number.isInteger(l.value) && l.value >= 0 && l.value <= 9,
+    );
 
   const select = useCallback(
     (index: number) => {
@@ -73,11 +95,23 @@ export function ScaleCards({
       select(Math.max(0, index - 1)); // no wrap at the left edge
       return;
     }
-    if (/^[1-9]$/.test(e.key)) {
-      const k = Number(e.key); // jump to the k-th card
-      if (k >= 1 && k <= n) {
+    if (/^[0-9]$/.test(e.key)) {
+      const d = Number(e.key);
+      if (valueMode) {
+        // Numbered scale: the digit is the number printed on a card. Jump to
+        // the card showing it; a digit no card shows is a no-op. (Two-digit
+        // labels like "10" -- a 0..10 pain scale's top card -- can't be typed as
+        // one key and are reached with the arrows.)
+        const target = levels.findIndex((l) => l.label === e.key);
+        if (target >= 0) {
+          e.preventDefault();
+          select(target);
+        }
+      } else if (d >= 1 && d <= n) {
+        // Un-numbered scale: the digit is a 1-indexed card position ("0" has no
+        // positional meaning, so it falls through and is ignored).
         e.preventDefault();
-        select(k - 1);
+        select(d - 1);
       }
     }
   }
@@ -113,10 +147,16 @@ export function ScaleCards({
                     refs.current[index] = node;
                   }}
                   type="button"
+                  // role=radio (not the default button role) so the group is a
+                  // conformant radiogroup: a screen reader announces each card as
+                  // a radio with its selected state and position, and exclusivity
+                  // is conveyed. aria-checked (not aria-pressed, which models an
+                  // independent toggle) marks the current selection.
+                  role="radio"
                   className={clsx(css.card, selected && css.selected)}
                   style={{ background: bg, color: readableTextOn(bg) }}
                   aria-label={ariaLabel}
-                  aria-pressed={selected}
+                  aria-checked={selected}
                   tabIndex={selected || (noSelection && index === 0) ? 0 : -1}
                   onClick={() => select(index)}
                   onKeyDown={(e) => onKeyDown(e, index)}

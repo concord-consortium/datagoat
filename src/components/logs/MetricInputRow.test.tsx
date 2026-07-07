@@ -36,7 +36,7 @@ function renderColorScale(initial = 0) {
     </MemoryRouter>,
   );
   const swatches = Array.from(
-    utils.container.querySelectorAll("button[aria-pressed]"),
+    utils.container.querySelectorAll("button[aria-checked]"),
   ) as HTMLButtonElement[];
   return { onChange, swatches, ...utils };
 }
@@ -49,11 +49,11 @@ describe("MetricInputRow ColorScale", () => {
     expect(swatches[7].getAttribute("aria-label")).toBe("8 of 8");
   });
 
-  it("marks selected swatch with aria-pressed and tabIndex 0", () => {
+  it("marks selected swatch with aria-checked and tabIndex 0", () => {
     const { swatches } = renderColorScale(3);
-    expect(swatches[2].getAttribute("aria-pressed")).toBe("true");
+    expect(swatches[2].getAttribute("aria-checked")).toBe("true");
     expect(swatches[2].tabIndex).toBe(0);
-    expect(swatches[0].getAttribute("aria-pressed")).toBe("false");
+    expect(swatches[0].getAttribute("aria-checked")).toBe("false");
     expect(swatches[0].tabIndex).toBe(-1);
   });
 
@@ -74,7 +74,7 @@ describe("MetricInputRow ColorScale", () => {
       </MemoryRouter>,
     );
     const swatches = Array.from(
-      utils.container.querySelectorAll("button[aria-pressed]"),
+      utils.container.querySelectorAll("button[aria-checked]"),
     ) as HTMLButtonElement[];
     expect(swatches[0].tabIndex).toBe(0);
     expect(swatches[1].tabIndex).toBe(-1);
@@ -181,22 +181,22 @@ function renderOrdinal(initial: number | undefined = undefined) {
 describe("MetricInputRow Ordinal", () => {
   it("renders one card per level with the label as visible text", () => {
     renderOrdinal();
-    expect(screen.getByRole("button", { name: /^low$/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^mid$/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^high$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^low$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^mid$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^high$/i })).toBeTruthy();
   });
 
-  it("marks the selected level via aria-pressed", () => {
+  it("marks the selected level via aria-checked", () => {
     renderOrdinal(3);
     expect(
-      screen.getByRole("button", { name: /^mid$/i }).getAttribute("aria-pressed"),
+      screen.getByRole("radio", { name: /^mid$/i }).getAttribute("aria-checked"),
     ).toBe("true");
   });
 
   it("fires onChange with the numeric value when a level is clicked", async () => {
     const user = userEvent.setup();
     const { onChange } = renderOrdinal();
-    await user.click(screen.getByRole("button", { name: /^high$/i }));
+    await user.click(screen.getByRole("radio", { name: /^high$/i }));
     expect(onChange).toHaveBeenCalledWith(5);
   });
 });
@@ -238,10 +238,12 @@ describe("MetricInputRow radio (Yes/No)", () => {
         </table>
       </MemoryRouter>,
     );
-    expect(screen.getByRole("radio", { name: /^no$/i })).toBeTruthy();
+    const no = screen.getByRole("radio", { name: /^no$/i });
+    expect(no).toBeTruthy();
     expect(screen.getByRole("radio", { name: /^yes$/i })).toBeTruthy();
-    // Not the scale-card picker.
-    expect(screen.queryByRole("button", { name: /^no$/i })).toBeNull();
+    // Native <input type="radio">, not the scale-card picker (whose cards are
+    // <button role="radio">). Both expose role=radio, so distinguish by element.
+    expect(no.tagName).toBe("INPUT");
   });
 });
 
@@ -262,7 +264,7 @@ describe("MetricInputRow Mood face icons", () => {
         </table>
       </MemoryRouter>,
     );
-    const happy = screen.getByRole("button", { name: /very happy/i });
+    const happy = screen.getByRole("radio", { name: /very happy/i });
     // The visible content is a decorative face icon (svg), not text.
     expect(happy.querySelector("svg")).toBeTruthy();
     expect(happy.textContent).toBe("");

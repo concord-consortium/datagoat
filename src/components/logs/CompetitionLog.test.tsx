@@ -208,8 +208,8 @@ describe("CompetitionLog ordinal custom metric", () => {
       },
     };
     renderAt("/competition");
-    expect(screen.getByRole("button", { name: /^poor$/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^great$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^poor$/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^great$/i })).toBeTruthy();
   });
 });
 

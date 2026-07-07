@@ -95,9 +95,15 @@ export function relativeLuminance(hex: string): number {
   return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
 }
 
-// Legible text color for content sitting on top of `hex`.
+// Legible text color for content sitting on top of `hex`: white on dark
+// backgrounds, near-black (#080A0E) on light ones. The threshold is the
+// luminance where the two text colors give equal WCAG contrast on `hex` --
+// solving (L + 0.05)^2 = (1 + 0.05)(L_dark + 0.05) with L_dark ~= 0.003
+// (the luminance of #080A0E) yields L ~= 0.18. Above it, dark text wins;
+// below it, white. (An earlier 0.45 biased toward white and left mid-tone
+// cards -- e.g. mood #79B6D9 at 2.2:1 -- below the 4.5:1 AA floor.)
 export function readableTextOn(hex: string): "#fff" | "#080A0E" {
-  return relativeLuminance(hex) < 0.45 ? "#fff" : "#080A0E";
+  return relativeLuminance(hex) < 0.18 ? "#fff" : "#080A0E";
 }
 
 interface ResolveArgs {

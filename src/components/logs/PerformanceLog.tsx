@@ -13,8 +13,10 @@ import {
   toISO,
 } from "../../utils/dates";
 import { emptyPerformanceEntry } from "../../types/data";
-import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { isTimeMetric, LogRecordInput } from "./LogRecordInput";
+import { formatMetricValue } from "../../charts/chartSeries";
+import { useChartConfigSync } from "../../charts/metricChartConfig";
 import css from "./PerformanceLog.module.css";
 
 // Mirrors CompetitionLog. Performance entries share the same map
@@ -28,6 +30,12 @@ export function PerformanceLog() {
   const { performance, setPerformanceEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
   const nameIdBase = useId();
+  // Re-render when the custom-metric chart-config overlay updates. The
+  // overlay is populated in a post-commit effect, so without this a custom
+  // time metric's row would render numeric on first paint (isTimeMetric /
+  // the summary formatter read getMetricChartConfig) until the next
+  // unrelated re-render.
+  useChartConfigSync();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
@@ -147,9 +155,15 @@ export function PerformanceLog() {
                       : "";
                 const filled = stringValue !== "";
                 const nameCellId = `${nameIdBase}-${metric.id}`;
+                const totalDisplay =
+                  isTimeMetric(metric.id) &&
+                  typeof live === "number" &&
+                  Number.isFinite(live)
+                    ? formatMetricValue(metric.id, live)
+                    : stringValue;
                 return (
                   <tr key={metric.id}>
-                    <td className={css.colTotal}>{filled ? stringValue : ""}</td>
+                    <td className={css.colTotal}>{filled ? totalDisplay : ""}</td>
                     <td id={nameCellId} className={css.colMetric}>
                       <Link
                         to={`/performance/${metric.id}`}
@@ -160,6 +174,7 @@ export function PerformanceLog() {
                     </td>
                     <td className={css.colRecord}>
                       {(() => {
+                        const builtInDef = builtInById.get(metric.id);
                         const customDef = customById.get(metric.id);
                         if (
                           customDef?.primitive === "ordinal" &&
@@ -182,15 +197,16 @@ export function PerformanceLog() {
                         }
                         if (customDef?.primitive === "nominal") return null;
                         return (
-                          <CompetitionMetricInput
+                          <LogRecordInput
                             metricId={metric.id}
-                            labelledBy={nameCellId}
+                            metricType="performance"
+                            builtInDef={builtInDef}
+                            customDef={customDef}
                             value={stringValue}
                             filled={filled}
                             onChange={(raw) => setMetricValue(metric.id, raw)}
-                            allowNegative={
-                              (customDef?.yBottomRaw ?? 0) < 0
-                            }
+                            labelledBy={nameCellId}
+                            allowNegative={(customDef?.yBottomRaw ?? 0) < 0}
                           />
                         );
                       })()}

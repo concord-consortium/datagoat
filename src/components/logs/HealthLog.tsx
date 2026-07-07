@@ -143,6 +143,7 @@ export function HealthLog() {
     howCollected: "",
     description: "",
     inputType: "numeric",
+    timePrecision: def.timePrecision,
   });
 
   // Welcome paragraph is shown only during onboarding (matches the

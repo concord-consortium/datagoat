@@ -53,8 +53,9 @@ export const COMPETITION_METRICS: MetricDefinition[] = [
     type: "competition",
     whoCollects: "Self",
     howCollected: "Log per competition (track / cross-country / swim).",
-    description: "Competition time. Unit selection (h / m / s) is a follow-up.",
+    description: "Competition time.",
     inputType: "numeric",
+    timePrecision: "s",
   },
   {
     id: "goals",

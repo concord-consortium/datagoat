@@ -200,3 +200,54 @@ describe("MetricInputRow Ordinal", () => {
     expect(onChange).toHaveBeenCalledWith(5);
   });
 });
+
+const timeBase = {
+  name: "M",
+  type: "health" as const,
+  whoCollects: "",
+  howCollected: "",
+  description: "",
+  inputType: "numeric" as const,
+};
+
+function renderTimeRoutingRow(metric: MetricDefinition, value: string) {
+  return render(
+    <MemoryRouter>
+      <table>
+        <tbody>
+          <MetricInputRow
+            metric={metric}
+            inputType="numeric"
+            value={value}
+            onChange={vi.fn()}
+          />
+        </tbody>
+      </table>
+    </MemoryRouter>,
+  );
+}
+
+describe("MetricInputRow time routing", () => {
+  it("renders two fields for a time metric (h:mm)", () => {
+    const sleep: MetricDefinition = {
+      ...timeBase,
+      id: "sleepTime",
+      unit: "hr",
+      displayUnit: "hr",
+      timePrecision: "m",
+    };
+    const { container } = renderTimeRoutingRow(sleep, "8.5");
+    expect(container.querySelectorAll("input").length).toBe(2);
+  });
+
+  it("renders a single numeric input for a non-time metric", () => {
+    const protein: MetricDefinition = {
+      ...timeBase,
+      id: "protein",
+      unit: "g",
+      displayUnit: "g",
+    };
+    const { container } = renderTimeRoutingRow(protein, "1.4");
+    expect(container.querySelectorAll("input").length).toBe(1);
+  });
+});

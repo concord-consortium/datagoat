@@ -40,6 +40,13 @@ const firestoreState = vi.hoisted(() => {
   };
 });
 
+// A recognizable sentinel standing in for the real Firestore deleteField()
+// FieldValue. Kept as a single stable object so tests can assert `toBe`
+// equality regardless of how many times deleteField() is invoked.
+const DELETE_FIELD_SENTINEL = vi.hoisted(() => ({
+  __isDeleteFieldSentinel: true,
+}));
+
 vi.mock("firebase/firestore", () => ({
   collection: () => ({}),
   doc: (_db: unknown, _col: string, id: string) => ({ id }),
@@ -57,6 +64,7 @@ vi.mock("firebase/firestore", () => ({
   },
   query: (...args: unknown[]) => args,
   serverTimestamp: () => ({ toMillis: () => Date.now() }),
+  deleteField: () => DELETE_FIELD_SENTINEL,
   setDoc: (...args: Parameters<typeof firestoreState.setDoc>) => firestoreState.setDoc(...args),
   updateDoc: (...args: Parameters<typeof firestoreState.updateDoc>) => firestoreState.updateDoc(...args),
   deleteDoc: (...args: Parameters<typeof firestoreState.deleteDoc>) => firestoreState.deleteDoc(...args),
@@ -293,6 +301,84 @@ describe("CustomMetricsContext (Firestore-backed)", () => {
       unknown
     >;
     expect(lastPatch.schedule).toEqual({ period: "irregular" });
+  });
+
+  it("updateMetric clears timePrecision via deleteField only when the patch passes it as null", async () => {
+    // Format toggled Time -> Number: the caller signals the clear
+    // explicitly with timePrecision: null. An absent key must NOT delete
+    // (so a future partial patch can't wipe a time metric's precision by
+    // omission); an explicit null deletes the stale stored value so
+    // re-opening the edit form no longer re-infers Format=Time.
+    const { result } = renderHook(() => useCustomMetrics(), { wrapper });
+    let id = "";
+    await act(async () => {
+      const def = await result.current.addMetric({
+        name: "400m Time",
+        metricType: "performance",
+        primitive: "numeric",
+        inputType: "numeric",
+        unit: "min",
+        timePrecision: "s",
+        goalRaw: 0,
+        yTopRaw: 10,
+        yBottomRaw: 0,
+        avgDecimals: 1,
+        referenceUrl: "",
+      });
+      id = def.id;
+    });
+    await waitFor(() => expect(result.current.metrics).toHaveLength(1));
+
+    // Omitting timePrecision leaves it untouched (no deleteField).
+    await act(async () => {
+      await result.current.updateMetric(id, { name: "400m Time", unit: "min" });
+    });
+    let lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
+      string,
+      unknown
+    >;
+    expect("timePrecision" in lastPatch).toBe(false);
+
+    // Passing null explicitly clears it.
+    await act(async () => {
+      await result.current.updateMetric(id, {
+        name: "400m Time",
+        unit: "min",
+        timePrecision: null,
+      });
+    });
+    lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
+      string,
+      unknown
+    >;
+    expect(lastPatch.timePrecision).toBe(DELETE_FIELD_SENTINEL);
+  });
+
+  it("updateMetric writes the real timePrecision (no deleteField) when the patch carries it", async () => {
+    const { result } = renderHook(() => useCustomMetrics(), { wrapper });
+    let id = "";
+    await act(async () => {
+      const def = await result.current.addMetric({
+        name: "400m Time",
+        metricType: "performance",
+        primitive: "numeric",
+        inputType: "numeric",
+        unit: "min",
+        referenceUrl: "",
+      });
+      id = def.id;
+    });
+    await waitFor(() => expect(result.current.metrics).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.updateMetric(id, { timePrecision: "s" });
+    });
+
+    const lastPatch = firestoreState.updateDoc.mock.calls.at(-1)![1] as Record<
+      string,
+      unknown
+    >;
+    expect(lastPatch.timePrecision).toBe("s");
   });
 
   it("deleteMetric removes the doc and reflects via subscription", async () => {

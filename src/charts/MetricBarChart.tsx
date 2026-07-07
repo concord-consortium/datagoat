@@ -66,12 +66,17 @@ export function MetricBarChart({
 
   // The computed average is a raw float; round to the metric's
   // configured precision before formatValue stringifies it, so the
-  // AverageBadge doesn't blow out with `8.283333333...`.
+  // AverageBadge doesn't blow out with `8.283333333...`. Time metrics are
+  // the exception: pre-rounding in the coarse unit (e.g. hours to 1
+  // decimal) can corrupt sub-minute/second precision, so pass the raw
+  // value straight through and let formatValue do its own rounding.
   const avgDecimals = config.avgDecimals ?? 1;
   const roundedAverage =
     averageRaw === undefined
       ? undefined
-      : Number(averageRaw.toFixed(avgDecimals));
+      : config.timeLayout
+        ? averageRaw
+        : Number(averageRaw.toFixed(avgDecimals));
 
   return (
     <g aria-hidden="true">

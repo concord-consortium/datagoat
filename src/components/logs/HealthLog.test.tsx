@@ -120,8 +120,11 @@ function inputForMetric(label: string): HTMLInputElement {
   return screen.getByRole("textbox", { name: label }) as HTMLInputElement;
 }
 
-function setSleepTime(value: string) {
-  fireEvent.change(inputForMetric("Total Sleep Time"), { target: { value } });
+// sleepTime is now a time metric (rendered via TimeInput, not a single
+// numeric field - see the "HealthLog time metric row" tests below), so
+// plain-numeric-field regression tests use sleepEfficiency instead.
+function setSleepEfficiency(value: string) {
+  fireEvent.change(inputForMetric("Sleep Efficiency"), { target: { value } });
 }
 
 function setProtein(value: string) {
@@ -189,10 +192,10 @@ describe("HealthLog route + redirect", () => {
 
   it("typing into a numeric metric calls setHealthEntry per keystroke", () => {
     renderAt("/health");
-    setSleepTime("8");
+    setSleepEfficiency("8");
     expect(ctx.setHealthEntryMock).toHaveBeenCalledWith(
       TODAY_ISO,
-      expect.objectContaining({ sleepTime: 8 }),
+      expect.objectContaining({ sleepEfficiency: 8 }),
     );
     setProtein("1.5");
     expect(ctx.setHealthEntryMock).toHaveBeenCalledWith(
@@ -265,6 +268,27 @@ describe("HealthLog ordinal custom metric", () => {
   });
 });
 
+describe("HealthLog time metric row", () => {
+  it("renders sleepTime as two time fields seeded from the stored decimal", () => {
+    ctx.health = {
+      status: "loaded",
+      entries: [
+        {
+          version: 1,
+          date: TODAY_ISO,
+          sleepTime: 8.5,
+          availability: {},
+        },
+      ],
+    };
+    renderAt("/health");
+    const hField = inputForMetric("Total Sleep Time hr");
+    const mField = inputForMetric("Total Sleep Time min");
+    expect(hField.value).toBe("8");
+    expect(mField.value).toBe("30");
+  });
+});
+
 describe("HealthLog chip reactivity to tracked-metric changes", () => {
   it("chip recomputes when trackedHealthMetrics changes via UserContext", () => {
     // Tracking only hydration, with hydration filled in the entry -> "all".
@@ -331,8 +355,8 @@ describe("HealthLog optimistic state via real DataContext", () => {
     // Initial chip is `none` (no metrics filled).
     const dateNavBefore = document.querySelector("[data-chip-state]");
     expect(dateNavBefore?.getAttribute("data-chip-state")).toBe("none");
-    // Type into sleepTime.
-    setSleepTime("8");
+    // Type into sleepEfficiency.
+    setSleepEfficiency("8");
     // Synchronously - no advanceTimers - the chip should update.
     const dateNavAfter = document.querySelector("[data-chip-state]");
     expect(dateNavAfter?.getAttribute("data-chip-state")).toBe("some");
@@ -350,9 +374,9 @@ describe("HealthLog optimistic state via real DataContext", () => {
       latestSub(state.healthSubs)?.emit([]);
       latestSub(state.competitionSubs)?.emit([]);
     });
-    const sleep = inputForMetric("Total Sleep Time");
-    fireEvent.change(sleep, { target: { value: "1." } });
-    expect(sleep.value).toBe("1.");
+    const sleepEff = inputForMetric("Sleep Efficiency");
+    fireEvent.change(sleepEff, { target: { value: "1." } });
+    expect(sleepEff.value).toBe("1.");
   });
 
   it("MetricInputRow numeric input keeps bare zero", () => {
@@ -361,9 +385,9 @@ describe("HealthLog optimistic state via real DataContext", () => {
       latestSub(state.healthSubs)?.emit([]);
       latestSub(state.competitionSubs)?.emit([]);
     });
-    const sleep = inputForMetric("Total Sleep Time");
-    fireEvent.change(sleep, { target: { value: "0" } });
-    expect(sleep.value).toBe("0");
+    const sleepEff = inputForMetric("Sleep Efficiency");
+    fireEvent.change(sleepEff, { target: { value: "0" } });
+    expect(sleepEff.value).toBe("0");
   });
 
   it("MetricInputRow numeric input keeps leading zero", () => {
@@ -372,9 +396,9 @@ describe("HealthLog optimistic state via real DataContext", () => {
       latestSub(state.healthSubs)?.emit([]);
       latestSub(state.competitionSubs)?.emit([]);
     });
-    const sleep = inputForMetric("Total Sleep Time");
-    fireEvent.change(sleep, { target: { value: "07" } });
-    expect(sleep.value).toBe("07");
+    const sleepEff = inputForMetric("Sleep Efficiency");
+    fireEvent.change(sleepEff, { target: { value: "07" } });
+    expect(sleepEff.value).toBe("07");
   });
 
   it("snapshot updates input value when parent prop changes (not mid-typing)", () => {
@@ -383,8 +407,8 @@ describe("HealthLog optimistic state via real DataContext", () => {
       latestSub(state.healthSubs)?.emit([]);
       latestSub(state.competitionSubs)?.emit([]);
     });
-    const sleep = inputForMetric("Total Sleep Time");
-    expect(sleep.value).toBe("");
+    const sleepEff = inputForMetric("Sleep Efficiency");
+    expect(sleepEff.value).toBe("");
     // External edit (e.g., another tab) lands via the snapshot listener.
     act(() => {
       latestSub(state.healthSubs)?.emit([
@@ -395,7 +419,7 @@ describe("HealthLog optimistic state via real DataContext", () => {
             date: TODAY_ISO,
             hydration: 0,
             sleepTime: 5,
-            sleepEfficiency: 0,
+            sleepEfficiency: 42,
             protein: 0,
             leanMass: 0,
             availability: {
@@ -408,6 +432,6 @@ describe("HealthLog optimistic state via real DataContext", () => {
         },
       ]);
     });
-    expect(sleep.value).toBe("5");
+    expect(sleepEff.value).toBe("42");
   });
 });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/react";
+import { render, fireEvent, screen, act } from "@testing-library/react";
 import {
   MemoryRouter,
   Routes,
@@ -76,6 +76,10 @@ vi.mock("../../firebase", () => ({ db: {} }));
 vi.mock("../../utils/logError", () => ({ logError: vi.fn() }));
 
 import { PerformanceLog } from "./PerformanceLog";
+import {
+  customDefToChartConfig,
+  setCustomChartConfigs,
+} from "../../charts/metricChartConfig";
 import { dateAtOffset, HISTORY, toISO } from "../../utils/dates";
 
 const TODAY_ISO = toISO(dateAtOffset(HISTORY));
@@ -271,6 +275,71 @@ describe("PerformanceLog metric resolution", () => {
   });
 });
 
+describe("PerformanceLog time metrics", () => {
+  it("renders 'oneMileRun' as a multi-field time input", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedPerformanceMetrics: ["oneMileRun"],
+      },
+    };
+    renderAt("/performance");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("1-Mile Run"),
+    );
+    expect(row).toBeDefined();
+    expect(row!.querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders 'tenMeterSprint' as a single seconds input", () => {
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedPerformanceMetrics: ["tenMeterSprint"],
+      },
+    };
+    renderAt("/performance");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("10-Meter Sprint"),
+    );
+    expect(row).toBeDefined();
+    expect(row!.querySelectorAll("input").length).toBe(1);
+  });
+});
+
+describe("PerformanceLog Latest column for time metrics", () => {
+  it("shows a formatted time (not the raw decimal) in the Latest cell for 'oneMileRun'", () => {
+    // Regression: the Latest cell used to render String(live) even for
+    // time metrics, so a stored 4.5 (4m30s) showed "4.5" instead of "4:30".
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedPerformanceMetrics: ["oneMileRun"],
+      },
+    };
+    ctx.performance = {
+      status: "loaded",
+      entries: [
+        {
+          version: 1,
+          date: TODAY_ISO,
+          metrics: { oneMileRun: 4.5 },
+        },
+      ],
+    };
+    renderAt("/performance");
+    const row = Array.from(document.querySelectorAll("tr")).find((r) =>
+      r.textContent?.includes("1-Mile Run"),
+    );
+    expect(row).toBeDefined();
+    const latestCell = row!.querySelector("td");
+    expect(latestCell?.textContent).toBe("4:30");
+  });
+});
+
 describe("PerformanceLog writes", () => {
   it("typing into a numeric metric calls setPerformanceEntry per keystroke", () => {
     ctx.loadState = {
@@ -314,5 +383,51 @@ describe("PerformanceLog writes", () => {
     expect(ctx.setPerformanceEntryMock).toHaveBeenCalledWith(TODAY_ISO, {
       metrics: { oneRepMaxBench: undefined },
     });
+  });
+});
+
+describe("PerformanceLog custom time metric overlay reactivity", () => {
+  const CUSTOM_TIME: CustomMetricDef = {
+    id: "c_time",
+    ownerId: "u1",
+    name: "Plank Hold",
+    metricType: "performance",
+    primitive: "numeric",
+    inputType: "numeric",
+    unit: "min",
+    timePrecision: "s",
+    goalRaw: 1,
+    yTopRaw: 5,
+    yBottomRaw: 0,
+    avgDecimals: 2,
+    referenceUrl: "",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+
+  it("re-renders a custom time metric as a time input once the chart-config overlay syncs", () => {
+    // The overlay is populated post-commit, so the row is numeric on first
+    // paint; the log must subscribe (useChartConfigSync) so it flips to the
+    // time input when the overlay syncs rather than staying numeric.
+    setCustomChartConfigs({});
+    ctx.customMetrics = [CUSTOM_TIME];
+    ctx.loadState = {
+      status: "loaded",
+      profile: { ...PROFILE, trackedPerformanceMetrics: ["c_time"] },
+    };
+    renderAt("/performance");
+
+    const findRow = () =>
+      Array.from(document.querySelectorAll("tr")).find((r) =>
+        r.textContent?.includes("Plank Hold"),
+      )!;
+    expect(findRow().querySelectorAll("input").length).toBe(1); // numeric, overlay stale
+
+    act(() => {
+      setCustomChartConfigs({ [CUSTOM_TIME.id]: customDefToChartConfig(CUSTOM_TIME) });
+    });
+    expect(findRow().querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
+
+    setCustomChartConfigs({}); // reset module overlay for other tests
   });
 });

@@ -14,8 +14,10 @@ import {
 } from "../../utils/dates";
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
-import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { isTimeMetric, LogRecordInput } from "./LogRecordInput";
+import { formatMetricValue } from "../../charts/chartSeries";
+import { useChartConfigSync } from "../../charts/metricChartConfig";
 import css from "./CompetitionLog.module.css";
 
 export function CompetitionLog() {
@@ -24,6 +26,12 @@ export function CompetitionLog() {
   const { competition, setCompetitionEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
   const nameIdBase = useId();
+  // Re-render when the custom-metric chart-config overlay updates. The
+  // overlay is populated in a post-commit effect, so without this a custom
+  // time metric's row would render numeric on first paint (isTimeMetric /
+  // the summary formatter read getMetricChartConfig) until the next
+  // unrelated re-render.
+  useChartConfigSync();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
@@ -173,7 +181,12 @@ export function CompetitionLog() {
                 totalCell = rate === undefined ? "" : `${rate}%`;
               } else {
                 const total = competitionTotal(entries, metric.id);
-                totalCell = total === undefined ? "" : String(total);
+                totalCell =
+                  total === undefined
+                    ? ""
+                    : isTimeMetric(metric.id)
+                      ? formatMetricValue(metric.id, total)
+                      : String(total);
               }
 
               return (
@@ -239,12 +252,15 @@ export function CompetitionLog() {
                       // a label-valued metric.
                       if (customDef?.primitive === "nominal") return null;
                       return (
-                        <CompetitionMetricInput
+                        <LogRecordInput
                           metricId={metric.id}
-                          labelledBy={nameCellId}
+                          metricType="competition"
+                          builtInDef={builtInDef}
+                          customDef={customDef}
                           value={stringValue}
                           filled={filled}
                           onChange={(raw) => setMetricValue(metric.id, raw)}
+                          labelledBy={nameCellId}
                           allowNegative={allowNegativeIds.has(metric.id)}
                         />
                       );

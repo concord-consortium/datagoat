@@ -1,0 +1,55 @@
+.timeInput {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.field {
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 14px 8px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  width: 56px;
+  text-align: center;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.field::placeholder {
+  color: var(--subtext);
+  opacity: 1;
+}
+
+.field.hasValue {
+  border-color: rgba(0, 179, 192, 0.4);
+}
+
+.field.hasValue:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.unitGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fieldUnit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--subtext);
+  white-space: nowrap;
+}
+
+.error {
+  color: var(--error, #e53e3e);
+  font-size: 13px;
+  margin-top: 4px;
+}

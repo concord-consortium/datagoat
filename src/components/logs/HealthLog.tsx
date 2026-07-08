@@ -57,7 +57,11 @@ export function HealthLog() {
   const { loadState } = useUser();
   const { health, setHealthEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
-  useChartConfigSync();
+  // Subscribe to config-overlay changes AND thread the snapshot into the
+  // `summaries` memo deps below, so a custom-metric config or goal override
+  // that registers after first render invalidates the memoized goal/average
+  // (matching useChartSeries; see metricChartConfig.useChartConfigSync).
+  const overlayVersion = useChartConfigSync();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
@@ -133,7 +137,7 @@ export function HealthLog() {
       });
     }
     return map;
-  }, [entries, trackedIds, profileKey]);
+  }, [entries, trackedIds, profileKey, overlayVersion]);
 
   const summaryProps = (mid: string) => {
     const s = summaries.get(mid);

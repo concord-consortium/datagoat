@@ -54,6 +54,13 @@ if (typeof window !== "undefined" && !window.matchMedia) {
 }
 
 afterEach(() => {
-  if (typeof localStorage !== "undefined") localStorage.clear();
-  if (typeof sessionStorage !== "undefined") sessionStorage.clear();
+  // Guard on the method, not just the global: some Node runtimes expose a
+  // partial Web Storage global (present but without `.clear`), which would
+  // otherwise throw here in the node test environment.
+  if (typeof localStorage !== "undefined" && typeof localStorage.clear === "function") {
+    localStorage.clear();
+  }
+  if (typeof sessionStorage !== "undefined" && typeof sessionStorage.clear === "function") {
+    sessionStorage.clear();
+  }
 });

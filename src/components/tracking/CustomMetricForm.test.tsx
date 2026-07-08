@@ -502,35 +502,31 @@ function renderCreateForm(type: "health" | "competition" | "performance") {
 }
 
 describe("CustomMetricForm — top-level type chooser", () => {
-  it("renders three top-level buttons: Numeric, Categorical, Y/N", () => {
+  it("renders three top-level buttons: Numeric, Scale, Y/N", () => {
     renderCreateForm("health");
     expect(screen.getByRole("radio", { name: /numeric/i })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /categorical/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /scale/i })).toBeTruthy();
     expect(screen.getByRole("radio", { name: /y\/n/i })).toBeTruthy();
   });
 
-  it("shows the levels editor for Categorical and Y/N but not Numeric", async () => {
+  it("shows the levels editor for Scale but not Numeric or Y/N", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");
     // Numeric (initial): no table.
     expect(screen.queryByRole("table")).toBeNull();
-    // Categorical: editable table.
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    // Scale: editable table.
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     expect(screen.getByRole("table")).toBeTruthy();
     expect(screen.getByRole("button", { name: /add row/i })).toBeTruthy();
-    // Y/N: table visible but read-only (inputs disabled, no Add row).
+    // Y/N is a fixed No/Yes preset - no levels editor.
     await user.click(screen.getByRole("radio", { name: /y\/n/i }));
-    expect(screen.getByRole("table")).toBeTruthy();
-    const labelInputs = screen.getAllByLabelText(/label/i) as HTMLInputElement[];
-    expect(labelInputs.every((i) => i.disabled)).toBe(true);
-    expect(screen.queryByRole("button", { name: /add row/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /remove row/i })).toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
-  it("preserves in-progress Categorical rows across a Y/N detour", async () => {
+  it("preserves in-progress Scale rows across a Y/N detour", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     // Type into the two seeded rows.
     const labels = screen.getAllByLabelText(/^label/i);
     const values = screen.getAllByLabelText(/^value/i);
@@ -538,13 +534,12 @@ describe("CustomMetricForm — top-level type chooser", () => {
     await user.type(values[0], "1");
     await user.type(labels[1], "High");
     await user.type(values[1], "9");
-    // Detour through Y/N - the read-only table shows No/Yes here, but
-    // the user's Categorical edits must survive untouched.
+    // Detour through Y/N (which has no levels editor); the user's Scale
+    // edits must survive untouched.
     await user.click(screen.getByRole("radio", { name: /y\/n/i }));
-    expect((screen.getByLabelText(/^Label for row 1$/i) as HTMLInputElement).value).toBe("No");
-    expect((screen.getByLabelText(/^Label for row 2$/i) as HTMLInputElement).value).toBe("Yes");
-    // Back to Categorical - the user's rows are restored.
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    expect(screen.queryByRole("table")).toBeNull();
+    // Back to Scale - the user's rows are restored.
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     expect((screen.getByLabelText(/^Label for row 1$/i) as HTMLInputElement).value).toBe("Low");
     expect((screen.getByLabelText(/^Value for row 1$/i) as HTMLInputElement).value).toBe("1");
     expect((screen.getByLabelText(/^Label for row 2$/i) as HTMLInputElement).value).toBe("High");
@@ -576,10 +571,10 @@ describe("CustomMetricForm — top-level type chooser", () => {
     expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("0");
   });
 
-  it("displays y-axis range derived from levels as the user fills Categorical", async () => {
+  it("displays y-axis range derived from levels as the user fills Scale", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     // With both seeded rows blank, the derivation has nothing to chew
     // on - the disabled fields render empty so the user isn't told a
     // misleading range exists yet.
@@ -593,10 +588,10 @@ describe("CustomMetricForm — top-level type chooser", () => {
     expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).value).toBe("2");
   });
 
-  it("greys out y-axis range when Categorical is selected", async () => {
+  it("greys out y-axis range when Scale is selected", async () => {
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     expect((screen.getByLabelText(/y-axis top/i) as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByLabelText(/y-axis bottom/i) as HTMLInputElement).disabled).toBe(true);
   });
@@ -607,7 +602,7 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Steps");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Steps");
     await user.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
     const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
@@ -621,7 +616,7 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Slept Well?");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Slept Well?");
     await user.click(screen.getByRole("radio", { name: /y\/n/i }));
     await user.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
@@ -634,18 +629,19 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     ]);
     expect(payload.yTopRaw).toBe(1);
     expect(payload.yBottomRaw).toBe(0);
-    expect(payload.unit).toBeUndefined();
+    // Unit is now a common field across all types (empty when not filled).
+    expect(payload.unit).toBe("");
   });
 
-  // Picking Categorical seeds two empty rows, so most of these tests
+  // Picking Scale seeds two empty rows, so most of these tests
   // start from a 2-row baseline and either fill those rows or click
   // "Add row" to extend.
-  it("derives yTop/yBottom from levels' min/max when Categorical is chosen", async () => {
+  it("derives yTop/yBottom from levels' min/max when Scale is chosen", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "My Mood");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.type(screen.getByLabelText(/^metric name$/i), "My Mood");
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     // Two seeded rows + one Add row click → three rows, matching the
     // Low/Mid/High shape this test exercises.
     await user.click(screen.getByRole("button", { name: /add row/i }));
@@ -670,12 +666,12 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     expect(payload.yBottomRaw).toBe(1);
   });
 
-  it("rejects Categorical submit when any level is missing a value", async () => {
+  it("rejects Scale submit when any level is missing a value", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Bad");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.type(screen.getByLabelText(/^metric name$/i), "Bad");
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     // Both seeded rows get labels so the label check passes, then
     // leave row 1's value blank so the value check fires.
     const labels = screen.getAllByLabelText(/^label/i);
@@ -688,12 +684,12 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     expect(mockedSetDoc).not.toHaveBeenCalled();
   });
 
-  it("rejects Categorical submit when fewer than 2 levels are defined", async () => {
+  it("rejects Scale submit when fewer than 2 levels are defined", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Tiny");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.type(screen.getByLabelText(/^metric name$/i), "Tiny");
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     // Remove both seeded rows so the count check fires on submit.
     // findAllByRole because the buttons appear after a state change.
     const removeButtons = await screen.findAllByRole("button", {
@@ -710,12 +706,12 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     expect(mockedSetDoc).not.toHaveBeenCalled();
   });
 
-  it("rejects Categorical submit when level values are not unique", async () => {
+  it("rejects Scale submit when level values are not unique", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
     renderCreateForm("health");
-    await user.type(screen.getByLabelText(/^name$/i), "Dup");
-    await user.click(screen.getByRole("radio", { name: /categorical/i }));
+    await user.type(screen.getByLabelText(/^metric name$/i), "Dup");
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
     // Two seeded rows are exactly right for the dup test.
     const labels = screen.getAllByLabelText(/^label/i);
     const values = screen.getAllByLabelText(/^value/i);
@@ -848,7 +844,7 @@ describe("CustomMetricForm — edit-mode inference", () => {
     expect((screen.getByRole("radio", { name: /y\/n/i }) as HTMLInputElement).checked).toBe(true);
   });
 
-  it("opens with Categorical selected for an ordinal metric with other levels", () => {
+  it("opens with Scale selected for an ordinal metric with other levels", () => {
     renderEditForm("health", {
       id: "c_x",
       ownerId: "u1",
@@ -868,7 +864,7 @@ describe("CustomMetricForm — edit-mode inference", () => {
       createdAt: 0,
       updatedAt: 0,
     });
-    expect((screen.getByRole("radio", { name: /categorical/i }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: /scale/i }) as HTMLInputElement).checked).toBe(true);
   });
 });
 
@@ -915,7 +911,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Hydration");
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument();
     expect(
@@ -928,7 +924,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^name$/i), "hYdRaTiOn");
+    await user.type(screen.getByLabelText(/^metric name$/i), "hYdRaTiOn");
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument();
   });
@@ -938,12 +934,12 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Hydration");
     await user.click(
       screen.getByRole("button", { name: /use .*hydration \(2\).* instead/i }),
     );
 
-    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe(
+    expect((screen.getByLabelText(/^metric name$/i) as HTMLInputElement).value).toBe(
       "Hydration (2)",
     );
     expect(screen.queryByText(/already exists/i)).toBeNull();
@@ -962,7 +958,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^name$/i), "Stretch Minutes");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Stretch Minutes");
 
     expect(screen.queryByText(/already exists/i)).toBeNull();
     expect(
@@ -989,7 +985,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
       updatedAt: 0,
     });
 
-    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe(
+    expect((screen.getByLabelText(/^metric name$/i) as HTMLInputElement).value).toBe(
       "My Recovery Score",
     );
     expect(screen.queryByText(/already exists/i)).toBeNull();
@@ -1037,8 +1033,8 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
       updatedAt: 0,
     });
 
-    await user.clear(screen.getByLabelText(/^name$/i));
-    await user.type(screen.getByLabelText(/^name$/i), "Hydration");
+    await user.clear(screen.getByLabelText(/^metric name$/i));
+    await user.type(screen.getByLabelText(/^metric name$/i), "Hydration");
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument();
   });
@@ -1100,7 +1096,7 @@ describe("CustomMetricForm (performance)", () => {
     const user = userEvent.setup();
     renderCreateForm("performance");
 
-    await user.type(screen.getByLabelText(/^name$/i), "400m Time");
+    await user.type(screen.getByLabelText(/^metric name$/i), "400m Time");
     // Numeric is selected by default; switch the Format sub-choice to Time.
     await user.click(screen.getByRole("radio", { name: /^time$/i }));
     await user.selectOptions(screen.getByLabelText(/^unit$/i), "min");
@@ -1119,7 +1115,7 @@ describe("CustomMetricForm (performance)", () => {
     const user = userEvent.setup();
     renderCreateForm("performance");
 
-    await user.type(screen.getByLabelText(/^name$/i), "Plain Sprint Count");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Plain Sprint Count");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
@@ -1138,7 +1134,7 @@ describe("CustomMetricForm (performance)", () => {
     const user = userEvent.setup();
     renderCreateForm("performance");
 
-    await user.type(screen.getByLabelText(/^name$/i), "Marathon Time");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Marathon Time");
     await user.click(screen.getByRole("radio", { name: /^time$/i }));
     await user.selectOptions(screen.getByLabelText(/^unit$/i), "hr");
     await user.selectOptions(screen.getByLabelText(/^precision$/i), "m");

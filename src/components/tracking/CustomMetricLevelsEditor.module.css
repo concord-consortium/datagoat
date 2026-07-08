@@ -1,7 +1,12 @@
+/* Styled to match the shared field primitives (see form/fields.module.css):
+   dark --surface2 backgrounds, #546888 borders, teal accent on hover/focus,
+   44px min touch height, --font-body 16px, and clear active/focus states. */
+
 .editor {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
 .table {
@@ -11,54 +16,118 @@
 
 .table th,
 .table td {
-  padding: 0.25rem 0.5rem;
+  padding: 4px 6px;
   text-align: left;
+  vertical-align: middle;
 }
 
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+
+/* Column headers match the shared field-label treatment (see
+   form/fields.module.css .fieldLabel): 16px uppercase, letter-spaced. */
 .table th {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1;
   font-weight: 600;
-  font-size: 0.875rem;
-  color: #555;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  padding-bottom: 8px;
 }
 
 .rowNum {
-  color: #999;
+  color: var(--subtext);
+  font-family: var(--font-display);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  width: 2rem;
+  width: 1.5rem;
 }
 
 .table input[type="text"],
 .table input[type="number"] {
   width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d6dde3;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 1rem;
-  background: #ffffff;
+  min-height: 44px;
+  background: var(--surface2);
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition:
+    border-color var(--dur-base) var(--ease-default),
+    box-shadow var(--dur-base) var(--ease-default);
+}
+
+.table input[type="text"]:hover,
+.table input[type="number"]:hover {
+  border-color: var(--accent);
+}
+
+.table input[type="text"]:focus,
+.table input[type="number"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 179, 192, 0.18);
+}
+
+.table input[type="text"]:focus-visible,
+.table input[type="number"]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .table input[type="text"]:disabled,
 .table input[type="number"]:disabled {
-  background: #f0f3f6;
-  border-color: #e1e5ea;
-  color: #888;
-  cursor: not-allowed;
-  /* Override Safari's subtle disabled-input tinting to match the
-     muted background above; without this the field still looks
-     near-active on iOS. */
-  -webkit-text-fill-color: #888;
+  background: rgba(0, 0, 0, 0.18);
+  border-color: rgba(84, 104, 136, 0.45);
+  color: var(--subtext);
+  -webkit-text-fill-color: var(--subtext);
   opacity: 1;
+  cursor: not-allowed;
 }
 
 .table input[type="color"] {
-  width: 2rem;
-  height: 2rem;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border: 1px solid #d6dde3;
-  border-radius: 4px;
-  background: none;
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  background: var(--surface2);
+  overflow: hidden;
   cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease-default);
+}
+
+/* Make the color swatch fill the rounded picker box (browsers inset the
+   swatch and paint square corners by default, leaving gaps). */
+.table input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.table input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.table input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.table input[type="color"]:hover {
+  border-color: var(--accent);
+}
+
+.table input[type="color"]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .table input[type="color"]:disabled {
@@ -68,32 +137,74 @@
 
 .removeBtn {
   appearance: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 1px solid #d6dde3;
-  border-radius: 4px;
-  background: #f5f5f5;
-  color: #666;
-  font-size: 1rem;
-  font-family: inherit;
+  -webkit-appearance: none;
+  width: 44px;
+  min-height: 44px;
+  border: 1.5px solid #546888;
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--subtext);
+  font-size: 26px;
+  line-height: 1;
+  font-family: var(--font-body);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color var(--dur-quick),
+    border-color var(--dur-quick),
+    background var(--dur-quick);
 }
 
 .removeBtn:hover {
-  color: #e53e3e;
+  color: #f98080;
+  border-color: #e5484d;
+  background: rgba(229, 72, 77, 0.12);
+}
+
+.removeBtn:active {
+  background: rgba(229, 72, 77, 0.2);
+}
+
+.removeBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .addBtn {
   appearance: none;
-  align-self: flex-start;
-  padding: 0.375rem 0.75rem;
-  border: 1px solid #d6dde3;
-  border-radius: 4px;
-  background: #f5f5f5;
-  color: #0693e3;
-  font-size: 0.875rem;
-  font-family: inherit;
+  -webkit-appearance: none;
+  align-self: stretch;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
+  transition:
+    background var(--dur-quick),
+    border-color var(--dur-quick);
+}
+
+.addBtn:hover {
+  background: rgba(0, 179, 192, 0.12);
+}
+
+.addBtn:active {
+  background: rgba(0, 179, 192, 0.2);
+}
+
+.addBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .visuallyHidden {

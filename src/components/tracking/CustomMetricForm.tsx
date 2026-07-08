@@ -17,6 +17,7 @@ import {
   ADDABLE_HEALTH,
   ADDABLE_PERFORMANCE,
 } from "../../metrics/addableMetrics";
+import { YN_LEVELS } from "../../metrics/yesNo";
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
@@ -37,11 +38,6 @@ const NAME_MAX = 128;
 type AuthorableCustomMetricType = "health" | "performance" | "competition";
 
 type TopLevelKind = "numeric" | "categorical" | "yn";
-
-const YN_LEVELS: CustomMetricLevel[] = [
-  { label: "No", value: 0 },
-  { label: "Yes", value: 1 },
-];
 
 function deriveLevelRangeDisplay(
   levels: CustomMetricLevel[],
@@ -143,7 +139,7 @@ function buildPayload(
     throw new Error("Each level needs a numeric value.");
   }
   if (levels.length < 2) {
-    throw new Error("Categorical metrics need at least two levels.");
+    throw new Error("Scale metrics need at least two levels.");
   }
   const values = levels.map((l) => l.value as number);
   if (new Set(values).size !== values.length) {
@@ -155,6 +151,7 @@ function buildPayload(
   return {
     name: trimmedName,
     metricType: type,
+    unit: draft.unit.trim(),
     primitive: "ordinal",
     inputType: "radio",
     levels: levels.map((l) => {
@@ -630,9 +627,11 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
   }
 
   const isTime = draft.topLevel === "numeric" && draft.numericFormat === "time";
-  // Time derives its unit from the Unit(hr|min|sec) select below, so the
-  // free-form Unit text field is greyed out in that mode too.
-  const unitDisabled = draft.topLevel !== "numeric" || isTime;
+  // Unit is a common field for every type (Numeric, Scale, Y/N). The one
+  // exception is numeric Time mode, which derives its unit from the
+  // Unit(hr|min|sec) select below, so the free-form Unit text field is greyed
+  // out only in that mode.
+  const unitDisabled = isTime;
   const goalDisabled = draft.topLevel === "yn";
   const yAxisDisabled = draft.topLevel !== "numeric";
   // Y/N's only possible values are 0 and 1, so the decimals setting
@@ -662,6 +661,45 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
 
   return (
     <form className={css.form} onSubmit={handleSubmit} noValidate>
+      <TextField
+        id="cm-name"
+        label="Metric Name"
+        value={draft.name}
+        maxLength={NAME_MAX}
+        onChange={(e) => update("name", e.target.value)}
+      />
+
+      <If condition={isDuplicateName}>
+        <div className={css.nameWarning} role="alert">
+          <p className={css.nameWarningText}>
+            A metric named "{trimmedName}" already exists.
+          </p>
+          <button
+            type="button"
+            className={css.nameWarningAction}
+            onClick={() => {
+              if (suggestedName) update("name", suggestedName);
+            }}
+          >
+            Use "{suggestedName}" instead
+          </button>
+        </div>
+      </If>
+
+      <TextField
+        id="cm-unit"
+        label="Unit (optional)"
+        value={draft.unit}
+        disabled={unitDisabled}
+        onChange={(e) => update("unit", e.target.value)}
+      />
+
+      <ScheduleField
+        idPrefix="cm-schedule"
+        value={draft.schedule}
+        onChange={(s) => update("schedule", s)}
+      />
+
       <fieldset className={css.typeChooser}>
         <legend className={css.typeChooserLegend}>Type</legend>
         <label className={css.typeOption}>
@@ -684,7 +722,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             checked={draft.topLevel === "categorical"}
             onChange={() => switchTopLevel("categorical")}
           />
-          Categorical
+          Scale
         </label>
         <label className={css.typeOption}>
           <input
@@ -762,49 +800,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         </div>
       </If>
 
-      <TextField
-        id="cm-name"
-        label="Name"
-        value={draft.name}
-        maxLength={NAME_MAX}
-        onChange={(e) => update("name", e.target.value)}
-      />
-
-      <If condition={isDuplicateName}>
-        <div className={css.nameWarning} role="alert">
-          <p className={css.nameWarningText}>
-            A metric named "{trimmedName}" already exists.
-          </p>
-          <button
-            type="button"
-            className={css.nameWarningAction}
-            onClick={() => {
-              if (suggestedName) update("name", suggestedName);
-            }}
-          >
-            Use "{suggestedName}" instead
-          </button>
-        </div>
-      </If>
-
-      <If condition={draft.topLevel !== "numeric"}>
+      <If condition={draft.topLevel === "categorical"}>
         <div className={css.levelsBlock}>
-          <label className={css.fieldLabel}>Levels</label>
+          <label className={css.fieldLabel}>Scale levels</label>
           <CustomMetricLevelsEditor
             levels={effectiveLevels}
             onChange={(next) => update("levels", next)}
-            readOnly={draft.topLevel === "yn"}
           />
         </div>
       </If>
-
-      <TextField
-        id="cm-unit"
-        label="Unit (optional)"
-        value={draft.unit}
-        disabled={unitDisabled}
-        onChange={(e) => update("unit", e.target.value)}
-      />
 
       <TextField
         id="cm-goal"
@@ -854,12 +858,6 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         inputMode="url"
         value={draft.referenceUrl}
         onChange={(e) => update("referenceUrl", e.target.value)}
-      />
-
-      <ScheduleField
-        idPrefix="cm-schedule"
-        value={draft.schedule}
-        onChange={(s) => update("schedule", s)}
       />
 
       {error && <p className={css.error}>{error}</p>}

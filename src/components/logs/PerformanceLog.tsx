@@ -13,7 +13,10 @@ import {
   toISO,
 } from "../../utils/dates";
 import { emptyPerformanceEntry } from "../../types/data";
-import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { ScaleCards } from "./ScaleCards";
+import { LevelRadioGroup } from "./LevelRadioGroup";
+import { resolveScaleColors } from "../../data/scaleColors";
+import { isYesNoLevels } from "../../metrics/yesNo";
 import { isTimeMetric, LogRecordInput } from "./LogRecordInput";
 import { formatMetricValue } from "../../charts/chartSeries";
 import { useChartConfigSync } from "../../charts/metricChartConfig";
@@ -184,9 +187,19 @@ export function PerformanceLog() {
                             typeof live === "number" && Number.isFinite(live)
                               ? live
                               : undefined;
-                          return (
-                            <OrdinalRadioGroup
+                          return isYesNoLevels(customDef.levels) ? (
+                            <LevelRadioGroup
                               levels={customDef.levels}
+                              value={ordinalValue}
+                              onChange={(next) =>
+                                setMetricValue(metric.id, String(next))
+                              }
+                              labelledBy={nameCellId}
+                            />
+                          ) : (
+                            <ScaleCards
+                              levels={customDef.levels}
+                              colors={resolveScaleColors({ metricId: metric.id, levels: customDef.levels })}
                               value={ordinalValue}
                               onChange={(next) =>
                                 setMetricValue(metric.id, String(next))

@@ -14,7 +14,7 @@ function ordinalRange(min: number, max: number) {
 // Default-off Health metrics from DGT-51 design source ("Metrics" tab
 // of the design spreadsheet). All start hidden; users opt in via the
 // AddMetric flow. The categorical/ordinal entries reuse the generic
-// "ordinal" inputType and OrdinalRadioGroup renderer; numeric entries
+// "ordinal" inputType and ScaleCards renderer; numeric entries
 // fall through MetricInputRow's numeric branch.
 export const ADDABLE_HEALTH: MetricDefinition[] = [
   {

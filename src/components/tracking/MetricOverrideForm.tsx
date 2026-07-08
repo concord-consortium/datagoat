@@ -264,6 +264,12 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
         disabled
       />
 
+      <ScheduleField
+        idPrefix="mo-schedule"
+        value={schedule}
+        onChange={setSchedule}
+      />
+
       <If condition={existing !== undefined}>
         <p className={css.hint}>This metric has been customized.</p>
       </If>
@@ -312,12 +318,6 @@ export function MetricOverrideForm({ metric }: MetricOverrideFormProps) {
           onErrorChange={(hasError) => setTimeFieldError("mo-ybot", hasError)}
         />
       </div>
-
-      <ScheduleField
-        idPrefix="mo-schedule"
-        value={schedule}
-        onChange={setSchedule}
-      />
 
       {error && <p className={css.error}>{error}</p>}
 

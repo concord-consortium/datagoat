@@ -1,8 +1,8 @@
-/* Lay the period select and the "times per …" count side by side, the
-   same way the forms lay out y-axis top/bottom. Both SelectField and
-   TextField render a `fieldWrap` <div> as their outer element, so the
-   direct-child rule makes them share the row evenly. When the count is
-   hidden (irregular schedule) the lone select takes the full width. */
+/* Lay the period select and the "times per …" count side by side, per the
+   design prototype. Both SelectField and TextField render a `fieldWrap` <div>
+   as their outer element, so the direct-child rule makes them share the row
+   evenly. When the count is hidden (irregular schedule) the lone select takes
+   the full width. */
 .row {
   display: flex;
   gap: 12px;

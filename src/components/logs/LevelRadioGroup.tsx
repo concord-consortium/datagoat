@@ -1,9 +1,9 @@
 import { useId } from "react";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import radioCss from "../form/RadioGroup.module.css";
-import css from "./OrdinalRadioGroup.module.css";
+import css from "./LevelRadioGroup.module.css";
 
-export interface OrdinalRadioGroupProps {
+export interface LevelRadioGroupProps {
   levels: CustomMetricLevel[];
   value: number | undefined;
   onChange: (next: number) => void;
@@ -11,28 +11,22 @@ export interface OrdinalRadioGroupProps {
   labelledBy: string;
 }
 
-export function OrdinalRadioGroup({
+// Plain radio-button group over a metric's levels. Used for Yes/No metrics,
+// which stay simple radios rather than the scale-card picker.
+export function LevelRadioGroup({
   levels,
   value,
   onChange,
   labelledBy,
-}: OrdinalRadioGroupProps) {
+}: LevelRadioGroupProps) {
   const groupName = useId();
   return (
-    <div
-      className={css.ordinalGroup}
-      role="radiogroup"
-      aria-labelledby={labelledBy}
-    >
+    <div className={css.group} role="radiogroup" aria-labelledby={labelledBy}>
       {levels.map((level, idx) => {
         if (level.value === undefined) return null;
         const checked = value === level.value;
-        // Key includes idx so a malformed doc with duplicate level
-        // values still gets unique React keys; the form rejects
-        // duplicates on write but the read boundary doesn't enforce
-        // it, so this defends against externally-written docs.
         return (
-          <label key={`${idx}-${level.value}`} className={css.ordinalOption}>
+          <label key={`${idx}-${level.value}`} className={css.option}>
             <input
               type="radio"
               className={radioCss.radio}

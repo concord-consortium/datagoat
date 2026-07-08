@@ -14,7 +14,10 @@ import {
 } from "../../utils/dates";
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { emptyCompetitionEntry } from "../../types/data";
-import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { ScaleCards } from "./ScaleCards";
+import { LevelRadioGroup } from "./LevelRadioGroup";
+import { resolveScaleColors } from "../../data/scaleColors";
+import { isYesNoLevels } from "../../metrics/yesNo";
 import { isTimeMetric, LogRecordInput } from "./LogRecordInput";
 import { formatMetricValue } from "../../charts/chartSeries";
 import { useChartConfigSync } from "../../charts/metricChartConfig";
@@ -205,7 +208,7 @@ export function CompetitionLog() {
                       // Built-in ordinal metrics (currently
                       // winningPercentage) carry their levels on the
                       // registry entry. Render the tile selector via
-                      // OrdinalRadioGroup, same renderer customs use.
+                      // ScaleCards, same renderer customs use.
                       if (
                         builtInDef?.inputType === "ordinal" &&
                         builtInDef.levels
@@ -215,8 +218,9 @@ export function CompetitionLog() {
                             ? live
                             : undefined;
                         return (
-                          <OrdinalRadioGroup
+                          <ScaleCards
                             levels={builtInDef.levels}
+                            colors={resolveScaleColors({ metricId: metric.id, levels: builtInDef.levels })}
                             value={ordinalValue}
                             onChange={(next) =>
                               setMetricValue(metric.id, String(next))
@@ -233,9 +237,19 @@ export function CompetitionLog() {
                           typeof live === "number" && Number.isFinite(live)
                             ? live
                             : undefined;
-                        return (
-                          <OrdinalRadioGroup
+                        return isYesNoLevels(customDef.levels) ? (
+                          <LevelRadioGroup
                             levels={customDef.levels}
+                            value={ordinalValue}
+                            onChange={(next) =>
+                              setMetricValue(metric.id, String(next))
+                            }
+                            labelledBy={nameCellId}
+                          />
+                        ) : (
+                          <ScaleCards
+                            levels={customDef.levels}
+                            colors={resolveScaleColors({ metricId: metric.id, levels: customDef.levels })}
                             value={ordinalValue}
                             onChange={(next) =>
                               setMetricValue(metric.id, String(next))

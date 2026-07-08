@@ -51,6 +51,20 @@ describe("buildCodapWrappedUrl", () => {
       "https://codap3.concord.org?di=https://datagoat-staging--pr-3-abc.web.app/codap",
     );
   });
+
+  it("appends ?demo to the di target when demo is present in the current URL", () => {
+    stubLocation("http://localhost:5173/dashboard?demo");
+    expect(buildCodapWrappedUrl()).toBe(
+      "https://codap3.concord.org?di=http://localhost:5173/codap?demo",
+    );
+  });
+
+  it("omits the demo suffix when the current URL has no demo param", () => {
+    stubLocation("http://localhost:5173/dashboard");
+    expect(buildCodapWrappedUrl()).toBe(
+      "https://codap3.concord.org?di=http://localhost:5173/codap",
+    );
+  });
 });
 
 describe("shouldRedirectToCodap", () => {

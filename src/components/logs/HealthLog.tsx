@@ -271,7 +271,12 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
-                      {...summaryProps(id)}
+                      // No summary: availability is a practice/game yes-no
+                      // tree with no scalar value, so a 7-day average and
+                      // sparkline are meaningless (readHealthMetric reduces
+                      // it to a 0/1 sentinel that formats as a misleading
+                      // "0%" on its 0..100 axis). Renders "—" until it gets
+                      // a real scalar definition.
                       metric={builtIn}
                       inputType="tree"
                       competitionTerm={competitionTerm}

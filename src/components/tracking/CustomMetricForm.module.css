@@ -60,10 +60,21 @@
   color: #0693e3;
 }
 
+/* Pinned footer: Save / Cancel stay fixed at the bottom of the scroll
+   container (AppShell's <main>) while the form fields scroll behind them.
+   Full-bleed to the form edges (cancel the form's 24px side / 20px bottom
+   padding) with an opaque page background so scrolled fields don't show
+   through. */
 .actions {
   display: flex;
   gap: 12px;
-  margin-top: 8px;
+  justify-content: center;
+  position: sticky;
+  bottom: 0;
+  margin: 12px -24px -20px;
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
 
 .primary,
@@ -71,27 +82,46 @@
 .danger {
   appearance: none;
   -webkit-appearance: none;
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 600;
-  padding: 10px 18px;
+  width: 150px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Uppercase display font, matching the section/column headers. */
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 18px;
   border-radius: 6px;
   cursor: pointer;
-  flex: 1;
   background: #f5f5f5;
   border: 1px solid var(--border);
   color: #0693e3;
 }
 
+/* Save: black text on a teal fill. */
 .primary {
   background: var(--accent, #0693e3);
   border-color: var(--accent, #0693e3);
-  color: white;
+  color: var(--bg);
 }
 
 .primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Cancel: teal text + teal outline on black. */
+.secondary {
+  background: var(--bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.secondary:hover {
+  background: rgba(0, 179, 192, 0.12);
 }
 
 .danger {

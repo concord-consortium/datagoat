@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { MetricDefinition } from "../metrics/types";
 import type { CustomMetricDef } from "../types/customMetrics";
 import {
+  buildDataset,
   clockPattern,
   metricColumns,
   normalizeMetric,
+  resolveTrackedMetrics,
   type NormalizedMetric,
 } from "./codapExport";
 import { resolveTimeLayout } from "../utils/timeValue";
@@ -130,8 +132,6 @@ describe("metricColumns - ordinal, nominal, compound", () => {
     expect(cols[0].toValue(null)).toBeNull();
   });
 });
-
-import { buildDataset, resolveTrackedMetrics } from "./codapExport";
 
 describe("resolveTrackedMetrics", () => {
   const builtins: MetricDefinition[] = [health({ id: "hydration", name: "Hydration", unit: "level" })];

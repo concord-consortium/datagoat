@@ -82,7 +82,7 @@ const PLUGIN_OPTIONS = {
 interface ExistingDataContextShape {
   collections?: Array<{
     name: string;
-    attrs?: Array<{ name: string; type?: string }>;
+    attrs?: Array<{ name: string; type?: string; unit?: string }>;
   }>;
 }
 
@@ -94,6 +94,13 @@ export function ensureSuccess(
   if (!result || result.success === false) {
     throw new Error(`CODAP ${step} failed`);
   }
+}
+
+// The CODAP attribute fields we set from an AttributeSpec: type, plus
+// unit when non-empty. Shared by the create-context payload and the
+// re-send reconcile so both stay in sync.
+function attrValues(spec: AttributeSpec): { type: string; unit?: string } {
+  return { type: spec.type, ...(spec.unit ? { unit: spec.unit } : {}) };
 }
 
 export function useCodapApi(): UseCodapApiResult {
@@ -153,8 +160,7 @@ export function useCodapApi(): UseCodapApiResult {
                 title: collectionName,
                 attrs: attributes.map((a) => ({
                   name: a.name,
-                  type: a.type,
-                  ...(a.unit ? { unit: a.unit } : {}),
+                  ...attrValues(a),
                 })),
               },
             ],
@@ -167,10 +173,11 @@ export function useCodapApi(): UseCodapApiResult {
       // land in CODAP's data model but no UI surfaces them.
       ensureSuccess(await createTable(name, tableName), "createTable");
     } else {
-      // Context already exists. Reconcile attribute types from the
-      // known specs (no sample-row inference needed). Types are
-      // authoritative from the metric registry, so an older context
-      // created with a wrong type gets corrected here.
+      // Context already exists. Reconcile attribute types and units
+      // from the known specs (no sample-row inference needed). Types
+      // and units are authoritative from the metric registry, so an
+      // older context created with a wrong type or a since-edited
+      // unit gets corrected here.
       const existingValues = (
         existing as { values?: ExistingDataContextShape }
       ).values;
@@ -182,14 +189,14 @@ export function useCodapApi(): UseCodapApiResult {
           const current = existingCollection.attrs.find(
             (a) => a.name === spec.name,
           );
-          if (current && current.type !== spec.type) {
+          if (current && (current.type !== spec.type || current.unit !== spec.unit)) {
             ensureSuccess(
               await updateAttribute(
                 name,
                 collectionName,
                 spec.name,
                 { name: spec.name },
-                { type: spec.type, ...(spec.unit ? { unit: spec.unit } : {}) },
+                attrValues(spec),
               ),
               "updateAttribute",
             );

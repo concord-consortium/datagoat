@@ -320,6 +320,42 @@ describe("useCodapApi sendDataset", () => {
     );
   });
 
+  it("reconciles a changed unit even when the type is unchanged", async () => {
+    codapMocks.getDataContext.mockResolvedValue({
+      success: true,
+      values: {
+        collections: [
+          {
+            name: "Performance",
+            attrs: [
+              { name: "date", type: "date" },
+              { name: "Vertical Jump", type: "numeric", unit: "in" },
+            ],
+          },
+        ],
+      },
+    });
+    const result = await renderApi();
+    await act(async () => {
+      await result.current.sendDataset({
+        name: "DataGOAT-Performance",
+        collectionName: "Performance",
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "Vertical Jump", type: "numeric", unit: "cm" },
+        ],
+        rows: [{ date: "2026-04-01", "Vertical Jump": 60 }],
+      });
+    });
+    expect(codapMocks.updateAttribute).toHaveBeenCalledWith(
+      "DataGOAT-Performance",
+      "Performance",
+      "Vertical Jump",
+      { name: "Vertical Jump" },
+      { type: "numeric", unit: "cm" },
+    );
+  });
+
   it("does nothing destructive when rows are empty and the context already exists", async () => {
     codapMocks.getDataContext.mockResolvedValue({
       success: true,

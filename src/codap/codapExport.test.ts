@@ -80,3 +80,53 @@ describe("metricColumns - numeric and time", () => {
     expect(cols[1].toValue(null)).toBeNull();
   });
 });
+
+describe("metricColumns - ordinal, nominal, compound", () => {
+  it("ordinal produces a label column (mapped from levels) plus a numeric level companion", () => {
+    const cols = metricColumns({
+      id: "winningPercentage",
+      name: "Winning Percentage",
+      flavor: "ordinal",
+      levels: [
+        { label: "Loss", value: 0 },
+        { label: "Win", value: 1 },
+      ],
+    });
+    expect(cols.map((c) => c.spec)).toEqual([
+      { name: "Winning Percentage", type: "categorical" },
+      { name: "Winning Percentage (level)", type: "numeric" },
+    ]);
+    expect(cols[0].toValue(1)).toBe("Win");
+    expect(cols[0].toValue(0)).toBe("Loss");
+    expect(cols[0].toValue(null)).toBeNull();
+    expect(cols[1].toValue(1)).toBe(1);
+    expect(cols[1].toValue(null)).toBeNull();
+  });
+
+  it("ordinal falls back to a stringified value when no level matches", () => {
+    const cols = metricColumns({
+      id: "mood", name: "Mood", flavor: "ordinal",
+      levels: [{ label: "1", value: 1 }],
+    });
+    expect(cols[0].toValue(3)).toBe("3");
+  });
+
+  it("nominal produces a single categorical label column", () => {
+    const cols = metricColumns({
+      id: "surface", name: "Surface", flavor: "nominal",
+      levels: [{ label: "Turf" }, { label: "Grass" }],
+    });
+    expect(cols).toHaveLength(1);
+    expect(cols[0].spec).toEqual({ name: "Surface", type: "categorical" });
+    expect(cols[0].toValue("Turf")).toBe("Turf");
+    expect(cols[0].toValue(null)).toBeNull();
+  });
+
+  it("compound produces a single categorical column that passes strings through", () => {
+    const cols = metricColumns({ id: "availability", name: "Availability", flavor: "compound" });
+    expect(cols).toHaveLength(1);
+    expect(cols[0].spec).toEqual({ name: "Availability", type: "categorical" });
+    expect(cols[0].toValue("practice:played / no-game")).toBe("practice:played / no-game");
+    expect(cols[0].toValue(null)).toBeNull();
+  });
+});

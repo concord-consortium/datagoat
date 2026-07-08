@@ -92,6 +92,19 @@ export function normalizeMetric(
   return { id, name, unit, flavor: "numeric" };
 }
 
+// Map a stored value to its level label. Falls back to the raw string
+// (nominal customs store the label directly) or a stringified number
+// when no level matches.
+function labelFor(
+  levels: CustomMetricLevel[] | undefined,
+  raw: RawValue,
+): string | null {
+  if (raw == null) return null;
+  const hit = levels?.find((l) => l.value === raw);
+  if (hit) return hit.label;
+  return typeof raw === "string" ? raw : String(raw);
+}
+
 function numericColumn(name: string, unit?: string): ExportColumn {
   return {
     spec: { name, type: "numeric", ...(unit ? { unit } : {}) },
@@ -117,8 +130,31 @@ export function metricColumns(metric: NormalizedMetric): ExportColumn[] {
         },
       ];
     }
-    // ordinal / nominal / compound added in Task 3.
-    default:
-      return [];
+    case "ordinal":
+      return [
+        {
+          spec: { name: metric.name, type: "categorical" },
+          toValue: (raw) => labelFor(metric.levels, raw),
+        },
+        {
+          spec: { name: `${metric.name} (level)`, type: "numeric" },
+          toValue: (raw) => (typeof raw === "number" ? raw : null),
+        },
+      ];
+    case "nominal":
+      return [
+        {
+          spec: { name: metric.name, type: "categorical" },
+          toValue: (raw) => labelFor(metric.levels, raw),
+        },
+      ];
+    case "compound":
+      return [
+        {
+          spec: { name: metric.name, type: "categorical" },
+          toValue: (raw) =>
+            typeof raw === "string" ? raw : raw == null ? null : String(raw),
+        },
+      ];
   }
 }

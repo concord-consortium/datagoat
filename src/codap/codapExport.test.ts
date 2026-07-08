@@ -130,3 +130,48 @@ describe("metricColumns - ordinal, nominal, compound", () => {
     expect(cols[0].toValue(null)).toBeNull();
   });
 });
+
+import { buildDataset, resolveTrackedMetrics } from "./codapExport";
+
+describe("resolveTrackedMetrics", () => {
+  const builtins: MetricDefinition[] = [health({ id: "hydration", name: "Hydration", unit: "level" })];
+  const customs: CustomMetricDef[] = [{
+    id: "c1", ownerId: "u", name: "Vertical Jump", metricType: "performance",
+    primitive: "numeric", unit: "in", inputType: "numeric", referenceUrl: "",
+    createdAt: 0, updatedAt: 0,
+  }];
+
+  it("resolves builtins and customs by id, in tracked order, skipping unknown ids", () => {
+    const out = resolveTrackedMetrics(["hydration", "c1", "ghost"], builtins, customs);
+    expect(out.map((m) => m.name)).toEqual(["Hydration", "Vertical Jump"]);
+    expect(out.map((m) => m.flavor)).toEqual(["numeric", "numeric"]);
+  });
+});
+
+describe("buildDataset", () => {
+  it("prepends a date attribute and emits one row per entry with name-keyed cells", () => {
+    const metrics: NormalizedMetric[] = [
+      { id: "hydration", name: "Hydration", flavor: "numeric", unit: "level" },
+      { id: "sleepTime", name: "Total Sleep Time", flavor: "time", unit: "hr", timeLayout: { coarsest: "h", precision: "m" } },
+    ];
+    const entries = [{ date: "2026-04-01", vals: { hydration: 64, sleepTime: 7 } }];
+    const readRaw = (e: (typeof entries)[number], id: string) =>
+      (e.vals as Record<string, number>)[id] ?? null;
+
+    const { attributes, rows } = buildDataset(metrics, entries, readRaw);
+    expect(attributes).toEqual([
+      { name: "date", type: "date" },
+      { name: "Hydration", type: "numeric", unit: "level" },
+      { name: "Total Sleep Time", type: "numeric", unit: "hr" },
+      { name: "Total Sleep Time (h:mm)", type: "categorical" },
+    ]);
+    expect(rows).toEqual([
+      {
+        date: "2026-04-01",
+        Hydration: 64,
+        "Total Sleep Time": 7,
+        "Total Sleep Time (h:mm)": "7:00",
+      },
+    ]);
+  });
+});

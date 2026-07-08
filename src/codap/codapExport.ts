@@ -1,6 +1,6 @@
 import type { MetricDefinition } from "../metrics/types";
 import type { CustomMetricDef, CustomMetricLevel } from "../types/customMetrics";
-import type { AttributeSpec } from "./codapApi";
+import type { AttributeSpec, DatasetRow } from "./codapApi";
 import {
   formatDecimalToTime,
   layoutUnits,
@@ -157,4 +157,50 @@ export function metricColumns(metric: NormalizedMetric): ExportColumn[] {
         },
       ];
   }
+}
+
+// Resolve a category's tracked metric ids to normalized metrics, in the
+// order the ids appear. Builtins win ties with customs (ids are unique
+// across the two in practice). Unknown ids (stale profile entries) are
+// skipped so the export never invents a column with no definition.
+export function resolveTrackedMetrics(
+  trackedIds: string[],
+  builtins: MetricDefinition[],
+  customs: CustomMetricDef[],
+): NormalizedMetric[] {
+  const byId = new Map<string, MetricDefinition | CustomMetricDef>();
+  for (const c of customs) byId.set(c.id, c);
+  for (const b of builtins) byId.set(b.id, b);
+  const out: NormalizedMetric[] = [];
+  for (const id of trackedIds) {
+    const def = byId.get(id);
+    if (def) out.push(normalizeMetric(def));
+  }
+  return out;
+}
+
+// Build a wide, date-keyed dataset: a leading `date` attribute plus each
+// metric's one or two columns, and one row per entry. `readRaw` pulls a
+// metric's stored value off an entry (health reads typed fields + the
+// customMetrics bag; competition/performance read the metrics bag).
+export function buildDataset<T extends { date: string }>(
+  metrics: NormalizedMetric[],
+  entries: T[],
+  readRaw: (entry: T, metricId: string) => RawValue,
+): { attributes: AttributeSpec[]; rows: DatasetRow[] } {
+  const columns = metrics.flatMap((m) =>
+    metricColumns(m).map((c) => ({ ...c, metricId: m.id })),
+  );
+  const attributes: AttributeSpec[] = [
+    { name: "date", type: "date" },
+    ...columns.map((c) => c.spec),
+  ];
+  const rows = entries.map((e) => {
+    const row: DatasetRow = { date: e.date };
+    for (const c of columns) {
+      row[c.spec.name] = c.toValue(readRaw(e, c.metricId));
+    }
+    return row;
+  });
+  return { attributes, rows };
 }

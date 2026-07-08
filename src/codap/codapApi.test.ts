@@ -254,7 +254,7 @@ describe("useCodapApi sendDataset", () => {
     );
   });
 
-  it("does NOT downgrade a numeric attr to categorical when re-sending empty rows", async () => {
+  it("leaves an attribute type alone when the spec type already matches", async () => {
     codapMocks.getDataContext.mockResolvedValue({
       success: true,
       values: {
@@ -282,6 +282,42 @@ describe("useCodapApi sendDataset", () => {
       });
     });
     expect(codapMocks.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it("reconciles a mismatched attr type on an empty-rows re-send", async () => {
+    codapMocks.getDataContext.mockResolvedValue({
+      success: true,
+      values: {
+        collections: [
+          {
+            name: "Health",
+            attrs: [
+              { name: "date", type: "date" },
+              { name: "hydration", type: "categorical" },
+            ],
+          },
+        ],
+      },
+    });
+    const result = await renderApi();
+    await act(async () => {
+      await result.current.sendDataset({
+        name: "DataGOAT-Health",
+        collectionName: "Health",
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
+        rows: [],
+      });
+    });
+    expect(codapMocks.updateAttribute).toHaveBeenCalledWith(
+      "DataGOAT-Health",
+      "Health",
+      "hydration",
+      { name: "hydration" },
+      { type: "numeric" },
+    );
   });
 
   it("does nothing destructive when rows are empty and the context already exists", async () => {

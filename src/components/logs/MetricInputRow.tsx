@@ -12,6 +12,8 @@ import { ScaleCards } from "./ScaleCards";
 import { LevelRadioGroup } from "./LevelRadioGroup";
 import { resolveScaleColors } from "../../data/scaleColors";
 import { MoodFace } from "../../icons/MoodFace";
+import { If } from "../common/If";
+import { MetricSparkline } from "../../charts/MetricSparkline";
 import css from "./MetricInputRow.module.css";
 
 interface BaseProps {
@@ -21,6 +23,10 @@ interface BaseProps {
   avgLabel?: string;
   // Detail link target (e.g., "/health/hydration").
   detailHref?: string;
+  // Optional 7-day summary shown in the leftmost cell (Health entry page): a
+  // mini bar sparkline (goal-colored via `sparklineGoal`) above the average.
+  sparklineData?: Array<{ date: string; value: number | null }>;
+  sparklineGoal?: number;
 }
 
 export interface NumericMetricInputRowProps extends BaseProps {
@@ -70,7 +76,7 @@ export type MetricInputRowProps =
 // Single row for a tracked health metric. Switches on props.inputType (the
 // discriminated-union tag), not metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
-  const { metric, avgLabel, detailHref } = props;
+  const { metric, avgLabel, detailHref, sparklineData, sparklineGoal } = props;
   const nameId = useId();
   // Hydration (colorScale) renders through ScaleCards with synthetic 1..max
   // levels; the numeric labels double as the card text and drive the default
@@ -86,7 +92,16 @@ export function MetricInputRow(props: MetricInputRowProps) {
   return (
     <tr className={css.metricInputRow}>
       <td>
-        <div className={css.trackCell}>{avgLabel ?? "—"}</div>
+        <div className={css.trackCell}>
+          <If condition={sparklineData !== undefined}>
+            <MetricSparkline
+              metricId={metric.id}
+              data={sparklineData!}
+              goalRaw={sparklineGoal}
+            />
+          </If>
+          <span className={css.avgValue}>{avgLabel ?? "—"}</span>
+        </div>
       </td>
       <td id={nameId} className={css.metricName}>
         {detailHref ? (

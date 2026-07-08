@@ -13,16 +13,22 @@
   border-bottom: none;
 }
 
-/* track-cell (lines 3024-3033) - the leftmost "Avg" cell. */
+/* track-cell - the leftmost "Avg" cell: a 7-day sparkline stacked over the
+   average value. */
 .trackCell {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 16px;
   color: var(--accent);
   white-space: nowrap;
+}
+
+.avgValue {
+  line-height: 1;
 }
 
 .metricName {

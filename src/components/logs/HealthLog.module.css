@@ -52,7 +52,7 @@
 }
 .bodyTable th:first-child,
 .bodyTable td:first-child {
-  width: 44px;
+  width: 56px;
 }
 .bodyTable th:last-child {
   padding-right: 0;

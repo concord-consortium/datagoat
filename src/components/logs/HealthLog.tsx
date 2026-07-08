@@ -22,6 +22,19 @@ import {
 } from "../../utils/dates";
 import { getChipState } from "../../utils/healthCompleteness";
 import { emptyHealthEntry, type HealthEntry } from "../../types/data";
+import {
+  buildAlignedSeries,
+  computeAverage,
+  formatMetricValue,
+  lookupGoalLine,
+  capitalizeGender,
+  capitalizeAthleteType,
+} from "../../charts/chartSeries";
+import {
+  getMetricChartConfig,
+  useChartConfigSync,
+} from "../../charts/metricChartConfig";
+import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import css from "./HealthLog.module.css";
 
 // All built-in health metric definitions (default-on + addable),
@@ -44,6 +57,11 @@ export function HealthLog() {
   const { loadState } = useUser();
   const { health, setHealthEntry } = useData();
   const { metrics: allCustom } = useCustomMetrics();
+  // Subscribe to config-overlay changes AND thread the snapshot into the
+  // `summaries` memo deps below, so a custom-metric config or goal override
+  // that registers after first render invalidates the memoized goal/average
+  // (matching useChartSeries; see metricChartConfig.useChartConfigSync).
+  const overlayVersion = useChartConfigSync();
 
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
@@ -84,6 +102,51 @@ export function HealthLog() {
     : emptyHealthEntry(dateIso);
 
   const chipState = getChipState(currentEntry, trackedIds);
+
+  const profileKey = profile
+    ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
+    : DEFAULT_PROFILE_KEY;
+
+  // Per-metric 7-day summary (sparkline series + goal + formatted average) for
+  // the leftmost "Avg" column, computed from the 365-day health window.
+  const summaries = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        data: Array<{ date: string; value: number | null }>;
+        goalRaw?: number;
+        avgLabel?: string;
+      }
+    >();
+    for (const mid of trackedIds) {
+      const data = buildAlignedSeries({
+        type: "health",
+        metricId: mid,
+        healthEntries: entries,
+        competitionEntries: [],
+        rangeDays: 7,
+      });
+      const config = getMetricChartConfig(mid);
+      const avg = computeAverage(data, {
+        nullsCountAsZero: config.nullsCountAsZero,
+      });
+      map.set(mid, {
+        data,
+        goalRaw: lookupGoalLine(mid, profileKey),
+        avgLabel: avg !== undefined ? formatMetricValue(mid, avg) : undefined,
+      });
+    }
+    return map;
+  }, [entries, trackedIds, profileKey, overlayVersion]);
+
+  const summaryProps = (mid: string) => {
+    const s = summaries.get(mid);
+    return {
+      sparklineData: s?.data,
+      sparklineGoal: s?.goalRaw,
+      avgLabel: s?.avgLabel,
+    };
+  };
 
   if (shouldRedirect) {
     return <Navigate to="/health" replace />;
@@ -192,6 +255,7 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
+                      {...summaryProps(id)}
                       metric={builtIn}
                       inputType="colorScale"
                       // Hydration is optional (undefined = not entered). The
@@ -208,6 +272,12 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
+                      // No summary: availability is a practice/game yes-no
+                      // tree with no scalar value, so a 7-day average and
+                      // sparkline are meaningless (readHealthMetric reduces
+                      // it to a 0/1 sentinel that formats as a misleading
+                      // "0%" on its 0..100 axis). Renders "—" until it gets
+                      // a real scalar definition.
                       metric={builtIn}
                       inputType="tree"
                       competitionTerm={competitionTerm}
@@ -265,6 +335,7 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
+                      {...summaryProps(id)}
                       metric={builtIn}
                       inputType="numeric"
                       value={stringValue}
@@ -291,6 +362,7 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
+                      {...summaryProps(id)}
                       metric={builtIn}
                       inputType="ordinal"
                       levels={builtIn.levels}
@@ -313,6 +385,7 @@ export function HealthLog() {
                 return (
                   <MetricInputRow
                     key={id}
+                    {...summaryProps(id)}
                     metric={builtIn}
                     inputType="numeric"
                     value={stringValue}
@@ -332,6 +405,7 @@ export function HealthLog() {
                   return (
                     <MetricInputRow
                       key={id}
+                      {...summaryProps(id)}
                       inputType="ordinal"
                       metric={adaptCustom(def)}
                       levels={def.levels}
@@ -363,6 +437,7 @@ export function HealthLog() {
                 return (
                   <MetricInputRow
                     key={id}
+                    {...summaryProps(id)}
                     metric={adaptCustom(def)}
                     inputType="numeric"
                     value={stringValue}

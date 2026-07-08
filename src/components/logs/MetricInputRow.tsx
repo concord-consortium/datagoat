@@ -67,7 +67,8 @@ export type MetricInputRowProps =
   | OrdinalMetricInputRowProps
   | RadioMetricInputRowProps;
 
-// Single row for a tracked health metric. Switches on metric.inputType.
+// Single row for a tracked health metric. Switches on props.inputType (the
+// discriminated-union tag), not metric.inputType.
 export function MetricInputRow(props: MetricInputRowProps) {
   const { metric, avgLabel, detailHref } = props;
   const nameId = useId();

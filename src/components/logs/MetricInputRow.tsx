@@ -12,6 +12,7 @@ import { NumericInput } from "./NumericInput";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { OrdinalRadioGroup } from "./OrdinalRadioGroup";
+import { If } from "../common/If";
 import { MetricSparkline } from "../../charts/MetricSparkline";
 import css from "./MetricInputRow.module.css";
 
@@ -73,13 +74,13 @@ export function MetricInputRow(props: MetricInputRowProps) {
     <tr className={css.metricInputRow}>
       <td>
         <div className={css.trackCell}>
-          {sparklineData && (
+          <If condition={sparklineData !== undefined}>
             <MetricSparkline
               metricId={metric.id}
-              data={sparklineData}
+              data={sparklineData!}
               goalRaw={sparklineGoal}
             />
-          )}
+          </If>
           <span className={css.avgValue}>{avgLabel ?? "—"}</span>
         </div>
       </td>

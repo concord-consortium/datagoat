@@ -25,6 +25,15 @@ export interface DatasetRow {
   [key: string]: string | number | null;
 }
 
+export interface AttributeSpec {
+  // Attribute name CODAP shows as the column header.
+  name: string;
+  // CODAP attribute type: "date" | "numeric" | "categorical".
+  type: string;
+  // Optional unit CODAP renders on numeric axes. Omitted when empty.
+  unit?: string;
+}
+
 export interface SendDatasetArgs {
   // Resource-safe identifier for the data context (e.g.
   // "DataGOAT-Health"). Used in CODAP's bracket-notation resource
@@ -40,7 +49,7 @@ export interface SendDatasetArgs {
   // visible label comes from the data context's `title`, not this -
   // setting it just gives the component a stable identifier.
   tableName?: string;
-  attributes: string[];
+  attributes: AttributeSpec[];
   rows: DatasetRow[];
   // Attribute used to match incoming rows against existing items in
   // CODAP. Rows whose value at this key matches an existing item's
@@ -85,24 +94,6 @@ export function ensureSuccess(
   if (!result || result.success === false) {
     throw new Error(`CODAP ${step} failed`);
   }
-}
-
-// Infer a CODAP attribute type from the attribute name + sample rows.
-// Special-cases "date" by name (the only date column we send today);
-// otherwise scans rows for the first non-null value at that key. A
-// number gets `numeric`, anything else `categorical`. With no non-null
-// samples (empty data), falls back to `categorical` - CODAP's default
-// when the type isn't set.
-//
-// Exported for unit tests; not part of the public hook surface.
-export function inferAttributeType(name: string, rows: DatasetRow[]): string {
-  if (name === "date") return "date";
-  for (const row of rows) {
-    const v = row[name];
-    if (v == null) continue;
-    return typeof v === "number" ? "numeric" : "categorical";
-  }
-  return "categorical";
 }
 
 export function useCodapApi(): UseCodapApiResult {
@@ -160,9 +151,10 @@ export function useCodapApi(): UseCodapApiResult {
               {
                 name: collectionName,
                 title: collectionName,
-                attrs: attributes.map((attrName) => ({
-                  name: attrName,
-                  type: inferAttributeType(attrName, rows),
+                attrs: attributes.map((a) => ({
+                  name: a.name,
+                  type: a.type,
+                  ...(a.unit ? { unit: a.unit } : {}),
                 })),
               },
             ],
@@ -174,13 +166,11 @@ export function useCodapApi(): UseCodapApiResult {
       // the collection) so the rows are visible. Without this, items
       // land in CODAP's data model but no UI surfaces them.
       ensureSuccess(await createTable(name, tableName), "createTable");
-    } else if (rows.length > 0) {
-      // Context already exists. Reconcile attribute types: if the
-      // first send happened with empty/sparse rows we'd have defaulted
-      // a numeric column to `categorical`; on a populated re-send we
-      // can now infer correctly and updateAttribute. Skipped on
-      // empty-rows re-sends so we don't downgrade an accurate type
-      // back to categorical for lack of samples.
+    } else {
+      // Context already exists. Reconcile attribute types from the
+      // known specs (no sample-row inference needed). Types are
+      // authoritative from the metric registry, so an older context
+      // created with a wrong type gets corrected here.
       const existingValues = (
         existing as { values?: ExistingDataContextShape }
       ).values;
@@ -188,19 +178,18 @@ export function useCodapApi(): UseCodapApiResult {
         (c) => c.name === collectionName,
       );
       if (existingCollection?.attrs) {
-        for (const attrName of attributes) {
-          const inferred = inferAttributeType(attrName, rows);
+        for (const spec of attributes) {
           const current = existingCollection.attrs.find(
-            (a) => a.name === attrName,
+            (a) => a.name === spec.name,
           );
-          if (current && current.type !== inferred) {
+          if (current && current.type !== spec.type) {
             ensureSuccess(
               await updateAttribute(
                 name,
                 collectionName,
-                attrName,
-                { name: attrName },
-                { type: inferred },
+                spec.name,
+                { name: spec.name },
+                { type: spec.type, ...(spec.unit ? { unit: spec.unit } : {}) },
               ),
               "updateAttribute",
             );

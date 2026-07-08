@@ -2,14 +2,22 @@ import { useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUser } from "../contexts/UserContext";
 import {
-  useHealthData,
   useCompetitionData,
+  useHealthData,
+  usePerformanceData,
 } from "../contexts/DataContext";
-import { HEALTH_METRICS } from "../metrics/healthMetrics";
+import { useCustomMetrics } from "../contexts/CustomMetricsContext";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
-import type { HealthEntry, CompetitionEntry } from "../types/data";
+import { HEALTH_METRICS } from "../metrics/healthMetrics";
+import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import type { HealthEntry } from "../types/data";
 import { logError } from "../utils/logError";
-import { useCodapApi, type DatasetRow } from "./codapApi";
+import { useCodapApi } from "./codapApi";
+import {
+  buildDataset,
+  resolveTrackedMetrics,
+  type RawValue,
+} from "./codapExport";
 import { CodapPluginSignIn } from "./CodapPluginSignIn";
 import buttons from "../components/form/buttons.module.css";
 import css from "./CodapPlugin.module.css";
@@ -157,7 +165,9 @@ function CodapPluginAuthed() {
   const { status, error, sendDataset } = useCodapApi();
   const { loadState, retry } = useUser();
   const health = useHealthData();
+  const performance = usePerformanceData();
   const competition = useCompetitionData();
+  const { metrics: customMetrics } = useCustomMetrics();
 
   // Three "no usable profile" branches. Without these, the plugin
   // would fall back to the registry default for trackedHealth /
@@ -176,9 +186,11 @@ function CodapPluginAuthed() {
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const [selected, setSelected] = useState<{
     health: boolean;
+    performance: boolean;
     competition: boolean;
   }>({
     health: true,
+    performance: true,
     competition: true,
   });
   const [sending, setSending] = useState(false);
@@ -190,13 +202,16 @@ function CodapPluginAuthed() {
   // defeating the upsert-by-date dedupe.
   const sendingRef = useRef(false);
 
-  const healthEntries =
-    health.status === "loaded" ? health.entries : [];
+  const healthEntries = health.status === "loaded" ? health.entries : [];
+  const performanceEntries =
+    performance.status === "loaded" ? performance.entries : [];
   const competitionEntries =
     competition.status === "loaded" ? competition.entries : [];
 
   const trackedHealth =
     profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
+  const trackedPerformance =
+    profile?.trackedPerformanceMetrics ?? PERFORMANCE_METRICS.map((m) => m.id);
   const trackedCompetition =
     profile?.trackedCompetitionMetrics ??
     COMPETITION_METRICS.map((m) => m.id);
@@ -212,29 +227,62 @@ function CodapPluginAuthed() {
       // + create-table calls to surface the table at all. Skipping on
       // empty data hides the table from the user.
       if (selected.health) {
-        const attrs = ["date", ...trackedHealth];
-        const rows = healthEntries.map((e) =>
-          healthEntryToRow(e, trackedHealth),
+        const metrics = resolveTrackedMetrics(
+          trackedHealth,
+          HEALTH_METRICS,
+          customMetrics.filter((m) => m.metricType === "health"),
+        );
+        const { attributes, rows } = buildDataset(
+          metrics,
+          healthEntries,
+          readHealthField,
         );
         await sendDataset({
           name: "DataGOAT-Health",
-          title: "Health & Performance",
+          title: "Health",
           collectionName: "Health",
           tableName: "Health",
-          attributes: attrs,
+          attributes,
+          rows,
+        });
+      }
+      if (selected.performance) {
+        const metrics = resolveTrackedMetrics(
+          trackedPerformance,
+          PERFORMANCE_METRICS,
+          customMetrics.filter((m) => m.metricType === "performance"),
+        );
+        const { attributes, rows } = buildDataset(
+          metrics,
+          performanceEntries,
+          readBagField,
+        );
+        await sendDataset({
+          name: "DataGOAT-Performance",
+          title: "Performance",
+          collectionName: "Performance",
+          tableName: "Performance",
+          attributes,
           rows,
         });
       }
       if (selected.competition) {
-        const attrs = ["date", ...trackedCompetition];
-        const rows = competitionEntries.map((e) =>
-          competitionEntryToRow(e, trackedCompetition),
+        const metrics = resolveTrackedMetrics(
+          trackedCompetition,
+          COMPETITION_METRICS,
+          customMetrics.filter((m) => m.metricType === "competition"),
+        );
+        const { attributes, rows } = buildDataset(
+          metrics,
+          competitionEntries,
+          readBagField,
         );
         await sendDataset({
           name: "DataGOAT-Competition",
           title: "Competition",
           collectionName: "Competition",
-          attributes: attrs,
+          tableName: "Competition",
+          attributes,
           rows,
         });
       }
@@ -250,13 +298,14 @@ function CodapPluginAuthed() {
   const dataLoading =
     loadState.status === "loading" ||
     (selected.health && health.status === "loading") ||
+    (selected.performance && performance.status === "loading") ||
     (selected.competition && competition.status === "loading");
 
   const canSend =
     status === "connected" &&
     !dataLoading &&
     !sending &&
-    (selected.health || selected.competition);
+    (selected.health || selected.performance || selected.competition);
 
   return (
     <div className={css.pluginShell}>
@@ -283,8 +332,21 @@ function CodapPluginAuthed() {
             }
           />
           <span>
-            Health &amp; Performance ({healthEntries.length}{" "}
+            Health ({healthEntries.length}{" "}
             {healthEntries.length === 1 ? "entry" : "entries"})
+          </span>
+        </label>
+        <label className={css.checkRow}>
+          <input
+            type="checkbox"
+            checked={selected.performance}
+            onChange={(e) =>
+              setSelected((s) => ({ ...s, performance: e.target.checked }))
+            }
+          />
+          <span>
+            Performance ({performanceEntries.length}{" "}
+            {performanceEntries.length === 1 ? "entry" : "entries"})
           </span>
         </label>
         <label className={css.checkRow}>
@@ -318,17 +380,6 @@ function CodapPluginAuthed() {
       )}
     </div>
   );
-}
-
-function healthEntryToRow(
-  e: HealthEntry,
-  trackedIds: string[],
-): DatasetRow {
-  const row: DatasetRow = { date: e.date };
-  for (const id of trackedIds) {
-    row[id] = readHealthField(e, id);
-  }
-  return row;
 }
 
 function readHealthField(
@@ -383,14 +434,13 @@ function readHealthField(
   }
 }
 
-function competitionEntryToRow(
-  e: CompetitionEntry,
-  trackedIds: string[],
-): DatasetRow {
-  const row: DatasetRow = { date: e.date };
-  for (const id of trackedIds) {
-    const v = e.metrics?.[id];
-    row[id] = typeof v === "number" || typeof v === "string" ? v : null;
-  }
-  return row;
+// Reads a metric value from a competition/performance entry's metrics
+// bag, coercing absent/undefined to null so buildDataset emits an empty
+// cell rather than a stray value.
+function readBagField(
+  e: { metrics?: Record<string, number | string | undefined> },
+  id: string,
+): RawValue {
+  const v = e.metrics?.[id];
+  return typeof v === "number" || typeof v === "string" ? v : null;
 }

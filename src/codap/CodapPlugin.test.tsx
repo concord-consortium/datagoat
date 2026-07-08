@@ -2,7 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { HealthEntry, CompetitionEntry } from "../types/data";
+import type {
+  CompetitionEntry,
+  HealthEntry,
+  PerformanceEntry,
+} from "../types/data";
+import type { CustomMetricDef } from "../types/customMetrics";
 import type { ProfileLoadState } from "../types/profile";
 import type { DataLoadState } from "../types/data";
 import type { CodapStatus } from "./codapApi";
@@ -138,14 +143,23 @@ function makeCompleteProfile(
 const dataState: {
   health: DataLoadState<HealthEntry>;
   competition: DataLoadState<CompetitionEntry>;
+  performance: DataLoadState<PerformanceEntry>;
 } = {
   health: { status: "loading" },
   competition: { status: "loading" },
+  performance: { status: "loading" },
 };
 
 vi.mock("../contexts/DataContext", () => ({
   useHealthData: () => dataState.health,
   useCompetitionData: () => dataState.competition,
+  usePerformanceData: () => dataState.performance,
+}));
+
+const customState: { metrics: CustomMetricDef[] } = { metrics: [] };
+
+vi.mock("../contexts/CustomMetricsContext", () => ({
+  useCustomMetrics: () => ({ metrics: customState.metrics }),
 }));
 
 import CodapPlugin from "./CodapPlugin";
@@ -159,6 +173,8 @@ describe("CodapPlugin", () => {
     userState.loadState = { status: "loading" };
     dataState.health = { status: "loading" };
     dataState.competition = { status: "loading" };
+    dataState.performance = { status: "loading" };
+    customState.metrics = [];
   });
 
   it("loading state renders the loading text", () => {
@@ -234,35 +250,36 @@ describe("CodapPlugin", () => {
         athleteType: "endurance",
         competitionTerm: "season",
         trackedHealthMetrics: ["hydration", "sleepTime"],
-        trackedCompetitionMetrics: ["fortyYardDash"],
+        trackedPerformanceMetrics: ["vjump"],
+        trackedCompetitionMetrics: ["winningPercentage", "times"],
         profileComplete: true,
         trackingSetupComplete: true,
       },
     };
+    customState.metrics = [
+      {
+        id: "vjump", ownerId: "u", name: "Vertical Jump",
+        metricType: "performance", primitive: "numeric", unit: "in",
+        inputType: "numeric", referenceUrl: "", createdAt: 0, updatedAt: 0,
+      },
+    ];
     dataState.health = {
       status: "loaded",
-      entries: [
-        {
-          version: 1,
-          date: "2026-04-01",
-          hydration: 64,
-          sleepTime: 7,
-          sleepEfficiency: 0,
-          protein: 0,
-          leanMass: 0,
-          availability: {},
-        },
-      ],
+      entries: [{
+        version: 1, date: "2026-04-01", hydration: 64, sleepTime: 7,
+        availability: {},
+      } as HealthEntry],
+    };
+    dataState.performance = {
+      status: "loaded",
+      entries: [{ version: 1, date: "2026-04-01", metrics: { vjump: 24 } }],
     };
     dataState.competition = {
       status: "loaded",
-      entries: [
-        {
-          version: 1,
-          date: "2026-04-01",
-          metrics: { fortyYardDash: 4.5 },
-        },
-      ],
+      entries: [{
+        version: 1, date: "2026-04-01",
+        metrics: { winningPercentage: 1, times: 1.5 },
+      }],
     };
 
     const user = userEvent.setup();
@@ -271,32 +288,69 @@ describe("CodapPlugin", () => {
     const sendBtn = screen.getByRole("button", { name: /send to codap/i });
     expect(sendBtn).toBeEnabled();
 
-    const [healthBox, competitionBox] = screen.getAllByRole("checkbox");
+    const [healthBox, performanceBox, competitionBox] =
+      screen.getAllByRole("checkbox");
     await user.click(healthBox);
+    await user.click(performanceBox);
     await user.click(competitionBox);
     expect(sendBtn).toBeDisabled();
 
     await user.click(healthBox);
+    await user.click(performanceBox);
+    await user.click(competitionBox);
     expect(sendBtn).toBeEnabled();
 
-    await user.click(competitionBox);
     await user.click(sendBtn);
 
-    expect(sendDatasetMock).toHaveBeenCalledTimes(2);
+    expect(sendDatasetMock).toHaveBeenCalledTimes(3);
     expect(sendDatasetMock).toHaveBeenNthCalledWith(1, {
       name: "DataGOAT-Health",
-      title: "Health & Performance",
+      title: "Health",
       collectionName: "Health",
       tableName: "Health",
-      attributes: ["date", "hydration", "sleepTime"],
-      rows: [{ date: "2026-04-01", hydration: 64, sleepTime: 7 }],
+      attributes: [
+        { name: "date", type: "date" },
+        { name: "Hydration", type: "numeric", unit: "level" },
+        { name: "Total Sleep Time", type: "numeric", unit: "hr" },
+        { name: "Total Sleep Time (h:mm)", type: "categorical" },
+      ],
+      rows: [{
+        date: "2026-04-01",
+        Hydration: 64,
+        "Total Sleep Time": 7,
+        "Total Sleep Time (h:mm)": "7:00",
+      }],
     });
     expect(sendDatasetMock).toHaveBeenNthCalledWith(2, {
+      name: "DataGOAT-Performance",
+      title: "Performance",
+      collectionName: "Performance",
+      tableName: "Performance",
+      attributes: [
+        { name: "date", type: "date" },
+        { name: "Vertical Jump", type: "numeric", unit: "in" },
+      ],
+      rows: [{ date: "2026-04-01", "Vertical Jump": 24 }],
+    });
+    expect(sendDatasetMock).toHaveBeenNthCalledWith(3, {
       name: "DataGOAT-Competition",
       title: "Competition",
       collectionName: "Competition",
-      attributes: ["date", "fortyYardDash"],
-      rows: [{ date: "2026-04-01", fortyYardDash: 4.5 }],
+      tableName: "Competition",
+      attributes: [
+        { name: "date", type: "date" },
+        { name: "Winning Percentage", type: "categorical" },
+        { name: "Winning Percentage (level)", type: "numeric" },
+        { name: "Times", type: "numeric", unit: "min" },
+        { name: "Times (m:ss)", type: "categorical" },
+      ],
+      rows: [{
+        date: "2026-04-01",
+        "Winning Percentage": "Win",
+        "Winning Percentage (level)": 1,
+        Times: 1.5,
+        "Times (m:ss)": "1:30",
+      }],
     });
   });
 
@@ -344,6 +398,7 @@ describe("CodapPlugin", () => {
       },
     };
     dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
     dataState.competition = { status: "loading" };
     codapState.status = "connected";
 
@@ -354,7 +409,7 @@ describe("CodapPlugin", () => {
     expect(sendBtn).toBeDisabled();
     expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
 
-    const [, competitionBox] = screen.getAllByRole("checkbox");
+    const [, , competitionBox] = screen.getAllByRole("checkbox");
     await user.click(competitionBox);
 
     expect(sendBtn).toBeEnabled();

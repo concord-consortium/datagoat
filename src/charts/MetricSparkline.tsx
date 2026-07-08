@@ -1,4 +1,4 @@
-import { getMetricChartConfig } from "./metricChartConfig";
+import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { linearScale } from "./linearScale";
 import type { ChartGeom } from "./chartGeom";
 import { Bars } from "./Bars";
@@ -26,6 +26,10 @@ export function MetricSparkline({
   width = 30,
   height = 16,
 }: MetricSparklineProps) {
+  // Self-subscribe to config-overlay changes so a custom-metric config or
+  // axis override updates the sparkline's scale even without a parent
+  // re-render, matching MetricBarChart.
+  useChartConfigSync();
   const config = getMetricChartConfig(metricId);
 
   // No y-axis; leave a couple px at the bottom for the x-axis baseline.

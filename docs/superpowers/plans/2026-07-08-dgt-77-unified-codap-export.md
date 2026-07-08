@@ -53,7 +53,7 @@ import {
 ```ts
 await result.current.sendDataset({
   name: "DataGOAT-Health",
-  title: "Health & Performance",
+  title: "Health",
   collectionName: "Health",
   attributes: [
     { name: "date", type: "date" },
@@ -61,6 +61,12 @@ await result.current.sendDataset({
   ],
   rows: [{ date: "2026-04-01", hydration: 64 }],
 });
+```
+
+Also change the matching `title:` inside the `sendRequest` payload assertion (`expect.objectContaining({ ... })`) from `"Health & Performance"` to `"Health"`, and change the expected `attrs`:
+
+```ts
+title: "Health",
 ```
 
 ```ts

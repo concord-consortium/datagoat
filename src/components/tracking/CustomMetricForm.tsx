@@ -4,6 +4,7 @@ import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
 import { useData } from "../../contexts/DataContext";
 import { useUser } from "../../contexts/UserContext";
 import { hasEntriesForMetric } from "../../utils/customMetricEntries";
+import { normalizeTimeUnit } from "../../utils/timeValue";
 import {
   normalizeMetricName,
   suggestUniqueName,
@@ -109,12 +110,18 @@ function buildPayload(
     if (yBottomRaw >= yTopRaw) {
       throw new Error("Y-axis top must be greater than y-axis bottom.");
     }
+    // Time is a numeric sub-format: its unit comes from the canonical
+    // hr/min/sec select (not the free-form Unit field, which is disabled
+    // for time), and it additionally carries timePrecision.
+    const isTime = draft.numericFormat === "time";
+    const resolvedUnit = isTime ? draft.timeUnit : draft.unit.trim();
     return {
       name: trimmedName,
       metricType: type,
       primitive: "numeric",
       inputType: "numeric",
-      unit: draft.unit.trim(),
+      unit: resolvedUnit,
+      ...(isTime ? { timePrecision: draft.timePrecision } : {}),
       goalRaw,
       yTopRaw,
       yBottomRaw,
@@ -178,11 +185,32 @@ function isAuthorableType(t: string | undefined): t is AuthorableCustomMetricTyp
   return t === "health" || t === "performance" || t === "competition";
 }
 
+// Map a stored unit to the canonical time-unit the <select> understands,
+// defaulting to "min". Guards the draft seed against a non-canonical or
+// corrupted stored unit (e.g. "hr/night", "kg") reaching the select as an
+// invalid value, which would blank the control and warn.
+function canonicalTimeUnit(unit: string | undefined): "hr" | "min" | "sec" {
+  switch (normalizeTimeUnit(unit)) {
+    case "h":
+      return "hr";
+    case "s":
+      return "sec";
+    default:
+      return "min";
+  }
+}
+
 interface DraftState {
   topLevel: TopLevelKind;
   name: string;
   inputType: CustomMetricInputType;
   unit: string;
+  // Numeric sub-format. "time" reuses the numeric primitive/save path but
+  // derives `unit` from `timeUnit` (rather than the free-form Unit field)
+  // and adds `timePrecision` to the payload.
+  numericFormat: "number" | "time";
+  timeUnit: "hr" | "min" | "sec";
+  timePrecision: "m" | "s";
   goalRaw: string;
   yTopRaw: string;
   yBottomRaw: string;
@@ -210,6 +238,9 @@ const EMPTY_DRAFT: Omit<DraftState, "schedule"> = {
   name: "",
   inputType: "numeric",
   unit: "",
+  numericFormat: "number",
+  timeUnit: "min",
+  timePrecision: "s",
   goalRaw: "0",
   yTopRaw: "10",
   yBottomRaw: "0",
@@ -337,6 +368,12 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       name: editing.name,
       inputType: editing.inputType,
       unit: editing.unit ?? "",
+      // Time is inferred from the presence of timePrecision; the
+      // canonical unit and precision come straight from the saved def
+      // (the free-form Unit field is disabled and ignored for time).
+      numericFormat: editing.timePrecision ? "time" : "number",
+      timeUnit: canonicalTimeUnit(editing.unit),
+      timePrecision: editing.timePrecision === "m" ? "m" : "s",
       goalRaw: String(editing.goalRaw ?? 0),
       yTopRaw: String(editing.yTopRaw ?? 0),
       yBottomRaw: String(editing.yBottomRaw ?? 0),
@@ -484,8 +521,10 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         // colors are display-only and don't reinterpret stored entries,
         // so they aren't part of the diff.
         const levelsChanged = !sameLevelValues(payload.levels, editing.levels);
+        const timePrecisionChanged =
+          (payload.timePrecision ?? undefined) !== (editing.timePrecision ?? undefined);
         const dataShapingChanged =
-          inputTypeChanged || unitChanged || levelsChanged;
+          inputTypeChanged || unitChanged || levelsChanged || timePrecisionChanged;
         if (
           dataShapingChanged &&
           hasEntriesForMetric(
@@ -499,6 +538,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             inputTypeChanged ? "input type" : null,
             unitChanged ? "unit" : null,
             levelsChanged ? "level values" : null,
+            timePrecisionChanged ? "time precision" : null,
           ]
             .filter(Boolean)
             .join(" and ");
@@ -510,7 +550,15 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             return;
           }
         }
-        await updateMetric(editing.id, { ...payload });
+        // Pass timePrecision explicitly: a value keeps it, `null` clears
+        // it (Format toggled Time -> Number). buildPayload omits the key
+        // for non-time metrics, so the ?? null makes that clear intent
+        // explicit rather than relying on updateMetric inferring deletion
+        // from an absent key.
+        await updateMetric(editing.id, {
+          ...payload,
+          timePrecision: payload.timePrecision ?? null,
+        });
       } else {
         const def = await addMetric(payload);
         // Auto-track the newly created metric. Appending to the existing
@@ -578,13 +626,21 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
+  const isTime = draft.topLevel === "numeric" && draft.numericFormat === "time";
+  // Unit is a common field for every type (Numeric, Scale, Y/N). The one
+  // exception is numeric Time mode, which derives its unit from the
+  // Unit(hr|min|sec) select below, so the free-form Unit text field is greyed
+  // out only in that mode.
+  const unitDisabled = isTime;
   const goalDisabled = draft.topLevel === "yn";
   const yAxisDisabled = draft.topLevel !== "numeric";
   // Y/N's only possible values are 0 and 1, so the decimals setting
   // applies to the formatted average display. The form holds it fixed
   // at the EMPTY_DRAFT default so the user doesn't fiddle with a knob
-  // whose effect is tangential to the Y/N concept.
-  const decimalsDisabled = draft.topLevel === "yn";
+  // whose effect is tangential to the Y/N concept. Time at minute
+  // precision has nothing after the decimal point to round either.
+  const decimalsDisabled =
+    draft.topLevel === "yn" || (isTime && draft.timePrecision === "m");
 
   // Y/N is a constant preset that doesn't live in draft.levels (so the
   // user's Categorical edits survive a Y/N detour). Resolve the
@@ -634,6 +690,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
         id="cm-unit"
         label="Unit (optional)"
         value={draft.unit}
+        disabled={unitDisabled}
         onChange={(e) => update("unit", e.target.value)}
       />
 
@@ -679,6 +736,69 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
           Y/N
         </label>
       </fieldset>
+
+      <If condition={draft.topLevel === "numeric"}>
+        <fieldset className={css.typeChooser}>
+          <legend className={css.typeChooserLegend}>Format</legend>
+          <label className={css.typeOption}>
+            <input
+              type="radio"
+              className={radioCss.radio}
+              name="cm-format"
+              value="number"
+              checked={draft.numericFormat === "number"}
+              onChange={() => update("numericFormat", "number")}
+            />
+            Number
+          </label>
+          <label className={css.typeOption}>
+            <input
+              type="radio"
+              className={radioCss.radio}
+              name="cm-format"
+              value="time"
+              checked={draft.numericFormat === "time"}
+              onChange={() => update("numericFormat", "time")}
+            />
+            Time
+          </label>
+        </fieldset>
+      </If>
+
+      <If condition={isTime}>
+        <div className={css.row}>
+          <label className={css.fieldLabel}>
+            Unit
+            <select
+              value={draft.timeUnit}
+              onChange={(e) => {
+                const u = e.target.value as "hr" | "min" | "sec";
+                // Keep precision <= unit: only hr allows a precision
+                // choice (m or s); min and sec force s.
+                const p = u === "hr" ? draft.timePrecision : "s";
+                setDraft((prev) => ({ ...prev, timeUnit: u, timePrecision: p }));
+              }}
+            >
+              <option value="hr">hr</option>
+              <option value="min">min</option>
+              <option value="sec">sec</option>
+            </select>
+          </label>
+          <label className={css.fieldLabel}>
+            Precision
+            <select
+              value={draft.timePrecision}
+              disabled={draft.timeUnit === "sec"}
+              onChange={(e) => update("timePrecision", e.target.value as "m" | "s")}
+            >
+              <If condition={draft.timeUnit === "hr"}>
+                <option value="m">minutes</option>
+              </If>
+              <option value="s">seconds</option>
+            </select>
+          </label>
+        </div>
+      </If>
 
       <If condition={draft.topLevel === "categorical"}>
         <div className={css.levelsBlock}>

@@ -200,6 +200,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     description:
       "Field test of cardiorespiratory endurance: time to run one mile (1.6 km).",
     inputType: "numeric",
+    timePrecision: "s",
     estimatedRange: "4–15 min",
     whenCollected: "Quarterly",
     // Quarterly == 4x per year.
@@ -215,6 +216,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     description:
       "Athlete's ability to accelerate and how quickly they perform a 10-meter sprint.",
     inputType: "numeric",
+    timePrecision: "s",
     estimatedRange: "1–3 sec",
     whenCollected: "Quarterly",
     // Quarterly == 4x per year.
@@ -230,6 +232,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     description:
       "Sprint test of short-distance speed and acceleration: 40 yards (36.6 m) from a stationary start.",
     inputType: "numeric",
+    timePrecision: "s",
     estimatedRange: "4.2–10 sec",
     whenCollected: "Quarterly",
     // Quarterly == 4x per year.

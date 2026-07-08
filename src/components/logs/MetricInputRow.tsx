@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
+import { TimeInput } from "./TimeInput";
+import { timeSecondsDecimals } from "./LogRecordInput";
+import { resolveTimeLayout } from "../../utils/timeValue";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { ScaleCards } from "./ScaleCards";
@@ -94,15 +97,24 @@ export function MetricInputRow(props: MetricInputRowProps) {
         )}
       </td>
       <td>
-        {props.inputType === "numeric" && (
-          <NumericInput
-            metric={metric}
-            value={props.value}
-            onChange={props.onChange}
-            labelledBy={nameId}
-            allowNegative={props.allowNegative}
-          />
-        )}
+        {props.inputType === "numeric" &&
+          (resolveTimeLayout(metric) ? (
+            <TimeInput
+              metric={metric}
+              value={props.value}
+              onChange={props.onChange}
+              labelledBy={nameId}
+              secondsDecimals={timeSecondsDecimals(metric.id)}
+            />
+          ) : (
+            <NumericInput
+              metric={metric}
+              value={props.value}
+              onChange={props.onChange}
+              labelledBy={nameId}
+              allowNegative={props.allowNegative}
+            />
+          ))}
         {props.inputType === "colorScale" && (
           <ScaleCards
             levels={hydrationLevels}

@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import type { CustomMetricLevel } from "../types/customMetrics";
 import type { MetricSchedule } from "../types/metricSchedule";
+import type { TimeUnit } from "../utils/timeValue";
 
 export type MetricType = "health" | "performance" | "competition";
 export type MetricInputType =
@@ -61,4 +62,8 @@ export interface MetricDefinition {
   // { period: "daily" }, "Quarterly" => { period: "yearly", count: 4 },
   // "2-3x/year" => { period: "yearly", count: 2 }. A user can override it.
   schedule?: MetricSchedule;
+  // Marks a numeric metric as a "time" metric. The finest field to
+  // render; the coarsest is derived from the unit via normalizeTimeUnit.
+  // Absent => plain numeric. See src/utils/timeValue.ts.
+  timePrecision?: TimeUnit;
 }

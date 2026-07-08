@@ -12,6 +12,7 @@
 
 import { useSyncExternalStore } from "react";
 import { randomFloat, randomInt } from "./randomValues";
+import { formatDecimalToTime, resolveTimeLayout, type TimeLayout } from "../utils/timeValue";
 import type { CustomMetricDef, CustomMetricLevel } from "../types/customMetrics";
 
 export interface MetricChartConfig {
@@ -49,6 +50,11 @@ export interface MetricChartConfig {
   // (default; e.g. "kg", "h") render inline next to the value
   // everywhere they appear.
   isLongUnit?: boolean;
+  // When set, this metric renders as a time. formatValue returns a
+  // formatted time string (e.g. "5:30") and `unit` is left undefined so
+  // consumers append no suffix. avgDecimals doubles as the seconds
+  // decimal places.
+  timeLayout?: TimeLayout;
   // Decimals to round the computed average to before formatting. Default
   // is 1 (so e.g. sleepTime's avg renders as "8.3" not "8.283333..."").
   // Set to 0 for metrics whose averages should read as integers (e.g.
@@ -74,6 +80,10 @@ export type MetricOverrideFields = Partial<
 const fmtRaw = (v: number) => `${v}`;
 const fmtPct = (v: number) => `${v}%`;
 
+function timeFormatValue(layout: TimeLayout, secondsDecimals: number) {
+  return (v: number) => formatDecimalToTime(v, layout, secondsDecimals);
+}
+
 // Health metrics
 const HYDRATION: MetricChartConfig = {
   chartType: "bar",
@@ -86,13 +96,14 @@ const HYDRATION: MetricChartConfig = {
   random: (rng) => randomInt(rng, 1, 5),
 };
 
+const SLEEP_TIME_LAYOUT: TimeLayout = { coarsest: "h", precision: "m" };
 const SLEEP_TIME: MetricChartConfig = {
   chartType: "bar",
   yTopRaw: 10,
   yBottomRaw: 0,
   goalRaw: 8, // 7-9 hr typical recommendation; pick midpoint as static default
-  formatValue: fmtRaw,
-  unit: "h",
+  timeLayout: SLEEP_TIME_LAYOUT,
+  formatValue: timeFormatValue(SLEEP_TIME_LAYOUT, 0), // whole minutes; no seconds component
   random: (rng) => randomFloat(rng, 6, 10, 1),
 };
 
@@ -166,14 +177,19 @@ function competitionConfig(
   yBottomRaw: number,
   yTopRaw: number,
   unit?: string,
+  timePrecision?: "h" | "m" | "s",
+  secondsDecimals: number = 0,
 ): MetricChartConfig {
+  const layout = timePrecision ? resolveTimeLayout({ unit, timePrecision }) : null;
   return {
     chartType: "bar",
     yTopRaw,
     yBottomRaw,
     // No goalRaw — competition goals haven't been content-defined.
-    formatValue: fmtRaw,
-    unit,
+    formatValue: layout ? timeFormatValue(layout, secondsDecimals) : fmtRaw,
+    unit: layout ? undefined : unit,
+    timeLayout: layout ?? undefined,
+    ...(layout ? { avgDecimals: secondsDecimals } : {}),
     random: (rng) => randomInt(rng, yBottomRaw, yTopRaw),
   };
 }
@@ -219,15 +235,20 @@ function performanceConfig(
   yTopRaw: number,
   unit?: string,
   lowerIsBetter?: boolean,
+  timePrecision?: "h" | "m" | "s",
+  secondsDecimals: number = 0,
 ): MetricChartConfig {
+  const layout = timePrecision ? resolveTimeLayout({ unit, timePrecision }) : null;
   return {
     chartType: "bar",
     yTopRaw,
     yBottomRaw,
     lowerIsBetter,
     // No goalRaw — perf goals are user-set per the DGT-51 sheet.
-    formatValue: fmtRaw,
-    unit,
+    formatValue: layout ? timeFormatValue(layout, secondsDecimals) : fmtRaw,
+    unit: layout ? undefined : unit,
+    timeLayout: layout ?? undefined,
+    ...(layout ? { avgDecimals: secondsDecimals } : {}),
     // randomFloat (rather than randomInt) — perf ranges include
     // non-integer bounds (e.g. fortyYardDash 4.2..10). Rounded to 1
     // decimal so demo values match the chart's typical avgDecimals.
@@ -249,11 +270,11 @@ const CONFIG: Record<string, MetricChartConfig> = {
   yards: competitionConfig(0, 200),
   tackles: competitionConfig(0, 10),
   scores: competitionConfig(0, 100),
-  times: competitionConfig(0, 60, "min"),
+  times: competitionConfig(0, 60, "min", "s", 2),
   // Performance — from sheet (time metrics pass lowerIsBetter)
-  oneMileRun: performanceConfig(4, 15, "min", true),         // from sheet
-  tenMeterSprint: performanceConfig(1, 3, "sec", true),      // from sheet
-  fortyYardDash: performanceConfig(4.2, 10, "sec", true),    // from sheet
+  oneMileRun: performanceConfig(4, 15, "min", true, "s", 2),         // from sheet
+  tenMeterSprint: performanceConfig(1, 3, "sec", true, "s", 2),      // from sheet
+  fortyYardDash: performanceConfig(4.2, 10, "sec", true, "s", 2),    // from sheet
   beepTest: performanceConfig(1, 21, "levels"),              // from sheet
   standingBroadJump: performanceConfig(100, 350, "cm"),      // from sheet
   verticalJump: performanceConfig(1, 50, "in"),              // from sheet
@@ -399,6 +420,7 @@ export function customDefToChartConfig(
   const decimals = Number.isFinite(def.avgDecimals)
     ? Math.min(100, Math.max(0, Math.floor(def.avgDecimals ?? 1)))
     : 1;
+  const timeLayout = resolveTimeLayout({ unit: def.unit, timePrecision: def.timePrecision });
   // Defense-in-depth: finite-check the axis bounds and goal. If
   // either bound is non-finite or the pair is inverted (yBottom >=
   // yTop), fall back to the safe default range. goalRaw drops to
@@ -425,10 +447,13 @@ export function customDefToChartConfig(
     yTopRaw,
     yBottomRaw,
     goalRaw,
-    formatValue: isPct
-      ? (v) => `${formatNumber(v)}%`
-      : formatNumber,
-    unit: isPct ? undefined : def.unit || undefined,
+    formatValue: timeLayout
+      ? (v) => formatDecimalToTime(v, timeLayout, decimals)
+      : isPct
+        ? (v) => `${formatNumber(v)}%`
+        : formatNumber,
+    unit: timeLayout ? undefined : isPct ? undefined : def.unit || undefined,
+    timeLayout: timeLayout ?? undefined,
     avgDecimals: decimals,
     // Numeric customs: randomFloat (rounded to `decimals`) handles the
     // form's decimal-allowed y-axis bounds correctly. randomInt would

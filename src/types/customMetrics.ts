@@ -1,4 +1,5 @@
 import type { MetricSchedule } from "./metricSchedule";
+import type { TimeUnit } from "../utils/timeValue";
 
 export type CustomMetricType = "health" | "performance" | "competition";
 
@@ -40,6 +41,9 @@ export interface CustomMetricDef {
   yTopRaw?: number;
   yBottomRaw?: number;
   avgDecimals?: number;
+  // Time metric: finest field to render. Coarsest is derived from `unit`
+  // (canonical hr/min/sec set by the form). Absent => plain numeric.
+  timePrecision?: TimeUnit;
 
   // Categorical config; required when primitive ∈ {"ordinal", "nominal"};
   // omitted for "numeric". Order is meaningful for ordinal (matches

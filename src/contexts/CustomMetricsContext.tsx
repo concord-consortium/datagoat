@@ -10,6 +10,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   query,
@@ -53,11 +54,17 @@ interface CustomMetricsValue {
   // on write, Firestore Timestamp on read). They're omitted from the
   // patch shape so a future caller can't accidentally overwrite them
   // and destabilize ordering. The provider stamps `updatedAt` itself.
+  // A field set to `null` in the patch is an explicit request to clear
+  // (delete) it; an absent field is left untouched. `timePrecision` uses
+  // this to drop precision when a metric's Format toggles Time -> Number.
   updateMetric: (
     id: string,
     patch: Partial<
-      Omit<CustomMetricDef, "id" | "ownerId" | "createdAt" | "updatedAt">
-    >,
+      Omit<
+        CustomMetricDef,
+        "id" | "ownerId" | "createdAt" | "updatedAt" | "timePrecision"
+      >
+    > & { timePrecision?: CustomMetricDef["timePrecision"] | null },
   ) => Promise<void>;
   deleteMetric: (id: string) => Promise<void>;
   getMetric: (id: string) => CustomMetricDef | undefined;
@@ -147,6 +154,16 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
     // `String(null)` surface as the literal `"null"` in the UI and
     // `Number(null) === 0` mask a stale-zero in numeric fields.
     unit: data.unit == null ? undefined : String(data.unit),
+    // Explicit comparisons (not `.includes`) so TS narrows to TimeUnit
+    // without a cast; anything that isn't a real time unit reads as
+    // undefined, so a stray value can't turn a plain numeric metric into
+    // a time metric.
+    timePrecision:
+      data.timePrecision === "h" ||
+      data.timePrecision === "m" ||
+      data.timePrecision === "s"
+        ? data.timePrecision
+        : undefined,
     goalRaw: data.goalRaw == null ? undefined : Number(data.goalRaw),
     yTopRaw: data.yTopRaw == null ? undefined : Number(data.yTopRaw),
     yBottomRaw: data.yBottomRaw == null ? undefined : Number(data.yBottomRaw),
@@ -277,6 +294,7 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
         updatedAt: serverTimestamp(),
       };
       if (def.unit !== undefined) writePayload.unit = def.unit;
+      if (def.timePrecision !== undefined) writePayload.timePrecision = def.timePrecision;
       if (def.goalRaw !== undefined) writePayload.goalRaw = def.goalRaw;
       if (def.yTopRaw !== undefined) writePayload.yTopRaw = def.yTopRaw;
       if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;
@@ -313,7 +331,16 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       const cleaned: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(patch)) {
         if (k === "createdAt" || k === "updatedAt") continue;
+        // Absent (undefined) -> leave the stored field untouched.
         if (v === undefined) continue;
+        // Explicit null -> delete the field (e.g. clearing timePrecision
+        // when Format toggles Time -> Number). Driven by the caller's
+        // intent, not inferred from a missing key, so a future partial
+        // patch can't wipe a field by omission.
+        if (v === null) {
+          cleaned[k] = deleteField();
+          continue;
+        }
         // Route schedule through the same normalizer the create path
         // uses, so update writes apply identical rules (drop count for
         // irregular / non-positive-integer) and never persist a nested

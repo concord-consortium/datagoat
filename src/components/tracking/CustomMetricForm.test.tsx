@@ -497,7 +497,7 @@ describe("CustomMetricForm (canonical-route redirect)", () => {
 
 // Thin wrapper that renders the create form for a given metric type.
 // Mirrors renderAt but with a more descriptive name for the new tests.
-function renderCreateForm(type: "health" | "competition") {
+function renderCreateForm(type: "health" | "competition" | "performance") {
   renderAt(`/add-metric/${type}/new`);
 }
 
@@ -768,6 +768,60 @@ describe("CustomMetricForm — edit-mode inference", () => {
     expect((screen.getByRole("radio", { name: /numeric/i }) as HTMLInputElement).checked).toBe(true);
   });
 
+  it("seeds a canonical time unit when a time metric's stored unit is non-canonical", () => {
+    renderEditForm("health", {
+      id: "c_t",
+      ownerId: "u1",
+      name: "Sleep",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "hr/night",
+      timePrecision: "m",
+      goalRaw: 8,
+      yTopRaw: 12,
+      yBottomRaw: 0,
+      avgDecimals: 0,
+      inputType: "numeric",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    // Format opens on Time (timePrecision present); the Unit select must
+    // hold a valid canonical value mapped from "hr/night", not the raw
+    // stored string (which would blank the control and warn).
+    const unitSelect = screen
+      .getByRole("option", { name: "hr" })
+      .closest("select") as HTMLSelectElement;
+    expect(unitSelect.value).toBe("hr");
+  });
+
+  it("defaults the time unit to min when a non-time metric is switched to Time", async () => {
+    const user = userEvent.setup();
+    renderEditForm("health", {
+      id: "c_k",
+      ownerId: "u1",
+      name: "Body Weight",
+      metricType: "health",
+      primitive: "numeric",
+      unit: "kg",
+      goalRaw: 70,
+      yTopRaw: 100,
+      yBottomRaw: 0,
+      avgDecimals: 1,
+      inputType: "numeric",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    await user.click(screen.getByRole("radio", { name: /time/i }));
+    const unitSelect = screen
+      .getByRole("option", { name: "hr" })
+      .closest("select") as HTMLSelectElement;
+    // "kg" is not a canonical time unit, so the select falls back to min
+    // rather than receiving an invalid value.
+    expect(unitSelect.value).toBe("min");
+  });
+
   it("opens with Y/N selected for an ordinal metric with the canonical No/Yes levels", () => {
     renderEditForm("health", {
       id: "c_x",
@@ -1035,6 +1089,62 @@ describe("CustomMetricForm (performance)", () => {
     expect(call?.trackedPerformanceMetrics).toEqual(
       expect.arrayContaining([expect.stringMatching(/^c_/)]),
     );
+  });
+
+  it("saves a time custom metric with timePrecision and a canonical unit", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("performance");
+
+    await user.type(screen.getByLabelText(/^metric name$/i), "400m Time");
+    // Numeric is selected by default; switch the Format sub-choice to Time.
+    await user.click(screen.getByRole("radio", { name: /^time$/i }));
+    await user.selectOptions(screen.getByLabelText(/^unit$/i), "min");
+    await user.selectOptions(screen.getByLabelText(/^precision$/i), "s");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.timePrecision).toBe("s");
+    expect(payload.unit).toBe("min");
+    expect(payload.primitive).toBe("numeric");
+  });
+
+  it("omits timePrecision for a plain Number metric (proves the field is conditional)", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("performance");
+
+    await user.type(screen.getByLabelText(/^metric name$/i), "Plain Sprint Count");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload).not.toHaveProperty("timePrecision");
+    expect(payload.primitive).toBe("numeric");
+  });
+
+  it("clamps precision to seconds when switching Unit from hr to min (DGT-19 finding 1)", async () => {
+    // Regression: the Unit onChange only clamped precision when switching
+    // TO "sec" (`u === "sec" ? "s" : draft.timePrecision`). Going from
+    // Unit=hr/Precision=minutes to Unit=min left precision="m", an invalid
+    // min+m combo (min's only valid precision is seconds) that would
+    // desync the Precision <select> and persist a bad payload.
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("performance");
+
+    await user.type(screen.getByLabelText(/^metric name$/i), "Marathon Time");
+    await user.click(screen.getByRole("radio", { name: /^time$/i }));
+    await user.selectOptions(screen.getByLabelText(/^unit$/i), "hr");
+    await user.selectOptions(screen.getByLabelText(/^precision$/i), "m");
+    await user.selectOptions(screen.getByLabelText(/^unit$/i), "min");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.timePrecision).toBe("s");
+    expect(payload.unit).toBe("min");
   });
 
   it("routes a built-in perf metric id (oneRepMaxBench) to MetricOverrideForm", () => {

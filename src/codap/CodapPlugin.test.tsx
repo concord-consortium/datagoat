@@ -545,5 +545,9 @@ describe("CodapPlugin", () => {
     expect(sendBtn).toBeEnabled();
     await user.click(sendBtn);
     expect(sendDatasetMock).toHaveBeenCalledTimes(3);
+    expect(sendDatasetMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ name: "DataGOAT-Demo-Health", title: "Demo Health" }),
+    );
   });
 });

@@ -254,6 +254,7 @@ interface CodapExportPanelProps {
   performance: CodapDataset<PerformanceEntry>;
   competition: CodapDataset<CompetitionEntry>;
   customMetrics: CustomMetricDef[];
+  namespaceLabel?: string;
 }
 
 function CodapExportPanel({
@@ -261,6 +262,7 @@ function CodapExportPanel({
   performance,
   competition,
   customMetrics,
+  namespaceLabel,
 }: CodapExportPanelProps) {
   const { status, error, sendDataset } = useCodapApi();
 
@@ -287,6 +289,8 @@ function CodapExportPanel({
     sendingRef.current = true;
     setSending(true);
     setLastSent(undefined);
+    const ns = namespaceLabel ? `${namespaceLabel} ` : "";
+    const nsCtx = namespaceLabel ? `${namespaceLabel}-` : "";
     try {
       // Always send if the dataset is selected, even when there are no
       // entries yet - CODAP needs the create-context + create-collection
@@ -304,10 +308,10 @@ function CodapExportPanel({
           readHealthField,
         );
         await sendDataset({
-          name: "DataGOAT-Health",
-          title: "Health",
-          collectionName: "Health",
-          tableName: "Health",
+          name: `DataGOAT-${nsCtx}Health`,
+          title: `${ns}Health`,
+          collectionName: `${ns}Health`,
+          tableName: `${ns}Health`,
           attributes,
           rows,
         });
@@ -324,10 +328,10 @@ function CodapExportPanel({
           readBagField,
         );
         await sendDataset({
-          name: "DataGOAT-Performance",
-          title: "Performance",
-          collectionName: "Performance",
-          tableName: "Performance",
+          name: `DataGOAT-${nsCtx}Performance`,
+          title: `${ns}Performance`,
+          collectionName: `${ns}Performance`,
+          tableName: `${ns}Performance`,
           attributes,
           rows,
         });
@@ -344,10 +348,10 @@ function CodapExportPanel({
           readBagField,
         );
         await sendDataset({
-          name: "DataGOAT-Competition",
-          title: "Competition",
-          collectionName: "Competition",
-          tableName: "Competition",
+          name: `DataGOAT-${nsCtx}Competition`,
+          title: `${ns}Competition`,
+          collectionName: `${ns}Competition`,
+          tableName: `${ns}Competition`,
           attributes,
           rows,
         });
@@ -490,6 +494,7 @@ function CodapPluginDemo() {
           builtins: COMPETITION_METRICS,
         }}
         customMetrics={[]}
+        namespaceLabel="Demo"
       />
     </div>
   );

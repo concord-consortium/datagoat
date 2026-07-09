@@ -25,11 +25,16 @@ export interface DatasetRow {
   [key: string]: string | number | null;
 }
 
+// The CODAP attribute types this export emits. Narrowed to a union (rather
+// than a plain string) so a typo like "number" vs "numeric" is a compile
+// error at the call site.
+export type CodapAttributeType = "date" | "numeric" | "categorical";
+
 export interface AttributeSpec {
   // Attribute name CODAP shows as the column header.
   name: string;
-  // CODAP attribute type: "date" | "numeric" | "categorical".
-  type: string;
+  // CODAP attribute type.
+  type: CodapAttributeType;
   // Optional unit CODAP renders on numeric axes. Omitted when empty.
   unit?: string;
 }

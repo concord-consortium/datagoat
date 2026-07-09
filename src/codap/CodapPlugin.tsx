@@ -235,7 +235,7 @@ function CodapPluginAuthed() {
             performance.status === "loaded" ? performance.entries : [],
           loading: profileLoading || performance.status === "loading",
           tracked: trackedPerformance,
-          builtins: PERFORMANCE_METRICS,
+          builtins: [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE],
         }}
         competition={{
           entries:
@@ -251,11 +251,13 @@ function CodapPluginAuthed() {
 }
 
 // `builtins` travels with each dataset (rather than the panel reading a
-// fixed registry) so each caller points it at the right metric source per
-// branch: the demo branch resolves performance against ADDABLE_PERFORMANCE
-// while the authed branch keeps resolving against the intentionally-empty
-// PERFORMANCE_METRICS - without changing authed behavior. The asymmetry is
-// deliberate, not a bug; see CodapPluginAuthed vs CodapPluginDemo.
+// fixed registry) so each caller supplies the right metric source. For
+// performance, both branches must resolve against ADDABLE_PERFORMANCE: the
+// 20 built-in performance metrics live there (PERFORMANCE_METRICS is empty
+// by design), and users track them by id via TrackedDataSetup. Every other
+// consumer (PerformanceLog, Dashboard, MetricDetail) resolves the same way,
+// so the export must too - otherwise a tracked built-in has no definition
+// to resolve and its column is silently dropped.
 interface CodapDataset<T> {
   entries: T[];
   loading: boolean;

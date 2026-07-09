@@ -9,9 +9,9 @@ import { buildDataset, resolveTrackedMetrics } from "./codapExport";
 import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 
-// Local copies of the plugin's field accessors so the test exercises the
-// same demo -> export path the plugin uses. Kept in sync with the
-// readHealthField / readBagField exported for Task 3.
+// Local copy of the plugin's readBagField accessor (a private helper in
+// CodapPlugin.tsx, not exported) so the test exercises the same demo ->
+// export path the plugin uses.
 function readBag(
   e: { metrics?: Record<string, number | string | undefined> },
   id: string,

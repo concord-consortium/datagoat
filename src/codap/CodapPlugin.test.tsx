@@ -360,6 +360,50 @@ describe("CodapPlugin", () => {
     });
   });
 
+  it("resolves a tracked built-in performance metric from ADDABLE_PERFORMANCE (regression: was silently dropped)", async () => {
+    // verticalJump is a built-in that lives in ADDABLE_PERFORMANCE (not the
+    // empty PERFORMANCE_METRICS) and is not a custom metric. It is tracked
+    // by id only, so the authed export must resolve its definition from
+    // ADDABLE_PERFORMANCE or the column is dropped.
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        trackedHealthMetrics: [],
+        trackedPerformanceMetrics: ["verticalJump"],
+        trackedCompetitionMetrics: [],
+      },
+    };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = {
+      status: "loaded",
+      entries: [
+        { version: 1, date: "2026-04-01", metrics: { verticalJump: 24 } },
+      ],
+    };
+    dataState.competition = { status: "loaded", entries: [] };
+    customState.metrics = [];
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    await user.click(screen.getByRole("button", { name: /send to codap/i }));
+
+    expect(sendDatasetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DataGOAT-Performance",
+        attributes: expect.arrayContaining([
+          { name: "Vertical Jump", type: "numeric", unit: "in" },
+        ]),
+        rows: [{ date: "2026-04-01", "Vertical Jump": 24 }],
+      }),
+    );
+  });
+
   it("authenticated-and-verified state disables 'Send to CODAP' while data or profile is still loading and shows a loading status", () => {
     ctx.authState = {
       user: { emailVerified: true, email: "athlete@school.edu" },

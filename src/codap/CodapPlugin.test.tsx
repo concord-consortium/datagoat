@@ -156,10 +156,16 @@ vi.mock("../contexts/DataContext", () => ({
   usePerformanceData: () => dataState.performance,
 }));
 
-const customState: { metrics: CustomMetricDef[] } = { metrics: [] };
+const customState: { metrics: CustomMetricDef[]; loading: boolean } = {
+  metrics: [],
+  loading: false,
+};
 
 vi.mock("../contexts/CustomMetricsContext", () => ({
-  useCustomMetrics: () => ({ metrics: customState.metrics }),
+  useCustomMetrics: () => ({
+    metrics: customState.metrics,
+    loading: customState.loading,
+  }),
 }));
 
 const demoState = { enabled: false };
@@ -180,6 +186,7 @@ describe("CodapPlugin", () => {
     dataState.competition = { status: "loading" };
     dataState.performance = { status: "loading" };
     customState.metrics = [];
+    customState.loading = false;
     demoState.enabled = false;
   });
 
@@ -402,6 +409,111 @@ describe("CodapPlugin", () => {
         rows: [{ date: "2026-04-01", "Vertical Jump": 24 }],
       }),
     );
+  });
+
+  it("resolves a tracked built-in health metric from ADDABLE_HEALTH (regression: was silently dropped)", async () => {
+    // hrv lives in ADDABLE_HEALTH (not HEALTH_METRICS) and is not a custom
+    // metric; readHealthField reads it from the customMetrics bag.
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        trackedHealthMetrics: ["hrv"],
+        trackedPerformanceMetrics: [],
+        trackedCompetitionMetrics: [],
+      },
+    };
+    dataState.health = {
+      status: "loaded",
+      entries: [
+        { version: 1, date: "2026-04-01", availability: {}, customMetrics: { hrv: 55 } },
+      ],
+    };
+    dataState.performance = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loaded", entries: [] };
+    customState.metrics = [];
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    await user.click(screen.getByRole("button", { name: /send to codap/i }));
+
+    expect(sendDatasetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DataGOAT-Health",
+        attributes: expect.arrayContaining([
+          { name: "HRV", type: "numeric", unit: "ms" },
+        ]),
+        rows: [{ date: "2026-04-01", HRV: 55 }],
+      }),
+    );
+  });
+
+  it("resolves a tracked built-in competition metric from ADDABLE_COMPETITION (regression: was silently dropped)", async () => {
+    // assists lives in ADDABLE_COMPETITION (not COMPETITION_METRICS).
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        trackedHealthMetrics: [],
+        trackedPerformanceMetrics: [],
+        trackedCompetitionMetrics: ["assists"],
+      },
+    };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
+    dataState.competition = {
+      status: "loaded",
+      entries: [{ version: 1, date: "2026-04-01", metrics: { assists: 3 } }],
+    };
+    customState.metrics = [];
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    await user.click(screen.getByRole("button", { name: /send to codap/i }));
+
+    expect(sendDatasetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DataGOAT-Competition",
+        attributes: expect.arrayContaining([
+          { name: "Assists", type: "numeric" },
+        ]),
+        rows: [{ date: "2026-04-01", Assists: 3 }],
+      }),
+    );
+  });
+
+  it("disables 'Send to CODAP' while custom metrics are still loading (even if profile + entries are loaded)", () => {
+    // Custom metrics loading late must gate Send: resolveTrackedMetrics would
+    // otherwise drop every tracked custom metric, and a re-send can't add the
+    // missing columns back to an existing CODAP context.
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = makeCompleteProfile();
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loaded", entries: [] };
+    customState.metrics = [];
+    customState.loading = true;
+    codapState.status = "connected";
+
+    render(<CodapPlugin />);
+
+    expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send to codap/i }),
+    ).toBeDisabled();
   });
 
   it("authenticated-and-verified state disables 'Send to CODAP' while data or profile is still loading and shows a loading status", () => {

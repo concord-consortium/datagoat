@@ -214,12 +214,28 @@ export function buildDataset<T extends { date: string }>(
   const columns = metrics.flatMap((m) =>
     metricColumns(m).map((c) => ({ ...c, metricId: m.id })),
   );
-  // Rows are keyed by attribute name (row[c.spec.name] below), so attribute
-  // names must be unique. A colliding name - a custom metric named "date",
-  // or one matching a generated companion column like "X (level)" - would
-  // silently overwrite an earlier column's value. Uniqueness of user-authored
-  // metric names is enforced upstream by custom-name validation (DGT-2), so
-  // buildDataset does not re-check it here.
+  // Rows are keyed by attribute name (row[c.spec.name] below), so names must
+  // be unique or a later column silently overwrites an earlier one. Custom
+  // metric names are user-authored and NOT reserved upstream (a metric named
+  // "date", or one matching a generated companion like "X (level)", is
+  // allowed), so guarantee uniqueness here: reserve the leading "date" key
+  // and disambiguate any collision by suffixing the metric id (then a
+  // counter). Mutating c.spec keeps the attribute name and the row key in
+  // lockstep since both read c.spec.name.
+  const usedNames = new Set<string>(["date"]);
+  for (const c of columns) {
+    if (!usedNames.has(c.spec.name)) {
+      usedNames.add(c.spec.name);
+      continue;
+    }
+    let candidate = `${c.spec.name} (${c.metricId})`;
+    let n = 2;
+    while (usedNames.has(candidate)) {
+      candidate = `${c.spec.name} (${c.metricId} ${n++})`;
+    }
+    usedNames.add(candidate);
+    c.spec = { ...c.spec, name: candidate };
+  }
   const attributes: AttributeSpec[] = [
     { name: "date", type: "date" },
     ...columns.map((c) => c.spec),

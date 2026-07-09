@@ -174,4 +174,32 @@ describe("buildDataset", () => {
       },
     ]);
   });
+
+  it("de-duplicates colliding attribute names (reserves date, suffixes dups by metric id)", () => {
+    const metrics: NormalizedMetric[] = [
+      { id: "a", name: "date", flavor: "numeric" }, // collides with the date column
+      { id: "b", name: "Score", flavor: "numeric" },
+      { id: "c", name: "Score", flavor: "numeric" }, // collides with b
+    ];
+    const { attributes, rows } = buildDataset(
+      metrics,
+      [{ date: "2026-04-01" }],
+      (_e, id) => (id === "a" ? 1 : id === "b" ? 2 : 3),
+    );
+    const names = attributes.map((a) => a.name);
+    // Every attribute name is unique.
+    expect(new Set(names).size).toBe(names.length);
+    // The leading date key is reserved; the colliding metric is suffixed.
+    expect(names[0]).toBe("date");
+    expect(names).toContain("date (a)");
+    expect(names).toContain("Score");
+    expect(names).toContain("Score (c)");
+    // Row values survive under the disambiguated keys (no overwrite).
+    expect(rows[0]).toEqual({
+      date: "2026-04-01",
+      "date (a)": 1,
+      Score: 2,
+      "Score (c)": 3,
+    });
+  });
 });

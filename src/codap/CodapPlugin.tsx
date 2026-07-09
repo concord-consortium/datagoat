@@ -8,7 +8,11 @@ import {
   usePerformanceData,
 } from "../contexts/DataContext";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
-import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
+import {
+  ADDABLE_COMPETITION,
+  ADDABLE_HEALTH,
+  ADDABLE_PERFORMANCE,
+} from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
 import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
@@ -192,7 +196,8 @@ function CodapPluginAuthed() {
   const health = useHealthData();
   const performance = usePerformanceData();
   const competition = useCompetitionData();
-  const { metrics: customMetrics } = useCustomMetrics();
+  const { metrics: customMetrics, loading: customMetricsLoading } =
+    useCustomMetrics();
 
   // Three "no usable profile" branches. Without these, the plugin
   // would fall back to the registry default for trackedHealth /
@@ -226,23 +231,32 @@ function CodapPluginAuthed() {
       <CodapExportPanel
         health={{
           entries: health.status === "loaded" ? health.entries : [],
-          loading: profileLoading || health.status === "loading",
+          loading:
+            profileLoading ||
+            customMetricsLoading ||
+            health.status === "loading",
           tracked: trackedHealth,
-          builtins: HEALTH_METRICS,
+          builtins: [...HEALTH_METRICS, ...ADDABLE_HEALTH],
         }}
         performance={{
           entries:
             performance.status === "loaded" ? performance.entries : [],
-          loading: profileLoading || performance.status === "loading",
+          loading:
+            profileLoading ||
+            customMetricsLoading ||
+            performance.status === "loading",
           tracked: trackedPerformance,
           builtins: [...PERFORMANCE_METRICS, ...ADDABLE_PERFORMANCE],
         }}
         competition={{
           entries:
             competition.status === "loaded" ? competition.entries : [],
-          loading: profileLoading || competition.status === "loading",
+          loading:
+            profileLoading ||
+            customMetricsLoading ||
+            competition.status === "loading",
           tracked: trackedCompetition,
-          builtins: COMPETITION_METRICS,
+          builtins: [...COMPETITION_METRICS, ...ADDABLE_COMPETITION],
         }}
         customMetrics={customMetrics}
       />
@@ -251,13 +265,14 @@ function CodapPluginAuthed() {
 }
 
 // `builtins` travels with each dataset (rather than the panel reading a
-// fixed registry) so each caller supplies the right metric source. For
-// performance, both branches must resolve against ADDABLE_PERFORMANCE: the
-// 20 built-in performance metrics live there (PERFORMANCE_METRICS is empty
-// by design), and users track them by id via TrackedDataSetup. Every other
-// consumer (PerformanceLog, Dashboard, MetricDetail) resolves the same way,
-// so the export must too - otherwise a tracked built-in has no definition
-// to resolve and its column is silently dropped.
+// fixed registry) so each caller supplies the right metric source. Users
+// track built-ins by id via TrackedDataSetup, which merges each default-on
+// registry with its ADDABLE_* set - so the authed export resolves each
+// category against those SAME merged lists ([...HEALTH_METRICS,
+// ...ADDABLE_HEALTH], etc.), matching every other consumer (PerformanceLog,
+// Dashboard, MetricDetail). Otherwise a tracked ADDABLE_* built-in has no
+// definition to resolve and its column is silently dropped. (The demo
+// branch supplies its own sources - only metrics that have chart configs.)
 interface CodapDataset<T> {
   entries: T[];
   loading: boolean;

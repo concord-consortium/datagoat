@@ -84,6 +84,10 @@ export function generateDemoHealthEntries(
     };
     const bag: Record<string, number | string> = {};
     for (const m of HEALTH_METRICS) {
+      // relativeProteinIntake is auto-calculated (no chart config), so it
+      // would fall back to DEFAULT_CONFIG's 0-100 random rather than its
+      // real 0.6-3 g/kg range. Skip it in demo rather than emit nonsense.
+      if (m.id === "relativeProteinIntake") continue;
       const rng = rngFor(seed, "health", m.id, i);
       if (m.id === "availability") {
         entry.availability = randomAvailability(rng);

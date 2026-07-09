@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useDemoMode } from "../contexts/DemoModeContext";
 import { useUser } from "../contexts/UserContext";
 import {
   useCompetitionData,
@@ -7,10 +8,17 @@ import {
   usePerformanceData,
 } from "../contexts/DataContext";
 import { useCustomMetrics } from "../contexts/CustomMetricsContext";
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
 import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
-import type { HealthEntry } from "../types/data";
+import type { MetricDefinition } from "../metrics/types";
+import type {
+  CompetitionEntry,
+  HealthEntry,
+  PerformanceEntry,
+} from "../types/data";
+import type { CustomMetricDef } from "../types/customMetrics";
 import { logError } from "../utils/logError";
 import { useCodapApi } from "./codapApi";
 import {
@@ -18,6 +26,11 @@ import {
   resolveTrackedMetrics,
   type RawValue,
 } from "./codapExport";
+import {
+  generateDemoCompetitionEntries,
+  generateDemoHealthEntries,
+  generateDemoPerformanceEntries,
+} from "./demoEntries";
 import { CodapPluginSignIn } from "./CodapPluginSignIn";
 import buttons from "../components/form/buttons.module.css";
 import css from "./CodapPlugin.module.css";
@@ -34,7 +47,12 @@ import css from "./CodapPlugin.module.css";
 // library out of the initial bundle for the 99% of users who never
 // visit /codap.
 export default function CodapPlugin() {
+  const demoMode = useDemoMode();
   const { user, loading, isEmailVerifiedOrTrusted } = useAuth();
+
+  if (demoMode) {
+    return <CodapPluginDemo />;
+  }
 
   if (loading) {
     return (
@@ -162,7 +180,6 @@ function CodapPluginNoProfile() {
 }
 
 function CodapPluginAuthed() {
-  const { status, error, sendDataset } = useCodapApi();
   const { loadState, retry } = useUser();
   const health = useHealthData();
   const performance = usePerformanceData();
@@ -184,29 +201,7 @@ function CodapPluginAuthed() {
   }
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
-  const [selected, setSelected] = useState<{
-    health: boolean;
-    performance: boolean;
-    competition: boolean;
-  }>({
-    health: true,
-    performance: true,
-    competition: true,
-  });
-  const [sending, setSending] = useState(false);
-  const [lastSent, setLastSent] = useState<string | undefined>(undefined);
-  // Synchronous re-entry gate. The disabled-button check uses `sending`
-  // state, which only flips after React commits - a rapid double-click
-  // between the click and that commit can otherwise launch two
-  // interleaved sendDataset cycles against the same CODAP context,
-  // defeating the upsert-by-date dedupe.
-  const sendingRef = useRef(false);
-
-  const healthEntries = health.status === "loaded" ? health.entries : [];
-  const performanceEntries =
-    performance.status === "loaded" ? performance.entries : [];
-  const competitionEntries =
-    competition.status === "loaded" ? competition.entries : [];
+  const profileLoading = loadState.status === "loading";
 
   const trackedHealth =
     profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
@@ -215,6 +210,77 @@ function CodapPluginAuthed() {
   const trackedCompetition =
     profile?.trackedCompetitionMetrics ??
     COMPETITION_METRICS.map((m) => m.id);
+
+  return (
+    <div className={css.pluginShell}>
+      <PluginSignOutBar />
+      <h1 className={css.heading}>DataGOAT in CODAP</h1>
+      <CodapExportPanel
+        health={{
+          entries: health.status === "loaded" ? health.entries : [],
+          loading: profileLoading || health.status === "loading",
+          tracked: trackedHealth,
+          builtins: HEALTH_METRICS,
+        }}
+        performance={{
+          entries:
+            performance.status === "loaded" ? performance.entries : [],
+          loading: profileLoading || performance.status === "loading",
+          tracked: trackedPerformance,
+          builtins: PERFORMANCE_METRICS,
+        }}
+        competition={{
+          entries:
+            competition.status === "loaded" ? competition.entries : [],
+          loading: profileLoading || competition.status === "loading",
+          tracked: trackedCompetition,
+          builtins: COMPETITION_METRICS,
+        }}
+        customMetrics={customMetrics}
+      />
+    </div>
+  );
+}
+
+interface CodapDataset<T> {
+  entries: T[];
+  loading: boolean;
+  tracked: string[];
+  builtins: MetricDefinition[];
+}
+
+interface CodapExportPanelProps {
+  health: CodapDataset<HealthEntry>;
+  performance: CodapDataset<PerformanceEntry>;
+  competition: CodapDataset<CompetitionEntry>;
+  customMetrics: CustomMetricDef[];
+}
+
+function CodapExportPanel({
+  health,
+  performance,
+  competition,
+  customMetrics,
+}: CodapExportPanelProps) {
+  const { status, error, sendDataset } = useCodapApi();
+
+  const healthEntries = health.entries;
+  const performanceEntries = performance.entries;
+  const competitionEntries = competition.entries;
+
+  const [selected, setSelected] = useState<{
+    health: boolean;
+    performance: boolean;
+    competition: boolean;
+  }>({ health: true, performance: true, competition: true });
+  const [sending, setSending] = useState(false);
+  const [lastSent, setLastSent] = useState<string | undefined>(undefined);
+  // Synchronous re-entry gate. The disabled-button check uses `sending`
+  // state, which only flips after React commits - a rapid double-click
+  // between the click and that commit can otherwise launch two
+  // interleaved sendDataset cycles against the same CODAP context,
+  // defeating the upsert-by-date dedupe.
+  const sendingRef = useRef(false);
 
   async function handleSend() {
     if (sendingRef.current) return;
@@ -228,8 +294,8 @@ function CodapPluginAuthed() {
       // empty data hides the table from the user.
       if (selected.health) {
         const metrics = resolveTrackedMetrics(
-          trackedHealth,
-          HEALTH_METRICS,
+          health.tracked,
+          health.builtins,
           customMetrics.filter((m) => m.metricType === "health"),
         );
         const { attributes, rows } = buildDataset(
@@ -248,8 +314,8 @@ function CodapPluginAuthed() {
       }
       if (selected.performance) {
         const metrics = resolveTrackedMetrics(
-          trackedPerformance,
-          PERFORMANCE_METRICS,
+          performance.tracked,
+          performance.builtins,
           customMetrics.filter((m) => m.metricType === "performance"),
         );
         const { attributes, rows } = buildDataset(
@@ -268,8 +334,8 @@ function CodapPluginAuthed() {
       }
       if (selected.competition) {
         const metrics = resolveTrackedMetrics(
-          trackedCompetition,
-          COMPETITION_METRICS,
+          competition.tracked,
+          competition.builtins,
           customMetrics.filter((m) => m.metricType === "competition"),
         );
         const { attributes, rows } = buildDataset(
@@ -296,10 +362,9 @@ function CodapPluginAuthed() {
   }
 
   const dataLoading =
-    loadState.status === "loading" ||
-    (selected.health && health.status === "loading") ||
-    (selected.performance && performance.status === "loading") ||
-    (selected.competition && competition.status === "loading");
+    (selected.health && health.loading) ||
+    (selected.performance && performance.loading) ||
+    (selected.competition && competition.loading);
 
   const canSend =
     status === "connected" &&
@@ -308,17 +373,14 @@ function CodapPluginAuthed() {
     (selected.health || selected.performance || selected.competition);
 
   return (
-    <div className={css.pluginShell}>
-      <PluginSignOutBar />
-      <h1 className={css.heading}>DataGOAT in CODAP</h1>
+    <>
       <p className={css.statusText} role="status">
         {status === "connecting" && "Connecting to CODAP…"}
         {status === "connected" &&
           (dataLoading
             ? "Loading your data…"
             : "Connected. Choose what to send.")}
-        {status === "disconnected" &&
-          (error ?? "Disconnected from CODAP.")}
+        {status === "disconnected" && (error ?? "Disconnected from CODAP.")}
       </p>
 
       <fieldset className={css.fieldset}>
@@ -378,6 +440,57 @@ function CodapPluginAuthed() {
           Sent at {lastSent}.
         </p>
       )}
+    </>
+  );
+}
+
+// Demo variant: rendered when the plugin loads with ?demo. Bypasses all
+// auth/profile gates and feeds the shared export panel synthetic entries
+// (no Firestore, no sign-in). Metric sources per category:
+//   health      -> HEALTH_METRICS (default-on)
+//   competition -> COMPETITION_METRICS (default-on)
+//   performance -> ADDABLE_PERFORMANCE (PERFORMANCE_METRICS is empty by
+//                  design; the addable set is the real performance builtins)
+// No custom metrics (there is no profile in demo mode). Each dataset's
+// `builtins` matches its generator's metric source so resolveTrackedMetrics
+// finds every id.
+function CodapPluginDemo() {
+  const healthEntries = useMemo(() => generateDemoHealthEntries(), []);
+  const performanceEntries = useMemo(
+    () => generateDemoPerformanceEntries(),
+    [],
+  );
+  const competitionEntries = useMemo(
+    () => generateDemoCompetitionEntries(),
+    [],
+  );
+  return (
+    <div className={css.pluginShell}>
+      <h1 className={css.heading}>DataGOAT in CODAP</h1>
+      <p className={css.statusText} role="status">
+        Demo data - generated sample entries, not saved.
+      </p>
+      <CodapExportPanel
+        health={{
+          entries: healthEntries,
+          loading: false,
+          tracked: HEALTH_METRICS.map((m) => m.id),
+          builtins: HEALTH_METRICS,
+        }}
+        performance={{
+          entries: performanceEntries,
+          loading: false,
+          tracked: ADDABLE_PERFORMANCE.map((m) => m.id),
+          builtins: ADDABLE_PERFORMANCE,
+        }}
+        competition={{
+          entries: competitionEntries,
+          loading: false,
+          tracked: COMPETITION_METRICS.map((m) => m.id),
+          builtins: COMPETITION_METRICS,
+        }}
+        customMetrics={[]}
+      />
     </div>
   );
 }

@@ -162,6 +162,11 @@ vi.mock("../contexts/CustomMetricsContext", () => ({
   useCustomMetrics: () => ({ metrics: customState.metrics }),
 }));
 
+const demoState = { enabled: false };
+vi.mock("../contexts/DemoModeContext", () => ({
+  useDemoMode: () => demoState.enabled,
+}));
+
 import CodapPlugin from "./CodapPlugin";
 
 describe("CodapPlugin", () => {
@@ -175,6 +180,7 @@ describe("CodapPlugin", () => {
     dataState.competition = { status: "loading" };
     dataState.performance = { status: "loading" };
     customState.metrics = [];
+    demoState.enabled = false;
   });
 
   it("loading state renders the loading text", () => {
@@ -509,5 +515,35 @@ describe("CodapPlugin", () => {
     expect(
       screen.queryByRole("button", { name: /send to codap/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("demo mode bypasses auth and renders the export panel with generated entries", async () => {
+    demoState.enabled = true;
+    ctx.authState = { user: null, loading: false };
+    userState.loadState = { status: "loading" };
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+
+    // No sign-in gate.
+    expect(
+      screen.queryByRole("button", { name: /continue with google/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/signed in as/i)).not.toBeInTheDocument();
+
+    // Export panel present, populated with 30 demo entries per dataset.
+    expect(screen.getByText(/health \(30 entries\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/performance \(30 entries\)/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/competition \(30 entries\)/i),
+    ).toBeInTheDocument();
+
+    const sendBtn = screen.getByRole("button", { name: /send to codap/i });
+    expect(sendBtn).toBeEnabled();
+    await user.click(sendBtn);
+    expect(sendDatasetMock).toHaveBeenCalledTimes(3);
   });
 });

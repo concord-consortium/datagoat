@@ -214,6 +214,12 @@ export function buildDataset<T extends { date: string }>(
   const columns = metrics.flatMap((m) =>
     metricColumns(m).map((c) => ({ ...c, metricId: m.id })),
   );
+  // Rows are keyed by attribute name (row[c.spec.name] below), so attribute
+  // names must be unique. A colliding name - a custom metric named "date",
+  // or one matching a generated companion column like "X (level)" - would
+  // silently overwrite an earlier column's value. Uniqueness of user-authored
+  // metric names is enforced upstream by custom-name validation (DGT-2), so
+  // buildDataset does not re-check it here.
   const attributes: AttributeSpec[] = [
     { name: "date", type: "date" },
     ...columns.map((c) => c.spec),

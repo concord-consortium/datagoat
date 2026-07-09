@@ -489,7 +489,7 @@ function CodapPluginDemo() {
   return (
     <div className={css.pluginShell}>
       <h1 className={css.heading}>DataGOAT in CODAP</h1>
-      <p className={css.statusText} role="status">
+      <p className={css.statusText}>
         Demo data - generated sample entries, not saved.
       </p>
       <CodapExportPanel

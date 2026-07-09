@@ -109,8 +109,10 @@ git commit -F /tmp/dgt77-t1.txt
 - Create: `src/codap/demoEntries.ts`
 - Test: `src/codap/demoEntries.test.ts`
 
+**Metric-source note (IMPORTANT):** `PERFORMANCE_METRICS` (`src/metrics/performanceMetrics.ts`) is intentionally an EMPTY array — every performance metric is default-off and lives in `ADDABLE_PERFORMANCE` (`src/metrics/addableMetrics.ts`), which holds the 20 built-in performance metric defs, all of which have chart configs with `.random`. So the demo performance generator sources from `ADDABLE_PERFORMANCE`, NOT `PERFORMANCE_METRICS`. Do NOT modify `performanceMetrics.ts` — leave the empty registry as-is. Health sources from `HEALTH_METRICS` (8 default-on) and competition from `COMPETITION_METRICS` (4 default-on); both are populated and all their ids have chart configs. `ADDABLE_HEALTH` / `ADDABLE_COMPETITION` ids lack chart configs and are intentionally excluded.
+
 **Interfaces:**
-- Consumes: `HEALTH_METRICS` (`src/metrics/healthMetrics.ts`), `PERFORMANCE_METRICS` (`src/metrics/performanceMetrics.ts`), `COMPETITION_METRICS` (`src/metrics/competitionMetrics.ts`), `getMetricChartConfig` (`src/charts/metricChartConfig.ts`), `seededRng` / `hashSeed` (`src/charts/randomValues.ts`), `isoAtDaysAgo` (`src/utils/dates.ts`), entry types + version constants (`src/types/data.ts`, `src/migrations/*`).
+- Consumes: `HEALTH_METRICS` (`src/metrics/healthMetrics.ts`), `ADDABLE_PERFORMANCE` (`src/metrics/addableMetrics.ts`), `COMPETITION_METRICS` (`src/metrics/competitionMetrics.ts`), `getMetricChartConfig` (`src/charts/metricChartConfig.ts`), `seededRng` / `hashSeed` (`src/charts/randomValues.ts`), `isoAtDaysAgo` (`src/utils/dates.ts`), entry types + version constants (`src/types/data.ts`, `src/migrations/*`).
 - Produces:
   - `generateDemoHealthEntries(days?: number, seed?: number): HealthEntry[]`
   - `generateDemoPerformanceEntries(days?: number, seed?: number): PerformanceEntry[]`
@@ -132,7 +134,7 @@ import {
   generateDemoPerformanceEntries,
 } from "./demoEntries";
 import { buildDataset, resolveTrackedMetrics } from "./codapExport";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 
 // Local copies of the plugin's field accessors so the test exercises the
@@ -196,8 +198,8 @@ describe("demoEntries", () => {
   it("performance/competition values land in the metrics bag and export to rows", () => {
     const perf = generateDemoPerformanceEntries(30, 5);
     const metrics = resolveTrackedMetrics(
-      PERFORMANCE_METRICS.map((m) => m.id),
-      PERFORMANCE_METRICS,
+      ADDABLE_PERFORMANCE.map((m) => m.id),
+      ADDABLE_PERFORMANCE,
       [],
     );
     const { attributes, rows } = buildDataset(metrics, perf, readBag);
@@ -239,9 +241,9 @@ Create `src/codap/demoEntries.ts`:
 // (getMetricChartConfig().random), seeded per (seed, category, metricId,
 // day) so a fixed seed is reproducible. A ~20% null rate leaves fields
 // absent, which the export renders as empty cells.
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import { getMetricChartConfig } from "../charts/metricChartConfig";
 import { hashSeed, seededRng } from "../charts/randomValues";
 import { CURRENT_COMPETITION_ENTRY_VERSION } from "../migrations/competitionEntry";
@@ -355,12 +357,16 @@ function generateBagEntries(
   return out;
 }
 
+// Sources from ADDABLE_PERFORMANCE, not PERFORMANCE_METRICS: the latter
+// is intentionally empty (all performance metrics are default-off). The
+// 20 ADDABLE_PERFORMANCE defs are the real built-in performance metrics
+// and all have chart configs with `.random`.
 export function generateDemoPerformanceEntries(
   days: number = DEMO_DAYS,
   seed: number = SESSION_SEED,
 ): PerformanceEntry[] {
   return generateBagEntries(
-    PERFORMANCE_METRICS,
+    ADDABLE_PERFORMANCE,
     "performance",
     CURRENT_PERFORMANCE_ENTRY_VERSION,
     days,
@@ -421,15 +427,18 @@ git commit -F /tmp/dgt77-t2.txt
 
 **Interfaces:**
 - Consumes: `generateDemoHealthEntries`, `generateDemoPerformanceEntries`, `generateDemoCompetitionEntries` (Task 2); `useDemoMode` (`src/contexts/DemoModeContext.tsx`); all existing imports in `CodapPlugin.tsx`.
-- Produces (internal to the file): a `CodapExportPanel` component with props:
+- Produces (internal to the file): a `CodapExportPanel` component whose props bundle each dataset's entries, loading flag, tracked-metric ids, AND the builtins registry to resolve those ids against. Bundling `builtins` per dataset is what lets the demo branch resolve performance against `ADDABLE_PERFORMANCE` while the authed branch keeps resolving against the (empty) `PERFORMANCE_METRICS` — WITHOUT changing authed behavior:
   ```ts
+  interface CodapDataset<T> {
+    entries: T[];
+    loading: boolean;
+    tracked: string[];
+    builtins: MetricDefinition[];
+  }
   interface CodapExportPanelProps {
-    health: { entries: HealthEntry[]; loading: boolean };
-    performance: { entries: PerformanceEntry[]; loading: boolean };
-    competition: { entries: CompetitionEntry[]; loading: boolean };
-    trackedHealth: string[];
-    trackedPerformance: string[];
-    trackedCompetition: string[];
+    health: CodapDataset<HealthEntry>;
+    performance: CodapDataset<PerformanceEntry>;
+    competition: CodapDataset<CompetitionEntry>;
     customMetrics: CustomMetricDef[];
   }
   ```
@@ -500,6 +509,8 @@ a. Add imports (keep alphabetical within groups):
 
 ```ts
 import { useDemoMode } from "../contexts/DemoModeContext";
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
+import type { MetricDefinition } from "../metrics/types";
 import {
   generateDemoCompetitionEntries,
   generateDemoHealthEntries,
@@ -514,18 +525,22 @@ import type { CustomMetricDef } from "../types/customMetrics";
 import { useMemo } from "react";
 ```
 
-(Merge `useMemo` into the existing `react` import line: `import { useMemo, useRef, useState } from "react";`. `HealthEntry` is already imported at line 13 — extend that type import to add `CompetitionEntry` and `PerformanceEntry` rather than adding a second import line.)
+(Merge `useMemo` into the existing `react` import line: `import { useMemo, useRef, useState } from "react";`. `HealthEntry` is already imported at line 13 — extend that type import to add `CompetitionEntry` and `PerformanceEntry` rather than adding a second import line. `MetricDefinition` may already be transitively available; import it from `../metrics/types` as shown. `ADDABLE_PERFORMANCE` is used only by the demo branch in Step 6.)
 
 b. Create the presentational panel. Move the state (`selected`, `sending`, `lastSent`, `sendingRef`), `handleSend`, `dataLoading`, `canSend`, and the returned JSX (current lines 187-382) into it, replacing the direct hook reads with props:
 
 ```tsx
+interface CodapDataset<T> {
+  entries: T[];
+  loading: boolean;
+  tracked: string[];
+  builtins: MetricDefinition[];
+}
+
 interface CodapExportPanelProps {
-  health: { entries: HealthEntry[]; loading: boolean };
-  performance: { entries: PerformanceEntry[]; loading: boolean };
-  competition: { entries: CompetitionEntry[]; loading: boolean };
-  trackedHealth: string[];
-  trackedPerformance: string[];
-  trackedCompetition: string[];
+  health: CodapDataset<HealthEntry>;
+  performance: CodapDataset<PerformanceEntry>;
+  competition: CodapDataset<CompetitionEntry>;
   customMetrics: CustomMetricDef[];
 }
 
@@ -533,9 +548,6 @@ function CodapExportPanel({
   health,
   performance,
   competition,
-  trackedHealth,
-  trackedPerformance,
-  trackedCompetition,
   customMetrics,
 }: CodapExportPanelProps) {
   const { status, error, sendDataset } = useCodapApi();
@@ -561,8 +573,8 @@ function CodapExportPanel({
     try {
       if (selected.health) {
         const metrics = resolveTrackedMetrics(
-          trackedHealth,
-          HEALTH_METRICS,
+          health.tracked,
+          health.builtins,
           customMetrics.filter((m) => m.metricType === "health"),
         );
         const { attributes, rows } = buildDataset(
@@ -581,8 +593,8 @@ function CodapExportPanel({
       }
       if (selected.performance) {
         const metrics = resolveTrackedMetrics(
-          trackedPerformance,
-          PERFORMANCE_METRICS,
+          performance.tracked,
+          performance.builtins,
           customMetrics.filter((m) => m.metricType === "performance"),
         );
         const { attributes, rows } = buildDataset(
@@ -601,8 +613,8 @@ function CodapExportPanel({
       }
       if (selected.competition) {
         const metrics = resolveTrackedMetrics(
-          trackedCompetition,
-          COMPETITION_METRICS,
+          competition.tracked,
+          competition.builtins,
           customMetrics.filter((m) => m.metricType === "competition"),
         );
         const { attributes, rows } = buildDataset(
@@ -754,20 +766,23 @@ function CodapPluginAuthed() {
         health={{
           entries: health.status === "loaded" ? health.entries : [],
           loading: profileLoading || health.status === "loading",
+          tracked: trackedHealth,
+          builtins: HEALTH_METRICS,
         }}
         performance={{
           entries:
             performance.status === "loaded" ? performance.entries : [],
           loading: profileLoading || performance.status === "loading",
+          tracked: trackedPerformance,
+          builtins: PERFORMANCE_METRICS,
         }}
         competition={{
           entries:
             competition.status === "loaded" ? competition.entries : [],
           loading: profileLoading || competition.status === "loading",
+          tracked: trackedCompetition,
+          builtins: COMPETITION_METRICS,
         }}
-        trackedHealth={trackedHealth}
-        trackedPerformance={trackedPerformance}
-        trackedCompetition={trackedCompetition}
         customMetrics={customMetrics}
       />
     </div>
@@ -782,8 +797,14 @@ Add the demo component (place it just below `CodapPluginAuthed`):
 ```tsx
 // Demo variant: rendered when the plugin loads with ?demo. Bypasses all
 // auth/profile gates and feeds the shared export panel synthetic entries
-// (no Firestore, no sign-in). All built-in metrics per category; no
-// custom metrics (there is no profile in demo mode).
+// (no Firestore, no sign-in). Metric sources per category:
+//   health      -> HEALTH_METRICS (default-on)
+//   competition -> COMPETITION_METRICS (default-on)
+//   performance -> ADDABLE_PERFORMANCE (PERFORMANCE_METRICS is empty by
+//                  design; the addable set is the real performance builtins)
+// No custom metrics (there is no profile in demo mode). Each dataset's
+// `builtins` matches its generator's metric source so resolveTrackedMetrics
+// finds every id.
 function CodapPluginDemo() {
   const healthEntries = useMemo(() => generateDemoHealthEntries(), []);
   const performanceEntries = useMemo(
@@ -801,12 +822,24 @@ function CodapPluginDemo() {
         Demo data - generated sample entries, not saved.
       </p>
       <CodapExportPanel
-        health={{ entries: healthEntries, loading: false }}
-        performance={{ entries: performanceEntries, loading: false }}
-        competition={{ entries: competitionEntries, loading: false }}
-        trackedHealth={HEALTH_METRICS.map((m) => m.id)}
-        trackedPerformance={PERFORMANCE_METRICS.map((m) => m.id)}
-        trackedCompetition={COMPETITION_METRICS.map((m) => m.id)}
+        health={{
+          entries: healthEntries,
+          loading: false,
+          tracked: HEALTH_METRICS.map((m) => m.id),
+          builtins: HEALTH_METRICS,
+        }}
+        performance={{
+          entries: performanceEntries,
+          loading: false,
+          tracked: ADDABLE_PERFORMANCE.map((m) => m.id),
+          builtins: ADDABLE_PERFORMANCE,
+        }}
+        competition={{
+          entries: competitionEntries,
+          loading: false,
+          tracked: COMPETITION_METRICS.map((m) => m.id),
+          builtins: COMPETITION_METRICS,
+        }}
         customMetrics={[]}
       />
     </div>

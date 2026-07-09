@@ -178,6 +178,12 @@ export function useCodapApi(): UseCodapApiResult {
       // and units are authoritative from the metric registry, so an
       // older context created with a wrong type or a since-edited
       // unit gets corrected here.
+      //
+      // Reconciliation matches existing attributes to specs by NAME only.
+      // A document created by the older id-keyed export (attributes named
+      // e.g. "hydration") keeps those id-named columns untouched on re-send
+      // - they are never renamed or removed, so the stale column and the
+      // new display-named "Hydration" column coexist. Known limitation.
       const existingValues = (
         existing as { values?: ExistingDataContextShape }
       ).values;

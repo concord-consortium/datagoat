@@ -1,3 +1,17 @@
+// CODAP export data model. The plugin sends three separate per-category
+// datasets (Health / Performance / Competition), each a WIDE, date-keyed
+// table: one row per date, one or two attributes per metric. This is
+// deliberately NOT a single long `date, category, metric, value` table -
+// CODAP's value is dragging an attribute onto an axis, which needs
+// metrics-as-wide-attributes; a shared `value` column mixes types and isn't
+// draggable per metric, and splitting by category avoids a competition-day
+// row carrying all-empty health columns.
+//
+// Column policy: emit a number wherever a number is meaningful (so it
+// graphs and averages) and add a display companion wherever the raw number
+// reads poorly - so time metrics emit [numeric, clock string] and ordinals
+// emit [label, numeric level]. A single-attribute alternative was rejected:
+// it forces choosing between readable display and numeric analysis.
 import type { MetricDefinition } from "../metrics/types";
 import type { CustomMetricDef, CustomMetricLevel } from "../types/customMetrics";
 import type { AttributeSpec, DatasetRow } from "./codapApi";
@@ -89,12 +103,16 @@ export function normalizeMetric(
   if (def.inputType === "ordinal")
     return { id, name, flavor: "ordinal", levels: def.levels };
   if (def.inputType === "tree") return { id, name, flavor: "compound" };
+  // colorScale inputs (e.g. hydration's 8-point scale) fall through to here:
+  // an inherently numeric scale, not a label set, so numeric is correct.
   return { id, name, unit, flavor: "numeric" };
 }
 
-// Map a stored value to its level label. Falls back to the raw string
-// (nominal customs store the label directly) or a stringified number
-// when no level matches.
+// Map a stored value to its level label. Ordinal metrics persist the
+// level's numeric value (not its label), so the lookup matches on
+// `l.value === raw`. Falls back to the raw string or a stringified number
+// when no level matches - nominal custom input is not fully wired yet, so
+// that string passthrough is defensive for when it is.
 function labelFor(
   levels: CustomMetricLevel[] | undefined,
   raw: RawValue,
@@ -183,6 +201,11 @@ export function resolveTrackedMetrics(
 // metric's one or two columns, and one row per entry. `readRaw` pulls a
 // metric's stored value off an entry (health reads typed fields + the
 // customMetrics bag; competition/performance read the metrics bag).
+//
+// Assumes one measurement per (metric, date) - true today, since each
+// entry is a Firestore doc keyed by date. A future multiple-per-day story
+// would add an `index` attribute and change the upsert key to (date,
+// index); the wide attribute layout itself would not change.
 export function buildDataset<T extends { date: string }>(
   metrics: NormalizedMetric[],
   entries: T[],

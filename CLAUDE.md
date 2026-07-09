@@ -171,6 +171,17 @@ Each component has its own CSS Module file next to it. To change how a specific 
 
 All buttons use `appearance: none` to reset browser defaults (required for consistent rendering on iOS Safari). When adding new buttons, include these properties to avoid platform inconsistencies: `appearance`, `font-size`, `font-family: inherit`, `background`, `border`, `border-radius`, `color`.
 
+### Form controls
+
+Default to the shared primitives - `TextField` and `SelectField` (`src/components/form/`) - for any text/email/tel/number/url input or dropdown. They carry the label association, aria wiring, `.has-value` toggle, and dark-theme styling from `fields.module.css`.
+
+The rule differs by element:
+
+- **`<select>`: never raw.** `SelectField` covers every case, so there is no legitimate bare `<select>` outside `src/components/form/`. A CI test enforces this - see `src/components/form/noRawSelect.test.ts`.
+- **`<input>`: raw is fine only when styled.** A bare `<input>` is acceptable when it either (a) is a type the wrappers don't cover - radio, checkbox, color - or (b) still carries the shared `fields.*` classes (`fieldInput`, `fieldLabel`, ...) or lives in a CSS-module that styles it via scoped tag selectors matching those primitives (see `CustomMetricLevelsEditor.module.css`'s `.table input[type="text"]`). Examples of legitimately-raw inputs: the auth email fields (RHF, `fields.fieldInput`), `NumericInput` / `TimeInput` (bespoke grouped/adorned inputs), the profile unit-suffix fields.
+
+What's banned is an **unstyled** native control that skips *both* the wrapper and the shared styling - it renders unstyled against the dark background (the defect the custom-metric Time row shipped with). New form UI should look identical to its neighbors: read the sibling fields in the same file before hand-rolling markup.
+
 ### Responsive layout
 
 The app column width and height are controlled by media queries in `src/index.css` targeting `#root > main`. Component styles should not set their own width constraints beyond `max-width` on inner content (e.g., the login form uses `max-width: 320px`). Horizontal padding for all views comes from `.centered` in `common.module.css`.

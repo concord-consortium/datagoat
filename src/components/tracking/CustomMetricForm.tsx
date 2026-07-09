@@ -21,6 +21,7 @@ import { YN_LEVELS } from "../../metrics/yesNo";
 import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
 import { MetricOverrideForm } from "./MetricOverrideForm";
 import { TextField } from "../form/TextField";
+import { SelectField } from "../form/SelectField";
 import { ScheduleField } from "../form/ScheduleField";
 import radioCss from "../form/RadioGroup.module.css";
 import { CustomMetricLevelsEditor } from "./CustomMetricLevelsEditor";
@@ -767,36 +768,39 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
 
       <If condition={isTime}>
         <div className={css.row}>
-          <label className={css.fieldLabel}>
-            Unit
-            <select
-              value={draft.timeUnit}
-              onChange={(e) => {
-                const u = e.target.value as "hr" | "min" | "sec";
-                // Keep precision <= unit: only hr allows a precision
-                // choice (m or s); min and sec force s.
-                const p = u === "hr" ? draft.timePrecision : "s";
-                setDraft((prev) => ({ ...prev, timeUnit: u, timePrecision: p }));
-              }}
-            >
-              <option value="hr">hr</option>
-              <option value="min">min</option>
-              <option value="sec">sec</option>
-            </select>
-          </label>
-          <label className={css.fieldLabel}>
-            Precision
-            <select
-              value={draft.timePrecision}
-              disabled={draft.timeUnit === "sec"}
-              onChange={(e) => update("timePrecision", e.target.value as "m" | "s")}
-            >
-              <If condition={draft.timeUnit === "hr"}>
-                <option value="m">minutes</option>
-              </If>
-              <option value="s">seconds</option>
-            </select>
-          </label>
+          <SelectField
+            id="cm-time-unit"
+            label="Unit"
+            options={[
+              { value: "hr", label: "hr" },
+              { value: "min", label: "min" },
+              { value: "sec", label: "sec" },
+            ]}
+            value={draft.timeUnit}
+            onChange={(e) => {
+              const u = e.target.value as "hr" | "min" | "sec";
+              // Keep precision <= unit: only hr allows a precision
+              // choice (m or s); min and sec force s.
+              const p = u === "hr" ? draft.timePrecision : "s";
+              setDraft((prev) => ({ ...prev, timeUnit: u, timePrecision: p }));
+            }}
+          />
+          <SelectField
+            id="cm-time-precision"
+            label="Precision"
+            // Precision must be finer than the unit: hr offers minutes or
+            // seconds; min and sec force seconds (the select is also
+            // disabled for sec, whose only value is seconds).
+            options={[
+              ...(draft.timeUnit === "hr"
+                ? [{ value: "m", label: "minutes" }]
+                : []),
+              { value: "s", label: "seconds" },
+            ]}
+            value={draft.timePrecision}
+            disabled={draft.timeUnit === "sec"}
+            onChange={(e) => update("timePrecision", e.target.value as "m" | "s")}
+          />
         </div>
       </If>
 

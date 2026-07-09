@@ -42,19 +42,17 @@ const SESSION_SEED = Math.floor(Math.random() * 0xffffffff);
 // The five HealthEntry fields that are typed numeric slots (everything
 // else on a health entry - mood, relativeProteinIntake, custom metrics -
 // lives in the customMetrics bag, matching readHealthField).
-type NumericHealthField =
-  | "hydration"
-  | "sleepTime"
-  | "sleepEfficiency"
-  | "protein"
-  | "leanMass";
-const NUMERIC_HEALTH_FIELDS = new Set<string>([
+// Single source list for the 5 typed numeric health fields; the union
+// type and the runtime lookup set both derive from it so they cannot drift.
+const NUMERIC_HEALTH_FIELD_IDS = [
   "hydration",
   "sleepTime",
   "sleepEfficiency",
   "protein",
   "leanMass",
-]);
+] as const;
+type NumericHealthField = (typeof NUMERIC_HEALTH_FIELD_IDS)[number];
+const NUMERIC_HEALTH_FIELDS = new Set<string>(NUMERIC_HEALTH_FIELD_IDS);
 
 function rngFor(seed: number, category: string, metricId: string, day: number) {
   return seededRng(hashSeed(`${seed}:${category}:${metricId}:${day}`));

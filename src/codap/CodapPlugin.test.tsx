@@ -274,7 +274,7 @@ describe("CodapPlugin", () => {
       entries: [{
         version: 1, date: "2026-04-01", hydration: 64, sleepTime: 7,
         availability: {},
-      } as HealthEntry],
+      }],
     };
     dataState.performance = {
       status: "loaded",

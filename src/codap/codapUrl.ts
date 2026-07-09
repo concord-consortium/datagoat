@@ -29,6 +29,10 @@ function diOrigin(): string {
 // useDemoMode() (the session demo state survives the app's ?demo-stripping
 // redirects, whereas window.location.search does not), and main.tsx from
 // the top-level /codap?demo URL (which still carries the param pre-React).
+//
+// This relies on CODAP preserving the di= value's query string verbatim
+// when it loads the plugin iframe (confirmed by a manual runtime test, not
+// unit tests). If CODAP ever starts stripping it, URL-encode the di value.
 export function buildCodapWrappedUrl(demo: boolean): string {
   return `${CODAP_ORIGIN}?di=${diOrigin()}/codap${demo ? "?demo" : ""}`;
 }

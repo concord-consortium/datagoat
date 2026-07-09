@@ -6,6 +6,13 @@
 // (getMetricChartConfig().random), seeded per (seed, category, metricId,
 // day) so a fixed seed is reproducible. A ~20% null rate leaves fields
 // absent, which the export renders as empty cells.
+//
+// Metric sources: health = HEALTH_METRICS, competition = COMPETITION_METRICS
+// (both default-on). Performance sources from ADDABLE_PERFORMANCE because its
+// own registry (PERFORMANCE_METRICS) is empty by design. ADDABLE_HEALTH and
+// ADDABLE_COMPETITION are intentionally NOT used: their ids have no chart
+// config, so getMetricChartConfig would fall back to DEFAULT_CONFIG (0..100)
+// and emit nonsense values and mismatched ordinal labels.
 import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";

@@ -47,9 +47,17 @@ import css from "./CodapPlugin.module.css";
 // library out of the initial bundle for the 99% of users who never
 // visit /codap.
 export default function CodapPlugin() {
+  // Both hooks run unconditionally before any branch so hook order stays
+  // stable across renders. This repo has no react-hooks lint to catch a
+  // conditional-hook regression, so keep both calls here even though only
+  // one of demo / auth is used per branch.
   const demoMode = useDemoMode();
   const { user, loading, isEmailVerifiedOrTrusted } = useAuth();
 
+  // Demo mode short-circuits before every auth / profile gate. This is safe
+  // because CodapPluginDemo reads no Firestore and shows only generated
+  // data - there is no private data behind this branch to protect. Do not
+  // add a real data read here, and do not move this check below the gates.
   if (demoMode) {
     return <CodapPluginDemo />;
   }
@@ -242,6 +250,12 @@ function CodapPluginAuthed() {
   );
 }
 
+// `builtins` travels with each dataset (rather than the panel reading a
+// fixed registry) so each caller points it at the right metric source per
+// branch: the demo branch resolves performance against ADDABLE_PERFORMANCE
+// while the authed branch keeps resolving against the intentionally-empty
+// PERFORMANCE_METRICS - without changing authed behavior. The asymmetry is
+// deliberate, not a bug; see CodapPluginAuthed vs CodapPluginDemo.
 interface CodapDataset<T> {
   entries: T[];
   loading: boolean;
@@ -254,6 +268,10 @@ interface CodapExportPanelProps {
   performance: CodapDataset<PerformanceEntry>;
   competition: CodapDataset<CompetitionEntry>;
   customMetrics: CustomMetricDef[];
+  // Optional prefix for dataset / table names (e.g. "Demo"). Demo mode sets
+  // it so its sends land on distinct CODAP tables (DataGOAT-Demo-Health,
+  // titled "Demo Health") and can never merge into or overwrite a real
+  // signed-in user's tables of the same name. Undefined = no prefix (authed).
   namespaceLabel?: string;
 }
 

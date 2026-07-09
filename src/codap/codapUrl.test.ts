@@ -33,35 +33,35 @@ describe("buildCodapWrappedUrl", () => {
 
   it("uses localhost origin (with port) when running on localhost", () => {
     stubLocation("http://localhost:5173/codap");
-    expect(buildCodapWrappedUrl()).toBe(
+    expect(buildCodapWrappedUrl(false)).toBe(
       "https://codap3.concord.org?di=http://localhost:5173/codap",
     );
   });
 
   it("uses prod origin when running on datagoat.concord.org", () => {
     stubLocation("https://datagoat.concord.org/codap");
-    expect(buildCodapWrappedUrl()).toBe(
+    expect(buildCodapWrappedUrl(false)).toBe(
       "https://codap3.concord.org?di=https://datagoat.concord.org/codap",
     );
   });
 
   it("uses preview-channel origin when running on a Firebase preview host", () => {
     stubLocation("https://datagoat-staging--pr-3-abc.web.app/codap");
-    expect(buildCodapWrappedUrl()).toBe(
+    expect(buildCodapWrappedUrl(false)).toBe(
       "https://codap3.concord.org?di=https://datagoat-staging--pr-3-abc.web.app/codap",
     );
   });
 
-  it("appends ?demo to the di target when demo is present in the current URL", () => {
-    stubLocation("http://localhost:5173/dashboard?demo");
-    expect(buildCodapWrappedUrl()).toBe(
+  it("appends ?demo to the di target when demo is true", () => {
+    stubLocation("http://localhost:5173/dashboard");
+    expect(buildCodapWrappedUrl(true)).toBe(
       "https://codap3.concord.org?di=http://localhost:5173/codap?demo",
     );
   });
 
-  it("omits the demo suffix when the current URL has no demo param", () => {
+  it("omits the demo suffix when demo is false", () => {
     stubLocation("http://localhost:5173/dashboard");
-    expect(buildCodapWrappedUrl()).toBe(
+    expect(buildCodapWrappedUrl(false)).toBe(
       "https://codap3.concord.org?di=http://localhost:5173/codap",
     );
   });

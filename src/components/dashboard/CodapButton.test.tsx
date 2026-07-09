@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { DemoModeProvider } from "../../contexts/DemoModeContext";
 
 import { CodapButton } from "./CodapButton";
 
@@ -125,5 +127,19 @@ describe("CodapButton", () => {
       expect.any(Function),
     );
     expect(mql._listeners.size).toBe(0);
+  });
+
+  it("carries ?demo into the di target when the app is in demo mode", () => {
+    render(
+      <MemoryRouter initialEntries={["/dashboard?demo"]}>
+        <DemoModeProvider>
+          <CodapButton />
+        </DemoModeProvider>
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole("link", {
+      name: /Analyze Your Data in CODAP/,
+    });
+    expect(link.getAttribute("href")).toContain("/codap?demo");
   });
 });

@@ -23,15 +23,13 @@ function diOrigin(): string {
   return window.location.origin;
 }
 
-// When the current page carries `?demo`, the flag is threaded onto the
-// di= plugin path (`/codap?demo`) so DemoModeProvider inside the CODAP
-// iframe puts the export panel into demo mode. Covers both callers: the
-// dashboard button (window at /dashboard?demo) and the main.tsx top-level
-// redirect (window at /codap?demo).
-export function buildCodapWrappedUrl(): string {
-  const demo =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("demo") !== null;
+// The `demo` flag is threaded onto the di= plugin path (`/codap?demo`) so
+// DemoModeProvider inside the CODAP iframe puts the export panel into demo
+// mode. Callers pass demo from the right source: CodapButton from
+// useDemoMode() (the session demo state survives the app's ?demo-stripping
+// redirects, whereas window.location.search does not), and main.tsx from
+// the top-level /codap?demo URL (which still carries the param pre-React).
+export function buildCodapWrappedUrl(demo: boolean): string {
   return `${CODAP_ORIGIN}?di=${diOrigin()}/codap${demo ? "?demo" : ""}`;
 }
 

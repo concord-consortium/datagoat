@@ -12,21 +12,4 @@ import type { MetricDefinition } from "./types";
 // gets moved from ADDABLE_PERFORMANCE to this array. No other code
 // path needs to change — Dashboard, PerformanceLog, MetricDetail, and
 // CODAP all consume this registry.
-//
-// Note: For demo/CODAP export testing, one sample metric is included
-// so generated demo datasets have values to export. This metric is
-// present only for test/demo purposes and should be moved to
-// ADDABLE_PERFORMANCE if/when demo mode is retired.
-export const PERFORMANCE_METRICS: MetricDefinition[] = [
-  {
-    id: "oneRepMaxSquat",
-    name: "1 Rep Max Squat",
-    unit: "kg or lbs",
-    type: "performance",
-    whoCollects: "Self, S&C (Strength & Conditioning Coach)",
-    howCollected: "Total load in lbs or kgs.",
-    description:
-      "The maximum load achievable for 1 repetition of barbell back squat through a full range of motion.",
-    inputType: "numeric",
-  },
-];
+export const PERFORMANCE_METRICS: MetricDefinition[] = [];

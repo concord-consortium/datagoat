@@ -6,7 +6,7 @@ import {
   generateDemoPerformanceEntries,
 } from "./demoEntries";
 import { buildDataset, resolveTrackedMetrics } from "./codapExport";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 
 // Local copies of the plugin's field accessors so the test exercises the
@@ -70,8 +70,8 @@ describe("demoEntries", () => {
   it("performance/competition values land in the metrics bag and export to rows", () => {
     const perf = generateDemoPerformanceEntries(30, 5);
     const metrics = resolveTrackedMetrics(
-      PERFORMANCE_METRICS.map((m) => m.id),
-      PERFORMANCE_METRICS,
+      ADDABLE_PERFORMANCE.map((m) => m.id),
+      ADDABLE_PERFORMANCE,
       [],
     );
     const { attributes, rows } = buildDataset(metrics, perf, readBag);

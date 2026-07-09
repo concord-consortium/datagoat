@@ -6,9 +6,9 @@
 // (getMetricChartConfig().random), seeded per (seed, category, metricId,
 // day) so a fixed seed is reproducible. A ~20% null rate leaves fields
 // absent, which the export renders as empty cells.
+import { ADDABLE_PERFORMANCE } from "../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../metrics/competitionMetrics";
 import { HEALTH_METRICS } from "../metrics/healthMetrics";
-import { PERFORMANCE_METRICS } from "../metrics/performanceMetrics";
 import { getMetricChartConfig } from "../charts/metricChartConfig";
 import { hashSeed, seededRng } from "../charts/randomValues";
 import { CURRENT_COMPETITION_ENTRY_VERSION } from "../migrations/competitionEntry";
@@ -122,12 +122,16 @@ function generateBagEntries(
   return out;
 }
 
+// Sources from ADDABLE_PERFORMANCE, not PERFORMANCE_METRICS: the latter
+// is intentionally empty (all performance metrics are default-off). The
+// 20 ADDABLE_PERFORMANCE defs are the real built-in performance metrics
+// and all have chart configs with `.random`.
 export function generateDemoPerformanceEntries(
   days: number = DEMO_DAYS,
   seed: number = SESSION_SEED,
 ): PerformanceEntry[] {
   return generateBagEntries(
-    PERFORMANCE_METRICS,
+    ADDABLE_PERFORMANCE,
     "performance",
     CURRENT_PERFORMANCE_ENTRY_VERSION,
     days,

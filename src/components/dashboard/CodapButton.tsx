@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { buildCodapWrappedUrl } from "../../codap/codapUrl";
+import { useDemoMode } from "../../contexts/DemoModeContext";
 import { MobileCodapModal } from "./MobileCodapModal";
 import common from "../common.module.css";
 import css from "./CodapButton.module.css";
@@ -14,6 +15,7 @@ const DESKTOP_QUERY = "(min-width: 640px)";
 // branch flips reactively when the user resizes / toggles device mode.
 // Same pattern as DashboardHeaderSlide's reduced-motion guard.
 export function CodapButton() {
+  const demoMode = useDemoMode();
   const [isDesktop, setIsDesktop] = useState(() => {
     if (typeof window === "undefined") return true;
     return window.matchMedia(DESKTOP_QUERY).matches;
@@ -108,7 +110,7 @@ export function CodapButton() {
       {isDesktop ? (
         <a
           className={css.codapBtn}
-          href={buildCodapWrappedUrl()}
+          href={buildCodapWrappedUrl(demoMode)}
           target="_blank"
           rel="noopener noreferrer"
         >

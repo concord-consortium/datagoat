@@ -29,38 +29,7 @@ vi.mock("@concord-consortium/codap-plugin-api", () => codapMocks);
 
 vi.mock("../utils/logError", () => ({ logError: vi.fn() }));
 
-import {
-  ensureSuccess,
-  inferAttributeType,
-  useCodapApi,
-  type DatasetRow,
-} from "./codapApi";
-
-describe("inferAttributeType", () => {
-  it("returns 'date' when the attribute name is 'date' regardless of rows", () => {
-    expect(inferAttributeType("date", [])).toBe("date");
-    expect(inferAttributeType("date", [{ date: 1 }])).toBe("date");
-  });
-
-  it("returns 'numeric' when the first non-null value is a number", () => {
-    const rows: DatasetRow[] = [
-      { hydration: null },
-      { hydration: 64 },
-      { hydration: "skipped" },
-    ];
-    expect(inferAttributeType("hydration", rows)).toBe("numeric");
-  });
-
-  it("returns 'categorical' when the first non-null value is non-numeric", () => {
-    const rows: DatasetRow[] = [{ availability: "practice:full" }];
-    expect(inferAttributeType("availability", rows)).toBe("categorical");
-  });
-
-  it("falls back to 'categorical' when all rows are null/missing", () => {
-    const rows: DatasetRow[] = [{ x: null }, {}, { x: null }];
-    expect(inferAttributeType("x", rows)).toBe("categorical");
-  });
-});
+import { ensureSuccess, useCodapApi } from "./codapApi";
 
 describe("ensureSuccess", () => {
   it("throws 'CODAP <step> failed' when result is undefined", () => {
@@ -111,9 +80,12 @@ describe("useCodapApi sendDataset", () => {
     await act(async () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
-        title: "Health & Performance",
+        title: "Health",
         collectionName: "Health",
-        attributes: ["date", "hydration"],
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric", unit: "level" },
+        ],
         rows: [{ date: "2026-04-01", hydration: 64 }],
       });
     });
@@ -124,13 +96,13 @@ describe("useCodapApi sendDataset", () => {
         resource: "dataContext",
         values: expect.objectContaining({
           name: "DataGOAT-Health",
-          title: "Health & Performance",
+          title: "Health",
           collections: [
             expect.objectContaining({
               name: "Health",
               attrs: [
                 { name: "date", type: "date" },
-                { name: "hydration", type: "numeric" },
+                { name: "hydration", type: "numeric", unit: "level" },
               ],
             }),
           ],
@@ -163,7 +135,10 @@ describe("useCodapApi sendDataset", () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
         collectionName: "Health",
-        attributes: ["date", "hydration"],
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
         rows: [{ date: "2026-04-01", hydration: 64 }],
       });
     });
@@ -189,7 +164,10 @@ describe("useCodapApi sendDataset", () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
         collectionName: "Health",
-        attributes: ["date", "hydration"],
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
         rows: [{ date: "2026-04-02", hydration: 65 }],
       });
     });
@@ -220,7 +198,10 @@ describe("useCodapApi sendDataset", () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
         collectionName: "Health",
-        attributes: ["date", "hydration"],
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
         rows: [{ date: "2026-04-01", hydration: 80 }],
       });
     });
@@ -257,7 +238,10 @@ describe("useCodapApi sendDataset", () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
         collectionName: "Health",
-        attributes: ["date", "hydration"],
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
         rows: [{ date: "2026-04-01", hydration: 64 }],
       });
     });
@@ -270,7 +254,7 @@ describe("useCodapApi sendDataset", () => {
     );
   });
 
-  it("does NOT downgrade a numeric attr to categorical when re-sending empty rows", async () => {
+  it("leaves an attribute type alone when the spec type already matches", async () => {
     codapMocks.getDataContext.mockResolvedValue({
       success: true,
       values: {
@@ -290,11 +274,86 @@ describe("useCodapApi sendDataset", () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
         collectionName: "Health",
-        attributes: ["date", "hydration"],
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
         rows: [],
       });
     });
     expect(codapMocks.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it("reconciles a mismatched attr type on an empty-rows re-send", async () => {
+    codapMocks.getDataContext.mockResolvedValue({
+      success: true,
+      values: {
+        collections: [
+          {
+            name: "Health",
+            attrs: [
+              { name: "date", type: "date" },
+              { name: "hydration", type: "categorical" },
+            ],
+          },
+        ],
+      },
+    });
+    const result = await renderApi();
+    await act(async () => {
+      await result.current.sendDataset({
+        name: "DataGOAT-Health",
+        collectionName: "Health",
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "hydration", type: "numeric" },
+        ],
+        rows: [],
+      });
+    });
+    expect(codapMocks.updateAttribute).toHaveBeenCalledWith(
+      "DataGOAT-Health",
+      "Health",
+      "hydration",
+      { name: "hydration" },
+      { type: "numeric" },
+    );
+  });
+
+  it("reconciles a changed unit even when the type is unchanged", async () => {
+    codapMocks.getDataContext.mockResolvedValue({
+      success: true,
+      values: {
+        collections: [
+          {
+            name: "Performance",
+            attrs: [
+              { name: "date", type: "date" },
+              { name: "Vertical Jump", type: "numeric", unit: "in" },
+            ],
+          },
+        ],
+      },
+    });
+    const result = await renderApi();
+    await act(async () => {
+      await result.current.sendDataset({
+        name: "DataGOAT-Performance",
+        collectionName: "Performance",
+        attributes: [
+          { name: "date", type: "date" },
+          { name: "Vertical Jump", type: "numeric", unit: "cm" },
+        ],
+        rows: [{ date: "2026-04-01", "Vertical Jump": 60 }],
+      });
+    });
+    expect(codapMocks.updateAttribute).toHaveBeenCalledWith(
+      "DataGOAT-Performance",
+      "Performance",
+      "Vertical Jump",
+      { name: "Vertical Jump" },
+      { type: "numeric", unit: "cm" },
+    );
   });
 
   it("does nothing destructive when rows are empty and the context already exists", async () => {
@@ -307,7 +366,7 @@ describe("useCodapApi sendDataset", () => {
       await result.current.sendDataset({
         name: "DataGOAT-Health",
         collectionName: "Health",
-        attributes: ["date"],
+        attributes: [{ name: "date", type: "date" }],
         rows: [],
       });
     });

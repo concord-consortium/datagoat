@@ -2,7 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { HealthEntry, CompetitionEntry } from "../types/data";
+import type {
+  CompetitionEntry,
+  HealthEntry,
+  PerformanceEntry,
+} from "../types/data";
+import type { CustomMetricDef } from "../types/customMetrics";
 import type { ProfileLoadState } from "../types/profile";
 import type { DataLoadState } from "../types/data";
 import type { CodapStatus } from "./codapApi";
@@ -138,14 +143,34 @@ function makeCompleteProfile(
 const dataState: {
   health: DataLoadState<HealthEntry>;
   competition: DataLoadState<CompetitionEntry>;
+  performance: DataLoadState<PerformanceEntry>;
 } = {
   health: { status: "loading" },
   competition: { status: "loading" },
+  performance: { status: "loading" },
 };
 
 vi.mock("../contexts/DataContext", () => ({
   useHealthData: () => dataState.health,
   useCompetitionData: () => dataState.competition,
+  usePerformanceData: () => dataState.performance,
+}));
+
+const customState: { metrics: CustomMetricDef[]; loading: boolean } = {
+  metrics: [],
+  loading: false,
+};
+
+vi.mock("../contexts/CustomMetricsContext", () => ({
+  useCustomMetrics: () => ({
+    metrics: customState.metrics,
+    loading: customState.loading,
+  }),
+}));
+
+const demoState = { enabled: false };
+vi.mock("../contexts/DemoModeContext", () => ({
+  useDemoMode: () => demoState.enabled,
 }));
 
 import CodapPlugin from "./CodapPlugin";
@@ -159,6 +184,10 @@ describe("CodapPlugin", () => {
     userState.loadState = { status: "loading" };
     dataState.health = { status: "loading" };
     dataState.competition = { status: "loading" };
+    dataState.performance = { status: "loading" };
+    customState.metrics = [];
+    customState.loading = false;
+    demoState.enabled = false;
   });
 
   it("loading state renders the loading text", () => {
@@ -234,35 +263,36 @@ describe("CodapPlugin", () => {
         athleteType: "endurance",
         competitionTerm: "season",
         trackedHealthMetrics: ["hydration", "sleepTime"],
-        trackedCompetitionMetrics: ["fortyYardDash"],
+        trackedPerformanceMetrics: ["vjump"],
+        trackedCompetitionMetrics: ["winningPercentage", "times"],
         profileComplete: true,
         trackingSetupComplete: true,
       },
     };
+    customState.metrics = [
+      {
+        id: "vjump", ownerId: "u", name: "Vertical Jump",
+        metricType: "performance", primitive: "numeric", unit: "in",
+        inputType: "numeric", referenceUrl: "", createdAt: 0, updatedAt: 0,
+      },
+    ];
     dataState.health = {
       status: "loaded",
-      entries: [
-        {
-          version: 1,
-          date: "2026-04-01",
-          hydration: 64,
-          sleepTime: 7,
-          sleepEfficiency: 0,
-          protein: 0,
-          leanMass: 0,
-          availability: {},
-        },
-      ],
+      entries: [{
+        version: 1, date: "2026-04-01", hydration: 64, sleepTime: 7,
+        availability: {},
+      }],
+    };
+    dataState.performance = {
+      status: "loaded",
+      entries: [{ version: 1, date: "2026-04-01", metrics: { vjump: 24 } }],
     };
     dataState.competition = {
       status: "loaded",
-      entries: [
-        {
-          version: 1,
-          date: "2026-04-01",
-          metrics: { fortyYardDash: 4.5 },
-        },
-      ],
+      entries: [{
+        version: 1, date: "2026-04-01",
+        metrics: { winningPercentage: 1, times: 1.5 },
+      }],
     };
 
     const user = userEvent.setup();
@@ -271,33 +301,219 @@ describe("CodapPlugin", () => {
     const sendBtn = screen.getByRole("button", { name: /send to codap/i });
     expect(sendBtn).toBeEnabled();
 
-    const [healthBox, competitionBox] = screen.getAllByRole("checkbox");
+    const [healthBox, performanceBox, competitionBox] =
+      screen.getAllByRole("checkbox");
     await user.click(healthBox);
+    await user.click(performanceBox);
     await user.click(competitionBox);
     expect(sendBtn).toBeDisabled();
 
     await user.click(healthBox);
+    await user.click(performanceBox);
+    await user.click(competitionBox);
     expect(sendBtn).toBeEnabled();
 
-    await user.click(competitionBox);
     await user.click(sendBtn);
 
-    expect(sendDatasetMock).toHaveBeenCalledTimes(2);
+    expect(sendDatasetMock).toHaveBeenCalledTimes(3);
     expect(sendDatasetMock).toHaveBeenNthCalledWith(1, {
       name: "DataGOAT-Health",
-      title: "Health & Performance",
+      title: "Health",
       collectionName: "Health",
       tableName: "Health",
-      attributes: ["date", "hydration", "sleepTime"],
-      rows: [{ date: "2026-04-01", hydration: 64, sleepTime: 7 }],
+      attributes: [
+        { name: "date", type: "date" },
+        { name: "Hydration", type: "numeric", unit: "level" },
+        { name: "Total Sleep Time", type: "numeric", unit: "hr" },
+        { name: "Total Sleep Time (h:mm)", type: "categorical" },
+      ],
+      rows: [{
+        date: "2026-04-01",
+        Hydration: 64,
+        "Total Sleep Time": 7,
+        "Total Sleep Time (h:mm)": "7:00",
+      }],
     });
     expect(sendDatasetMock).toHaveBeenNthCalledWith(2, {
+      name: "DataGOAT-Performance",
+      title: "Performance",
+      collectionName: "Performance",
+      tableName: "Performance",
+      attributes: [
+        { name: "date", type: "date" },
+        { name: "Vertical Jump", type: "numeric", unit: "in" },
+      ],
+      rows: [{ date: "2026-04-01", "Vertical Jump": 24 }],
+    });
+    expect(sendDatasetMock).toHaveBeenNthCalledWith(3, {
       name: "DataGOAT-Competition",
       title: "Competition",
       collectionName: "Competition",
-      attributes: ["date", "fortyYardDash"],
-      rows: [{ date: "2026-04-01", fortyYardDash: 4.5 }],
+      tableName: "Competition",
+      attributes: [
+        { name: "date", type: "date" },
+        { name: "Winning Percentage", type: "categorical" },
+        { name: "Winning Percentage (level)", type: "numeric" },
+        { name: "Times", type: "numeric", unit: "min" },
+        { name: "Times (m:ss)", type: "categorical" },
+      ],
+      rows: [{
+        date: "2026-04-01",
+        "Winning Percentage": "Win",
+        "Winning Percentage (level)": 1,
+        Times: 1.5,
+        "Times (m:ss)": "1:30",
+      }],
     });
+  });
+
+  it("resolves a tracked built-in performance metric from ADDABLE_PERFORMANCE (regression: was silently dropped)", async () => {
+    // verticalJump is a built-in that lives in ADDABLE_PERFORMANCE (not the
+    // empty PERFORMANCE_METRICS) and is not a custom metric. It is tracked
+    // by id only, so the authed export must resolve its definition from
+    // ADDABLE_PERFORMANCE or the column is dropped.
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        trackedHealthMetrics: [],
+        trackedPerformanceMetrics: ["verticalJump"],
+        trackedCompetitionMetrics: [],
+      },
+    };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = {
+      status: "loaded",
+      entries: [
+        { version: 1, date: "2026-04-01", metrics: { verticalJump: 24 } },
+      ],
+    };
+    dataState.competition = { status: "loaded", entries: [] };
+    customState.metrics = [];
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    await user.click(screen.getByRole("button", { name: /send to codap/i }));
+
+    expect(sendDatasetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DataGOAT-Performance",
+        attributes: expect.arrayContaining([
+          { name: "Vertical Jump", type: "numeric", unit: "in" },
+        ]),
+        rows: [{ date: "2026-04-01", "Vertical Jump": 24 }],
+      }),
+    );
+  });
+
+  it("resolves a tracked built-in health metric from ADDABLE_HEALTH (regression: was silently dropped)", async () => {
+    // hrv lives in ADDABLE_HEALTH (not HEALTH_METRICS) and is not a custom
+    // metric; readHealthField reads it from the customMetrics bag.
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        trackedHealthMetrics: ["hrv"],
+        trackedPerformanceMetrics: [],
+        trackedCompetitionMetrics: [],
+      },
+    };
+    dataState.health = {
+      status: "loaded",
+      entries: [
+        { version: 1, date: "2026-04-01", availability: {}, customMetrics: { hrv: 55 } },
+      ],
+    };
+    dataState.performance = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loaded", entries: [] };
+    customState.metrics = [];
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    await user.click(screen.getByRole("button", { name: /send to codap/i }));
+
+    expect(sendDatasetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DataGOAT-Health",
+        attributes: expect.arrayContaining([
+          { name: "HRV", type: "numeric", unit: "ms" },
+        ]),
+        rows: [{ date: "2026-04-01", HRV: 55 }],
+      }),
+    );
+  });
+
+  it("resolves a tracked built-in competition metric from ADDABLE_COMPETITION (regression: was silently dropped)", async () => {
+    // assists lives in ADDABLE_COMPETITION (not COMPETITION_METRICS).
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = {
+      status: "loaded",
+      profile: {
+        ...makeCompleteProfile().profile,
+        trackedHealthMetrics: [],
+        trackedPerformanceMetrics: [],
+        trackedCompetitionMetrics: ["assists"],
+      },
+    };
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
+    dataState.competition = {
+      status: "loaded",
+      entries: [{ version: 1, date: "2026-04-01", metrics: { assists: 3 } }],
+    };
+    customState.metrics = [];
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+    await user.click(screen.getByRole("button", { name: /send to codap/i }));
+
+    expect(sendDatasetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "DataGOAT-Competition",
+        attributes: expect.arrayContaining([
+          { name: "Assists", type: "numeric" },
+        ]),
+        rows: [{ date: "2026-04-01", Assists: 3 }],
+      }),
+    );
+  });
+
+  it("disables 'Send to CODAP' while custom metrics are still loading (even if profile + entries are loaded)", () => {
+    // Custom metrics loading late must gate Send: resolveTrackedMetrics would
+    // otherwise drop every tracked custom metric, and a re-send can't add the
+    // missing columns back to an existing CODAP context.
+    ctx.authState = {
+      user: { emailVerified: true, email: "athlete@school.edu" },
+      loading: false,
+    };
+    userState.loadState = makeCompleteProfile();
+    dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
+    dataState.competition = { status: "loaded", entries: [] };
+    customState.metrics = [];
+    customState.loading = true;
+    codapState.status = "connected";
+
+    render(<CodapPlugin />);
+
+    expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send to codap/i }),
+    ).toBeDisabled();
   });
 
   it("authenticated-and-verified state disables 'Send to CODAP' while data or profile is still loading and shows a loading status", () => {
@@ -344,6 +560,7 @@ describe("CodapPlugin", () => {
       },
     };
     dataState.health = { status: "loaded", entries: [] };
+    dataState.performance = { status: "loaded", entries: [] };
     dataState.competition = { status: "loading" };
     codapState.status = "connected";
 
@@ -354,7 +571,7 @@ describe("CodapPlugin", () => {
     expect(sendBtn).toBeDisabled();
     expect(screen.getByText(/loading your data/i)).toBeInTheDocument();
 
-    const [, competitionBox] = screen.getAllByRole("checkbox");
+    const [, , competitionBox] = screen.getAllByRole("checkbox");
     await user.click(competitionBox);
 
     expect(sendBtn).toBeEnabled();
@@ -454,5 +671,39 @@ describe("CodapPlugin", () => {
     expect(
       screen.queryByRole("button", { name: /send to codap/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("demo mode bypasses auth and renders the export panel with generated entries", async () => {
+    demoState.enabled = true;
+    ctx.authState = { user: null, loading: false };
+    userState.loadState = { status: "loading" };
+    codapState.status = "connected";
+
+    const user = userEvent.setup();
+    render(<CodapPlugin />);
+
+    // No sign-in gate.
+    expect(
+      screen.queryByRole("button", { name: /continue with google/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/signed in as/i)).not.toBeInTheDocument();
+
+    // Export panel present, populated with 30 demo entries per dataset.
+    expect(screen.getByText(/health \(30 entries\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/performance \(30 entries\)/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/competition \(30 entries\)/i),
+    ).toBeInTheDocument();
+
+    const sendBtn = screen.getByRole("button", { name: /send to codap/i });
+    expect(sendBtn).toBeEnabled();
+    await user.click(sendBtn);
+    expect(sendDatasetMock).toHaveBeenCalledTimes(3);
+    expect(sendDatasetMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ name: "DataGOAT-Demo-Health", title: "Demo Health" }),
+    );
   });
 });

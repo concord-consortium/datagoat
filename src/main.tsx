@@ -17,7 +17,11 @@ const isCodapRoute = window.location.pathname === "/codap";
 // redirect away from itself. The dev escape hatch (?noredirect=1) is
 // honored by shouldRedirectToCodap.
 if (isCodapRoute && shouldRedirectToCodap()) {
-  window.location.replace(buildCodapWrappedUrl());
+  window.location.replace(
+    buildCodapWrappedUrl(
+      new URLSearchParams(window.location.search).get("demo") !== null,
+    ),
+  );
 } else {
   // Path-based SW skip for /codap. Per spec: the CODAP plugin route is
   // loaded inside CODAP's iframe; the SW would caching-conflict with

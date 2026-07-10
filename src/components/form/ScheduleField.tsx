@@ -51,6 +51,14 @@ export function ScheduleField({
   idPrefix = "schedule",
 }: ScheduleFieldProps) {
   const periodic = value.period !== "irregular";
+  // The count field is meaningful only for a periodic schedule whose days
+  // aren't already pinned explicitly. A weekly schedule carrying an explicit
+  // `days` set derives its count from those days, so we hide the count input
+  // rather than let an edit here rewrite `{ period, count }` and silently drop
+  // the authoritative day-set. (Editing the days themselves is a separate,
+  // not-yet-built UI.)
+  const showCount =
+    periodic && !(value.period === "weekly" && (value.days?.length ?? 0) > 0);
   // Local text buffer for the count input. Owning the raw string (rather
   // than deriving it from value.count every render) lets the user clear
   // the field and type freely without each keystroke snapping back to a
@@ -103,7 +111,7 @@ export function ScheduleField({
           value={value.period}
           onChange={(e) => handlePeriodChange(e.target.value as SchedulePeriod)}
         />
-        <If condition={periodic}>
+        <If condition={showCount}>
           <TextField
             id={`${idPrefix}-count`}
             label={`Times per ${

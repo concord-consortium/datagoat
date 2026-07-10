@@ -126,9 +126,11 @@ export function remainingToLog<T extends ScheduledMetric>(
 
 // How many entries a schedule expects by `date` within the current period: for
 // weekly, the scheduled weekdays that have already occurred this week (Monday-
-// start, including today); daily expects one (today). Comparing this against
-// the count logged so far makes the reminder "are you on pace?" rather than
-// "have you hit the full weekly quota?".
+// start, including today); every non-weekly period expects one. A metric is
+// logged at most once per day, so even a "3× daily" schedule can be satisfied
+// only once per day - daily deliberately expects 1, not its count. Comparing
+// this against the count logged so far makes the reminder "are you on pace?"
+// rather than "have you hit the full weekly quota?".
 function expectedByDate(schedule: MetricSchedule, date: Date): number {
   if (schedule.period !== "weekly") return 1;
   const todayPos = weekPos(date.getDay());

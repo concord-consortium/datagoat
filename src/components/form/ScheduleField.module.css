@@ -3,11 +3,31 @@
    as their outer element, so the direct-child rule makes them share the row
    evenly. When the count is hidden (irregular schedule) the lone select takes
    the full width. */
+/* Groups the schedule controls with their read-only due-days summary and
+   carries the standard field-to-field spacing (matching fields.module.css
+   .fieldWrap margin-bottom) below the group as a whole. */
+.field {
+  margin-bottom: 18px;
+}
+
 .row {
   display: flex;
   gap: 12px;
 }
 
+/* The select/count fields drop their own bottom margin so the due-days line
+   sits tight beneath them; the .field wrapper provides the spacing below. */
 .row > div {
   flex: 1;
+  margin-bottom: 0;
+}
+
+/* Read-only summary of the weekdays the current schedule is due on, shown
+   just under the controls. Mirrors fields.module.css .fieldHint so it reads as
+   a field hint rather than an interactive control. */
+.dueDays {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--subtext);
+  margin: 4px 0 0;
 }

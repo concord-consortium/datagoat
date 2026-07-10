@@ -21,11 +21,22 @@ export type SchedulePeriod =
   | "yearly"
   | "irregular";
 
+// Day of week, matching Date.getDay(): 0 = Sunday … 6 = Saturday.
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface MetricSchedule {
   period: SchedulePeriod;
   // Entries expected within `period`. Omitted => 1. Meaningless for
   // "irregular" (no scheduled entries), where it is ignored.
   count?: number;
+  // Weekly only: the exact weekdays the metric is due on. When present it is
+  // authoritative - it overrides the count-derived default day set, and its
+  // length is the weekly quota (so an explicit `days` makes `count`
+  // redundant, and the persistence boundaries drop `count` in its favor). A
+  // metric only recommends a frequency; which weekdays make sense is the
+  // user's call, so this is populated by user schedules rather than built-in
+  // definitions.
+  days?: Weekday[];
 }
 
 // Fallback for any metric without an explicit schedule. Existing
@@ -72,6 +83,24 @@ export function normalizedCount(
   return undefined;
 }
 
+// Canonicalize an explicit weekly day set. Days are meaningful only for weekly
+// schedules and only as integers 0-6 (Sun-Sat); anything else is dropped. The
+// result is deduped and sorted ascending, or undefined when the input is not a
+// weekly period, not an array, or has no valid day left (so "no usable days"
+// falls back to the count-derived default). The single source of truth for day
+// validity, shared by the Firestore boundaries, equality, and the formatter.
+export function normalizedDays(
+  period: SchedulePeriod,
+  days: unknown,
+): Weekday[] | undefined {
+  if (period !== "weekly" || !Array.isArray(days)) return undefined;
+  const valid = days.filter(
+    (d): d is Weekday => Number.isInteger(d) && d >= 0 && d <= 6,
+  );
+  const unique = [...new Set(valid)].sort((a, b) => a - b);
+  return unique.length ? unique : undefined;
+}
+
 // Read a schedule out of an untrusted Firestore value. Lenient by
 // design: a missing field, a legacy doc written before schedule existed,
 // or a malformed value all read as undefined, which resolveSchedule
@@ -84,8 +113,15 @@ export function parseStoredSchedule(raw: unknown): MetricSchedule | undefined {
     return undefined;
   }
   const schedule: MetricSchedule = { period: row.period as SchedulePeriod };
-  const count = normalizedCount(schedule.period, row.count);
-  if (count !== undefined) schedule.count = count;
+  // An explicit day set is authoritative and makes count redundant; only fall
+  // back to count when there are no usable days.
+  const days = normalizedDays(schedule.period, row.days);
+  if (days !== undefined) {
+    schedule.days = days;
+  } else {
+    const count = normalizedCount(schedule.period, row.count);
+    if (count !== undefined) schedule.count = count;
+  }
   return schedule;
 }
 
@@ -96,6 +132,19 @@ export function parseStoredSchedule(raw: unknown): MetricSchedule | undefined {
 export function schedulesEqual(a: MetricSchedule, b: MetricSchedule): boolean {
   if (a.period !== b.period) return false;
   if (a.period === "irregular") return true;
+  // An explicit weekly day set is compared as a set; a day-set schedule and a
+  // count-derived one are treated as distinct representations (only one carries
+  // days), so editing to explicit days always registers as a change to persist.
+  const daysA = normalizedDays(a.period, a.days);
+  const daysB = normalizedDays(b.period, b.days);
+  if (daysA || daysB) {
+    return (
+      daysA !== undefined &&
+      daysB !== undefined &&
+      daysA.length === daysB.length &&
+      daysA.every((d, i) => d === daysB[i])
+    );
+  }
   // Compare normalized counts so a non-canonical count (e.g. 2.5, 0) is
   // treated as the 1 it persists as - otherwise the override form could
   // judge an edited schedule "different" from the default and write an
@@ -112,8 +161,15 @@ export function scheduleToFirestore(
   schedule: MetricSchedule,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { period: schedule.period };
-  const count = normalizedCount(schedule.period, schedule.count);
-  if (count !== undefined) out.count = count;
+  // Mirror parseStoredSchedule: an explicit day set is written and makes count
+  // redundant; only persist a count when there are no usable days.
+  const days = normalizedDays(schedule.period, schedule.days);
+  if (days !== undefined) {
+    out.days = days;
+  } else {
+    const count = normalizedCount(schedule.period, schedule.count);
+    if (count !== undefined) out.count = count;
+  }
   return out;
 }
 
@@ -132,10 +188,14 @@ const PERIOD_LABEL: Record<SchedulePeriod, string> = {
 // consistent within a UI. Irregular ignores count.
 export function formatSchedule(schedule: MetricSchedule): string {
   if (schedule.period === "irregular") return PERIOD_LABEL.irregular;
-  // Normalize so an invalid in-memory count (e.g. 2.5 from transient
-  // form state) can't render as "2.5× Daily" - matches the rules applied
-  // at the Firestore boundaries.
-  const count = normalizedCount(schedule.period, schedule.count) ?? 1;
+  // An explicit weekly day set defines the quota by its length; otherwise
+  // normalize the count so an invalid in-memory count (e.g. 2.5 from transient
+  // form state) can't render as "2.5× Daily" - matches the rules applied at the
+  // Firestore boundaries.
+  const days = normalizedDays(schedule.period, schedule.days);
+  const count = days
+    ? days.length
+    : (normalizedCount(schedule.period, schedule.count) ?? 1);
   if (count > 1) return `${count}× ${PERIOD_LABEL[schedule.period]}`;
   return PERIOD_LABEL[schedule.period];
 }

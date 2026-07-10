@@ -7,6 +7,7 @@ import {
   type MetricSchedule,
   type SchedulePeriod,
 } from "../../types/metricSchedule";
+import { formatDueDays } from "../../metrics/dueToday";
 import css from "./ScheduleField.module.css";
 
 export interface ScheduleFieldProps {
@@ -81,32 +82,45 @@ export function ScheduleField({
     setCountText(String(countFromText(value.period, countText)));
   }
 
+  // Read-only summary of which days the schedule resolves to ("Every day",
+  // "Mon, Wed, Fri", ...). Empty for monthly / yearly / irregular, which have
+  // no weekday anchoring; the line is hidden in that case.
+  const dueDays = formatDueDays(value);
+
   return (
-    // role="group" ties the period select and its count together for
-    // assistive tech, so the "Times per <period>" field is announced as
-    // part of the schedule rather than a stray, separately-labelled input.
-    <div className={css.row} role="group" aria-label="Metric schedule">
-      <SelectField
-        id={`${idPrefix}-period`}
-        label="Schedule"
-        options={PERIOD_OPTIONS}
-        value={value.period}
-        onChange={(e) => handlePeriodChange(e.target.value as SchedulePeriod)}
-      />
-      <If condition={periodic}>
-        <TextField
-          id={`${idPrefix}-count`}
-          label={`Times per ${
-            value.period === "irregular" ? "" : PERIOD_NOUN[value.period]
-          }`}
-          type="number"
-          inputMode="numeric"
-          min={1}
-          step={1}
-          value={countText}
-          onChange={(e) => handleCountChange(e.target.value)}
-          onBlur={handleCountBlur}
+    // Wrapper carries the standard field-to-field spacing below the whole
+    // schedule group (the due-days line included), so the "Due:" summary stays
+    // grouped with the controls above it rather than the next field below.
+    <div className={css.field}>
+      {/* role="group" ties the period select and its count together for
+          assistive tech, so the "Times per <period>" field is announced as
+          part of the schedule rather than a stray, separately-labelled input. */}
+      <div className={css.row} role="group" aria-label="Metric schedule">
+        <SelectField
+          id={`${idPrefix}-period`}
+          label="Schedule"
+          options={PERIOD_OPTIONS}
+          value={value.period}
+          onChange={(e) => handlePeriodChange(e.target.value as SchedulePeriod)}
         />
+        <If condition={periodic}>
+          <TextField
+            id={`${idPrefix}-count`}
+            label={`Times per ${
+              value.period === "irregular" ? "" : PERIOD_NOUN[value.period]
+            }`}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={countText}
+            onChange={(e) => handleCountChange(e.target.value)}
+            onBlur={handleCountBlur}
+          />
+        </If>
+      </div>
+      <If condition={dueDays !== ""}>
+        <p className={css.dueDays}>Due: {dueDays}</p>
       </If>
     </div>
   );

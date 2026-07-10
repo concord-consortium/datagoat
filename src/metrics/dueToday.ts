@@ -8,26 +8,42 @@
 //      for this cadence? Daily → every day; weekly → the anchor weekdays
 //      (1×→Mon, 2×→Mon/Tue, 3×→Mon/Wed/Fri, ...). This ignores history and is
 //      what the UI uses to indicate which fields are scheduled.
-//   2. Remaining (remainingToLog): of the metrics scheduled today, which have
-//      NOT yet met their quota for the current period. Entering data early
-//      satisfies the period and removes the reminder - e.g. logging a weekly
-//      metric earlier in the week clears its scheduled-day reminder.
+//   2. Remaining (remainingToLog): of the metrics scheduled today, which are
+//      behind pace for the current week. A metric nags on a scheduled day only
+//      when the entries logged so far this week fall short of the scheduled
+//      days elapsed so far - so keeping up earlier in the week (even on
+//      non-scheduled days) clears a later scheduled-day reminder. A Mon/Wed/Fri
+//      metric logged twice by Wednesday is on pace and won't nag, but still
+//      needs a third entry by Friday.
 //
 // Only `daily` and `weekly` drive the reminder. `monthly` / `yearly` /
 // `irregular` are never counted as due today: infrequent metrics (e.g. a
 // twice-a-year body measurement) shouldn't nag daily on calendar dates we'd
 // have to invent for them.
 
-import type { MetricDefinition } from "./types";
 import {
   normalizedCount,
+  normalizedDays,
   resolveSchedule,
   type MetricSchedule,
 } from "../types/metricSchedule";
 
+// The minimal metric shape the engine reads: an id and an optional schedule.
+// Built-in MetricDefinitions and the user's custom-metric defs both satisfy it,
+// so the engine works over built-in, addable, and custom metrics alike.
+export interface ScheduledMetric {
+  id: string;
+  schedule?: MetricSchedule;
+}
+
 // Weekday numbers match Date.getDay(): 0 = Sunday … 6 = Saturday.
-// (Same convention as DAY_NAMES in src/utils/dates.ts.)
 const MON = 1;
+const TUE = 2;
+const WED = 3;
+const THU = 4;
+const FRI = 5;
+const SAT = 6;
+const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const EVERY_DAY: ReadonlySet<number> = new Set([0, 1, 2, 3, 4, 5, 6]);
 
 // The calendar week is Monday-anchored for now. Letting the user pick
@@ -35,17 +51,18 @@ const EVERY_DAY: ReadonlySet<number> = new Set([0, 1, 2, 3, 4, 5, 6]);
 // constant becomes a parameter threaded from user settings.
 const WEEK_STARTS_ON = MON;
 
-// Which weekdays a `weekly` schedule of `count` entries is due on. The 1×/2×/3×
-// mappings are the specified cadence (1→Mon, 2→Mon/Tue, 3→Mon/Wed/Fri); counts
-// of 4-6 front-load the extra days onto the earliest weekdays, and 7+ collapses
-// to every day. A count below 1 is treated as 1.
+// Which weekdays a `weekly` schedule of `count` entries defaults to, when the
+// schedule doesn't name explicit days. Spread across the workweek: 1×→Wed
+// (centered), 2×→Tue/Thu, 3×→Mon/Wed/Fri; 4-6 fill outward and 7+ collapses to
+// every day. A count below 1 is treated as 1. Only recommends days - the user
+// can override with an explicit `days` set on the schedule.
 const WEEKLY_DUE_DAYS: Record<number, number[]> = {
-  1: [MON],
-  2: [MON, 2],
-  3: [MON, 3, 5],
-  4: [MON, 2, 3, 4],
-  5: [MON, 2, 3, 4, 5],
-  6: [MON, 2, 3, 4, 5, 6],
+  1: [WED],
+  2: [TUE, THU],
+  3: [MON, WED, FRI],
+  4: [MON, TUE, THU, FRI],
+  5: [MON, TUE, WED, THU, FRI],
+  6: [MON, TUE, WED, THU, FRI, SAT],
 };
 
 export function weeklyDueDays(count: number): Set<number> {
@@ -54,16 +71,22 @@ export function weeklyDueDays(count: number): Set<number> {
   return new Set(WEEKLY_DUE_DAYS[c >= 1 ? c : 1]);
 }
 
+// The weekdays a weekly schedule is due on: its explicit `days` when set,
+// otherwise the count-derived default.
+function dueWeekdays(schedule: MetricSchedule): Set<number> {
+  const days = normalizedDays(schedule.period, schedule.days);
+  if (days) return new Set(days);
+  return weeklyDueDays(normalizedCount("weekly", schedule.count) ?? 1);
+}
+
 // Is a metric with this (already-resolved) schedule scheduled on `date`?
 // Calendar-only - does not consider what has been logged.
 export function isScheduleDueOn(schedule: MetricSchedule, date: Date): boolean {
   switch (schedule.period) {
     case "daily":
       return true;
-    case "weekly": {
-      const count = normalizedCount("weekly", schedule.count) ?? 1;
-      return weeklyDueDays(count).has(date.getDay());
-    }
+    case "weekly":
+      return dueWeekdays(schedule).has(date.getDay());
     // monthly / yearly / irregular never drive the daily reminder.
     default:
       return false;
@@ -74,10 +97,10 @@ export function isScheduleDueOn(schedule: MetricSchedule, date: Date): boolean {
 // effective schedule is resolved (its own schedule, else irregular) before the
 // due check; callers with user overrides should pass metrics whose `schedule`
 // already reflects the override.
-export function metricsDueOn(
-  metrics: MetricDefinition[],
+export function metricsDueOn<T extends ScheduledMetric>(
+  metrics: T[],
   date: Date,
-): MetricDefinition[] {
+): T[] {
   return metrics.filter((m) =>
     isScheduleDueOn(resolveSchedule(m.schedule), date),
   );
@@ -87,16 +110,39 @@ export function metricsDueOn(
 // current period - the set behind the "Log <n> remaining metrics." message (its
 // length is n). `wasLogged(id, day)` keeps the engine pure; the caller supplies
 // the real per-day logged state.
-export function remainingToLog(
-  metrics: MetricDefinition[],
+export function remainingToLog<T extends ScheduledMetric>(
+  metrics: T[],
   date: Date,
   wasLogged: (metricId: string, day: Date) => boolean,
-): MetricDefinition[] {
+): T[] {
   return metricsDueOn(metrics, date).filter((m) => {
     const schedule = resolveSchedule(m.schedule);
-    const required = normalizedCount(schedule.period, schedule.count) ?? 1;
-    return loggedInPeriod(m.id, schedule, date, wasLogged) < required;
+    return (
+      loggedInPeriod(m.id, schedule, date, wasLogged) <
+      expectedByDate(schedule, date)
+    );
   });
+}
+
+// How many entries a schedule expects by `date` within the current period: for
+// weekly, the scheduled weekdays that have already occurred this week (Monday-
+// start, including today); daily expects one (today). Comparing this against
+// the count logged so far makes the reminder "are you on pace?" rather than
+// "have you hit the full weekly quota?".
+function expectedByDate(schedule: MetricSchedule, date: Date): number {
+  if (schedule.period !== "weekly") return 1;
+  const todayPos = weekPos(date.getDay());
+  let expected = 0;
+  for (const day of dueWeekdays(schedule)) {
+    if (weekPos(day) <= todayPos) expected += 1;
+  }
+  return expected;
+}
+
+// Position of a weekday within the current week: 0 at the week start,
+// increasing through the week.
+function weekPos(weekday: number): number {
+  return (weekday - WEEK_STARTS_ON + 7) % 7;
 }
 
 // How many distinct days in the current period (up to and including `date`)
@@ -128,6 +174,20 @@ function addDays(date: Date, n: number): Date {
 }
 
 function startOfWeek(date: Date): Date {
-  const diff = (date.getDay() - WEEK_STARTS_ON + 7) % 7;
-  return addDays(date, -diff);
+  return addDays(date, -weekPos(date.getDay()));
+}
+
+// Human-readable read-only summary of which days a schedule is due, for display
+// next to the schedule editor. "Every day" for daily (or a 7-day weekly), the
+// weekday abbreviations Monday-first for weekly (e.g. "Mon, Wed, Fri"), and ""
+// for periods without weekday anchoring (monthly / yearly / irregular).
+export function formatDueDays(schedule: MetricSchedule): string {
+  if (schedule.period === "daily") return "Every day";
+  if (schedule.period !== "weekly") return "";
+  const days = dueWeekdays(schedule);
+  if (days.size >= 7) return "Every day";
+  return [...days]
+    .sort((a, b) => ((a - WEEK_STARTS_ON + 7) % 7) - ((b - WEEK_STARTS_ON + 7) % 7))
+    .map((d) => DAY_ABBR[d])
+    .join(", ");
 }

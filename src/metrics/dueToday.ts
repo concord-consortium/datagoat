@@ -6,7 +6,7 @@
 // Two ideas, kept separate:
 //   1. Calendar-due (isScheduleDueOn / metricsDueOn): is `date` a scheduled day
 //      for this cadence? Daily → every day; weekly → the anchor weekdays
-//      (1×→Mon, 2×→Mon/Tue, 3×→Mon/Wed/Fri, ...). This ignores history and is
+//      (1×→Wed, 2×→Tue/Thu, 3×→Mon/Wed/Fri, ...). This ignores history and is
 //      what the UI uses to indicate which fields are scheduled.
 //   2. Remaining (remainingToLog): of the metrics scheduled today, which are
 //      behind pace for the current week. A metric nags on a scheduled day only
@@ -27,6 +27,7 @@ import {
   resolveSchedule,
   type MetricSchedule,
 } from "../types/metricSchedule";
+import { DAY_NAMES } from "../utils/dates";
 
 // The minimal metric shape the engine reads: an id and an optional schedule.
 // Built-in MetricDefinitions and the user's custom-metric defs both satisfy it,
@@ -43,7 +44,6 @@ const WED = 3;
 const THU = 4;
 const FRI = 5;
 const SAT = 6;
-const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const EVERY_DAY: ReadonlySet<number> = new Set([0, 1, 2, 3, 4, 5, 6]);
 
 // The calendar week is Monday-anchored for now. Letting the user pick
@@ -187,7 +187,7 @@ export function formatDueDays(schedule: MetricSchedule): string {
   const days = dueWeekdays(schedule);
   if (days.size >= 7) return "Every day";
   return [...days]
-    .sort((a, b) => ((a - WEEK_STARTS_ON + 7) % 7) - ((b - WEEK_STARTS_ON + 7) % 7))
-    .map((d) => DAY_ABBR[d])
+    .sort((a, b) => weekPos(a) - weekPos(b))
+    .map((d) => DAY_NAMES[d])
     .join(", ");
 }

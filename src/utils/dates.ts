@@ -3,7 +3,8 @@
 // HISTORY span 30 days, with offset HISTORY === today.
 export const HISTORY = 29;
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Weekday abbreviations indexed by Date.getDay() (0 = Sun … 6 = Sat).
+export const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",

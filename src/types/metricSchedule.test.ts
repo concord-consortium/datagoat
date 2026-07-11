@@ -7,6 +7,7 @@ import {
   parseStoredSchedule,
   scheduleToFirestore,
   schedulesEqual,
+  normalizedDays,
   type MetricSchedule,
 } from "./metricSchedule";
 
@@ -151,5 +152,92 @@ describe("scheduleToFirestore", () => {
     expect(scheduleToFirestore({ period: "daily", count: 0 })).toEqual({
       period: "daily",
     });
+  });
+});
+
+describe("normalizedDays", () => {
+  it("returns undefined for a non-weekly period (days are weekly-only)", () => {
+    expect(normalizedDays("daily", [1, 2])).toBeUndefined();
+    expect(normalizedDays("monthly", [1])).toBeUndefined();
+    expect(normalizedDays("irregular", [1])).toBeUndefined();
+  });
+
+  it("returns undefined when days is missing or not an array", () => {
+    expect(normalizedDays("weekly", undefined)).toBeUndefined();
+    expect(normalizedDays("weekly", 3)).toBeUndefined();
+  });
+
+  it("drops out-of-range and non-integer values", () => {
+    expect(normalizedDays("weekly", [-1, 0, 6, 7, 2.5, 3])).toEqual([0, 3, 6]);
+  });
+
+  it("dedupes and sorts ascending", () => {
+    expect(normalizedDays("weekly", [5, 1, 5, 3, 1])).toEqual([1, 3, 5]);
+  });
+
+  it("returns undefined for an empty or all-invalid list", () => {
+    expect(normalizedDays("weekly", [])).toBeUndefined();
+    expect(normalizedDays("weekly", [8, -2, 1.5])).toBeUndefined();
+  });
+});
+
+describe("explicit weekly days", () => {
+  it("parseStoredSchedule reads, normalizes, and prefers days over count", () => {
+    expect(parseStoredSchedule({ period: "weekly", days: [4, 1, 1] })).toEqual({
+      period: "weekly",
+      days: [1, 4],
+    });
+    // days wins; a redundant count is dropped
+    expect(
+      parseStoredSchedule({ period: "weekly", count: 2, days: [1, 4] }),
+    ).toEqual({ period: "weekly", days: [1, 4] });
+  });
+
+  it("parseStoredSchedule ignores days for non-weekly and falls back to count", () => {
+    expect(parseStoredSchedule({ period: "daily", days: [1, 2] })).toEqual({
+      period: "daily",
+    });
+    // invalid/empty days on a weekly falls back to count
+    expect(
+      parseStoredSchedule({ period: "weekly", count: 2, days: [] }),
+    ).toEqual({ period: "weekly", count: 2 });
+  });
+
+  it("scheduleToFirestore writes days and drops the redundant count", () => {
+    expect(
+      scheduleToFirestore({ period: "weekly", count: 2, days: [1, 4] }),
+    ).toEqual({ period: "weekly", days: [1, 4] });
+    expect(
+      "count" in scheduleToFirestore({ period: "weekly", days: [1, 4] }),
+    ).toBe(false);
+  });
+
+  it("formatSchedule uses the day count for the multiplier prefix", () => {
+    expect(formatSchedule({ period: "weekly", days: [1, 3, 5] })).toBe(
+      "3× Weekly",
+    );
+    expect(formatSchedule({ period: "weekly", days: [3] })).toBe("Weekly");
+  });
+
+  it("schedulesEqual compares day sets, treating days and count as distinct", () => {
+    expect(
+      schedulesEqual(
+        { period: "weekly", days: [1, 4] },
+        { period: "weekly", days: [4, 1] },
+      ),
+    ).toBe(true);
+    expect(
+      schedulesEqual(
+        { period: "weekly", days: [1, 4] },
+        { period: "weekly", days: [1, 3] },
+      ),
+    ).toBe(false);
+    // an explicit day set is not equal to a count-derived schedule
+    expect(
+      schedulesEqual(
+        { period: "weekly", days: [2, 4] },
+        { period: "weekly", count: 2 },
+      ),
+    ).toBe(false);
   });
 });

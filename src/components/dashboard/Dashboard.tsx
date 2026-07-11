@@ -4,12 +4,27 @@ import { DashboardChartCard } from "./DashboardChartCard";
 import { CodapButton } from "./CodapButton";
 import { useUser } from "../../contexts/UserContext";
 import { useData } from "../../contexts/DataContext";
+import { useCustomMetrics } from "../../contexts/CustomMetricsContext";
+import { useMetricOverrides } from "../../contexts/MetricOverridesContext";
+import { resolveSchedule } from "../../types/metricSchedule";
 import { HEALTH_METRICS } from "../../metrics/healthMetrics";
+import { ADDABLE_HEALTH } from "../../metrics/addableMetrics";
 import { COMPETITION_METRICS } from "../../metrics/competitionMetrics";
 import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
+import {
+  metricsDueOn,
+  remainingToLog,
+  type ScheduledMetric,
+} from "../../metrics/dueToday";
+import type { MetricDefinition } from "../../metrics/types";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
 import { getChipState } from "../../utils/healthCompleteness";
 import css from "./Dashboard.module.css";
+
+// Health metric definitions the tracked-id list can resolve against (built-in
+// plus addable). Used to recover each tracked metric's schedule for the
+// schedule-aware "due today" count.
+const HEALTH_DEFS: MetricDefinition[] = [...HEALTH_METRICS, ...ADDABLE_HEALTH];
 
 // Dashboard scaffold: header carousel + welcome + activity calendars +
 // log CTAs. Chart cards are added in Step 14 (placeholder gray-box +
@@ -17,6 +32,8 @@ import css from "./Dashboard.module.css";
 export function Dashboard() {
   const { loadState } = useUser();
   const { health, performance, competition } = useData();
+  const { metrics: allCustom } = useCustomMetrics();
+  const { getOverride } = useMetricOverrides();
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
 
@@ -35,15 +52,36 @@ export function Dashboard() {
   const competitionEntries =
     competition.status === "loaded" ? competition.entries : [];
 
-  // Compute today's health completeness for the CTA copy.
-  const todayIso = toISO(dateAtOffset(HISTORY));
-  const todayHealth =
-    healthEntries.find((e) => e.date === todayIso) ?? null;
-  const healthChip = getChipState(todayHealth, trackedHealthIds);
-  const healthLogged = countHealthLogged(
-    todayHealth,
-    trackedHealthIds,
-  );
+  // Schedule-aware health CTA: the "Log N remaining" count reflects only the
+  // metrics whose schedule makes them due today, and drops those already logged
+  // enough to keep pace this week (see metrics/dueToday). Because an entry on
+  // any day of the week counts toward pace, wasHealthLogged is asked per day
+  // across the current week, not just today.
+  const today = dateAtOffset(HISTORY);
+  const todayIso = toISO(today);
+  const healthByDate = new Map(healthEntries.map((e) => [e.date, e]));
+  const wasHealthLogged = (id: string, day: Date) =>
+    getChipState(healthByDate.get(toISO(day)) ?? null, [id]) !== "none";
+  // Resolve each tracked id to its effective schedule, spanning built-in,
+  // addable, and custom health metrics, with a user override winning. Custom
+  // metric values already flow through getChipState above, so this is the only
+  // place custom metrics needed wiring into the due-today count.
+  const trackedHealthMetrics: ScheduledMetric[] = trackedHealthIds.map((id) => {
+    const base =
+      HEALTH_DEFS.find((m) => m.id === id) ??
+      allCustom.find((m) => m.id === id && m.metricType === "health");
+    return {
+      id,
+      schedule: resolveSchedule(base?.schedule, getOverride(id)?.schedule),
+    };
+  });
+  const healthDueCount = metricsDueOn(trackedHealthMetrics, today).length;
+  const healthRemainingCount = remainingToLog(
+    trackedHealthMetrics,
+    today,
+    wasHealthLogged,
+  ).length;
+  const healthLoggedOfDue = healthDueCount - healthRemainingCount;
 
   const todayCompetition =
     competitionEntries.find((e) => e.date === todayIso) ?? null;
@@ -72,27 +110,28 @@ export function Dashboard() {
     })
   );
 
-  // Health CTA copy. Three states (matches prototype _updateDashStatus
-  // around HTML line 7662): all-logged success copy; partial "log N
-  // remaining metric(s)"; empty "log your N metrics for today". The
-  // &nbsp; on either side of the highlight prevents the bolded pill
-  // from wrapping onto its own line on narrow widths (prototype HTML
-  // line 4196).
-  const healthRemaining = trackedHealthIds.length - healthLogged;
+  // Health CTA copy, driven by the schedule-aware counts. Three states (matches
+  // prototype _updateDashStatus around HTML line 7662): caught-up success copy;
+  // partial "log N remaining metric(s)"; fresh "log your N metrics for today".
+  // The &nbsp; on either side of the highlight prevents the bolded pill from
+  // wrapping onto its own line on narrow widths (prototype HTML line 4196).
   let healthPre: string | undefined;
   let healthHighlight: string | undefined;
   let healthPost: string | undefined;
   let healthStatus: string;
-  if (healthChip === "all") {
-    healthStatus = "Great! You've logged all your health data!";
-  } else if (healthLogged > 0) {
+  if (healthRemainingCount === 0) {
+    healthStatus =
+      healthDueCount === 0
+        ? "Nothing due today."
+        : "Great! You've logged everything due today!";
+  } else if (healthLoggedOfDue > 0) {
     healthPre = "Log ";
-    healthHighlight = `${healthRemaining} remaining metric${healthRemaining === 1 ? "" : "s"}`;
+    healthHighlight = `${healthRemainingCount} remaining metric${healthRemainingCount === 1 ? "" : "s"}`;
     healthPost = ".";
     healthStatus = `${healthPre}${healthHighlight}${healthPost}`;
   } else {
     healthPre = "Log your ";
-    healthHighlight = `${trackedHealthIds.length} metric${trackedHealthIds.length === 1 ? "" : "s"}`;
+    healthHighlight = `${healthDueCount} metric${healthDueCount === 1 ? "" : "s"}`;
     healthPost = " for today.";
     healthStatus = `${healthPre}${healthHighlight}${healthPost}`;
   }
@@ -199,15 +238,4 @@ export function Dashboard() {
       </div>
     </div>
   );
-}
-
-function countHealthLogged(
-  entry: Parameters<typeof getChipState>[0],
-  trackedIds: string[],
-): number {
-  let n = 0;
-  for (const id of trackedIds) {
-    if (getChipState(entry, [id]) !== "none") n++;
-  }
-  return n;
 }

@@ -6,6 +6,7 @@ import {
   normalizedCount,
   type MetricSchedule,
   type SchedulePeriod,
+  type Weekday,
 } from "../../types/metricSchedule";
 import { formatDueDays } from "../../metrics/dueToday";
 import css from "./ScheduleField.module.css";
@@ -66,10 +67,26 @@ export function ScheduleField({
   // irregular round-trip (the schedule object drops count while the
   // period is irregular).
   const [countText, setCountText] = useState(String(value.count ?? 1));
+  // Local buffer for an explicit weekly day set, for the same reason as
+  // countText: the schedule object carries `days` only while the period is
+  // weekly, so without a buffer a weekly -> monthly -> weekly round-trip would
+  // silently discard the authoritative day-set and fall back to count 1.
+  const [daysBuffer, setDaysBuffer] = useState<Weekday[] | undefined>(
+    value.period === "weekly" ? value.days : undefined,
+  );
 
   function handlePeriodChange(next: SchedulePeriod) {
+    // `value` is still the pre-change schedule here, so a weekly day set is
+    // captured on the way out and survives until the period returns to weekly.
+    const days = value.period === "weekly" ? value.days : daysBuffer;
+    if (days?.length) setDaysBuffer(days);
+
     if (next === "irregular") {
       onChange({ period: "irregular" });
+    } else if (next === "weekly" && days?.length) {
+      // An explicit day set is authoritative and makes count redundant, so
+      // restore it rather than emitting a count-derived weekly schedule.
+      onChange({ period: "weekly", days });
     } else {
       // Restore the count from the buffer so switching away from and back
       // to a periodic schedule doesn't silently reset it to 1.

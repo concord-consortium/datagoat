@@ -134,6 +134,26 @@
   max-width: 194px;
 }
 
+/* Unit suffix rendered beside a field ("hr", "lbs", "YRS"). Composed by
+   TimeInput, NumericInput and ProfileForm.
+
+   Do NOT add a declaration here that a consumer needs to override from its
+   own `.fieldUnit`: this rule is emitted AFTER the consumers' local rules,
+   so at equal specificity it wins the tie and the local override silently
+   loses. Casing is the live example - it is deliberately absent here, and
+   ProfileForm opts into `text-transform: uppercase` rather than the base
+   setting it and the logs overriding back to `none` (which would not have
+   worked). A consumer that must override an inherited declaration needs a
+   compound selector to outrank this rule. */
+.fieldUnit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--subtext);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
 .fieldSelect {
   width: 100%;
   min-height: 48px;

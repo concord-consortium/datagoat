@@ -105,6 +105,19 @@
   box-shadow: none;
 }
 
+/* Unit suffix rendered beside a field ("hr", "lbs", "YRS"). Composed by
+   TimeInput, NumericInput and ProfileForm. Casing is deliberately not set
+   here - consumers differ (ProfileForm uppercases, the logs render the
+   unit string as authored), so each opts in rather than overriding back. */
+.fieldUnit {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--subtext);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
 .fieldInput.short {
   max-width: 120px;
 }

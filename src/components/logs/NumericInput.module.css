@@ -8,18 +8,8 @@
   max-width: 194px;
 }
 
-.recordCell .fieldUnit {
-  text-transform: none;
-}
-
 .fieldUnit {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--subtext);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  composes: fieldUnit from "../form/fields.module.css";
 }
 
 /* Per-metric hint rendered below the record-input (e.g., Lean Mass:

@@ -1,0 +1,89 @@
+.section {
+  margin-bottom: 8px;
+}
+
+.header {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.count {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--subtext);
+}
+
+.chevron {
+  margin-left: auto;
+  flex: none;
+  transition: transform 150ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.empty {
+  margin: 0 0 16px;
+  padding: 4px 6px 12px;
+  color: var(--subtext);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-style: italic;
+}
+
+/* Ported from HealthLog.module.css .bodyTable (prototype lines 2984-3014). */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+.table thead th {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  padding: 10px 6px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--border);
+}
+.table th:first-child,
+.table td:first-child {
+  width: 56px;
+}
+.table th:last-child {
+  padding-right: 0;
+}
+.table td:last-child {
+  padding-right: 0;
+  overflow: visible;
+}
+.table td:last-child > * {
+  margin-left: auto;
+}
+
+.recordHeaderLabel {
+  max-width: 194px;
+  margin-left: auto;
+  text-align: left;
+}

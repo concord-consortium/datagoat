@@ -1,0 +1,53 @@
+import { HealthMetricRow } from "./HealthMetricRow";
+import { PerfCompMetricRow } from "./PerfCompMetricRow";
+import type { HealthSummary } from "./useHealthSummaries";
+import type { TrackedMetric } from "./useTrackedMetrics";
+import type { CompetitionEntry, HealthEntry, PerformanceEntry } from "../../types/data";
+
+export interface LogMetricRowProps {
+  tracked: TrackedMetric;
+  healthEntry: HealthEntry;
+  performanceEntry: PerformanceEntry;
+  competitionEntry: CompetitionEntry;
+  summary: HealthSummary;
+  summaryCell: string;
+  competitionTerm: string;
+  setHealth: (partial: Partial<HealthEntry>) => void;
+  setPerformance: (raw: string) => void;
+  setCompetition: (raw: string) => void;
+}
+
+// The one seam between the two row families.
+//
+// Health rows and performance/competition rows keep separate widget
+// dispatchers because their inputs genuinely differ: health has named-field
+// built-ins plus the availability tree and the hydration color scale, none of
+// which have a performance/competition analogue. Unifying them is a follow-up
+// with its own story, not a precondition for grouping rows by frequency.
+export function LogMetricRow(props: LogMetricRowProps) {
+  const { tracked } = props;
+
+  if (tracked.type === "health") {
+    return (
+      <HealthMetricRow
+        tracked={tracked}
+        entry={props.healthEntry}
+        summary={props.summary}
+        competitionTerm={props.competitionTerm}
+        setEntry={props.setHealth}
+      />
+    );
+  }
+
+  const entry = tracked.type === "performance" ? props.performanceEntry : props.competitionEntry;
+  const setValue = tracked.type === "performance" ? props.setPerformance : props.setCompetition;
+
+  return (
+    <PerfCompMetricRow
+      tracked={tracked}
+      value={entry.metrics?.[tracked.id]}
+      summaryCell={props.summaryCell}
+      setValue={setValue}
+    />
+  );
+}

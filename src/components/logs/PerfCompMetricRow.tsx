@@ -30,10 +30,12 @@ interface RecordCellProps {
 
 // Widget for the Record cell.
 //
-// Written as if/return rather than a nested ternary so TypeScript narrows
-// `levels` to non-undefined inside the guard: ScaleCards and LevelRadioGroup
-// then typecheck without a non-null assertion. This is also the structure the
-// per-type pages used before the merge.
+// The built-in-ordinal and custom-ordinal cases are separate if/return
+// branches (not a combined ternary) so TypeScript narrows each def's `levels`
+// to non-undefined inside its own guard, with no non-null assertion. This is
+// also the branch order and precedence the per-type pages used before the
+// merge: built-in ordinals always render as scale cards, and only the
+// custom-ordinal branch ever routes to the Yes/No radio group.
 function RecordCell({
   tracked,
   stringValue,
@@ -50,29 +52,37 @@ function RecordCell({
   // a number against a label-valued metric and corrupt the entry shape.
   if (customDef?.primitive === "nominal") return null;
 
-  // Built-in ordinals (currently winningPercentage) carry levels on the
-  // registry entry; customs carry them on the def. Built-in wins, matching the
-  // branch order the per-type pages used.
-  const levels =
-    builtInDef?.inputType === "ordinal" ? builtInDef.levels : customDef?.levels;
-  const isOrdinal =
-    builtInDef?.inputType === "ordinal" || customDef?.primitive === "ordinal";
+  // Health rows never reach this component (the dispatcher routes them to
+  // HealthMetricRow). Guarding the local rather than casting keeps the
+  // narrowing honest and fails safe if that ever changes.
+  if (type === "health") return null;
 
-  if (isOrdinal && levels) {
-    if (isYesNoLevels(levels)) {
-      return (
-        <LevelRadioGroup
-          levels={levels}
-          value={ordinalValue}
-          onChange={(next) => setValue(String(next))}
-          labelledBy={labelledBy}
-        />
-      );
-    }
+  // Built-in ordinals (currently winningPercentage) always render as scale
+  // cards, matching the per-type pages: only the custom-ordinal branch below
+  // ever routed to the Yes/No radio group.
+  if (builtInDef?.inputType === "ordinal" && builtInDef.levels) {
     return (
       <ScaleCards
-        levels={levels}
-        colors={resolveScaleColors({ metricId: id, levels })}
+        levels={builtInDef.levels}
+        colors={resolveScaleColors({ metricId: id, levels: builtInDef.levels })}
+        value={ordinalValue}
+        onChange={(next) => setValue(String(next))}
+        labelledBy={labelledBy}
+      />
+    );
+  }
+  if (customDef?.primitive === "ordinal" && customDef.levels) {
+    return isYesNoLevels(customDef.levels) ? (
+      <LevelRadioGroup
+        levels={customDef.levels}
+        value={ordinalValue}
+        onChange={(next) => setValue(String(next))}
+        labelledBy={labelledBy}
+      />
+    ) : (
+      <ScaleCards
+        levels={customDef.levels}
+        colors={resolveScaleColors({ metricId: id, levels: customDef.levels })}
         value={ordinalValue}
         onChange={(next) => setValue(String(next))}
         labelledBy={labelledBy}
@@ -83,11 +93,7 @@ function RecordCell({
   return (
     <LogRecordInput
       metricId={id}
-      // tracked.type is the 3-way MetricType shared across all log rows
-      // (health/performance/competition); this component only ever receives
-      // performance or competition items (health has its own row component),
-      // so the narrower cast here is safe.
-      metricType={type as "performance" | "competition"}
+      metricType={type}
       builtInDef={builtInDef}
       customDef={customDef}
       value={stringValue}

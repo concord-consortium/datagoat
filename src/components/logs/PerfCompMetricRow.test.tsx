@@ -59,10 +59,18 @@ describe("PerfCompMetricRow", () => {
     expect(setValue).toHaveBeenCalledWith("12");
   });
 
-  it("renders Win/Loss cards for the ordinal built-in", () => {
+  it("renders Win/Loss cards (not radio inputs) for the ordinal built-in", () => {
     renderRow("winningPercentage");
     expect(screen.getByText("Win")).toBeTruthy();
     expect(screen.getByText("Loss")).toBeTruthy();
+    // ScaleCards and LevelRadioGroup both render `level.label` as visible
+    // text, so text alone can't tell them apart. ScaleCards marks its card
+    // row with data-testid="scale-card-row"; LevelRadioGroup has no such
+    // marker and renders native radio inputs instead. Assert the ScaleCards
+    // structure so a regression that routes built-ins to LevelRadioGroup
+    // (the originals never did) fails this test.
+    expect(screen.getByTestId("scale-card-row")).toBeTruthy();
+    expect(document.querySelector('input[type="radio"]')).toBeNull();
   });
 
   it("renders a stored 0 rather than treating it as not-logged", () => {

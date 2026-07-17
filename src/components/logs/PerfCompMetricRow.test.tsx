@@ -78,6 +78,91 @@ describe("PerfCompMetricRow", () => {
     expect(screen.getByRole("textbox").getAttribute("value")).toBe("0");
   });
 
+  it("renders a Yes/No-shaped ordinal custom via LevelRadioGroup", () => {
+    // ScaleCards and LevelRadioGroup both render `level.label` as visible
+    // text, so text alone can't discriminate. Assert the structural markers:
+    // ScaleCards' data-testid="scale-card-row" vs. native radio inputs.
+    render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <PerfCompMetricRow
+              tracked={{
+                id: "c-felt",
+                name: "Felt Good",
+                type: "competition",
+                section: "asNeeded",
+                customDef: {
+                  id: "c-felt",
+                  ownerId: "u1",
+                  name: "Felt Good",
+                  metricType: "competition",
+                  primitive: "ordinal",
+                  inputType: "radio",
+                  referenceUrl: "",
+                  createdAt: 0,
+                  updatedAt: 0,
+                  levels: [
+                    { label: "No", value: 0 },
+                    { label: "Yes", value: 1 },
+                  ],
+                } as CustomMetricDef,
+              }}
+              value={undefined}
+              summaryCell=""
+              setValue={vi.fn()}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    expect(document.querySelectorAll('input[type="radio"]').length).toBe(2);
+    expect(screen.queryByTestId("scale-card-row")).toBeNull();
+  });
+
+  it("renders a non-Yes/No-shaped ordinal custom via ScaleCards, name linked to its detail page", () => {
+    render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <PerfCompMetricRow
+              tracked={{
+                id: "c-perf",
+                name: "Performance",
+                type: "competition",
+                section: "asNeeded",
+                customDef: {
+                  id: "c-perf",
+                  ownerId: "u1",
+                  name: "Performance",
+                  metricType: "competition",
+                  primitive: "ordinal",
+                  inputType: "radio",
+                  referenceUrl: "",
+                  createdAt: 0,
+                  updatedAt: 0,
+                  levels: [
+                    { label: "Poor", value: 1 },
+                    { label: "Great", value: 5 },
+                  ],
+                } as CustomMetricDef,
+              }}
+              value={undefined}
+              summaryCell=""
+              setValue={vi.fn()}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("scale-card-row")).toBeTruthy();
+    expect(document.querySelector('input[type="radio"]')).toBeNull();
+    // Regression: a custom row once rendered its name as plain text because
+    // the MetricInputRow/row call site omitted the detail link.
+    const link = screen.getByRole("link", { name: "Performance" });
+    expect(link.getAttribute("href")).toBe("/competition/c-perf");
+  });
+
   it("renders the row but no input for a nominal custom metric", () => {
     // Nominal customs must not get a numeric input (it would corrupt the
     // entry shape). The ROW still renders - this matches the per-type pages,

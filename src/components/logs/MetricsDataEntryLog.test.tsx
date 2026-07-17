@@ -177,6 +177,44 @@ describe("MetricsDataEntryLog", () => {
     // still render after the redirect resolves.
     expect(screen.getByRole("button", { name: /Daily Metrics/ })).toBeTruthy();
   });
+
+  describe("time-formatted summary cells", () => {
+    it("formats a time performance metric's Latest cell instead of the raw decimal", () => {
+      // Regression: the Latest cell used to render String(live) even for
+      // time metrics, so a stored 4.5 (4m30s) showed "4.5" instead of "4:30".
+      ctx.performance = {
+        status: "loaded",
+        entries: [{ version: 1, date: todayIso(), metrics: { oneMileRun: 4.5 } }],
+      } as DataLoadState<PerformanceEntry>;
+      renderPage();
+      // oneMileRun is quarterly, not daily - expand its section first or the
+      // query below finds nothing and the assertion passes vacuously.
+      fireEvent.click(screen.getByRole("button", { name: /Quarterly Metrics/ }));
+      const row = screen.getByRole("link", { name: /1-Mile Run/ }).closest("tr")!;
+      const summaryCell = row.querySelector("td")!;
+      expect(summaryCell.textContent).toBe("4:30");
+    });
+
+    it("formats a time competition metric's Total cell instead of the raw decimal", () => {
+      // Regression: the Total cell used to render String(total) even for
+      // time metrics, so a stored 5.5 (5m30s) showed "5.5" instead of "5:30".
+      ctx.loadState = {
+        status: "loaded",
+        profile: { ...PROFILE, trackedCompetitionMetrics: ["times"] },
+      } as ProfileLoadState;
+      ctx.competition = {
+        status: "loaded",
+        entries: [{ version: 1, date: todayIso(), metrics: { times: 5.5 } }],
+      } as DataLoadState<CompetitionEntry>;
+      renderPage();
+      // "times" (like "scores") has no explicit schedule, so it lands in
+      // As Needed, not Daily - expand it first.
+      fireEvent.click(screen.getByRole("button", { name: /As Needed Metrics/ }));
+      const row = screen.getByRole("link", { name: /Times/ }).closest("tr")!;
+      const summaryCell = row.querySelector("td")!;
+      expect(summaryCell.textContent).toBe("5:30");
+    });
+  });
 });
 
 function todayIso(): string {

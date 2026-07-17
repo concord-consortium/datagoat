@@ -113,7 +113,7 @@ vi.mock("../contexts/DataContext", () => ({
 
 // MetricOverridesContext: MetricsDataEntryLog resolves each tracked
 // metric's schedule (and therefore its accordion section) through this
-// context. No overrides in these tests — schedule comes straight from
+// context. No overrides in these tests - schedule comes straight from
 // the built-in registry or the custom def under test.
 vi.mock("../contexts/MetricOverridesContext", () => ({
   useMetricOverrides: () => ({ getOverride: () => undefined }),
@@ -295,7 +295,7 @@ describe("MetricsDataEntryLog — drag-reorder is respected in row order", () =>
     // section (Daily, open by default) as the two built-ins below.
     // MetricsDataEntryLog groups rows by frequency first, so proving
     // drag-order survives the merge only makes sense within a single
-    // section — cross-section position is no longer meaningful, since
+    // section - cross-section position is no longer meaningful, since
     // grouping (not tracked-array position) decides where a row lands.
     customMetricsMock.metrics = [
       customDef("c_w", "Stretch Time", "health", { period: "daily" }),

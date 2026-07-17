@@ -1,0 +1,185 @@
+import { useMemo } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { DateNav } from "../layout/DateNav";
+import { LogMetricRow } from "./LogMetricRow";
+import { LogSection } from "./LogSection";
+import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
+import { isTimeMetric } from "./LogRecordInput";
+import { useHealthSummaries } from "./useHealthSummaries";
+import { useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
+import { capitalizeAthleteType, capitalizeGender, formatMetricValue } from "../../charts/chartSeries";
+import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
+import { SECTIONS } from "../../metrics/logSections";
+import { useData } from "../../contexts/DataContext";
+import { useUser } from "../../contexts/UserContext";
+import {
+  emptyCompetitionEntry,
+  emptyHealthEntry,
+  emptyPerformanceEntry,
+  type HealthEntry,
+} from "../../types/data";
+import { HISTORY, dateAtOffset, historyOffsetFromISO, toISO } from "../../utils/dates";
+import { getChipStateBy, isHealthFieldFilled } from "../../utils/healthCompleteness";
+import css from "./MetricsDataEntryLog.module.css";
+
+// Unified data-entry log. Renders every tracked metric, from all three
+// metric types, grouped into frequency accordions.
+//
+// This is a presentation merge: the three DataContext slices, their Firestore
+// collections, and the three tracked-id arrays are all still separate. Rows
+// resolve to the slice that owns them. Collapsing the data model is a
+// follow-up with its own story.
+export function MetricsDataEntryLog() {
+  const [searchParams] = useSearchParams();
+  const { loadState } = useUser();
+  const {
+    health,
+    performance,
+    competition,
+    setHealthEntry,
+    setPerformanceEntry,
+    setCompetitionEntry,
+  } = useData();
+  const tracked = useTrackedMetrics();
+
+  const dateParam = searchParams.get("date");
+  const requestedOffset = useMemo(() => {
+    if (!dateParam) return HISTORY;
+    return historyOffsetFromISO(dateParam);
+  }, [dateParam]);
+
+  // Malformed or out-of-range ?date= triggers a fallback Navigate. Compute the
+  // flag here so all hooks below run unconditionally - returning <Navigate />
+  // early would change the hook count between renders.
+  const shouldRedirect =
+    dateParam !== null &&
+    (Number.isNaN(requestedOffset) || requestedOffset < 0 || requestedOffset > HISTORY);
+  const offset =
+    shouldRedirect || Number.isNaN(requestedOffset) ? HISTORY : requestedOffset;
+  const dateIso = toISO(dateAtOffset(offset));
+
+  const profile = loadState.status === "loaded" ? loadState.profile : null;
+  const competitionTerm = profile?.competitionTerm ?? "game";
+  const profileKey = profile
+    ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
+    : DEFAULT_PROFILE_KEY;
+
+  const healthEntries = health.status === "loaded" ? health.entries : [];
+  const performanceEntries = performance.status === "loaded" ? performance.entries : [];
+  const competitionEntries = competition.status === "loaded" ? competition.entries : [];
+
+  // Merge over emptyHealthEntry defaults so partially-saved docs still expose
+  // every field the UI reads. Without this, toggling availability on after
+  // logging other metrics hands AvailabilityTree an undefined value and
+  // crashes.
+  const foundHealth = healthEntries.find((e) => e.date === dateIso);
+  const healthEntry: HealthEntry = foundHealth
+    ? { ...emptyHealthEntry(dateIso), ...foundHealth }
+    : emptyHealthEntry(dateIso);
+  const performanceEntry =
+    performanceEntries.find((e) => e.date === dateIso) ?? emptyPerformanceEntry(dateIso);
+  const competitionEntry =
+    competitionEntries.find((e) => e.date === dateIso) ?? emptyCompetitionEntry(dateIso);
+
+  const trackedHealthIds = useMemo(
+    () => tracked.filter((m) => m.type === "health").map((m) => m.id),
+    [tracked],
+  );
+  const summaryFor = useHealthSummaries(trackedHealthIds, healthEntries, profileKey);
+
+  // One chip across every tracked metric, whatever slice owns it. A chip that
+  // counted only health would under-report on a page showing everything.
+  const chipState = getChipStateBy(
+    tracked.map((m) => m.id),
+    (id) => {
+      const m = tracked.find((t) => t.id === id);
+      if (!m) return false;
+      if (m.type === "health") return isHealthFieldFilled(healthEntry, id);
+      const entry = m.type === "performance" ? performanceEntry : competitionEntry;
+      const v = entry.metrics?.[id];
+      if (typeof v === "number") return Number.isFinite(v);
+      if (typeof v === "string") return v.trim() !== "";
+      return false;
+    },
+  );
+
+  if (shouldRedirect) {
+    return <Navigate to="/log" replace />;
+  }
+
+  function setPerformanceValue(metricId: string, raw: string) {
+    if (raw === "") {
+      setPerformanceEntry(dateIso, { metrics: { [metricId]: undefined } });
+      return;
+    }
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) return;
+    setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
+  }
+
+  function setCompetitionValue(metricId: string, raw: string) {
+    if (raw === "") {
+      setCompetitionEntry(dateIso, { metrics: { [metricId]: undefined } });
+      return;
+    }
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) return;
+    setCompetitionEntry(dateIso, { metrics: { [metricId]: numeric } });
+  }
+
+  // Leftmost cell for a non-health row. Competition keeps its running total
+  // (and the derived win rate); Performance keeps the current day's value.
+  // Both are preserved as-is: this story reorganizes rows, it does not
+  // redefine what they show.
+  function summaryCellFor(m: TrackedMetric): string {
+    if (m.type === "competition") {
+      if (m.id === "winningPercentage") {
+        const rate = winningPercentageRate(competitionEntries);
+        return rate === undefined ? "" : `${rate}%`;
+      }
+      const total = competitionTotal(competitionEntries, m.id);
+      if (total === undefined) return "";
+      return isTimeMetric(m.id) ? formatMetricValue(m.id, total) : String(total);
+    }
+    const live = performanceEntry.metrics?.[m.id];
+    if (typeof live === "number" && Number.isFinite(live)) {
+      return isTimeMetric(m.id) ? formatMetricValue(m.id, live) : String(live);
+    }
+    return typeof live === "string" ? live : "";
+  }
+
+  return (
+    <>
+      <DateNav offset={offset} withChip chipState={chipState} />
+      <div className={css.screenContent}>
+        {SECTIONS.map((section) => {
+          const rows = tracked.filter((m) => m.section === section);
+          return (
+            <LogSection
+              key={section}
+              section={section}
+              count={rows.length}
+              defaultOpen={section === "daily"}
+            >
+              {rows.map((m) => (
+                <LogMetricRow
+                  key={m.id}
+                  tracked={m}
+                  healthEntry={healthEntry}
+                  performanceEntry={performanceEntry}
+                  competitionEntry={competitionEntry}
+                  summary={summaryFor(m.id)}
+                  summaryCell={summaryCellFor(m)}
+                  competitionTerm={competitionTerm}
+                  setHealth={(partial) => setHealthEntry(dateIso, partial)}
+                  setPerformance={(raw) => setPerformanceValue(m.id, raw)}
+                  setCompetition={(raw) => setCompetitionValue(m.id, raw)}
+                />
+              ))}
+            </LogSection>
+          );
+        })}
+      </div>
+    </>
+  );
+}

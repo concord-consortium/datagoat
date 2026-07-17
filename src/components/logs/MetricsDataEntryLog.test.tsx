@@ -73,6 +73,9 @@ function renderPage(initialPath = "/log") {
 
 beforeEach(() => {
   ctx.loadState = { status: "loaded", profile: PROFILE } as ProfileLoadState;
+  ctx.health = { status: "loaded", entries: [] } as DataLoadState<HealthEntry>;
+  ctx.performance = { status: "loaded", entries: [] } as DataLoadState<PerformanceEntry>;
+  ctx.competition = { status: "loaded", entries: [] } as DataLoadState<CompetitionEntry>;
   ctx.customMetrics = [];
   vi.clearAllMocks();
 });
@@ -120,14 +123,52 @@ describe("MetricsDataEntryLog", () => {
     expect(screen.getByText("No weekly metrics to track")).toBeTruthy();
   });
 
-  it("reports chip state across all three metric types, not health alone", () => {
+  it("reports 'some' when only health is filled (necessary but not sufficient proof of type coverage)", () => {
     // Health filled, performance and competition empty => "some", not "all".
+    // Note: a health-only resolver produces the same "some" result for this
+    // fixture (1 of 3 tracked metrics filled either way), so this case alone
+    // does not prove the chip spans all three types. See the two tests below.
     ctx.health = {
       status: "loaded",
       entries: [{ version: 1, date: todayIso(), hydration: 3, availability: {} }],
     } as DataLoadState<HealthEntry>;
     renderPage();
     expect(screen.getByRole("status").textContent).toMatch(/Some metrics entered/);
+  });
+
+  it("reports 'some' when health is empty but performance and competition are filled", () => {
+    // Health entirely empty, non-health metrics filled. A health-only
+    // resolver would see nothing filled here and report "none" - so this
+    // discriminates between a correct resolver and a health-only one.
+    ctx.performance = {
+      status: "loaded",
+      entries: [{ version: 1, date: todayIso(), metrics: { oneMileRun: 420 } }],
+    } as DataLoadState<PerformanceEntry>;
+    ctx.competition = {
+      status: "loaded",
+      entries: [{ version: 1, date: todayIso(), metrics: { scores: 10 } }],
+    } as DataLoadState<CompetitionEntry>;
+    renderPage();
+    expect(screen.getByRole("status").textContent).toMatch(/Some metrics entered/);
+  });
+
+  it("reports 'all' when health, performance, and competition are all filled", () => {
+    // A health-only resolver would count just 1 of 3 tracked metrics as
+    // filled here and report "some", not "all" - another discriminator.
+    ctx.health = {
+      status: "loaded",
+      entries: [{ version: 1, date: todayIso(), hydration: 3, availability: {} }],
+    } as DataLoadState<HealthEntry>;
+    ctx.performance = {
+      status: "loaded",
+      entries: [{ version: 1, date: todayIso(), metrics: { oneMileRun: 420 } }],
+    } as DataLoadState<PerformanceEntry>;
+    ctx.competition = {
+      status: "loaded",
+      entries: [{ version: 1, date: todayIso(), metrics: { scores: 10 } }],
+    } as DataLoadState<CompetitionEntry>;
+    renderPage();
+    expect(screen.getByRole("status").textContent).toMatch(/All metrics entered/);
   });
 
   it("redirects an out-of-range date to /log", () => {

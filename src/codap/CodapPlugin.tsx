@@ -269,7 +269,7 @@ function CodapPluginAuthed() {
 // track built-ins by id via TrackedDataSetup, which merges each default-on
 // registry with its ADDABLE_* set - so the authed export resolves each
 // category against those SAME merged lists ([...HEALTH_METRICS,
-// ...ADDABLE_HEALTH], etc.), matching every other consumer (PerformanceLog,
+// ...ADDABLE_HEALTH], etc.), matching every other consumer (MetricsDataEntryLog,
 // Dashboard, MetricDetail). Otherwise a tracked ADDABLE_* built-in has no
 // definition to resolve and its column is silently dropped. (The demo
 // branch supplies its own sources - only metrics that have chart configs.)

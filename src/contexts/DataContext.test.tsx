@@ -576,7 +576,7 @@ describe("DataContext optimistic merge memo", () => {
   });
 
   it("6b' health optimistic merge preserves established customMetrics", () => {
-    // Mirror of 6b for the health customMetrics map. HealthLog writes
+    // Mirror of 6b for the health customMetrics map. The metrics log writes
     // a sparse partial (only the metric being edited); the optimistic
     // overlay must merge it against the server's other custom-metric
     // values rather than clobber them, otherwise other custom-metric

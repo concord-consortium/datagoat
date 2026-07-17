@@ -2,26 +2,30 @@
 //
 // Cross-surface verification that custom metrics respect the user's
 // tracked-IDs preference the same way built-in metrics do — i.e.,
-// untracked customs disappear from the health log, the competition
-// log, and the dashboard chart picker, mirroring the behavior of
-// untracked built-ins. Until the variant cherry-pick (commit 4e4b6a9
-// + the wiring follow-up c4ee0aa), customs always appeared regardless
-// of trackedIds; the comment in each surface flagged this as a "demo
-// decision: no per-custom checkbox" that the variant integration
-// invalidated.
+// untracked customs disappear from the merged metrics log and the
+// dashboard chart picker, mirroring the behavior of untracked built-ins.
+// Until the variant cherry-pick (commit 4e4b6a9 + the wiring follow-up
+// c4ee0aa), customs always appeared regardless of trackedIds; the comment
+// in each surface flagged this as a "demo decision: no per-custom
+// checkbox" that the variant integration invalidated.
 //
-// One file rather than three because the behavior under test is the
-// same in all three components, just with different render harnesses.
+// The log-page coverage below renders MetricsDataEntryLog, the merged
+// health/performance/competition log at /log, rather than the old
+// per-type pages the merge replaced. Rows there are grouped into
+// frequency accordions, and only Daily is open by default, so each
+// test opens whichever section its metric's schedule resolves to
+// before asserting on it.
 
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { CustomMetricDef } from "../types/customMetrics";
 import type { ProfileLoadState, UserProfile } from "../types/profile";
 import type {
-  DataLoadState,
   CompetitionEntry,
+  DataLoadState,
   HealthEntry,
+  PerformanceEntry,
 } from "../types/data";
 
 // Hoisted mock state — each test mutates `customMetricsMock.metrics`
@@ -52,9 +56,11 @@ vi.mock("../contexts/AuthContext", () => ({
   useAuth: () => ({ user: { uid: "u1" } }),
 }));
 
-// UserContext is mutated per test to swap profile.trackedHealthMetrics
-// / trackedCompetitionMetrics. The shape mirrors the lightweight ctx
-// pattern HealthLog.test.tsx already uses.
+// UserContext is mutated per test to swap profile.trackedHealthMetrics /
+// trackedCompetitionMetrics. trackedPerformanceMetrics is pinned to []
+// throughout so the default (untracked) performance registry doesn't
+// bleed unrelated rows into these tests, which only care about health
+// and competition.
 const userMock = vi.hoisted(() => ({
   loadState: {
     status: "loaded",
@@ -71,6 +77,7 @@ const userMock = vi.hoisted(() => ({
       athleteType: "endurance" as const,
       competitionTerm: "game",
       trackedHealthMetrics: [] as string[],
+      trackedPerformanceMetrics: [] as string[],
       trackedCompetitionMetrics: [] as string[],
       profileComplete: true,
       trackingSetupComplete: true,
@@ -81,24 +88,35 @@ vi.mock("../contexts/UserContext", () => ({
   useUser: () => userMock,
 }));
 
-// DataContext: stubbed health/competition load state. setX handlers
-// are noops; tests don't exercise the write path.
+// DataContext: stubbed health/performance/competition load state. setX
+// handlers are noops; tests don't exercise the write path.
 const dataMock = vi.hoisted(() => ({
   health: {
     status: "loaded",
     entries: [] as HealthEntry[],
   } as DataLoadState<HealthEntry>,
+  performance: {
+    status: "loaded",
+    entries: [] as PerformanceEntry[],
+  } as DataLoadState<PerformanceEntry>,
   competition: {
     status: "loaded",
     entries: [] as CompetitionEntry[],
   } as DataLoadState<CompetitionEntry>,
   setHealthEntry: vi.fn(),
+  setPerformanceEntry: vi.fn(),
   setCompetitionEntry: vi.fn(),
 }));
 vi.mock("../contexts/DataContext", () => ({
   useData: () => dataMock,
-  useHealthData: () => dataMock.health,
-  useCompetitionData: () => dataMock.competition,
+}));
+
+// MetricOverridesContext: MetricsDataEntryLog resolves each tracked
+// metric's schedule (and therefore its accordion section) through this
+// context. No overrides in these tests — schedule comes straight from
+// the built-in registry or the custom def under test.
+vi.mock("../contexts/MetricOverridesContext", () => ({
+  useMetricOverrides: () => ({ getOverride: () => undefined }),
 }));
 
 // DemoMode: dashboard-only dep; default false so no random data is
@@ -107,14 +125,14 @@ vi.mock("../contexts/DemoModeContext", () => ({
   useDemoMode: () => false,
 }));
 
-import { HealthLog } from "./logs/HealthLog";
-import { CompetitionLog } from "./logs/CompetitionLog";
+import { MetricsDataEntryLog } from "./logs/MetricsDataEntryLog";
 import { DashboardChartCard } from "./dashboard/DashboardChartCard";
 
 function customDef(
   id: string,
   name: string,
   metricType: "health" | "competition",
+  schedule?: CustomMetricDef["schedule"],
 ): CustomMetricDef {
   return {
     id,
@@ -131,10 +149,29 @@ function customDef(
     referenceUrl: "",
     createdAt: 0,
     updatedAt: 0,
+    schedule,
   };
 }
 
-describe("HealthLog — customs respect tracked-IDs filter", () => {
+function renderLog() {
+  return render(
+    <MemoryRouter>
+      <MetricsDataEntryLog />
+    </MemoryRouter>,
+  );
+}
+
+// Custom metrics under test here have no explicit schedule, so they
+// resolve to the "irregular" default and land in As Needed, which is
+// collapsed by default. Open it so a mistakenly-rendered row would
+// actually be found (a query against a collapsed section would find
+// nothing either way, which would make the "hides" case pass for the
+// wrong reason).
+function openAsNeeded() {
+  fireEvent.click(screen.getByRole("button", { name: /As Needed Metrics/ }));
+}
+
+describe("MetricsDataEntryLog — health customs respect tracked-IDs filter", () => {
   it("hides a custom whose id is NOT in trackedHealthMetrics", () => {
     customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     userMock.loadState = {
@@ -144,11 +181,8 @@ describe("HealthLog — customs respect tracked-IDs filter", () => {
         trackedHealthMetrics: ["hydration", "sleepTime"], // no c_w
       },
     };
-    render(
-      <MemoryRouter>
-        <HealthLog />
-      </MemoryRouter>,
-    );
+    renderLog();
+    openAsNeeded();
     expect(screen.queryByText("Stretch Time")).toBeNull();
   });
 
@@ -161,16 +195,13 @@ describe("HealthLog — customs respect tracked-IDs filter", () => {
         trackedHealthMetrics: ["hydration", "c_w"],
       },
     };
-    render(
-      <MemoryRouter>
-        <HealthLog />
-      </MemoryRouter>,
-    );
+    renderLog();
+    openAsNeeded();
     expect(screen.getByText("Stretch Time")).toBeInTheDocument();
   });
 });
 
-describe("CompetitionLog — customs respect tracked-IDs filter", () => {
+describe("MetricsDataEntryLog — competition customs respect tracked-IDs filter", () => {
   it("hides a custom whose id is NOT in trackedCompetitionMetrics", () => {
     customMetricsMock.metrics = [customDef("c_p", "5K Time", "competition")];
     userMock.loadState = {
@@ -180,11 +211,8 @@ describe("CompetitionLog — customs respect tracked-IDs filter", () => {
         trackedCompetitionMetrics: ["wins", "goals"], // no c_p
       },
     };
-    render(
-      <MemoryRouter>
-        <CompetitionLog />
-      </MemoryRouter>,
-    );
+    renderLog();
+    openAsNeeded();
     expect(screen.queryByText("5K Time")).toBeNull();
   });
 
@@ -197,11 +225,8 @@ describe("CompetitionLog — customs respect tracked-IDs filter", () => {
         trackedCompetitionMetrics: ["wins", "c_p"],
       },
     };
-    render(
-      <MemoryRouter>
-        <CompetitionLog />
-      </MemoryRouter>,
-    );
+    renderLog();
+    openAsNeeded();
     expect(screen.getByText("5K Time")).toBeInTheDocument();
   });
 });
@@ -264,9 +289,17 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
   });
 });
 
-describe("HealthLog — drag-reorder is respected in row order", () => {
+describe("MetricsDataEntryLog — drag-reorder is respected in row order", () => {
   it("renders rows in trackedHealthMetrics order with customs interleaved", () => {
-    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
+    // Pinned to a daily schedule so it lands in the same accordion
+    // section (Daily, open by default) as the two built-ins below.
+    // MetricsDataEntryLog groups rows by frequency first, so proving
+    // drag-order survives the merge only makes sense within a single
+    // section — cross-section position is no longer meaningful, since
+    // grouping (not tracked-array position) decides where a row lands.
+    customMetricsMock.metrics = [
+      customDef("c_w", "Stretch Time", "health", { period: "daily" }),
+    ];
     userMock.loadState = {
       status: "loaded",
       profile: {
@@ -276,11 +309,7 @@ describe("HealthLog — drag-reorder is respected in row order", () => {
         trackedHealthMetrics: ["hydration", "c_w", "sleepTime"],
       },
     };
-    const { container } = render(
-      <MemoryRouter>
-        <HealthLog />
-      </MemoryRouter>,
-    );
+    const { container } = renderLog();
     // Read the rendered metric-name column in order. Each MetricInputRow
     // renders the name as a Link inside a `td.metricName` cell.
     const names = Array.from(

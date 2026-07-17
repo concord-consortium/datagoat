@@ -123,7 +123,7 @@ function buildWeeks(
         Object.values(entry.metrics ?? {}).some((v) => {
           // A finite number (including 0 and negatives) or a non-empty
           // string counts as logged. Matches Dashboard.competitionLoggedAny
-          // and CompetitionLog stringValue.
+          // and PerfCompMetricRow stringValue.
           if (typeof v === "number") return Number.isFinite(v);
           if (typeof v === "string") return v.trim() !== "";
           return false;

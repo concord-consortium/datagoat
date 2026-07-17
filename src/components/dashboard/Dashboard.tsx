@@ -55,12 +55,12 @@ export function Dashboard() {
   // Schedule-aware health CTA: the "Log N remaining" count reflects only the
   // metrics whose schedule makes them due today, and drops those already logged
   // enough to keep pace this week (see metrics/dueToday). Because an entry on
-  // any day of the week counts toward pace, wasHealthLogged is asked per day
-  // across the current week, not just today.
+  // any day of the week counts toward pace, wasHealthEntryLogged is asked per
+  // day across the current week, not just today.
   const today = dateAtOffset(HISTORY);
   const todayIso = toISO(today);
   const healthByDate = new Map(healthEntries.map((e) => [e.date, e]));
-  const wasHealthLogged = (id: string, day: Date) =>
+  const wasHealthEntryLogged = (id: string, day: Date) =>
     getChipState(healthByDate.get(toISO(day)) ?? null, [id]) !== "none";
   // Resolve each tracked id to its effective schedule, spanning built-in,
   // addable, and custom health metrics, with a user override winning. Custom
@@ -79,7 +79,7 @@ export function Dashboard() {
   const healthRemainingCount = remainingToLog(
     trackedHealthMetrics,
     today,
-    wasHealthLogged,
+    wasHealthEntryLogged,
   ).length;
   const healthLoggedOfDue = healthDueCount - healthRemainingCount;
 

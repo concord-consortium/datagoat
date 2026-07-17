@@ -33,7 +33,7 @@ interface LogRecordInputProps {
 
 // Chooses the Record-cell control for a competition/performance log row:
 // the multi-field TimeInput for time metrics, else the numeric input.
-// Shared by CompetitionLog and PerformanceLog so the time-routing (build
+// Shared by both metric types so the time-routing (build
 // MetricDefinition -> gate -> seconds precision) lives in one place.
 export function LogRecordInput({
   metricId,

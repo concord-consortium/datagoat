@@ -50,7 +50,7 @@ describe("ActivityCalendar", () => {
       healthEntries: [fullEntry(todayIso)],
     });
     // Today's cell has state='all', offset=HISTORY - should be a Link.
-    const links = container.querySelectorAll(`a[href*="/health?date="]`);
+    const links = container.querySelectorAll(`a[href*="/log?date="]`);
     expect(links.length).toBeGreaterThan(0);
     const todayLink = Array.from(links).find((a) =>
       (a as HTMLAnchorElement).getAttribute("href")?.includes(todayIso),
@@ -110,7 +110,7 @@ describe("ActivityCalendar", () => {
     ).toBe(true);
   });
 
-  it("health tappable cell links to /health?date=ISO", () => {
+  it("health tappable cell links to /log?date=ISO", () => {
     const todayIso = toISO(dateAtOffset(HISTORY));
     const { container } = renderCalendar({
       type: "health",
@@ -118,7 +118,7 @@ describe("ActivityCalendar", () => {
       healthEntries: [fullEntry(todayIso)],
     });
     const link = container.querySelector(
-      `a[href="/health?date=${todayIso}"]`,
+      `a[href="/log?date=${todayIso}"]`,
     );
     expect(link).not.toBeNull();
   });

@@ -146,7 +146,7 @@ function renderAt(
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path={`/${type}`} element={<div data-testid="log-fallback" />} />
+        <Route path="/log" element={<div data-testid="log-fallback" />} />
         <Route
           path={`/${type}/:metricId`}
           element={<MetricDetail type={type} />}
@@ -174,9 +174,9 @@ describe("MetricDetail — custom-metric handling", () => {
     customMetricsMock.loading = false;
     renderAt("/health/c_p", "health");
     // Cross-type access falls through to the not-found Navigate that
-    // bounces to /health. Without the metricType filter, MetricDetail
+    // bounces to /log. Without the metricType filter, MetricDetail
     // would render but read from the wrong entry map.
-    expect(screen.getByTestId("loc").textContent).toBe("/health");
+    expect(screen.getByTestId("loc").textContent).toBe("/log");
     expect(screen.getByTestId("log-fallback")).toBeInTheDocument();
   });
 

@@ -48,7 +48,7 @@ function renderShell(initialEntry: string, content: ReactNode) {
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route element={<AppShell />}>
-          <Route path="/health" element={content} />
+          <Route path="/log" element={content} />
           <Route path="/test" element={content} />
         </Route>
       </Routes>
@@ -86,9 +86,9 @@ function fakeRect(partial: Partial<DOMRect>): DOMRect {
 
 describe("AppShell", () => {
   describe("document.title sync (WCAG 2.4.2)", () => {
-    it("sets document.title to 'Health Log | DataGOAT' on /health", () => {
-      renderShell("/health", <div>health content</div>);
-      expect(document.title).toBe("Health Log | DataGOAT");
+    it("sets document.title to 'Metrics Data Entry Log | DataGOAT' on /log", () => {
+      renderShell("/log", <div>log content</div>);
+      expect(document.title).toBe("Metrics Data Entry Log | DataGOAT");
     });
   });
 

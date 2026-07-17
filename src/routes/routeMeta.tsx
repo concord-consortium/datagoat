@@ -48,17 +48,9 @@ const STATIC: Record<string, RouteMeta> = {
     icon: <HomeIcon />,
     showHome: false,
   },
-  "/health": {
-    title: "Health Log",
+  "/log": {
+    title: "Metrics Data Entry Log",
     icon: <CalendarIcon />,
-  },
-  "/performance": {
-    title: "Performance Log",
-    icon: <StopwatchIcon />,
-  },
-  "/competition": {
-    title: "Competition Log",
-    icon: <StopwatchIcon />,
   },
   "/profile": {
     title: "Profile",
@@ -113,7 +105,7 @@ const PATTERNS: Array<{
         return {
           title: m.name,
           icon: m.Icon ? <m.Icon /> : <CalendarIcon />,
-          backTo: "/health",
+          backTo: "/log",
         };
       }
       // Custom health metric fallthrough — match the route's :type so
@@ -125,7 +117,7 @@ const PATTERNS: Array<{
         return {
           title: c.name,
           icon: <CustomMetricIcon />,
-          backTo: "/health",
+          backTo: "/log",
         };
       }
       return null;
@@ -141,7 +133,7 @@ const PATTERNS: Array<{
         return {
           title: m.name,
           icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
-          backTo: "/performance",
+          backTo: "/log",
         };
       }
       const c = customs.find(
@@ -151,7 +143,7 @@ const PATTERNS: Array<{
         return {
           title: c.name,
           icon: <CustomMetricIcon />,
-          backTo: "/performance",
+          backTo: "/log",
         };
       }
       return null;
@@ -167,7 +159,7 @@ const PATTERNS: Array<{
         return {
           title: m.name,
           icon: m.Icon ? <m.Icon /> : <StopwatchIcon />,
-          backTo: "/competition",
+          backTo: "/log",
         };
       }
       const c = customs.find(
@@ -177,7 +169,7 @@ const PATTERNS: Array<{
         return {
           title: c.name,
           icon: <CustomMetricIcon />,
-          backTo: "/competition",
+          backTo: "/log",
         };
       }
       return null;

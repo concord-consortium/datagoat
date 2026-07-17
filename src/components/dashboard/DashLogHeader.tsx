@@ -34,12 +34,7 @@ export function DashLogHeader({
   // choice in routeMeta and HamburgerMenu so the Performance section
   // has a single visual identity across surfaces.
   const Icon = type === "health" ? CalendarIcon : StopwatchIcon;
-  const to =
-    type === "health"
-      ? "/health"
-      : type === "performance"
-        ? "/performance"
-        : "/competition";
+  const to = "/log";
   // Lead the accessible name with the visible status so WCAG 2.5.3
   // (Label in Name) is satisfied — voice control "click log your 5
   // remaining metrics" must match the visible text.

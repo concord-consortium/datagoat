@@ -31,14 +31,14 @@ describe("resolveRouteMeta — custom metric routing", () => {
     const customs = [customDef("c_stretch", "Stretch Time", "health")];
     const meta = resolveRouteMeta("/health/c_stretch", customs);
     expect(meta?.title).toBe("Stretch Time");
-    expect(meta?.backTo).toBe("/health");
+    expect(meta?.backTo).toBe("/log");
   });
 
   it("resolves a custom competition metric title at /competition/:metricId", () => {
     const customs = [customDef("c_5k", "5K Time", "competition")];
     const meta = resolveRouteMeta("/competition/c_5k", customs);
     expect(meta?.title).toBe("5K Time");
-    expect(meta?.backTo).toBe("/competition");
+    expect(meta?.backTo).toBe("/log");
   });
 
   it("does NOT resolve a health URL to a competition custom (and vice versa)", () => {
@@ -146,7 +146,7 @@ describe("resolveRouteMeta — custom metric routing", () => {
 
 describe("resolveRouteMeta — location-state backTo override", () => {
   it("overrides the registry backTo when state.backTo is provided", () => {
-    // /health/:metricId resolves to backTo: "/health" by default.
+    // /health/:metricId resolves to backTo: "/log" by default.
     // SortableMetricRow on /setup/tracking passes state.backTo so the
     // back chevron returns the user to /setup/tracking instead.
     const customs = [customDef("c_stretch", "Stretch Time", "health")];
@@ -160,7 +160,7 @@ describe("resolveRouteMeta — location-state backTo override", () => {
   it("keeps the registry backTo when no state is provided", () => {
     const customs = [customDef("c_stretch", "Stretch Time", "health")];
     expect(resolveRouteMeta("/health/c_stretch", customs)?.backTo).toBe(
-      "/health",
+      "/log",
     );
   });
 
@@ -168,7 +168,7 @@ describe("resolveRouteMeta — location-state backTo override", () => {
     const customs = [customDef("c_stretch", "Stretch Time", "health")];
     expect(
       resolveRouteMeta("/health/c_stretch", customs, null)?.backTo,
-    ).toBe("/health");
+    ).toBe("/log");
   });
 
   it("keeps the registry backTo when state.backTo is not a string", () => {
@@ -176,7 +176,7 @@ describe("resolveRouteMeta — location-state backTo override", () => {
     // typo'd field) shouldn't override the registry default.
     const customs = [customDef("c_stretch", "Stretch Time", "health")];
     const meta = resolveRouteMeta("/health/c_stretch", customs, {});
-    expect(meta?.backTo).toBe("/health");
+    expect(meta?.backTo).toBe("/log");
   });
 
   it("returns null untouched when the route does not resolve", () => {

@@ -435,7 +435,7 @@ function CellNode({
   if (tappable && cell.date) {
     const iso = toISO(cell.date);
     return (
-      <Link to={`/health?date=${iso}`} className={className}>
+      <Link to={`/log?date=${iso}`} className={className}>
         <span aria-hidden="true">{dayNum}</span>
         <span className={common.visuallyHidden}>{visuallyHiddenLabel}</span>
       </Link>

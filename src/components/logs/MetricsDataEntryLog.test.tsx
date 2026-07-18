@@ -144,23 +144,6 @@ describe("MetricsDataEntryLog", () => {
     expect(screen.getByText("No weekly metrics to track")).toBeTruthy();
   });
 
-  it("hides the onboarding welcome for an established user", () => {
-    // Default fixture profile is complete, so no first-visit guidance.
-    renderPage();
-    expect(screen.queryByRole("heading", { name: "Your Metrics Log" })).toBeNull();
-  });
-
-  it("shows the onboarding welcome while the profile is still being set up", () => {
-    ctx.loadState = {
-      status: "loaded",
-      profile: { ...PROFILE, trackingSetupComplete: false },
-    } as ProfileLoadState;
-    renderPage();
-    expect(
-      screen.getByRole("heading", { name: "Your Metrics Log" }),
-    ).toBeTruthy();
-  });
-
   it("reports 'some' when only health is filled (necessary but not sufficient proof of type coverage)", () => {
     // Health filled, performance and competition empty => "some", not "all".
     // Note: a health-only resolver produces the same "some" result for this

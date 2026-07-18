@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
-import { If } from "../common/If";
 import { LogMetricRow } from "./LogMetricRow";
 import { LogSection } from "./LogSection";
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
@@ -75,17 +74,6 @@ export function MetricsDataEntryLog() {
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const competitionTerm = profile?.competitionTerm ?? "game";
-
-  // Welcome guidance shown only during onboarding (matches the prototype's
-  // .profile-welcome.show gate keyed on window.isNewUser). Established users
-  // with a complete profile see only the frequency accordions. The three
-  // per-type logs each had their own copy; the merged page carries one block
-  // covering every metric type.
-  const isOnboarding =
-    loadState.status === "missing" ||
-    (loadState.status === "loaded" &&
-      (!loadState.profile.profileComplete ||
-        !loadState.profile.trackingSetupComplete));
   const profileKey = profile
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
     : DEFAULT_PROFILE_KEY;
@@ -184,16 +172,6 @@ export function MetricsDataEntryLog() {
     <>
       <DateNav offset={offset} withChip chipState={chipState} />
       <div className={css.screenContent}>
-        <If condition={isOnboarding}>
-          <div className={css.profileWelcome}>
-            <h2 className={css.profileWelcomeTitle}>Your Metrics Log</h2>
-            <p>
-              Record every metric your team tracks here, grouped by how often
-              it's due. Logging consistently - even on rest days - helps you
-              and your team spot patterns over time.
-            </p>
-          </div>
-        </If>
         {SECTIONS.map((section) => {
           const rows = tracked.filter((m) => m.section === section);
           return (

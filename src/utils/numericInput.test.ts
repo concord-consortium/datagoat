@@ -19,8 +19,20 @@ describe("parseNumericInput", () => {
 
   it("returns null for non-finite / mid-typed input (ignore)", () => {
     expect(parseNumericInput("-")).toBeNull();
+    // A lone "." (and "-.") is NaN, not 0, so it is ignored like "-" - it never
+    // stores a spurious 0 that would make the metric look filled.
+    expect(parseNumericInput(".")).toBeNull();
+    expect(parseNumericInput("-.")).toBeNull();
     expect(parseNumericInput("abc")).toBeNull();
     expect(parseNumericInput("1e")).toBeNull();
     expect(parseNumericInput("Infinity")).toBeNull();
+  });
+
+  it("parses partial-but-valid decimals rather than ignoring them", () => {
+    // A leading or trailing dot on real digits IS a parseable number, unlike
+    // the lone "." above.
+    expect(parseNumericInput(".5")).toBe(0.5);
+    expect(parseNumericInput("0.")).toBe(0);
+    expect(parseNumericInput("1.")).toBe(1);
   });
 });

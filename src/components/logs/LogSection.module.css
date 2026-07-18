@@ -2,6 +2,14 @@
   margin-bottom: 8px;
 }
 
+/* Semantics-only wrapper for the accordion toggle (WAI-ARIA accordion
+   pattern). Strips the default h2 margin and font sizing so the button
+   inside is the sole source of the header's appearance. */
+.heading {
+  margin: 0;
+  font: inherit;
+}
+
 .header {
   appearance: none;
   display: flex;

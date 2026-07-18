@@ -39,7 +39,7 @@ describe("DashLogHeader", () => {
     });
     const link = container.querySelector("a")!;
     expect(link.getAttribute("aria-label")).toBe(
-      "Log your 5 metrics for today. Go to Health Log.",
+      "Log your 5 metrics for today. Go to Metrics Data Entry Log.",
     );
     // Visible <p> shows just the status, no SR suffix bleed-through.
     const p = container.querySelector("p")!;

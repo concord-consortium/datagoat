@@ -6,3 +6,25 @@
 .dateNavSibling + .screenContent {
   padding-top: 10px;
 }
+
+/* Onboarding welcome block, shown only to first-visit users. Ported from the
+   per-type logs' .profileWelcome (prototype's .profile-welcome). */
+.profileWelcome {
+  font-size: 16px;
+  color: var(--subtext);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+}
+.profileWelcomeTitle {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.profileWelcome p {
+  margin: 0;
+}

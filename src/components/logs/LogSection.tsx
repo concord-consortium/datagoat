@@ -21,40 +21,49 @@ export interface LogSectionProps {
 export function LogSection({ section, count, defaultOpen, children }: LogSectionProps) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   const regionId = useId();
+  const labelId = useId();
 
   return (
     <section className={css.section}>
-      <button
-        type="button"
-        className={css.header}
-        aria-expanded={open}
-        aria-controls={regionId}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span>{sectionLabel(section)}</span>
-        <span className={css.count}>
-          ({count} {count === 1 ? "metric" : "metrics"})
-        </span>
-        <svg
-          className={clsx(css.chevron, open && css.chevronOpen)}
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          aria-hidden="true"
+      {/* Per the WAI-ARIA accordion pattern the toggle button sits inside a
+          heading, so assistive tech exposes each frequency group in the page's
+          heading outline (below the h1 page title). The <h2> is styling-neutral;
+          the button owns all appearance. */}
+      <h2 className={css.heading}>
+        <button
+          type="button"
+          className={css.header}
+          aria-expanded={open}
+          aria-controls={regionId}
+          onClick={() => setOpen((v) => !v)}
         >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+          <span id={labelId}>{sectionLabel(section)}</span>
+          <span className={css.count}>
+            ({count} {count === 1 ? "metric" : "metrics"})
+          </span>
+          <svg
+            className={clsx(css.chevron, open && css.chevronOpen)}
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            aria-hidden="true"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </h2>
       <div id={regionId}>
         <If condition={open}>
           <If condition={count === 0}>
             <p className={css.empty}>{sectionEmptyText(section)}</p>
           </If>
           <If condition={count > 0}>
-            <table className={css.table}>
+            {/* Name the table after its section so the six sibling tables are
+                distinguishable in an assistive-tech tables list. */}
+            <table className={css.table} aria-labelledby={labelId}>
               <thead>
                 <tr>
                   <th scope="col">Summary</th>

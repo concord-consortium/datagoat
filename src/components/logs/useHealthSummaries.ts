@@ -48,12 +48,7 @@ export function useHealthSummaries(
     return map;
   }, [entries, trackedHealthIds, profileKey, overlayVersion]);
 
-  return (id: string) => {
-    const s = summaries.get(id);
-    return {
-      sparklineData: s?.sparklineData,
-      sparklineGoal: s?.sparklineGoal,
-      avgLabel: s?.avgLabel,
-    };
-  };
+  // The stored value is already a HealthSummary; return it directly rather
+  // than copying its three fields into a fresh object on every row per render.
+  return (id: string) => summaries.get(id) ?? {};
 }

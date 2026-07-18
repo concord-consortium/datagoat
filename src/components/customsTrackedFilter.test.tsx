@@ -171,7 +171,7 @@ function openAsNeeded() {
   fireEvent.click(screen.getByRole("button", { name: /As Needed Metrics/ }));
 }
 
-describe("MetricsDataEntryLog — health customs respect tracked-IDs filter", () => {
+describe("MetricsDataEntryLog - health customs respect tracked-IDs filter", () => {
   it("hides a custom whose id is NOT in trackedHealthMetrics", () => {
     customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
     userMock.loadState = {
@@ -201,7 +201,7 @@ describe("MetricsDataEntryLog — health customs respect tracked-IDs filter", ()
   });
 });
 
-describe("MetricsDataEntryLog — competition customs respect tracked-IDs filter", () => {
+describe("MetricsDataEntryLog - competition customs respect tracked-IDs filter", () => {
   it("hides a custom whose id is NOT in trackedCompetitionMetrics", () => {
     customMetricsMock.metrics = [customDef("c_p", "5K Time", "competition")];
     userMock.loadState = {
@@ -289,7 +289,7 @@ describe("DashboardChartCard — customs respect tracked-IDs filter", () => {
   });
 });
 
-describe("MetricsDataEntryLog — drag-reorder is respected in row order", () => {
+describe("MetricsDataEntryLog - drag-reorder is respected in row order", () => {
   it("renders rows in trackedHealthMetrics order with customs interleaved", () => {
     // Pinned to a daily schedule so it lands in the same accordion
     // section (Daily, open by default) as the two built-ins below.

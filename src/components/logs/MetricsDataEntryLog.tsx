@@ -1,10 +1,14 @@
 import { useMemo } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { DateNav } from "../layout/DateNav";
+import { If } from "../common/If";
 import { LogMetricRow } from "./LogMetricRow";
 import { LogSection } from "./LogSection";
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { isTimeMetric } from "./LogRecordInput";
+import { useChartConfigSync } from "../../charts/metricChartConfig";
+import { isScheduleDueOn } from "../../metrics/dueToday";
+import { parseNumericInput } from "../../utils/numericInput";
 import { useHealthSummaries } from "./useHealthSummaries";
 import { useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
 import { capitalizeAthleteType, capitalizeGender, formatMetricValue } from "../../charts/chartSeries";
@@ -42,6 +46,16 @@ export function MetricsDataEntryLog() {
   } = useData();
   const tracked = useTrackedMetrics();
 
+  // Subscribe the whole page to chart-config overlay changes. Custom time
+  // metrics read their time layout from the overlay (isTimeMetric ->
+  // getMetricChartConfig), which registers asynchronously; without a
+  // subscription a custom time performance/competition row renders as a plain
+  // numeric input until some unrelated re-render. useHealthSummaries also
+  // subscribes, but relying on that couples this behavior to the presence of
+  // health metrics - make the dependency explicit here so it survives a future
+  // refactor of that hook.
+  useChartConfigSync();
+
   const dateParam = searchParams.get("date");
   const requestedOffset = useMemo(() => {
     if (!dateParam) return HISTORY;
@@ -56,10 +70,22 @@ export function MetricsDataEntryLog() {
     (Number.isNaN(requestedOffset) || requestedOffset < 0 || requestedOffset > HISTORY);
   const offset =
     shouldRedirect || Number.isNaN(requestedOffset) ? HISTORY : requestedOffset;
-  const dateIso = toISO(dateAtOffset(offset));
+  const displayedDate = dateAtOffset(offset);
+  const dateIso = toISO(displayedDate);
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
   const competitionTerm = profile?.competitionTerm ?? "game";
+
+  // Welcome guidance shown only during onboarding (matches the prototype's
+  // .profile-welcome.show gate keyed on window.isNewUser). Established users
+  // with a complete profile see only the frequency accordions. The three
+  // per-type logs each had their own copy; the merged page carries one block
+  // covering every metric type.
+  const isOnboarding =
+    loadState.status === "missing" ||
+    (loadState.status === "loaded" &&
+      (!loadState.profile.profileComplete ||
+        !loadState.profile.trackingSetupComplete));
   const profileKey = profile
     ? `${capitalizeGender(profile.gender)}/${capitalizeAthleteType(profile.athleteType)}`
     : DEFAULT_PROFILE_KEY;
@@ -87,12 +113,26 @@ export function MetricsDataEntryLog() {
   );
   const summaryFor = useHealthSummaries(trackedHealthIds, healthEntries, profileKey);
 
-  // One chip across every tracked metric, whatever slice owns it. A chip that
-  // counted only health would under-report on a page showing everything.
+  // One chip across every tracked metric, whatever slice owns it - a chip that
+  // counted only health would under-report on a page showing everything. But
+  // "complete for this day" means the metrics actually scheduled today: the
+  // due-today engine counts daily every day and weekly on its anchor weekdays,
+  // and never counts monthly/quarterly/yearly/as-needed (they don't nag on
+  // dates we'd have to invent). Counting those not-due cadences would leave
+  // "All" permanently unreachable for anyone tracking one. relativeProteinIntake
+  // is excluded too: it's an auto-calculated placeholder with no input, so it
+  // can never be "filled" and would also pin the chip below "All".
+  const dueMetrics = tracked.filter(
+    (m) =>
+      m.id !== "relativeProteinIntake" &&
+      m.schedule !== undefined &&
+      isScheduleDueOn(m.schedule, displayedDate),
+  );
+  const dueById = new Map(dueMetrics.map((m) => [m.id, m]));
   const chipState = getChipStateBy(
-    tracked.map((m) => m.id),
+    dueMetrics.map((m) => m.id),
     (id) => {
-      const m = tracked.find((t) => t.id === id);
+      const m = dueById.get(id);
       if (!m) return false;
       if (m.type === "health") return isHealthFieldFilled(healthEntry, id);
       const entry = m.type === "performance" ? performanceEntry : competitionEntry;
@@ -108,23 +148,15 @@ export function MetricsDataEntryLog() {
   }
 
   function setPerformanceValue(metricId: string, raw: string) {
-    if (raw === "") {
-      setPerformanceEntry(dateIso, { metrics: { [metricId]: undefined } });
-      return;
-    }
-    const numeric = Number(raw);
-    if (!Number.isFinite(numeric)) return;
-    setPerformanceEntry(dateIso, { metrics: { [metricId]: numeric } });
+    const value = parseNumericInput(raw);
+    if (value === null) return;
+    setPerformanceEntry(dateIso, { metrics: { [metricId]: value } });
   }
 
   function setCompetitionValue(metricId: string, raw: string) {
-    if (raw === "") {
-      setCompetitionEntry(dateIso, { metrics: { [metricId]: undefined } });
-      return;
-    }
-    const numeric = Number(raw);
-    if (!Number.isFinite(numeric)) return;
-    setCompetitionEntry(dateIso, { metrics: { [metricId]: numeric } });
+    const value = parseNumericInput(raw);
+    if (value === null) return;
+    setCompetitionEntry(dateIso, { metrics: { [metricId]: value } });
   }
 
   // Leftmost cell for a non-health row. Competition keeps its running total
@@ -152,6 +184,16 @@ export function MetricsDataEntryLog() {
     <>
       <DateNav offset={offset} withChip chipState={chipState} />
       <div className={css.screenContent}>
+        <If condition={isOnboarding}>
+          <div className={css.profileWelcome}>
+            <h2 className={css.profileWelcomeTitle}>Your Metrics Log</h2>
+            <p>
+              Record every metric your team tracks here, grouped by how often
+              it's due. Logging consistently - even on rest days - helps you
+              and your team spot patterns over time.
+            </p>
+          </div>
+        </If>
         {SECTIONS.map((section) => {
           const rows = tracked.filter((m) => m.section === section);
           return (

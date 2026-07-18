@@ -9,7 +9,7 @@ import { PERFORMANCE_METRICS } from "../../metrics/performanceMetrics";
 import { sectionFor, type SectionKey } from "../../metrics/logSections";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
-import { resolveSchedule } from "../../types/metricSchedule";
+import { resolveSchedule, type MetricSchedule } from "../../types/metricSchedule";
 
 export type MetricType = "health" | "performance" | "competition";
 
@@ -18,6 +18,12 @@ export interface TrackedMetric {
   name: string;
   type: MetricType;
   section: SectionKey;
+  // Resolved schedule (own schedule merged with any user override), the same
+  // value `section` is derived from. Carried through so callers can ask the
+  // due-today engine whether the metric is scheduled on a given date without
+  // re-resolving it. The hook always sets it; optional only so lightweight
+  // row-test fixtures that don't exercise scheduling can omit it.
+  schedule?: MetricSchedule;
   // Exactly one of these is set. The row dispatcher branches on which.
   builtInDef?: MetricDefinition;
   customDef?: CustomMetricDef;
@@ -60,13 +66,16 @@ export function useTrackedMetrics(): TrackedMetric[] {
         profile?.trackedCompetitionMetrics ?? COMPETITION_METRICS.map((m) => m.id),
     };
 
+    // Index customs once by "type:id" so the tracked-id loop below is a Map
+    // lookup, not an allCustom.find() scan per id (which was O(tracked * customs)).
+    const customByTypeId = new Map<string, CustomMetricDef>();
+    for (const m of allCustom) customByTypeId.set(`${m.metricType}:${m.id}`, m);
+
     const out: TrackedMetric[] = [];
     for (const type of ["health", "performance", "competition"] as const) {
       for (const id of trackedByType[type]) {
         const builtInDef = BUILT_IN_BY_ID[type].get(id);
-        const customDef = builtInDef
-          ? undefined
-          : allCustom.find((m) => m.id === id && m.metricType === type);
+        const customDef = builtInDef ? undefined : customByTypeId.get(`${type}:${id}`);
         // A tracked id resolving to neither is a stale entry from a deleted
         // custom that has not been pruned yet. Skip it rather than render a
         // broken row.
@@ -80,6 +89,7 @@ export function useTrackedMetrics(): TrackedMetric[] {
           name: builtInDef?.name ?? customDef?.name ?? id,
           type,
           section: sectionFor(schedule),
+          schedule,
           builtInDef,
           customDef,
         });

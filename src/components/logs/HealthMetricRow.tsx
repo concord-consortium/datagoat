@@ -6,6 +6,7 @@ import type { CustomMetricDef } from "../../types/customMetrics";
 import type { HealthEntry } from "../../types/data";
 import type { HealthSummary } from "./useHealthSummaries";
 import type { TrackedMetric } from "./useTrackedMetrics";
+import { parseNumericInput } from "../../utils/numericInput";
 import rowCss from "./MetricInputRow.module.css";
 
 export interface HealthMetricRowProps {
@@ -44,23 +45,15 @@ export function HealthMetricRow({
   const detailHref = `/health/${id}`;
 
   function setNumericField<K extends keyof HealthEntry>(field: K, raw: string) {
-    if (raw === "") {
-      setEntry({ [field]: undefined } as Partial<HealthEntry>);
-      return;
-    }
-    const numeric = Number(raw);
-    if (!Number.isFinite(numeric)) return;
-    setEntry({ [field]: numeric } as Partial<HealthEntry>);
+    const value = parseNumericInput(raw);
+    if (value === null) return;
+    setEntry({ [field]: value } as Partial<HealthEntry>);
   }
 
   function setCustomMetric(metricId: string, raw: string) {
-    if (raw === "") {
-      setEntry({ customMetrics: { [metricId]: undefined } });
-      return;
-    }
-    const numeric = Number(raw);
-    if (!Number.isFinite(numeric)) return;
-    setEntry({ customMetrics: { [metricId]: numeric } });
+    const value = parseNumericInput(raw);
+    if (value === null) return;
+    setEntry({ customMetrics: { [metricId]: value } });
   }
 
   const builtIn = tracked.builtInDef;

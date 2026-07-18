@@ -37,13 +37,10 @@ export function DashLogHeader({
   const to = "/log";
   // Lead the accessible name with the visible status so WCAG 2.5.3
   // (Label in Name) is satisfied — voice control "click log your 5
-  // remaining metrics" must match the visible text.
-  const label =
-    type === "health"
-      ? `${status} Go to Health Log.`
-      : type === "performance"
-        ? `${status} Go to Performance Log.`
-        : `${status} Go to Competition Log.`;
+  // remaining metrics" must match the visible text. The destination is the
+  // one unified log for every type, so name the page it actually opens
+  // ("Metrics Data Entry Log") rather than the retired per-type pages.
+  const label = `${status} Go to Metrics Data Entry Log.`;
 
   const preHasTrailingSpace = !!pre && /\s$/.test(pre);
   const postHasLeadingSpace = !!post && /^\s/.test(post);

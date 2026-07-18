@@ -73,4 +73,18 @@ describe("LogSection", () => {
     expect(screen.getByRole("columnheader", { name: "Metric" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Record" })).toBeTruthy();
   });
+
+  it("exposes the toggle inside a level-2 heading for the page outline", () => {
+    renderSection({ section: "weekly", count: 3 });
+    const heading = screen.getByRole("heading", { level: 2, name: /Weekly Metrics/ });
+    // The toggle button lives inside the heading, not beside it.
+    expect(heading.querySelector("button")).toBeTruthy();
+  });
+
+  it("gives the table an accessible name matching its section", () => {
+    renderSection({ section: "weekly", count: 1, defaultOpen: true });
+    // Without this the six sibling frequency tables are indistinguishable in
+    // an assistive-tech tables list; the name comes from the section label.
+    expect(screen.getByRole("table", { name: "Weekly Metrics" })).toBeTruthy();
+  });
 });

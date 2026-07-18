@@ -22,7 +22,7 @@ import {
   type HealthEntry,
 } from "../../types/data";
 import { HISTORY, dateAtOffset, historyOffsetFromISO, toISO } from "../../utils/dates";
-import { getChipStateBy, isHealthFieldFilled } from "../../utils/healthCompleteness";
+import { getChipStateBy, isHealthFieldFilled, type ChipState } from "../../utils/healthCompleteness";
 import css from "./MetricsDataEntryLog.module.css";
 
 // Unified data-entry log. Renders every tracked metric, from all three
@@ -117,19 +117,28 @@ export function MetricsDataEntryLog() {
       isScheduleDueOn(m.schedule, displayedDate),
   );
   const dueById = new Map(dueMetrics.map((m) => [m.id, m]));
-  const chipState = getChipStateBy(
-    dueMetrics.map((m) => m.id),
-    (id) => {
-      const m = dueById.get(id);
-      if (!m) return false;
-      if (m.type === "health") return isHealthFieldFilled(healthEntry, id);
-      const entry = m.type === "performance" ? performanceEntry : competitionEntry;
-      const v = entry.metrics?.[id];
-      if (typeof v === "number") return Number.isFinite(v);
-      if (typeof v === "string") return v.trim() !== "";
-      return false;
-    },
-  );
+  // When nothing is scheduled for the displayed date, the day is complete by
+  // definition - there is nothing to enter - so read "all". Without this,
+  // getChipStateBy returns "none" for the empty set and DateNav announces
+  // "No metrics entered for this day" on a day with nothing due (e.g. a user
+  // tracking only competition/irregular metrics, or weekly metrics off their
+  // anchor day).
+  const chipState: ChipState =
+    dueMetrics.length === 0
+      ? "all"
+      : getChipStateBy(
+          dueMetrics.map((m) => m.id),
+          (id) => {
+            const m = dueById.get(id);
+            if (!m) return false;
+            if (m.type === "health") return isHealthFieldFilled(healthEntry, id);
+            const entry = m.type === "performance" ? performanceEntry : competitionEntry;
+            const v = entry.metrics?.[id];
+            if (typeof v === "number") return Number.isFinite(v);
+            if (typeof v === "string") return v.trim() !== "";
+            return false;
+          },
+        );
 
   if (shouldRedirect) {
     return <Navigate to="/log" replace />;

@@ -208,6 +208,24 @@ describe("MetricsDataEntryLog", () => {
     expect(screen.getByRole("status").textContent).toMatch(/All metrics entered/);
   });
 
+  it("reports 'all' when metrics are tracked but none are due today", () => {
+    // No daily metric, only a quarterly + an as-needed metric - neither is ever
+    // due on a given day, so nothing is scheduled to enter. The day is complete
+    // by definition; the chip must read "all", not "none" ("No metrics entered"
+    // would be misleading when there is nothing to enter).
+    ctx.loadState = {
+      status: "loaded",
+      profile: {
+        ...PROFILE,
+        trackedHealthMetrics: [],
+        trackedPerformanceMetrics: ["oneMileRun"],
+        trackedCompetitionMetrics: ["scores"],
+      },
+    } as ProfileLoadState;
+    renderPage();
+    expect(screen.getByRole("status").textContent).toMatch(/All metrics entered/);
+  });
+
   it("excludes the auto-calculated placeholder from completeness", () => {
     // relativeProteinIntake is a daily metric but renders as a non-enterable
     // "coming soon" placeholder, so it can never be filled. It must not pin

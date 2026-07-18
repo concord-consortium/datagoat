@@ -1,5 +1,21 @@
 /* Ported verbatim from CompetitionLog.module.css (.colTotal renamed .colSummary). */
 
+/* Row cell padding + separators. The old per-type table set these at the
+   table level (.competitionLogTable tbody td); that rule was dropped when the
+   row moved into this component, leaving perf/comp rows with no vertical
+   padding (they butted against the section header). Matches MetricInputRow's
+   10px 6px so perf/comp and health rows are the same height in a shared
+   section. */
+.row td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.row:last-child td {
+  border-bottom: none;
+}
+
 /* .col-total - the "Total" column header + cell. */
 .colSummary {
   font-weight: 700;

@@ -127,7 +127,7 @@ export function PerfCompMetricRow({
     typeof value === "number" && Number.isFinite(value) ? value : undefined;
 
   return (
-    <tr>
+    <tr className={css.row}>
       <td className={css.colSummary}>{summaryCell}</td>
       <td id={nameCellId} className={css.colMetric}>
         <Link to={`/${type}/${id}`} className={css.metricLink}>

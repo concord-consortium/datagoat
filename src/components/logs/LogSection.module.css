@@ -8,10 +8,11 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 14px 0;
+  min-height: 44px;
+  padding: 8px;
   background: none;
   border: none;
-  border-radius: 0;
+  border-radius: 4px;
   color: var(--text);
   font-family: var(--font-display);
   font-size: 18px;
@@ -20,6 +21,25 @@
   text-transform: uppercase;
   text-align: left;
   cursor: pointer;
+  /* Pin the line box tight so the 44px min-height (a floor, not a ceiling)
+     governs the height; otherwise the inherited line-height inflates the
+     single line and the hover highlight renders taller than the prototype. */
+  line-height: 1.1;
+  transition: background 0.15s;
+}
+
+/* Full-header hover highlight (the whole button, not just the chevron),
+   matching the prototype's .log-sched-toggle: accent tint at 12%, 20% while
+   pressed. */
+.header:hover {
+  background: rgba(0, 179, 192, 0.12);
+}
+.header:active {
+  background: rgba(0, 179, 192, 0.2);
+}
+.header:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .count {
@@ -32,7 +52,14 @@
 .chevron {
   margin-left: auto;
   flex: none;
+  color: var(--subtext);
   transition: transform 150ms ease;
+}
+
+/* Chevron brightens from subtext to accent on header hover (matches the
+   date-nav prev/next chevrons). */
+.header:hover .chevron {
+  color: var(--accent);
 }
 
 .chevronOpen {

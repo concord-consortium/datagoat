@@ -10,7 +10,7 @@ import { isScheduleDueOn } from "../../metrics/dueToday";
 import { isMetricFilled } from "../../metrics/metricAccessor";
 import { parseNumericInput } from "../../utils/numericInput";
 import { useHealthSummaries } from "./useHealthSummaries";
-import { useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
+import { metricRendersRow, useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
 import { capitalizeAthleteType, capitalizeGender, formatMetricValue } from "../../charts/chartSeries";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import { SECTIONS } from "../../metrics/logSections";
@@ -189,7 +189,7 @@ export function MetricsDataEntryLog() {
             <LogSection
               key={section}
               section={section}
-              count={rows.length}
+              count={rows.filter(metricRendersRow).length}
               defaultOpen={section === "daily"}
             >
               {rows.map((m) => (

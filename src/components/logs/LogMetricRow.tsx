@@ -1,7 +1,7 @@
 import { HealthMetricRow } from "./HealthMetricRow";
 import { PerfCompMetricRow } from "./PerfCompMetricRow";
 import type { HealthSummary } from "./useHealthSummaries";
-import type { TrackedMetric } from "./useTrackedMetrics";
+import { metricRendersRow, type TrackedMetric } from "./useTrackedMetrics";
 import type { CompetitionEntry, HealthEntry, PerformanceEntry } from "../../types/data";
 
 export interface LogMetricRowProps {
@@ -26,6 +26,10 @@ export interface LogMetricRowProps {
 // with its own story, not a precondition for grouping rows by frequency.
 export function LogMetricRow(props: LogMetricRowProps) {
   const { tracked } = props;
+
+  // Single source of truth for "does this render a row?", shared with the
+  // section counter. Nominal customs (no widget in any type) render nothing.
+  if (!metricRendersRow(tracked)) return null;
 
   if (tracked.type === "health") {
     return (

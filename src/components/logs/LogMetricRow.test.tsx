@@ -11,6 +11,7 @@ import {
   emptyHealthEntry,
   emptyPerformanceEntry,
 } from "../../types/data";
+import type { CustomMetricDef } from "../../types/customMetrics";
 import type { TrackedMetric } from "./useTrackedMetrics";
 
 const DATE = "2026-07-06";
@@ -177,5 +178,48 @@ describe("LogMetricRow", () => {
     fireEvent.change(recordInput("scores"), { target: { value: "10" } });
     expect(setCompetition).toHaveBeenCalledWith("10");
     expect(setPerformance).not.toHaveBeenCalled();
+  });
+
+  it("renders nothing for a nominal custom", () => {
+    const def: CustomMetricDef = {
+      id: "label",
+      ownerId: "u",
+      name: "Label",
+      metricType: "performance",
+      primitive: "nominal",
+      levels: [{ label: "A" }, { label: "B" }],
+      inputType: "radio",
+      referenceUrl: "",
+      createdAt: 0,
+      updatedAt: 0,
+    };
+    const tracked: TrackedMetric = {
+      id: "label",
+      name: "Label",
+      type: "performance",
+      section: "daily",
+      customDef: def,
+    };
+    const { container } = render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <LogMetricRow
+              tracked={tracked}
+              healthEntry={emptyHealthEntry(DATE)}
+              performanceEntry={emptyPerformanceEntry(DATE)}
+              competitionEntry={emptyCompetitionEntry(DATE)}
+              summary={{}}
+              summaryCell=""
+              competitionTerm="game"
+              setHealth={vi.fn()}
+              setPerformance={vi.fn()}
+              setCompetition={vi.fn()}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    expect(container.querySelector("tr")).toBeNull();
   });
 });

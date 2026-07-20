@@ -168,6 +168,11 @@ describe("NumericInput", () => {
     expect(onChange).toHaveBeenCalledWith("-5");
   });
 
+  it("stamps data-metric-id on the input for test/query hooks", () => {
+    const { container } = renderInput("");
+    expect(container.querySelector('[data-metric-id="protein"]')).not.toBeNull();
+  });
+
   it("keeps a bare minus mid-typing when allowNegative is set", () => {
     // "-" alone parses to NaN, but the user is still typing — accept
     // it so they can finish the keystroke chain into "-5".

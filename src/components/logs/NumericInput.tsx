@@ -43,6 +43,7 @@ export function NumericInput({
           onChange={handleChange}
           onCompositionEnd={handleCompositionEnd}
           aria-labelledby={labelledBy}
+          data-metric-id={metric.id}
         />
         {shortUnit && shortUnit !== "level" && (
           <span className={css.fieldUnit}>{shortUnit}</span>

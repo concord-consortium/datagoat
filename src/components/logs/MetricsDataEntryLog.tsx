@@ -7,6 +7,7 @@ import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
 import { isTimeMetric } from "./LogRecordInput";
 import { useChartConfigSync } from "../../charts/metricChartConfig";
 import { isScheduleDueOn } from "../../metrics/dueToday";
+import { isMetricFilled } from "../../metrics/metricAccessor";
 import { parseNumericInput } from "../../utils/numericInput";
 import { useHealthSummaries } from "./useHealthSummaries";
 import { useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
@@ -22,7 +23,7 @@ import {
   type HealthEntry,
 } from "../../types/data";
 import { HISTORY, dateAtOffset, historyOffsetFromISO, toISO } from "../../utils/dates";
-import { getChipStateBy, isHealthFieldFilled, type ChipState } from "../../utils/healthCompleteness";
+import { getChipStateBy, type ChipState } from "../../utils/healthCompleteness";
 import css from "./MetricsDataEntryLog.module.css";
 
 // Unified data-entry log. Renders every tracked metric, from all three
@@ -131,12 +132,13 @@ export function MetricsDataEntryLog() {
           (id) => {
             const m = dueById.get(id);
             if (!m) return false;
-            if (m.type === "health") return isHealthFieldFilled(healthEntry, id);
-            const entry = m.type === "performance" ? performanceEntry : competitionEntry;
-            const v = entry.metrics?.[id];
-            if (typeof v === "number") return Number.isFinite(v);
-            if (typeof v === "string") return v.trim() !== "";
-            return false;
+            const entry =
+              m.type === "health"
+                ? healthEntry
+                : m.type === "performance"
+                  ? performanceEntry
+                  : competitionEntry;
+            return isMetricFilled(m, entry);
           },
         );
 

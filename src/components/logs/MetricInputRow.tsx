@@ -66,12 +66,20 @@ export interface RadioMetricInputRowProps extends BaseProps {
   onChange: (next: number) => void;
 }
 
+export interface PlaceholderMetricInputRowProps extends BaseProps {
+  // Auto-calculated metric with no input yet (relativeProteinIntake). Renders a
+  // placeholder in the record cell; with no summary the first cell shows the
+  // em-dash glyph.
+  inputType: "placeholder";
+}
+
 export type MetricInputRowProps =
   | NumericMetricInputRowProps
   | ColorScaleMetricInputRowProps
   | TreeMetricInputRowProps
   | OrdinalMetricInputRowProps
-  | RadioMetricInputRowProps;
+  | RadioMetricInputRowProps
+  | PlaceholderMetricInputRowProps;
 
 // Single row for a tracked health metric. Switches on props.inputType (the
 // discriminated-union tag), not metric.inputType.
@@ -175,6 +183,9 @@ export function MetricInputRow(props: MetricInputRowProps) {
             onChange={props.onChange}
             labelledBy={nameId}
           />
+        )}
+        {props.inputType === "placeholder" && (
+          <span className={css.placeholderCell}>🚧 Auto-calculated · coming soon</span>
         )}
       </td>
     </tr>

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MetricInputRow } from "./MetricInputRow";
+import { getMetricValue } from "../../metrics/metricAccessor";
 import { isYesNoLevels } from "../../metrics/yesNo";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
@@ -14,7 +15,10 @@ export interface HealthMetricRowProps {
   entry: HealthEntry;
   summary: HealthSummary;
   competitionTerm: string;
+  // Direct health-partial setter, used only for the availability tree (the one
+  // non-scalar health widget). Every scalar value goes through writeValue.
   setEntry: (partial: Partial<HealthEntry>) => void;
+  writeValue: (value: number | string | undefined) => void;
 }
 
 // Adapts a custom health metric to the MetricDefinition shape MetricInputRow
@@ -40,20 +44,17 @@ export function HealthMetricRow({
   summary,
   competitionTerm,
   setEntry,
+  writeValue,
 }: HealthMetricRowProps) {
   const id = tracked.id;
   const detailHref = `/health/${id}`;
 
-  function setNumericField<K extends keyof HealthEntry>(field: K, raw: string) {
+  // Storage routing (named field vs customMetrics) now lives in the accessor,
+  // so the row only parses the raw input and hands the typed value to writeValue.
+  function writeParsed(raw: string) {
     const value = parseNumericInput(raw);
     if (value === null) return;
-    setEntry({ [field]: value } as Partial<HealthEntry>);
-  }
-
-  function setCustomMetric(metricId: string, raw: string) {
-    const value = parseNumericInput(raw);
-    if (value === null) return;
-    setEntry({ customMetrics: { [metricId]: value } });
+    writeValue(value);
   }
 
   const builtIn = tracked.builtInDef;
@@ -68,7 +69,7 @@ export function HealthMetricRow({
           // component renders "no selection" when value is 0 or undefined,
           // preserving the undefined semantics throughout the data flow.
           value={entry.hydration}
-          onChange={(level: number) => setEntry({ hydration: level })}
+          onChange={(level: number) => writeValue(level)}
           detailHref={detailHref}
         />
       );
@@ -121,11 +122,7 @@ export function HealthMetricRow({
     // as typed fields on HealthEntry; the chart engine's readHealthMetric has
     // matching `case` branches.
     if (id === "sleepTime" || id === "sleepEfficiency" || id === "protein" || id === "leanMass") {
-      const fieldKey = id as keyof Pick<
-        HealthEntry,
-        "sleepTime" | "sleepEfficiency" | "protein" | "leanMass"
-      >;
-      const live = entry[fieldKey];
+      const live = getMetricValue(tracked, entry);
       const stringValue =
         typeof live === "number" && Number.isFinite(live) ? String(live) : "";
       return (
@@ -134,7 +131,7 @@ export function HealthMetricRow({
           metric={builtIn}
           inputType="numeric"
           value={stringValue}
-          onChange={(raw: string) => setNumericField(fieldKey, raw)}
+          onChange={(raw: string) => writeParsed(raw)}
           detailHref={detailHref}
         />
       );
@@ -145,7 +142,7 @@ export function HealthMetricRow({
     // the registry's inputType so adding another ordinal/numeric built-in
     // needs only a registry entry, no new branch here.
     if (builtIn.inputType === "ordinal" && builtIn.levels) {
-      const live = entry.customMetrics?.[id];
+      const live = getMetricValue(tracked, entry);
       const ordinalValue =
         typeof live === "number" && Number.isFinite(live) ? live : undefined;
       return (
@@ -155,12 +152,12 @@ export function HealthMetricRow({
           inputType="ordinal"
           levels={builtIn.levels}
           value={ordinalValue}
-          onChange={(next: number) => setCustomMetric(id, String(next))}
+          onChange={(next: number) => writeValue(next)}
           detailHref={detailHref}
         />
       );
     }
-    const live = entry.customMetrics?.[id];
+    const live = getMetricValue(tracked, entry);
     const stringValue =
       typeof live === "number" && Number.isFinite(live) ? String(live) : "";
     return (
@@ -169,7 +166,7 @@ export function HealthMetricRow({
         metric={builtIn}
         inputType="numeric"
         value={stringValue}
-        onChange={(raw: string) => setCustomMetric(id, raw)}
+        onChange={(raw: string) => writeParsed(raw)}
         detailHref={detailHref}
       />
     );
@@ -179,7 +176,7 @@ export function HealthMetricRow({
   if (!def) return null;
 
   if (def.primitive === "ordinal" && def.levels) {
-    const live = entry.customMetrics?.[id];
+    const live = getMetricValue(tracked, entry);
     const ordinalValue =
       typeof live === "number" && Number.isFinite(live) ? live : undefined;
     return (
@@ -189,7 +186,7 @@ export function HealthMetricRow({
         metric={adaptCustom(def)}
         levels={def.levels}
         value={ordinalValue}
-        onChange={(next: number) => setCustomMetric(id, String(next))}
+        onChange={(next: number) => writeValue(next)}
         detailHref={detailHref}
       />
     );
@@ -200,7 +197,7 @@ export function HealthMetricRow({
   // label-valued metric and corrupt the entry shape. Skip the row.
   if (def.primitive === "nominal") return null;
 
-  const live = entry.customMetrics?.[id];
+  const live = getMetricValue(tracked, entry);
   // Finite numbers (incl. 0 and negatives for customs with yBottomRaw < 0)
   // render verbatim. A missing key (undefined) is "not logged" and renders
   // as blank.
@@ -216,7 +213,7 @@ export function HealthMetricRow({
       metric={adaptCustom(def)}
       inputType="numeric"
       value={stringValue}
-      onChange={(raw: string) => setCustomMetric(id, raw)}
+      onChange={(raw: string) => writeParsed(raw)}
       detailHref={detailHref}
       // Open the keystroke filter to a leading `-` only when the metric's
       // range goes below 0; otherwise typing minus stays blocked, matching

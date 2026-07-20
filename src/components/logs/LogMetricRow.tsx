@@ -14,6 +14,7 @@ export interface LogMetricRowProps {
   summaryCell: string;
   competitionTerm: string;
   setHealth: (partial: Partial<HealthEntry>) => void;
+  setHealthValue: (value: number | string | undefined) => void;
   setPerformance: (raw: string) => void;
   setCompetition: (raw: string) => void;
 }
@@ -40,6 +41,7 @@ export function LogMetricRow(props: LogMetricRowProps) {
         summary={props.summary}
         competitionTerm={props.competitionTerm}
         setEntry={props.setHealth}
+        writeValue={props.setHealthValue}
       />
     );
   }

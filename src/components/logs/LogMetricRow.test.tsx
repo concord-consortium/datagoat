@@ -34,6 +34,7 @@ function renderRow(tracked: TrackedMetric, overrides: RenderOverrides = {}) {
             summaryCell=""
             competitionTerm="game"
             setHealth={vi.fn()}
+            setHealthValue={vi.fn()}
             setPerformance={overrides.setPerformance ?? vi.fn()}
             setCompetition={overrides.setCompetition ?? vi.fn()}
           />
@@ -213,6 +214,7 @@ describe("LogMetricRow", () => {
               summaryCell=""
               competitionTerm="game"
               setHealth={vi.fn()}
+              setHealthValue={vi.fn()}
               setPerformance={vi.fn()}
               setCompetition={vi.fn()}
             />

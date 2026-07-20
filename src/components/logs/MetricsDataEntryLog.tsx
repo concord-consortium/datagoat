@@ -192,6 +192,7 @@ export function MetricsDataEntryLog() {
                   summaryCell={summaryCellFor(m)}
                   competitionTerm={competitionTerm}
                   setHealth={(partial) => setHealthEntry(dateIso, partial)}
+                  setHealthValue={(value) => setMetricValue(m, dateIso, value)}
                   setPerformance={(raw) => writeParsedValue(m, raw)}
                   setCompetition={(raw) => writeParsedValue(m, raw)}
                 />

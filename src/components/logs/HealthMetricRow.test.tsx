@@ -30,11 +30,9 @@ function trackedForCustom(def: CustomMetricDef): TrackedMetric {
   };
 }
 
-function renderCustomRow(
-  def: CustomMetricDef,
-  setEntry = vi.fn(),
-  entry = emptyHealthEntry(DATE),
-) {
+function renderCustomRow(def: CustomMetricDef, entry = emptyHealthEntry(DATE)) {
+  const setEntry = vi.fn();
+  const writeValue = vi.fn();
   render(
     <MemoryRouter>
       <table>
@@ -45,19 +43,18 @@ function renderCustomRow(
             summary={{}}
             competitionTerm="game"
             setEntry={setEntry}
+            writeValue={writeValue}
           />
         </tbody>
       </table>
     </MemoryRouter>,
   );
-  return setEntry;
+  return { setEntry, writeValue };
 }
 
-function renderRow(
-  id: string,
-  setEntry = vi.fn(),
-  entry = emptyHealthEntry(DATE),
-) {
+function renderRow(id: string, entry = emptyHealthEntry(DATE)) {
+  const setEntry = vi.fn();
+  const writeValue = vi.fn();
   render(
     <MemoryRouter>
       <table>
@@ -68,12 +65,13 @@ function renderRow(
             summary={{}}
             competitionTerm="game"
             setEntry={setEntry}
+            writeValue={writeValue}
           />
         </tbody>
       </table>
     </MemoryRouter>,
   );
-  return setEntry;
+  return { setEntry, writeValue };
 }
 
 describe("HealthMetricRow", () => {
@@ -84,10 +82,10 @@ describe("HealthMetricRow", () => {
   });
 
   it("writes a named numeric field", () => {
-    const setEntry = renderRow("sleepEfficiency");
+    const { writeValue } = renderRow("sleepEfficiency");
     const input = screen.getByRole("textbox");
     fireEvent.change(input, { target: { value: "83" } });
-    expect(setEntry).toHaveBeenCalledWith({ sleepEfficiency: 83 });
+    expect(writeValue).toHaveBeenCalledWith(83);
   });
 
   it("clears a named numeric field to undefined when emptied", () => {
@@ -96,13 +94,13 @@ describe("HealthMetricRow", () => {
     // (the DOM value tracker sees no change), which would make this
     // assertion pass vacuously against a broken implementation too.
     // Starting from a real value makes the clear a genuine DOM change.
-    const setEntry = renderRow("sleepEfficiency", vi.fn(), {
+    const { writeValue } = renderRow("sleepEfficiency", {
       ...emptyHealthEntry(DATE),
       sleepEfficiency: 50,
     });
     const input = screen.getByRole("textbox");
     fireEvent.change(input, { target: { value: "" } });
-    expect(setEntry).toHaveBeenCalledWith({ sleepEfficiency: undefined });
+    expect(writeValue).toHaveBeenCalledWith(undefined);
   });
 
   it("renders the placeholder for the auto-calculated metric", () => {

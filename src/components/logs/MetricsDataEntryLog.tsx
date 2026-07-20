@@ -8,7 +8,6 @@ import { isTimeMetric } from "./timeMetrics";
 import { useChartConfigSync } from "../../charts/metricChartConfig";
 import { isScheduleDueOn } from "../../metrics/dueToday";
 import { isMetricFilled } from "../../metrics/metricAccessor";
-import { parseNumericInput } from "../../utils/numericInput";
 import { useHealthSummaries } from "./useHealthSummaries";
 import { useMetricWriter } from "./useMetricWriter";
 import { metricRendersRow, useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
@@ -141,12 +140,6 @@ export function MetricsDataEntryLog() {
     return <Navigate to="/log" replace />;
   }
 
-  function writeParsedValue(m: TrackedMetric, raw: string) {
-    const value = parseNumericInput(raw);
-    if (value === null) return;
-    setMetricValue(m, dateIso, value);
-  }
-
   // Leftmost cell for a non-health row. Competition keeps its running total
   // (and the derived win rate); Performance keeps the current day's value.
   // Both are preserved as-is: this story reorganizes rows, it does not
@@ -191,10 +184,8 @@ export function MetricsDataEntryLog() {
                   summary={summaryFor(m.id)}
                   summaryCell={summaryCellFor(m)}
                   competitionTerm={competitionTerm}
-                  setHealth={(partial) => setHealthEntry(dateIso, partial)}
-                  setHealthValue={(value) => setMetricValue(m, dateIso, value)}
-                  setPerformance={(raw) => writeParsedValue(m, raw)}
-                  setCompetition={(raw) => writeParsedValue(m, raw)}
+                  setValue={(value) => setMetricValue(m, dateIso, value)}
+                  setAvailability={(next) => setHealthEntry(dateIso, { availability: next })}
                 />
               ))}
             </LogSection>

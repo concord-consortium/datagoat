@@ -4,7 +4,7 @@ import { DateNav } from "../layout/DateNav";
 import { LogMetricRow } from "./LogMetricRow";
 import { LogSection } from "./LogSection";
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
-import { isTimeMetric } from "./LogRecordInput";
+import { isTimeMetric } from "./timeMetrics";
 import { useChartConfigSync } from "../../charts/metricChartConfig";
 import { isScheduleDueOn } from "../../metrics/dueToday";
 import { isMetricFilled } from "../../metrics/metricAccessor";

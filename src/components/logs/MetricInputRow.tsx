@@ -4,7 +4,7 @@ import type { MetricDefinition } from "../../metrics/types";
 import { AvailabilityTree } from "./AvailabilityTree";
 import { NumericInput } from "./NumericInput";
 import { TimeInput } from "./TimeInput";
-import { timeSecondsDecimals } from "./LogRecordInput";
+import { timeSecondsDecimals } from "./timeMetrics";
 import { resolveTimeLayout } from "../../utils/timeValue";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";

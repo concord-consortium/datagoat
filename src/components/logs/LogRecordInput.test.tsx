@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { LogRecordInput, isTimeMetric, timeSecondsDecimals } from "./LogRecordInput";
+import { LogRecordInput } from "./LogRecordInput";
 import type { MetricDefinition } from "../../metrics/types";
 
 // oneMileRun is a min/sec time metric; goals is a plain numeric metric.
@@ -43,19 +43,6 @@ function renderInput(props: Partial<React.ComponentProps<typeof LogRecordInput>>
     </MemoryRouter>,
   );
 }
-
-describe("isTimeMetric", () => {
-  it("is true for a time metric and false for a plain numeric one", () => {
-    expect(isTimeMetric("oneMileRun")).toBe(true);
-    expect(isTimeMetric("goals")).toBe(false);
-  });
-});
-
-describe("timeSecondsDecimals", () => {
-  it("returns the metric's configured seconds precision", () => {
-    expect(timeSecondsDecimals("oneMileRun")).toBeGreaterThanOrEqual(0);
-  });
-});
 
 describe("LogRecordInput", () => {
   it("renders a multi-field time input for a time metric", () => {

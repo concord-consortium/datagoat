@@ -1,23 +1,9 @@
 import { CompetitionMetricInput } from "./CompetitionMetricInput";
 import { TimeInput } from "./TimeInput";
+import { isTimeMetric, timeSecondsDecimals } from "./timeMetrics";
 import { customAsMetricDefinition } from "../../metrics/customMetricDefinition";
-import { getMetricChartConfig } from "../../charts/metricChartConfig";
 import type { MetricDefinition } from "../../metrics/types";
 import type { CustomMetricDef } from "../../types/customMetrics";
-
-// Seconds precision for a metric's TimeInput, read from its chart config
-// (avgDecimals doubles as the seconds precision). One source so every log
-// renders a given metric's seconds field at the same precision.
-export function timeSecondsDecimals(metricId: string): number {
-  return getMetricChartConfig(metricId).avgDecimals ?? 2;
-}
-
-// The single "render this metric as a time value?" predicate. The log's
-// Total/Latest column and its Record input both consult it, so they can't
-// disagree about a metric's time-ness.
-export function isTimeMetric(metricId: string): boolean {
-  return getMetricChartConfig(metricId).timeLayout != null;
-}
 
 interface LogRecordInputProps {
   metricId: string;

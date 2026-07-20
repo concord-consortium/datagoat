@@ -10,6 +10,7 @@ import { isScheduleDueOn } from "../../metrics/dueToday";
 import { isMetricFilled } from "../../metrics/metricAccessor";
 import { parseNumericInput } from "../../utils/numericInput";
 import { useHealthSummaries } from "./useHealthSummaries";
+import { useMetricWriter } from "./useMetricWriter";
 import { metricRendersRow, useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
 import { capitalizeAthleteType, capitalizeGender, formatMetricValue } from "../../charts/chartSeries";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
@@ -36,15 +37,9 @@ import css from "./MetricsDataEntryLog.module.css";
 export function MetricsDataEntryLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
-  const {
-    health,
-    performance,
-    competition,
-    setHealthEntry,
-    setPerformanceEntry,
-    setCompetitionEntry,
-  } = useData();
+  const { health, performance, competition, setHealthEntry } = useData();
   const tracked = useTrackedMetrics();
+  const { setMetricValue } = useMetricWriter();
 
   // Subscribe the whole page to chart-config overlay changes. Custom time
   // metrics read their time layout from the overlay (isTimeMetric ->
@@ -146,16 +141,10 @@ export function MetricsDataEntryLog() {
     return <Navigate to="/log" replace />;
   }
 
-  function setPerformanceValue(metricId: string, raw: string) {
+  function writeParsedValue(m: TrackedMetric, raw: string) {
     const value = parseNumericInput(raw);
     if (value === null) return;
-    setPerformanceEntry(dateIso, { metrics: { [metricId]: value } });
-  }
-
-  function setCompetitionValue(metricId: string, raw: string) {
-    const value = parseNumericInput(raw);
-    if (value === null) return;
-    setCompetitionEntry(dateIso, { metrics: { [metricId]: value } });
+    setMetricValue(m, dateIso, value);
   }
 
   // Leftmost cell for a non-health row. Competition keeps its running total
@@ -203,8 +192,8 @@ export function MetricsDataEntryLog() {
                   summaryCell={summaryCellFor(m)}
                   competitionTerm={competitionTerm}
                   setHealth={(partial) => setHealthEntry(dateIso, partial)}
-                  setPerformance={(raw) => setPerformanceValue(m.id, raw)}
-                  setCompetition={(raw) => setCompetitionValue(m.id, raw)}
+                  setPerformance={(raw) => writeParsedValue(m, raw)}
+                  setCompetition={(raw) => writeParsedValue(m, raw)}
                 />
               ))}
             </LogSection>

@@ -2,6 +2,7 @@ import { HealthMetricRow } from "./HealthMetricRow";
 import { PerfCompMetricRow } from "./PerfCompMetricRow";
 import type { HealthSummary } from "./useHealthSummaries";
 import { metricRendersRow, type TrackedMetric } from "./useTrackedMetrics";
+import { getMetricValue } from "../../metrics/metricAccessor";
 import type { CompetitionEntry, HealthEntry, PerformanceEntry } from "../../types/data";
 
 export interface LogMetricRowProps {
@@ -49,7 +50,7 @@ export function LogMetricRow(props: LogMetricRowProps) {
   return (
     <PerfCompMetricRow
       tracked={tracked}
-      value={entry.metrics?.[tracked.id]}
+      value={getMetricValue(tracked, entry)}
       summaryCell={props.summaryCell}
       setValue={setValue}
     />

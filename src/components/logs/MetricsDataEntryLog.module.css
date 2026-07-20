@@ -1,0 +1,8 @@
+/* Ported from HealthLog.module.css (prototype line 1025; the override at
+   line 1031 gives the .date-nav + .screen-content pair padding-top: 10px). */
+.screenContent {
+  padding: 20px 24px 20px;
+}
+.dateNavSibling + .screenContent {
+  padding-top: 10px;
+}

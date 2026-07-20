@@ -16,20 +16,20 @@ function renderHeader(props: Parameters<typeof DashLogHeader>[0]) {
 }
 
 describe("DashLogHeader", () => {
-  it("renders an anchor with href /health for type=health, /competition for type=competition", () => {
+  it("renders an anchor with href /log for type=health and for type=competition", () => {
     const health = renderHeader({
       type: "health",
       status: "Log your 5 metrics for today.",
     });
     const wLink = health.container.querySelector("a")!;
-    expect(wLink.getAttribute("href")).toBe("/health");
+    expect(wLink.getAttribute("href")).toBe("/log");
 
     const perf = renderHeader({
       type: "competition",
       status: "No perf. data logged today.",
     });
     const pLink = perf.container.querySelector("a")!;
-    expect(pLink.getAttribute("href")).toBe("/competition");
+    expect(pLink.getAttribute("href")).toBe("/log");
   });
 
   it("aria-label leads with the visible status (WCAG 2.5.3 Label in Name)", () => {
@@ -39,7 +39,7 @@ describe("DashLogHeader", () => {
     });
     const link = container.querySelector("a")!;
     expect(link.getAttribute("aria-label")).toBe(
-      "Log your 5 metrics for today. Go to Health Log.",
+      "Log your 5 metrics for today. Go to Metrics Data Entry Log.",
     );
     // Visible <p> shows just the status, no SR suffix bleed-through.
     const p = container.querySelector("p")!;

@@ -12,9 +12,7 @@ import { ForgotPassword } from "../components/auth/ForgotPassword";
 import { EmailVerification } from "../components/auth/EmailVerification";
 import { ProfileForm } from "../components/profile/ProfileForm";
 import { TrackedDataSetup } from "../components/tracking/TrackedDataSetup";
-import { HealthLog } from "../components/logs/HealthLog";
-import { PerformanceLog } from "../components/logs/PerformanceLog";
-import { CompetitionLog } from "../components/logs/CompetitionLog";
+import { MetricsDataEntryLog } from "../components/logs/MetricsDataEntryLog";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { MetricDetail } from "../charts/MetricDetail";
 import { AddMetric } from "../components/tracking/AddMetric";
@@ -22,6 +20,7 @@ import { CustomMetricForm } from "../components/tracking/CustomMetricForm";
 import { InfoScreen } from "../components/info/InfoScreen";
 import { About } from "../components/about/About";
 import { Loading } from "../components/Loading";
+import { LogPathRedirect } from "./LogPathRedirect";
 
 // Lazy-loaded to keep the codap-plugin-api dependency out of the initial bundle for non-CODAP visitors.
 const CodapPlugin = lazy(() => import("@/codap/CodapPlugin"));
@@ -84,17 +83,18 @@ export function AppRoutes() {
             /profile (onboarding entry point). */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/health" element={<HealthLog />} />
+          <Route path="/log" element={<MetricsDataEntryLog />} />
+          <Route path="/health" element={<LogPathRedirect />} />
           <Route
             path="/health/:metricId"
             element={<MetricDetail type="health" />}
           />
-          <Route path="/performance" element={<PerformanceLog />} />
+          <Route path="/performance" element={<LogPathRedirect />} />
           <Route
             path="/performance/:metricId"
             element={<MetricDetail type="performance" />}
           />
-          <Route path="/competition" element={<CompetitionLog />} />
+          <Route path="/competition" element={<LogPathRedirect />} />
           <Route
             path="/competition/:metricId"
             element={<MetricDetail type="competition" />}

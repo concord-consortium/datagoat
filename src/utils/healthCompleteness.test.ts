@@ -141,3 +141,52 @@ describe("getChipState", () => {
     expect(getChipState(entry, ["sleepTime"])).toBe("none");
   });
 });
+
+import { getChipStateBy, isHealthFieldFilled } from "./healthCompleteness";
+
+describe("getChipStateBy", () => {
+  it("returns none for an empty tracked list", () => {
+    expect(getChipStateBy([], () => true)).toBe("none");
+  });
+
+  it("returns none when nothing is filled", () => {
+    expect(getChipStateBy(["a", "b"], () => false)).toBe("none");
+  });
+
+  it("returns all when everything is filled", () => {
+    expect(getChipStateBy(["a", "b"], () => true)).toBe("all");
+  });
+
+  it("returns some when only part is filled", () => {
+    expect(getChipStateBy(["a", "b"], (id) => id === "a")).toBe("some");
+  });
+
+  it("spans metrics from different entry shapes via the resolver", () => {
+    // The merged log's case: a health named field, a competition map key.
+    const healthEntry = { hydration: 3 } as never;
+    const competitionMetrics: Record<string, number> = { scores: 12 };
+    const isFilled = (id: string) =>
+      id === "hydration"
+        ? isHealthFieldFilled(healthEntry, id)
+        : Number.isFinite(competitionMetrics[id]);
+    expect(getChipStateBy(["hydration", "scores"], isFilled)).toBe("all");
+    expect(getChipStateBy(["hydration", "scores", "times"], isFilled)).toBe("some");
+  });
+});
+
+describe("isHealthFieldFilled", () => {
+  it("reads named fields", () => {
+    expect(isHealthFieldFilled({ hydration: 3 } as never, "hydration")).toBe(true);
+    expect(isHealthFieldFilled({} as never, "hydration")).toBe(false);
+  });
+
+  it("reads custom metrics from the map", () => {
+    expect(
+      isHealthFieldFilled({ customMetrics: { mood: 4 } } as never, "mood"),
+    ).toBe(true);
+  });
+
+  it("returns false for a null entry", () => {
+    expect(isHealthFieldFilled(null, "hydration")).toBe(false);
+  });
+});

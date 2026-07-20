@@ -6,7 +6,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useOnboardingGate } from "../../hooks/useOnboardingGate";
 import HomeIcon from "@/icons/home.svg?react";
 import CalendarIcon from "@/icons/calendar.svg?react";
-import StopwatchIcon from "@/icons/stopwatch.svg?react";
 import ProfilePersonIcon from "@/icons/profile-person.svg?react";
 import GearIcon from "@/icons/gear.svg?react";
 import InfoCircleIcon from "@/icons/info-circle.svg?react";
@@ -26,9 +25,7 @@ interface MenuItem {
 
 const ITEMS: MenuItem[] = [
   { label: "Dashboard", to: "/dashboard", Icon: HomeIcon },
-  { label: "Health Log", to: "/health", Icon: CalendarIcon },
-  { label: "Performance Log", to: "/performance", Icon: StopwatchIcon },
-  { label: "Competition Log", to: "/competition", Icon: StopwatchIcon },
+  { label: "Metrics Data Entry Log", to: "/log", Icon: CalendarIcon },
   { label: "Profile", to: "/profile", Icon: ProfilePersonIcon },
   { label: "Tracked Data Setup", to: "/setup/tracking", Icon: GearIcon },
   { label: "About", to: "/about", Icon: InfoCircleIcon },

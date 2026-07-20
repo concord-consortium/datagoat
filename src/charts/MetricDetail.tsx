@@ -133,18 +133,7 @@ export function MetricDetail({ type }: MetricDetailProps) {
     return <p className={css.loading}>Loading…</p>;
   }
   if (!metric) {
-    return (
-      <Navigate
-        to={
-          type === "health"
-            ? "/health"
-            : type === "performance"
-              ? "/performance"
-              : "/competition"
-        }
-        replace
-      />
-    );
+    return <Navigate to="/log" replace />;
   }
 
   const goalLine = lookupGoalLine(metric.id, profileKey);

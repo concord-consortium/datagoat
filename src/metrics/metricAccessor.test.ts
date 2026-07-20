@@ -3,6 +3,7 @@ import {
   getMetricValue,
   isMetricFilled,
   resolveStorage,
+  resolveWrite,
   scalarFilled,
 } from "./metricAccessor";
 import type { TrackedMetric } from "../components/logs/useTrackedMetrics";
@@ -99,5 +100,40 @@ describe("isMetricFilled", () => {
     expect(isMetricFilled(tracked("hydration", "health"), health())).toBe(false);
     expect(isMetricFilled(tracked("scores", "performance"), perf({ scores: 12 }))).toBe(true);
     expect(isMetricFilled(tracked("scores", "performance"), perf({ scores: "" }))).toBe(false);
+  });
+});
+
+describe("resolveWrite", () => {
+  it("writes a named health field", () => {
+    expect(resolveWrite(tracked("hydration", "health"), 4)).toEqual({
+      slice: "health",
+      partial: { hydration: 4 },
+    });
+  });
+  it("writes a health custom under customMetrics", () => {
+    expect(resolveWrite(tracked("mood", "health"), 2)).toEqual({
+      slice: "health",
+      partial: { customMetrics: { mood: 2 } },
+    });
+  });
+  it("writes perf/comp under the metrics map", () => {
+    expect(resolveWrite(tracked("scores", "performance"), 10)).toEqual({
+      slice: "performance",
+      partial: { metrics: { scores: 10 } },
+    });
+    expect(resolveWrite(tracked("goals", "competition"), 3)).toEqual({
+      slice: "competition",
+      partial: { metrics: { goals: 3 } },
+    });
+  });
+  it("preserves undefined so the delete sentinel fires downstream", () => {
+    expect(resolveWrite(tracked("mood", "health"), undefined)).toEqual({
+      slice: "health",
+      partial: { customMetrics: { mood: undefined } },
+    });
+    expect(resolveWrite(tracked("scores", "performance"), undefined)).toEqual({
+      slice: "performance",
+      partial: { metrics: { scores: undefined } },
+    });
   });
 });

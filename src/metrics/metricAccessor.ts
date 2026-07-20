@@ -85,3 +85,30 @@ export function isMetricFilled(tracked: TrackedMetric, entry: MetricEntry): bool
   }
   return scalarFilled(getMetricValue(tracked, entry));
 }
+
+export type WriteSlice = "competition" | "health" | "performance";
+
+export interface MetricWrite {
+  slice: WriteSlice;
+  partial: Partial<MetricEntry>;
+}
+
+// undefined is passed through verbatim: set*Entry -> withDeleteSentinels turns
+// it into a Firestore deleteField(). Do not coerce it to null or 0.
+export function resolveWrite(
+  tracked: TrackedMetric,
+  value: number | string | undefined,
+): MetricWrite {
+  const loc = resolveStorage(tracked);
+  switch (loc.kind) {
+    case "healthNamed":
+      return { slice: "health", partial: { [loc.field]: value } as Partial<HealthEntry> };
+    case "healthCustom":
+      return { slice: "health", partial: { customMetrics: { [tracked.id]: value } } };
+    case "map":
+      return {
+        slice: tracked.type === "performance" ? "performance" : "competition",
+        partial: { metrics: { [tracked.id]: value } },
+      };
+  }
+}

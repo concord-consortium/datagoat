@@ -1,3 +1,9 @@
+import {
+  availabilityFilled,
+  NAMED_HEALTH_FIELDS,
+  scalarFilled,
+  type HealthNamedField,
+} from "../metrics/metricAccessor";
 import type { HealthEntry } from "../types/data";
 
 export type ChipState = "all" | "some" | "none";
@@ -36,49 +42,15 @@ export function getChipState(
   return getChipStateBy(trackedMetricIds, (id) => isHealthFieldFilled(entry, id));
 }
 
-// Availability counts as filled iff practiceHeld is answered AND
-// (practiceHeld === false OR practiceParticipation is answered) - the
-// tree must be answered to its leaves to count. Same rule for game.
-// "Answered" means typeof === "boolean"; absent / undefined means
-// "not answered."
+// One filled-check for every health field, on the accessor's shared core:
+// availability delegates to the tree check, the five named built-ins and every
+// custom go through scalarFilled. A null entry, or an absent / undefined value,
+// is "not logged."
 export function isHealthFieldFilled(entry: HealthEntry | null, id: string): boolean {
   if (!entry) return false;
-  switch (id) {
-    case "hydration":
-      return typeof entry.hydration === "number" && Number.isFinite(entry.hydration);
-    case "sleepTime":
-      return typeof entry.sleepTime === "number" && Number.isFinite(entry.sleepTime);
-    case "sleepEfficiency":
-      return (
-        typeof entry.sleepEfficiency === "number" &&
-        Number.isFinite(entry.sleepEfficiency)
-      );
-    case "protein":
-      return typeof entry.protein === "number" && Number.isFinite(entry.protein);
-    case "leanMass":
-      return typeof entry.leanMass === "number" && Number.isFinite(entry.leanMass);
-    case "availability":
-      return availabilityFilled(entry);
-    default: {
-      // Custom metric: a finite number (including 0 and negatives)
-      // or a non-empty string counts as filled. A missing / undefined
-      // key means "not logged."
-      const v = entry.customMetrics?.[id];
-      if (typeof v === "number") return Number.isFinite(v);
-      if (typeof v === "string") return v.trim() !== "";
-      return false;
-    }
-  }
-}
-
-function availabilityFilled(entry: HealthEntry): boolean {
-  const a = entry.availability;
-  if (!a) return false;
-  const practiceFilled =
-    typeof a.practiceHeld === "boolean" &&
-    (a.practiceHeld === false || typeof a.practiceParticipation === "boolean");
-  const gameFilled =
-    typeof a.gameHeld === "boolean" &&
-    (a.gameHeld === false || typeof a.gameParticipation === "boolean");
-  return practiceFilled && gameFilled;
+  if (id === "availability") return availabilityFilled(entry);
+  const value = (NAMED_HEALTH_FIELDS as readonly string[]).includes(id)
+    ? entry[id as HealthNamedField]
+    : entry.customMetrics?.[id];
+  return scalarFilled(value);
 }

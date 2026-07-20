@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   getMetricValue,
+  isMetricFilled,
   resolveStorage,
   scalarFilled,
 } from "./metricAccessor";
@@ -78,5 +79,25 @@ describe("scalarFilled", () => {
     expect(scalarFilled("x")).toBe(true);
     expect(scalarFilled("   ")).toBe(false);
     expect(scalarFilled("")).toBe(false);
+  });
+});
+
+describe("isMetricFilled", () => {
+  it("delegates health availability to the tree check", () => {
+    const t = tracked("availability", "health");
+    expect(isMetricFilled(t, health({ availability: {} }))).toBe(false);
+    expect(
+      isMetricFilled(
+        t,
+        health({ availability: { practiceHeld: false, gameHeld: false } }),
+      ),
+    ).toBe(true);
+  });
+
+  it("uses scalarFilled for every other metric", () => {
+    expect(isMetricFilled(tracked("hydration", "health"), health({ hydration: 0 }))).toBe(true);
+    expect(isMetricFilled(tracked("hydration", "health"), health())).toBe(false);
+    expect(isMetricFilled(tracked("scores", "performance"), perf({ scores: 12 }))).toBe(true);
+    expect(isMetricFilled(tracked("scores", "performance"), perf({ scores: "" }))).toBe(false);
   });
 });

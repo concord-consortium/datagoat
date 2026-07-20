@@ -63,3 +63,25 @@ export function scalarFilled(value: number | string | undefined): boolean {
   if (typeof value === "string") return value.trim() !== "";
   return false;
 }
+
+// Availability counts as filled iff practiceHeld is answered AND (practiceHeld
+// is false OR practiceParticipation is answered) - the tree must be answered to
+// its leaves. Same rule for game. "Answered" means typeof === "boolean".
+export function availabilityFilled(entry: HealthEntry): boolean {
+  const a = entry.availability;
+  if (!a) return false;
+  const practiceFilled =
+    typeof a.practiceHeld === "boolean" &&
+    (a.practiceHeld === false || typeof a.practiceParticipation === "boolean");
+  const gameFilled =
+    typeof a.gameHeld === "boolean" &&
+    (a.gameHeld === false || typeof a.gameParticipation === "boolean");
+  return practiceFilled && gameFilled;
+}
+
+export function isMetricFilled(tracked: TrackedMetric, entry: MetricEntry): boolean {
+  if (tracked.type === "health" && tracked.id === "availability") {
+    return availabilityFilled(entry as HealthEntry);
+  }
+  return scalarFilled(getMetricValue(tracked, entry));
+}

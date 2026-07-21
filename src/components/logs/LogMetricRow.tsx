@@ -45,8 +45,9 @@ export function LogMetricRow(props: LogMetricRowProps) {
   const numberValue = typeof value === "number" && Number.isFinite(value) ? value : undefined;
 
   // First cell: health shows its sparkline + 7-day average; perf/comp show the
-  // pre-formatted summaryCell string with no sparkline. Preserves the two
-  // per-type looks until the Summary-semantics story revisits them.
+  // pre-formatted summaryCell string with no sparkline. The two per-type looks
+  // are intentionally preserved as-is - unifying their semantics is a separate,
+  // deferred design decision.
   const firstCell: HealthSummary =
     tracked.type === "health" ? summary : { avgLabel: summaryCell };
 

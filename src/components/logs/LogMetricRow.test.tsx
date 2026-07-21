@@ -139,6 +139,13 @@ describe("LogMetricRow", () => {
     expect(recordInput("scores").value).toBe("99");
   });
 
+  it("renders a stored 0 rather than treating it as not-logged", () => {
+    renderRow(competitionTracked("scores"), {
+      competitionEntry: { ...emptyCompetitionEntry(DATE), metrics: { scores: 0 } },
+    });
+    expect(recordInput("scores").value).toBe("0");
+  });
+
   it("writes a parsed numeric value through setValue", () => {
     const setValue = vi.fn();
     renderRow(performanceTracked("oneRepMaxBench"), {

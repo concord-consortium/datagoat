@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import common from "../common.module.css";
 import css from "./ActivityCalendar.module.css";
 import { HISTORY, dateAtOffset, toISO } from "../../utils/dates";
+import { scalarFilled } from "../../metrics/metricAccessor";
 import { getChipState } from "../../utils/healthCompleteness";
 import type { CompetitionEntry, HealthEntry } from "../../types/data";
 
@@ -119,14 +120,7 @@ function buildWeeks(
     } else {
       const entry = competitionByDate.get(iso) ?? null;
       const hasAny =
-        !!entry &&
-        Object.values(entry.metrics ?? {}).some((v) => {
-          // A finite number (including 0 and negatives) or a non-empty
-          // string counts as logged - the shared scalar-filled rule.
-          if (typeof v === "number") return Number.isFinite(v);
-          if (typeof v === "string") return v.trim() !== "";
-          return false;
-        });
+        !!entry && Object.values(entry.metrics ?? {}).some((v) => scalarFilled(v));
       state = hasAny ? "all" : "none";
     }
     cells.push({ date: d, state, offset });

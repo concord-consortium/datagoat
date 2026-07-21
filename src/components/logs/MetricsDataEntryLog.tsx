@@ -4,12 +4,13 @@ import { DateNav } from "../layout/DateNav";
 import { LogMetricRow } from "./LogMetricRow";
 import { LogSection } from "./LogSection";
 import { competitionTotal, winningPercentageRate } from "./CompetitionTotals";
-import { isTimeMetric } from "./LogRecordInput";
+import { isTimeMetric } from "./timeMetrics";
 import { useChartConfigSync } from "../../charts/metricChartConfig";
 import { isScheduleDueOn } from "../../metrics/dueToday";
-import { parseNumericInput } from "../../utils/numericInput";
+import { isMetricFilled } from "../../metrics/metricAccessor";
 import { useHealthSummaries } from "./useHealthSummaries";
-import { useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
+import { useMetricWriter } from "./useMetricWriter";
+import { metricRendersRow, useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
 import { capitalizeAthleteType, capitalizeGender, formatMetricValue } from "../../charts/chartSeries";
 import { DEFAULT_PROFILE_KEY } from "../../data/profileVariants";
 import { SECTIONS } from "../../metrics/logSections";
@@ -22,7 +23,7 @@ import {
   type HealthEntry,
 } from "../../types/data";
 import { HISTORY, dateAtOffset, historyOffsetFromISO, toISO } from "../../utils/dates";
-import { getChipStateBy, isHealthFieldFilled, type ChipState } from "../../utils/healthCompleteness";
+import { getChipStateBy, type ChipState } from "../../utils/healthCompleteness";
 import css from "./MetricsDataEntryLog.module.css";
 
 // Unified data-entry log. Renders every tracked metric, from all three
@@ -35,15 +36,9 @@ import css from "./MetricsDataEntryLog.module.css";
 export function MetricsDataEntryLog() {
   const [searchParams] = useSearchParams();
   const { loadState } = useUser();
-  const {
-    health,
-    performance,
-    competition,
-    setHealthEntry,
-    setPerformanceEntry,
-    setCompetitionEntry,
-  } = useData();
+  const { health, performance, competition, setHealthEntry } = useData();
   const tracked = useTrackedMetrics();
+  const { setMetricValue } = useMetricWriter();
 
   // Subscribe the whole page to chart-config overlay changes. Custom time
   // metrics read their time layout from the overlay (isTimeMetric ->
@@ -113,6 +108,7 @@ export function MetricsDataEntryLog() {
   const dueMetrics = tracked.filter(
     (m) =>
       m.id !== "relativeProteinIntake" &&
+      metricRendersRow(m) &&
       m.schedule !== undefined &&
       isScheduleDueOn(m.schedule, displayedDate),
   );
@@ -131,29 +127,18 @@ export function MetricsDataEntryLog() {
           (id) => {
             const m = dueById.get(id);
             if (!m) return false;
-            if (m.type === "health") return isHealthFieldFilled(healthEntry, id);
-            const entry = m.type === "performance" ? performanceEntry : competitionEntry;
-            const v = entry.metrics?.[id];
-            if (typeof v === "number") return Number.isFinite(v);
-            if (typeof v === "string") return v.trim() !== "";
-            return false;
+            const entry =
+              m.type === "health"
+                ? healthEntry
+                : m.type === "performance"
+                  ? performanceEntry
+                  : competitionEntry;
+            return isMetricFilled(m, entry);
           },
         );
 
   if (shouldRedirect) {
     return <Navigate to="/log" replace />;
-  }
-
-  function setPerformanceValue(metricId: string, raw: string) {
-    const value = parseNumericInput(raw);
-    if (value === null) return;
-    setPerformanceEntry(dateIso, { metrics: { [metricId]: value } });
-  }
-
-  function setCompetitionValue(metricId: string, raw: string) {
-    const value = parseNumericInput(raw);
-    if (value === null) return;
-    setCompetitionEntry(dateIso, { metrics: { [metricId]: value } });
   }
 
   // Leftmost cell for a non-health row. Competition keeps its running total
@@ -187,7 +172,7 @@ export function MetricsDataEntryLog() {
             <LogSection
               key={section}
               section={section}
-              count={rows.length}
+              count={rows.filter(metricRendersRow).length}
               defaultOpen={section === "daily"}
             >
               {rows.map((m) => (
@@ -200,9 +185,8 @@ export function MetricsDataEntryLog() {
                   summary={summaryFor(m.id)}
                   summaryCell={summaryCellFor(m)}
                   competitionTerm={competitionTerm}
-                  setHealth={(partial) => setHealthEntry(dateIso, partial)}
-                  setPerformance={(raw) => setPerformanceValue(m.id, raw)}
-                  setCompetition={(raw) => setCompetitionValue(m.id, raw)}
+                  setValue={(value) => setMetricValue(m, dateIso, value)}
+                  setAvailability={(next) => setHealthEntry(dateIso, { availability: next })}
                 />
               ))}
             </LogSection>

@@ -321,3 +321,36 @@ describe("MetricInputRow time routing", () => {
     expect(container.querySelectorAll("input").length).toBe(1);
   });
 });
+
+describe("MetricInputRow placeholder", () => {
+  const RPI: MetricDefinition = {
+    id: "relativeProteinIntake",
+    name: "Relative Protein Intake",
+    unit: "",
+    type: "health",
+    whoCollects: "",
+    howCollected: "",
+    description: "",
+    inputType: "numeric",
+  };
+
+  it("renders the placeholder text and a name link", () => {
+    render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <MetricInputRow
+              inputType="placeholder"
+              metric={RPI}
+              detailHref="/health/relativeProteinIntake"
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/Auto-calculated/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /Relative Protein Intake/ }).getAttribute("href"),
+    ).toBe("/health/relativeProteinIntake");
+  });
+});

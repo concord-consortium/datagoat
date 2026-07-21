@@ -309,11 +309,12 @@ describe("MetricsDataEntryLog", () => {
       updatedAt: 0,
     };
 
-    it("re-renders a custom time metric as a time input once the chart-config overlay syncs", () => {
-      // The overlay is populated post-commit, so the row is numeric on first
-      // paint; the page must subscribe (useChartConfigSync) so it flips to the
-      // time input when the overlay syncs rather than staying numeric. This
-      // guards the coupling that used to live on the per-type PerformanceLog.
+    it("renders a custom time metric as a time input from first paint, before the overlay syncs", () => {
+      // The unified row reads the metric's own timePrecision (resolveTimeLayout),
+      // not the async chart-config overlay, so a custom time metric mounts as a
+      // multi-field time input immediately - no numeric-then-time flash. The
+      // page keeps its useChartConfigSync subscription because the overlay still
+      // refines seconds precision and the summary column.
       setCustomChartConfigs({});
       ctx.customMetrics = [CUSTOM_TIME];
       ctx.loadState = {
@@ -329,11 +330,13 @@ describe("MetricsDataEntryLog", () => {
         Array.from(document.querySelectorAll("tr")).find((r) =>
           r.textContent?.includes("Plank Hold"),
         )!;
-      expect(findRow().querySelectorAll("input").length).toBe(1); // numeric, overlay stale
+      // Time input (min + sec sub-fields) on first paint, overlay still stale.
+      expect(findRow().querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
 
       act(() => {
         setCustomChartConfigs({ [CUSTOM_TIME.id]: customDefToChartConfig(CUSTOM_TIME) });
       });
+      // Still a time input after the overlay syncs.
       expect(findRow().querySelectorAll("input").length).toBeGreaterThanOrEqual(2);
 
       setCustomChartConfigs({}); // reset module overlay for other tests

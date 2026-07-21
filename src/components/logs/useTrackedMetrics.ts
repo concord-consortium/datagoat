@@ -29,6 +29,15 @@ export interface TrackedMetric {
   customDef?: CustomMetricDef;
 }
 
+// Whether a tracked metric renders a row at all. Nominal customs are
+// schema-reserved but have no widget in any metric type, so they render
+// nothing. This is the single predicate the section counter and the row
+// dispatcher both consult, so the "(N metrics)" header and the rendered rows
+// cannot disagree. Keyed on the definition, never on an entry value.
+export function metricRendersRow(tracked: TrackedMetric): boolean {
+  return tracked.customDef?.primitive !== "nominal";
+}
+
 // Built-in lookup per type, spanning default-on and addable registries.
 // Default-on vs default-off is a property of the tracked-id list, not of
 // this map, so both go in.

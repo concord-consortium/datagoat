@@ -39,7 +39,7 @@ vi.mock("../../contexts/MetricOverridesContext", () => ({
   useMetricOverrides: () => ({ getOverride: (id: string) => ctx.overrides[id] }),
 }));
 
-import { useTrackedMetrics } from "./useTrackedMetrics";
+import { metricRendersRow, useTrackedMetrics, type TrackedMetric } from "./useTrackedMetrics";
 
 function setProfile(patch: Partial<UserProfile>) {
   ctx.loadState = {
@@ -123,5 +123,42 @@ describe("useTrackedMetrics", () => {
     setProfile({ trackedHealthMetrics: ["hydration", "deleted-custom-id"] });
     const { result } = renderHook(() => useTrackedMetrics());
     expect(result.current.map((m) => m.id)).toEqual(["hydration"]);
+  });
+});
+
+function nominalCustom(type: TrackedMetric["type"]): TrackedMetric {
+  const def: CustomMetricDef = {
+    id: "label",
+    ownerId: "u",
+    name: "Label",
+    metricType: type,
+    primitive: "nominal",
+    levels: [{ label: "A" }, { label: "B" }],
+    inputType: "radio",
+    referenceUrl: "",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  return { id: "label", name: "Label", type, section: "daily", customDef: def };
+}
+
+describe("metricRendersRow", () => {
+  it("returns false for nominal customs of any type", () => {
+    expect(metricRendersRow(nominalCustom("health"))).toBe(false);
+    expect(metricRendersRow(nominalCustom("performance"))).toBe(false);
+  });
+
+  it("returns true for built-ins and scalar customs", () => {
+    expect(
+      metricRendersRow({ id: "hydration", name: "Hydration", type: "health", section: "daily" }),
+    ).toBe(true);
+    expect(
+      metricRendersRow({
+        id: "relativeProteinIntake",
+        name: "RPI",
+        type: "health",
+        section: "daily",
+      }),
+    ).toBe(true);
   });
 });

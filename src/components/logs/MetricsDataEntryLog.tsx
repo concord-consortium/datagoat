@@ -108,6 +108,7 @@ export function MetricsDataEntryLog() {
   const dueMetrics = tracked.filter(
     (m) =>
       m.id !== "relativeProteinIntake" &&
+      metricRendersRow(m) &&
       m.schedule !== undefined &&
       isScheduleDueOn(m.schedule, displayedDate),
   );

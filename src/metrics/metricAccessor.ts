@@ -110,8 +110,12 @@ export function resolveWrite(
 ): MetricWrite {
   const loc = resolveStorage(tracked);
   switch (loc.kind) {
-    case "healthNamed":
-      return { slice: "health", partial: { [loc.field]: value } as Partial<HealthEntry> };
+    case "healthNamed": {
+      // Named health fields are numeric-only; a string here would be a caller
+      // bug, so coerce it away rather than letting the cast smuggle it in.
+      const numeric = typeof value === "number" ? value : undefined;
+      return { slice: "health", partial: { [loc.field]: numeric } as Partial<HealthEntry> };
+    }
     case "healthCustom":
       return { slice: "health", partial: { customMetrics: { [tracked.id]: value } } };
     case "map":

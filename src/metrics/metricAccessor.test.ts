@@ -136,4 +136,11 @@ describe("resolveWrite", () => {
       partial: { metrics: { scores: undefined } },
     });
   });
+
+  it("coerces a string away from a numeric named health field", () => {
+    expect(resolveWrite(tracked("hydration", "health"), "oops")).toEqual({
+      slice: "health",
+      partial: { hydration: undefined },
+    });
+  });
 });

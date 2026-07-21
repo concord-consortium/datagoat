@@ -1,5 +1,14 @@
-import type { TrackedMetric } from "../components/logs/useTrackedMetrics";
 import type { CompetitionEntry, HealthEntry, PerformanceEntry } from "../types/data";
+import type { MetricType } from "./types";
+
+// The accessor only needs a metric's id and type. Taking this minimal shape
+// (rather than the UI-layer TrackedMetric) keeps this domain module free of a
+// components -> metrics import edge; callers pass their richer TrackedMetric
+// structurally.
+export interface MetricRef {
+  id: string;
+  type: MetricType;
+}
 
 // The five health built-ins stored as named fields on HealthEntry. Every
 // other health metric (built-in Mood, all customs) lives in the customMetrics
@@ -30,7 +39,7 @@ export type StorageLoc =
   | { kind: "healthCustom" }
   | { kind: "map" };
 
-export function resolveStorage(tracked: TrackedMetric): StorageLoc {
+export function resolveStorage(tracked: MetricRef): StorageLoc {
   if (tracked.type === "health") {
     if ((NAMED_HEALTH_FIELDS as readonly string[]).includes(tracked.id)) {
       return { kind: "healthNamed", field: tracked.id as HealthNamedField };
@@ -41,7 +50,7 @@ export function resolveStorage(tracked: TrackedMetric): StorageLoc {
 }
 
 export function getMetricValue(
-  tracked: TrackedMetric,
+  tracked: MetricRef,
   entry: MetricEntry,
 ): number | string | undefined {
   const loc = resolveStorage(tracked);
@@ -79,7 +88,7 @@ export function availabilityFilled(entry: HealthEntry): boolean {
   return practiceFilled && gameFilled;
 }
 
-export function isMetricFilled(tracked: TrackedMetric, entry: MetricEntry): boolean {
+export function isMetricFilled(tracked: MetricRef, entry: MetricEntry): boolean {
   if (tracked.type === "health" && tracked.id === "availability") {
     return availabilityFilled(entry as HealthEntry);
   }
@@ -96,7 +105,7 @@ export interface MetricWrite {
 // undefined is passed through verbatim: set*Entry -> withDeleteSentinels turns
 // it into a Firestore deleteField(). Do not coerce it to null or 0.
 export function resolveWrite(
-  tracked: TrackedMetric,
+  tracked: MetricRef,
   value: number | string | undefined,
 ): MetricWrite {
   const loc = resolveStorage(tracked);

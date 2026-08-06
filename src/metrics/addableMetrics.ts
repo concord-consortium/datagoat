@@ -17,6 +17,8 @@ function ordinalRange(min: number, max: number) {
 // "ordinal" inputType and ScaleCards renderer; numeric entries
 // fall through MetricInputRow's numeric branch.
 export const ADDABLE_HEALTH: MetricDefinition[] = [
+  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "hrv",
     name: "HRV",
@@ -47,6 +49,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  */
   {
     id: "perceivedExertion",
     name: "Perceived Exertion",
@@ -81,6 +84,8 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "readiness",
     name: "Readiness",
@@ -128,6 +133,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  */
 ];
 
 // Default-off Performance metrics from the same design source. All
@@ -146,6 +152,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell bench press through a full range of motion.",
     inputType: "numeric",
   },
+  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "oneRepMaxDeadlift",
     name: "1 Rep Max Deadlift",
@@ -168,6 +176,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell hang clean through a full range of motion.",
     inputType: "numeric",
   },
+  */
   {
     id: "oneRepMaxPowerClean",
     name: "1 Rep Max Power Clean",
@@ -190,6 +199,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell back squat through a full range of motion.",
     inputType: "numeric",
   },
+  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "oneMileRun",
     name: "1-Mile Run",
@@ -222,6 +233,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     // Quarterly == 4x per year.
     schedule: { period: "yearly", count: 4 },
   },
+  */
   {
     id: "fortyYardDash",
     name: "40-Yard Dash",
@@ -294,6 +306,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "Rate of change of velocity in the horizontal plane (start at rest or in motion, change of direction).",
     inputType: "numeric",
   },
+  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "heartRateZone",
     name: "Heart Rate Zone",
@@ -306,6 +320,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "HR zones: Z1 50–60% / Z2 60–70% / Z3 70–80% / Z4 80–90% / Z5 90–100% of Max HR.",
     inputType: "numeric",
   },
+  */
   {
     id: "peakVelocity",
     name: "Peak Velocity",
@@ -316,6 +331,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     description: "Highest velocity achieved in a session or specific drill.",
     inputType: "numeric",
   },
+  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "reactiveStrengthIndex",
     name: "Reactive Strength Index",
@@ -327,6 +344,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "RSI-modified: ratio of jump height to movement time, an indicator of lower-body explosive ability.",
     inputType: "numeric",
   },
+  */
   {
     id: "standingBroadJump",
     name: "Standing Broad Jump",

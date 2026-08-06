@@ -12,13 +12,14 @@ import AvailabilityIcon from "@/icons/metric-availability.svg?react";
 // stays numeric 1..5. Card colors come from the fixed MOOD_HEXES built-in
 // palette (see data/scaleColors). Defining levels in module scope keeps the
 // registry entry below readable.
-const MOOD_LEVELS = [
-  { label: "Very sad", value: 1 },
-  { label: "Sad", value: 2 },
-  { label: "Neutral", value: 3 },
-  { label: "Happy", value: 4 },
-  { label: "Very happy", value: 5 },
-];
+// Removed as a choice per DGT-87 (restore alongside the mood registry entry below).
+// const MOOD_LEVELS = [
+//   { label: "Very sad", value: 1 },
+//   { label: "Sad", value: 2 },
+//   { label: "Neutral", value: 3 },
+//   { label: "Happy", value: 4 },
+//   { label: "Very happy", value: 5 },
+// ];
 
 // Strings ported verbatim from the 2026-04-27 prototype's metricDetails
 // table (whoCollects, howCollected, desc). Do not paraphrase - the prototype
@@ -195,6 +196,9 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  // Removed as a choice per DGT-87 (restore by uncommenting; also un-comment MOOD_LEVELS above).
+  // Existing entries are orphaned.
+  /*
   {
     id: "mood",
     name: "Mood",
@@ -212,4 +216,5 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  */
 ];

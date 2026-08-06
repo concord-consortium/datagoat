@@ -29,7 +29,7 @@ const PROFILE: UserProfile = {
   athleteType: "endurance",
   competitionTerm: "game",
   trackedHealthMetrics: ["hydration"],
-  trackedPerformanceMetrics: ["oneMileRun"],
+  trackedPerformanceMetrics: ["fortyYardDash"],
   trackedCompetitionMetrics: ["scores"],
   profileComplete: true,
   trackingSetupComplete: true,
@@ -89,7 +89,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// The default fixture tracks a quarterly performance metric (oneMileRun) and
+// The default fixture tracks a quarterly performance metric (fortyYardDash) and
 // an as-needed competition metric (scores); neither is due on any given day,
 // so the completeness chip - which counts only the metrics scheduled today -
 // would rightly ignore them. The chip tests below exist to prove the chip
@@ -97,7 +97,7 @@ beforeEach(() => {
 // making them due today and part of the denominator alongside the daily
 // health metric.
 const dueDailyOverride = (id: string) =>
-  id === "oneMileRun" || id === "scores"
+  id === "fortyYardDash" || id === "scores"
     ? { schedule: { period: "daily" } as MetricSchedule }
     : undefined;
 
@@ -129,7 +129,7 @@ describe("MetricsDataEntryLog", () => {
   it("groups a quarterly performance metric under Quarterly", () => {
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: /Quarterly Metrics/ }));
-    expect(screen.getByRole("link", { name: /1-Mile Run/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /40-Yard Dash/ })).toBeTruthy();
   });
 
   it("groups a schedule-less competition metric under As Needed", () => {
@@ -165,7 +165,7 @@ describe("MetricsDataEntryLog", () => {
     ctx.getOverride = dueDailyOverride;
     ctx.performance = {
       status: "loaded",
-      entries: [{ version: 1, date: todayIso(), metrics: { oneMileRun: 420 } }],
+      entries: [{ version: 1, date: todayIso(), metrics: { fortyYardDash: 420 } }],
     } as DataLoadState<PerformanceEntry>;
     ctx.competition = {
       status: "loaded",
@@ -185,7 +185,7 @@ describe("MetricsDataEntryLog", () => {
     } as DataLoadState<HealthEntry>;
     ctx.performance = {
       status: "loaded",
-      entries: [{ version: 1, date: todayIso(), metrics: { oneMileRun: 420 } }],
+      entries: [{ version: 1, date: todayIso(), metrics: { fortyYardDash: 420 } }],
     } as DataLoadState<PerformanceEntry>;
     ctx.competition = {
       status: "loaded",
@@ -196,7 +196,7 @@ describe("MetricsDataEntryLog", () => {
   });
 
   it("reaches 'all' with only the due metric filled, ignoring not-due cadences", () => {
-    // The default fixture also tracks oneMileRun (quarterly) and scores
+    // The default fixture also tracks fortyYardDash (quarterly) and scores
     // (as-needed) - neither due today. They must not drag the chip below
     // "all": filling the day's only due metric (daily hydration) completes
     // the day. Counting not-due cadences is what made "all" unreachable.
@@ -218,7 +218,7 @@ describe("MetricsDataEntryLog", () => {
       profile: {
         ...PROFILE,
         trackedHealthMetrics: [],
-        trackedPerformanceMetrics: ["oneMileRun"],
+        trackedPerformanceMetrics: ["fortyYardDash"],
         trackedCompetitionMetrics: ["scores"],
       },
     } as ProfileLoadState;
@@ -254,19 +254,19 @@ describe("MetricsDataEntryLog", () => {
 
   describe("time-formatted summary cells", () => {
     it("formats a time performance metric's Latest cell instead of the raw decimal", () => {
-      // Regression: the Latest cell used to render String(live) even for
-      // time metrics, so a stored 4.5 (4m30s) showed "4.5" instead of "4:30".
+      // Regression: the Latest cell used to render String(live) even for time
+      // metrics, so a stored 4.5 sec showed "4.5" instead of the formatted "4.50".
       ctx.performance = {
         status: "loaded",
-        entries: [{ version: 1, date: todayIso(), metrics: { oneMileRun: 4.5 } }],
+        entries: [{ version: 1, date: todayIso(), metrics: { fortyYardDash: 4.5 } }],
       } as DataLoadState<PerformanceEntry>;
       renderPage();
-      // oneMileRun is quarterly, not daily - expand its section first or the
+      // fortyYardDash is quarterly, not daily - expand its section first or the
       // query below finds nothing and the assertion passes vacuously.
       fireEvent.click(screen.getByRole("button", { name: /Quarterly Metrics/ }));
-      const row = screen.getByRole("link", { name: /1-Mile Run/ }).closest("tr")!;
+      const row = screen.getByRole("link", { name: /40-Yard Dash/ }).closest("tr")!;
       const summaryCell = row.querySelector("td")!;
-      expect(summaryCell.textContent).toBe("4:30");
+      expect(summaryCell.textContent).toBe("4.50");
     });
 
     it("formats a time competition metric's Total cell instead of the raw decimal", () => {

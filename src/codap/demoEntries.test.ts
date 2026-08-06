@@ -61,10 +61,10 @@ describe("demoEntries", () => {
       expect(typeof e.availability.practiceHeld === "boolean" ||
         typeof e.availability.gameHeld === "boolean").toBe(true);
     }
-    // mood is not a typed field: it lands in the customMetrics bag.
-    expect(
-      entries.some((e) => typeof e.customMetrics?.mood === "number"),
-    ).toBe(true);
+    // mood used to be the default-on health metric that landed in the
+    // customMetrics bag; it was removed as a choice (DGT-87), so no default-on
+    // health metric populates the bag now. The bag path stays covered by the
+    // performance/competition and custom-metric tests below.
   });
 
   it("performance/competition values land in the metrics bag and export to rows", () => {

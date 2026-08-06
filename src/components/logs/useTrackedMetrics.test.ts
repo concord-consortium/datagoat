@@ -66,9 +66,8 @@ describe("useTrackedMetrics", () => {
   });
 
   it("sections a quarterly performance metric under quarterly", () => {
-    // oneMileRun is {period: "yearly", count: 4}. This is the prototype's
-    // "My Mile" row under QUARTERLY.
-    setProfile({ trackedPerformanceMetrics: ["oneMileRun"] });
+    // fortyYardDash is {period: "yearly", count: 4}, so it sections under QUARTERLY.
+    setProfile({ trackedPerformanceMetrics: ["fortyYardDash"] });
     const { result } = renderHook(() => useTrackedMetrics());
     expect(result.current[0].section).toBe("quarterly");
     expect(result.current[0].type).toBe("performance");
@@ -83,14 +82,14 @@ describe("useTrackedMetrics", () => {
   it("orders health, then performance, then competition, preserving drag order", () => {
     setProfile({
       trackedHealthMetrics: ["leanMass", "hydration"],
-      trackedPerformanceMetrics: ["oneMileRun"],
+      trackedPerformanceMetrics: ["fortyYardDash"],
       trackedCompetitionMetrics: ["scores"],
     });
     const { result } = renderHook(() => useTrackedMetrics());
     expect(result.current.map((m) => m.id)).toEqual([
       "leanMass",
       "hydration",
-      "oneMileRun",
+      "fortyYardDash",
       "scores",
     ]);
   });

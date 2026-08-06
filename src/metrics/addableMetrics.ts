@@ -252,7 +252,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "averageVelocity",
-    name: "Average Velocity",
+    name: "GPS Average Velocity",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -277,7 +277,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "deceleration",
-    name: "Deceleration",
+    name: "GPS Deceleration",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -297,7 +297,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "forwardAcceleration",
-    name: "Forward Acceleration",
+    name: "GPS Forward Acceleration",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -323,7 +323,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   */
   {
     id: "peakVelocity",
-    name: "Peak Velocity",
+    name: "GPS Peak Velocity",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -362,7 +362,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "upwardAcceleration",
-    name: "Upward Acceleration",
+    name: "GPS Upward Acceleration",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",

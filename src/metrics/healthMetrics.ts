@@ -188,7 +188,9 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     howCollected:
       "Each day, you’ll log whether you had a practice and/or a game and whether you participated. Your availability percentage — your unrestricted ability to participate in training and/or competition — will be calculated for the week.",
     description:
-      "Percentage of time an athlete is fit for full training or competition without restrictions.",
+      "Percentage of time an athlete is able to participate for full training or competition without restrictions.",
+    questionsToExplore:
+      "Does your availability improve when recovery, sleep, and hydration habits are optimized? Are changes in your availability associated with injury, illness, or soreness? Do athletes with higher availability demonstrate better performance outcomes over time? Is there a relationship between your training volume or intensity and your availability the following week? It may be interesting to track your availability over time and compare it with training, recovery, health, and performance measures. Observing patterns may help identify factors that support consistent participation and readiness for training and competition.",
     inputType: "tree",
     Icon: AvailabilityIcon,
     learnMoreUrl: "https://pubmed.ncbi.nlm.nih.gov/32362281/",

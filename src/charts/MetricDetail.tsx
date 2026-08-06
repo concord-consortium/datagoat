@@ -41,6 +41,7 @@ import {
 import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { useChartSeries } from "./useChartSeries";
 import { useDemoMode } from "../contexts/DemoModeContext";
+import { buildCodapWrappedUrl } from "../codap/codapUrl";
 import { If } from "../components/common/If";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
@@ -276,6 +277,29 @@ export function MetricDetail({ type }: MetricDetailProps) {
           {formatSchedule(effectiveSchedule)}
         </div>
       </If>
+
+      {metric.questionsToExplore && (
+        <>
+          <h2 className={css.infoSectionHeading}>Questions to Explore</h2>
+          <div className={css.metricDescription}>
+            {renderMultiline(metric.questionsToExplore)}
+            <p>
+              You can explore these questions using your data in{" "}
+              <a
+                className={css.inlineLink}
+                href={buildCodapWrappedUrl(demoMode)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                CODAP
+                <span className={css.linkIconWrap}>
+                  <ExternalLinkIcon className={css.linkIcon} />
+                </span>
+              </a>
+            </p>
+          </div>
+        </>
+      )}
 
       {metric.references && metric.references.length > 0 && (
         <>

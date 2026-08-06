@@ -171,6 +171,33 @@
   height: 24px;
 }
 
+/* Inline link for a single word mid-sentence (e.g. "CODAP" in Questions to
+   Explore). Unlike .learnMore it carries no oversized touch-target ::before,
+   which would overlap surrounding text. */
+.inlineLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: filter var(--dur-quick) var(--ease-default);
+}
+
+.inlineLink:hover {
+  filter: brightness(1.2);
+}
+
+.inlineLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inlineLink {
+    transition: none;
+  }
+}
+
 .referenceLinkWrap {
   margin: 10px 0 0;
 }

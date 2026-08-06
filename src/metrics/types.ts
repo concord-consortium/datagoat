@@ -29,6 +29,10 @@ export interface MetricDefinition {
   // section (e.g. a collection-protocol doc), styled like learnMoreUrl.
   howCollectedUrl?: string;
   description: string;
+  // Optional "Questions to Explore" section in MetricDetail: prompts /
+  // research questions inviting the athlete to investigate the metric.
+  // Omitted => the section is not rendered.
+  questionsToExplore?: string;
   min?: number;
   max?: number;
   inputType: MetricInputType;

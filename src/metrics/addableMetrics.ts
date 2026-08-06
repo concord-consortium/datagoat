@@ -57,8 +57,12 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     type: "health",
     whoCollects: "Self",
     howCollected: "Self-report on a 0–10 scale after training.",
+    howCollectedUrl:
+      "https://hr.umich.edu/sites/default/files/perceived-exertion-v2_0.pdf",
     description:
-      "Subjective rating of effort during training on a 0 (none) to 10 (maximal) scale.",
+      "Your rating of how much effort you had to exert during a training session. It provides a quick assessment for how hard or demanding the training session felt to you, both mentally and physically. It is best to complete this scale during or immediately after exercise.",
+    questionsToExplore:
+      "How strongly is perceived exertion associated with heart rate during training? How does sleep efficiency influence perceived exertion during training? Does accumulated training load predict changes in perceived exertion? It may be interesting to track perceived exertion during training to better understand how you respond to training demands. Monitoring perceived exertion alongside heart rate, sleep efficiency, and training load may provide insight into how physiological recovery and accumulated workload influence how difficult training feels on a day-to-day basis.",
     min: 0,
     max: 10,
     inputType: "ordinal",
@@ -78,6 +82,8 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
       "https://drive.google.com/file/d/19U0R1L4YMEKyEEghYVbOKyOcG__uv_Ur/view?usp=drive_link",
     description:
       "Your rating of how tired or fatigued you feel right now. It reflects your overall level of physical and mental fatigue and provides a quick assessment of how much energy you have available for training, competition, and daily activities.",
+    questionsToExplore:
+      "Are changes in fatigue associated with changes in performance or availability? Does fatigue increase during periods of higher training volume or intensity? Tracking fatigue may provide valuable insight into your recovery, readiness, and response to training. By monitoring fatigue alongside measures such as sleep, training load, and perceived exertion, you may be able to identify patterns that show inadequate recovery or high training stress.",
     min: 1,
     max: 5,
     inputType: "ordinal",

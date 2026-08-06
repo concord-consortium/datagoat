@@ -227,6 +227,23 @@ export function MetricDetail({ type }: MetricDetailProps) {
       <h2 className={css.infoSectionHeading}>How Collected</h2>
       <div className={css.metricDescription}>
         {renderMultiline(metric.howCollected)}
+        {metric.howCollectedUrl && (
+          <p className={css.learnMoreWrap}>
+            <a
+              className={css.learnMore}
+              href={metric.howCollectedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className={css.linkText}>
+                How {metric.name} is collected{" "}
+                <span className={css.linkIconWrap}>
+                  <ExternalLinkIcon className={css.linkIcon} />
+                </span>
+              </span>
+            </a>
+          </p>
+        )}
       </div>
 
       <h2 className={css.infoSectionHeading}>Estimated Range</h2>

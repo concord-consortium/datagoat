@@ -25,6 +25,9 @@ export interface MetricDefinition {
   type: MetricType;
   whoCollects: string;
   howCollected: string;
+  // Optional external link rendered under MetricDetail's "How Collected"
+  // section (e.g. a collection-protocol doc), styled like learnMoreUrl.
+  howCollectedUrl?: string;
   description: string;
   min?: number;
   max?: number;

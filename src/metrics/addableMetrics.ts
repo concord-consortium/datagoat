@@ -74,8 +74,10 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     type: "health",
     whoCollects: "Self",
     howCollected: "Self-report on a 1–5 scale.",
+    howCollectedUrl:
+      "https://drive.google.com/file/d/19U0R1L4YMEKyEEghYVbOKyOcG__uv_Ur/view?usp=drive_link",
     description:
-      "Subjective rating of fatigue on a 1 (none) to 5 (extreme) scale.",
+      "Your rating of how tired or fatigued you feel right now. It reflects your overall level of physical and mental fatigue and provides a quick assessment of how much energy you have available for training, competition, and daily activities.",
     min: 1,
     max: 5,
     inputType: "ordinal",

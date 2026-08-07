@@ -57,9 +57,11 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     type: "health",
     whoCollects: "Self",
     howCollected:
-      "Oura Ring, PSQI, ASSQ\nYou can monitor your sleep using a wearable device like an Oura Ring, Fitbit, or Whoop strap, or you can fill out a questionnaire like the Pittsburgh Sleep Quality Index (PSQI) or the Athlete Sleep Screening Questionnaire (ASSQ). Both are great options to track your sleep duration and efficiency.",
+      "You can monitor your sleep using a wearable device like an Oura Ring, Fitbit, or Whoop strap, or you can fill out a questionnaire like the Pittsburgh Sleep Quality Index (PSQI) or the Athlete Sleep Screening Questionnaire (ASSQ). Both are great options to track your sleep duration and efficiency.",
     description:
       "Total amount of time spent asleep during a sleep period, typically measured from sleep onset to final awakening, expressed in minutes or hours.",
+    questionsToExplore:
+      "Do you perform better after nights with more sleep? Does exercise feel harder after nights with less sleep? Does sleep duration differ between training days and competition days? It may be interesting to track sleep duration alongside measures like athletic performance, perceived exertion, and season timepoints such as in-season, off-season, pre-game, playoffs, etc. Observing patterns between these variables may help you identify whether better sleep is associated with improved performance or reduced effort during exercise, and how sleep varies across your season.",
     inputType: "numeric",
     timePrecision: "m",
     Icon: SleepTimeIcon,
@@ -78,7 +80,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
         url: "https://docs.google.com/document/d/1VIiGo671Hs9t8PcKPdPZTe2oppCb7Ar8/edit",
       },
     ],
-    estimatedRange: "4–12 hours/night",
+    hideEstimatedRange: true,
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
@@ -89,9 +91,11 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     type: "health",
     whoCollects: "Self",
     howCollected:
-      "Oura Ring, PSQI, ASSQ\nYou can monitor your sleep using a wearable device like an Oura Ring, Fitbit, or Whoop strap, or you can fill out a questionnaire like the Pittsburgh Sleep Quality Index (PSQI) or the Athlete Sleep Screening Questionnaire (ASSQ). Both are great options to track your sleep duration and efficiency.",
+      "You can monitor your sleep using a wearable device like an Oura Ring, Fitbit, or Whoop strap, or you can fill out a questionnaire like the Pittsburgh Sleep Quality Index (PSQI) or the Athlete Sleep Screening Questionnaire (ASSQ). Both are great options to track your sleep duration and efficiency.",
     description:
       "Percentage of time spent asleep relative to the total time spent in bed attempting to sleep.\nSleep Efficiency = (Total Sleep Time/Total Time in Bed) × 100",
+    questionsToExplore:
+      "Do you perform better after nights with higher sleep efficiency? Does exercise feel harder after nights with lower sleep efficiency? Does sleep efficiency differ between training days and rest days? It may be interesting to track sleep efficiency alongside measures such as athletic performance, perceived exertion, and training status over time. Observing patterns between these variables may help you identify whether better sleep is associated with improved performance, reduced effort during exercise, or differences between training and rest days.",
     min: 0,
     max: 100,
     inputType: "numeric",
@@ -111,7 +115,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
         url: "https://docs.google.com/document/d/1VIiGo671Hs9t8PcKPdPZTe2oppCb7Ar8/edit",
       },
     ],
-    estimatedRange: "0–100%",
+    hideEstimatedRange: true,
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
@@ -168,7 +172,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     howCollected:
       "Skinfolds, BIA (Bioelectrical Impedance Analysis), BIS (Bioimpedance Spectroscopy), DXA (Dual-Energy X-ray Absorptiometry)",
     description:
-      "Total mass of body excluding fat mass. This includes muscle, bone, organs, connective tissue, and body water.",
+      "Lean mass is all of your body's mass excluding fat mass. It includes muscle, bone, organs, connective tissue, and body water.",
     questionsToExplore:
       "Has lean mass increased, decreased, or remained stable since your last test? Are changes in lean mass related to improvements in strength, power, speed, or endurance? Is there a relationship between your protein intake and lean mass over time? It may be interesting to track lean mass over time to determine whether changes in body composition are related to changes in performance or nutritional habits. Comparing measurements across multiple assessments may help identify long-term trends related to training and lifestyle habits.",
     inputType: "numeric",

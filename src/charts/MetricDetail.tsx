@@ -249,10 +249,11 @@ export function MetricDetail({ type }: MetricDetailProps) {
 
       <h2 className={css.infoSectionHeading}>Estimated Range</h2>
       <div className={css.metricDescription}>
-        {metric.estimatedRange ??
-          (metric.min !== undefined && metric.max !== undefined
-            ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
-            : metric.unit || "—")}
+        {!metric.hideEstimatedRange &&
+          (metric.estimatedRange ??
+            (metric.min !== undefined && metric.max !== undefined
+              ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
+              : metric.unit || "—"))}
         {metric.id === "hydration" && <HydrationColorScale />}
         {goalText && (
           <p className={css.goalLine}>

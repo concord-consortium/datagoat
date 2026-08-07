@@ -169,10 +169,12 @@ export const HEALTH_METRICS: MetricDefinition[] = [
       "Skinfolds, BIA (Bioelectrical Impedance Analysis), BIS (Bioimpedance Spectroscopy), DXA (Dual-Energy X-ray Absorptiometry)",
     description:
       "Total mass of body excluding fat mass. This includes muscle, bone, organs, connective tissue, and body water.",
+    questionsToExplore:
+      "Has lean mass increased, decreased, or remained stable since your last test? Are changes in lean mass related to improvements in strength, power, speed, or endurance? Is there a relationship between your protein intake and lean mass over time? It may be interesting to track lean mass over time to determine whether changes in body composition are related to changes in performance or nutritional habits. Comparing measurements across multiple assessments may help identify long-term trends related to training and lifestyle habits.",
     inputType: "numeric",
     Icon: LeanMassIcon,
     learnMoreUrl: "https://acsm.org/education-resources/books/fitness-assessment-manual/",
-    estimatedRange: "30–130 kg (66–287 lbs)",
+    hideEstimatedRange: true,
     whenCollected: "2–3×/year",
     // "2-3x/year" is a regular (if infrequent) cadence, not ad-hoc, so
     // it's yearly (count 2) rather than irregular - a single count can't
@@ -194,7 +196,7 @@ export const HEALTH_METRICS: MetricDefinition[] = [
     inputType: "tree",
     Icon: AvailabilityIcon,
     learnMoreUrl: "https://pubmed.ncbi.nlm.nih.gov/32362281/",
-    estimatedRange: "0–100%",
+    hideEstimatedRange: true,
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },

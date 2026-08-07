@@ -319,8 +319,8 @@ describe("MetricsDataEntryLog - drag-reorder is respected in row order", () => {
     // registry name); we only need their relative order.
     const idx = (needle: string) =>
       names.findIndex((n) => n.toLowerCase().includes(needle.toLowerCase()));
-    expect(idx("hydration")).toBeGreaterThanOrEqual(0);
-    expect(idx("stretch time")).toBeGreaterThan(idx("hydration"));
+    expect(idx("urine color")).toBeGreaterThanOrEqual(0);
+    expect(idx("stretch time")).toBeGreaterThan(idx("urine color"));
     expect(idx("sleep time")).toBeGreaterThan(idx("stretch time"));
   });
 });

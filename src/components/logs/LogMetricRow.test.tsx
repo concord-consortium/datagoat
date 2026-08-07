@@ -108,7 +108,7 @@ function ordinalCustom(labels: Array<{ label: string; value: number }>): CustomM
 describe("LogMetricRow", () => {
   it("links a health row to its detail page", () => {
     renderRow(healthTracked("hydration"));
-    expect(screen.getByRole("link", { name: /Hydration/ }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: /Urine Color/ }).getAttribute("href")).toBe(
       "/health/hydration",
     );
   });

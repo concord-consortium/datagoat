@@ -123,7 +123,7 @@ describe("MetricsDataEntryLog", () => {
     expect(daily.getAttribute("aria-expanded")).toBe("true");
     expect(weekly.getAttribute("aria-expanded")).toBe("false");
     // The daily health metric is visible without any interaction.
-    expect(screen.getByRole("link", { name: /Hydration/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Urine Color/ })).toBeTruthy();
   });
 
   it("groups a quarterly performance metric under Quarterly", () => {

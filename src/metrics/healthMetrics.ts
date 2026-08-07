@@ -27,14 +27,16 @@ import AvailabilityIcon from "@/icons/metric-availability.svg?react";
 export const HEALTH_METRICS: MetricDefinition[] = [
   {
     id: "hydration",
-    name: "Hydration",
+    name: "Urine Color",
     unit: "level",
     type: "health",
     whoCollects: "Self",
     howCollected: "Morning urine color",
     Icon: HydrationIcon,
     description:
-      "State of total body water balance reflecting the relationship between fluid intake and fluid loss required to maintain normal physiological function and homeostasis. Hydration levels are best measured by urine color. Optimal hydration is indicated by pale yellow, similar to lemonade. Darker yellow or amber indicates a need for water, while, conversely, completely clear urine may indicate overhydration.",
+      "Urine color is a simple indicator of hydration status. Hydration reflects the relationship between fluid intake and fluid loss. Maintaining the proper hydration ensures we have enough total body water to maintain normal physiological function and homeostasis. We lose more water during exercise, therefore it is important we replenish fluids to stay hydrated. Optimal hydration is indicated by pale yellow, similar to lemonade. Darker yellow or amber indicates a need for water, while, conversely, completely clear urine may indicate overhydration. Use urine color as one tool to help monitor your hydration habits.",
+    questionsToExplore:
+      "Does exercise feel harder when urine color is darker? Are changes in hydration status associated with changes in workout performance? It may be interesting to track both urine color and perceived exertion over time to determine whether hydration status influences how hard exercise feels. Observing patterns between these measures over time may help you better understand how hydration impacts how you feel during your workout or competition.",
     min: 1,
     max: 8,
     inputType: "colorScale",

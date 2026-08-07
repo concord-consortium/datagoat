@@ -323,13 +323,13 @@ describe("CodapPlugin", () => {
       tableName: "Health",
       attributes: [
         { name: "date", type: "date" },
-        { name: "Hydration", type: "numeric", unit: "level" },
+        { name: "Urine Color", type: "numeric", unit: "level" },
         { name: "Total Sleep Time", type: "numeric", unit: "hr" },
         { name: "Total Sleep Time (h:mm)", type: "categorical" },
       ],
       rows: [{
         date: "2026-04-01",
-        Hydration: 64,
+        "Urine Color": 64,
         "Total Sleep Time": 7,
         "Total Sleep Time (h:mm)": "7:00",
       }],

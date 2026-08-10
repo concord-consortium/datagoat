@@ -11,13 +11,13 @@ function ordinalRange(min: number, max: number) {
   return out;
 }
 
-// Default-off Health metrics from DGT-51 design source ("Metrics" tab
+// Default-off Health metrics from the design source ("Metrics" tab
 // of the design spreadsheet). All start hidden; users opt in via the
 // AddMetric flow. The categorical/ordinal entries reuse the generic
 // "ordinal" inputType and ScaleCards renderer; numeric entries
 // fall through MetricInputRow's numeric branch.
 export const ADDABLE_HEALTH: MetricDefinition[] = [
-  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
   /*
   {
     id: "hrv",
@@ -92,7 +92,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
-  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
   /*
   {
     id: "readiness",
@@ -160,7 +160,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell bench press through a full range of motion.",
     inputType: "numeric",
   },
-  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
   /*
   {
     id: "oneRepMaxDeadlift",
@@ -207,7 +207,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell back squat through a full range of motion.",
     inputType: "numeric",
   },
-  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
   /*
   {
     id: "oneMileRun",
@@ -314,7 +314,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "Rate of change of velocity in the horizontal plane (start at rest or in motion, change of direction).",
     inputType: "numeric",
   },
-  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
   /*
   {
     id: "heartRateZone",
@@ -339,7 +339,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     description: "Highest velocity achieved in a session or specific drill.",
     inputType: "numeric",
   },
-  // Removed as a choice per DGT-87 (restore by uncommenting). Existing entries are orphaned.
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
   /*
   {
     id: "reactiveStrengthIndex",

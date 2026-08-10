@@ -414,7 +414,7 @@ describe("CodapPlugin", () => {
   it("resolves a tracked built-in health metric from ADDABLE_HEALTH (regression: was silently dropped)", async () => {
     // perceivedExertion lives in ADDABLE_HEALTH (not HEALTH_METRICS) and is not
     // a custom metric; readHealthField reads it from the customMetrics bag.
-    // (Was hrv until DGT-87 removed hrv as a choice; perceivedExertion is the
+    // (Was hrv until Aug 2026 removed hrv as a choice; perceivedExertion is the
     // remaining addable-health case, an ordinal that exports two columns.)
     ctx.authState = {
       user: { emailVerified: true, email: "athlete@school.edu" },

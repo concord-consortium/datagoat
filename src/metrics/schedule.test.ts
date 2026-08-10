@@ -14,7 +14,7 @@ function byId(list: MetricDefinition[], id: string): MetricDefinition {
 
 describe("built-in metric schedules", () => {
   it("marks ordinary health metrics daily", () => {
-    // mood was removed as a choice (DGT-87); hydration / sleepTime / protein remain daily.
+    // mood was removed as a choice (Aug 2026); hydration / sleepTime / protein remain daily.
     for (const id of ["hydration", "sleepTime", "protein"]) {
       expect(resolveSchedule(byId(HEALTH_METRICS, id).schedule)).toEqual({
         period: "daily",
@@ -30,14 +30,14 @@ describe("built-in metric schedules", () => {
   });
 
   it("marks addable health metrics daily", () => {
-    // hrv was removed as a choice (DGT-87); perceivedExertion remains a daily addable.
+    // hrv was removed as a choice (Aug 2026); perceivedExertion remains a daily addable.
     expect(resolveSchedule(byId(ADDABLE_HEALTH, "perceivedExertion").schedule)).toEqual({
       period: "daily",
     });
   });
 
   it("schedules quarterly performance field tests as yearly x4", () => {
-    // oneMileRun was removed as a choice (DGT-87); fortyYardDash / beepTest remain quarterly.
+    // oneMileRun was removed as a choice (Aug 2026); fortyYardDash / beepTest remain quarterly.
     for (const id of ["fortyYardDash", "beepTest"]) {
       expect(
         resolveSchedule(byId(ADDABLE_PERFORMANCE, id).schedule),

@@ -62,7 +62,7 @@ describe("demoEntries", () => {
         typeof e.availability.gameHeld === "boolean").toBe(true);
     }
     // mood used to be the default-on health metric that landed in the
-    // customMetrics bag; it was removed as a choice (DGT-87), so no default-on
+    // customMetrics bag; it was removed as a choice (Aug 2026), so no default-on
     // health metric populates the bag now. The bag path stays covered by the
     // performance/competition and custom-metric tests below.
   });

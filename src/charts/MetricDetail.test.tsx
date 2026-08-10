@@ -308,3 +308,67 @@ describe("MetricDetail - Questions to Explore", () => {
     expect(screen.queryByRole("link", { name: /codap/i })).toBeNull();
   });
 });
+
+describe("MetricDetail - How Collected link", () => {
+  beforeEach(() => {
+    demoModeMock.value = false;
+    customMetricsMock.metrics = [];
+    customMetricsMock.loading = false;
+  });
+
+  it("renders a protocol link for a metric that defines howCollectedUrl", () => {
+    // perceivedExertion lives in ADDABLE_HEALTH and carries a howCollectedUrl.
+    renderAt("/health/perceivedExertion", "health");
+    const link = screen.getByRole("link", {
+      name: /how perceived exertion is collected/i,
+    });
+    expect(link.getAttribute("href")).toBe(
+      "https://hr.umich.edu/sites/default/files/perceived-exertion-v2_0.pdf",
+    );
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.getAttribute("rel")).toMatch(/noopener/);
+  });
+
+  it("omits the link for a metric with no howCollectedUrl", () => {
+    // leanMass has howCollected prose but no protocol URL.
+    renderAt("/health/leanMass", "health");
+    expect(screen.getByText("How Collected")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /is collected/i })).toBeNull();
+  });
+});
+
+describe("MetricDetail - Estimated Range", () => {
+  beforeEach(() => {
+    demoModeMock.value = false;
+    customMetricsMock.metrics = [];
+    customMetricsMock.loading = false;
+  });
+
+  // The section body is the div immediately after the heading; reading it
+  // directly is what distinguishes "range omitted" from "range rendered",
+  // since the goal line lives in the same div either way.
+  function estimatedRangeBody(): HTMLElement {
+    const heading = screen.getByRole("heading", { name: "Estimated Range" });
+    return heading.nextElementSibling as HTMLElement;
+  }
+
+  it("omits the range value but keeps the heading and goal line when hideEstimatedRange is set", () => {
+    // leanMass sets hideEstimatedRange, so neither an estimatedRange string
+    // nor the unit fallback ("kg") should precede the goal line.
+    renderAt("/health/leanMass", "health");
+    const body = estimatedRangeBody();
+    expect(body.textContent?.trim().startsWith("As a")).toBe(true);
+    expect(
+      screen.getByText(/to keep your lean mass between 55-69 kg/i),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the range value for a metric without hideEstimatedRange", () => {
+    // hydration keeps its estimatedRange string - the positive control for
+    // the assertion above.
+    renderAt("/health/hydration", "health");
+    expect(
+      estimatedRangeBody().textContent?.trim().startsWith("8 levels"),
+    ).toBe(true);
+  });
+});

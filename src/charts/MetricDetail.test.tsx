@@ -90,8 +90,9 @@ vi.mock("../contexts/DataContext", () => ({
   usePerformanceData: () => dataMock.performance,
 }));
 
+const demoModeMock = vi.hoisted(() => ({ value: false }));
 vi.mock("../contexts/DemoModeContext", () => ({
-  useDemoMode: () => false,
+  useDemoMode: () => demoModeMock.value,
 }));
 
 const metricOverridesMock = vi.hoisted(() => ({
@@ -108,6 +109,7 @@ vi.mock("../contexts/MetricOverridesContext", async () => {
 });
 
 import { MetricDetail } from "./MetricDetail";
+import { buildCodapWrappedUrl } from "../codap/codapUrl";
 
 function customDef(
   id: string,
@@ -264,5 +266,45 @@ describe("MetricDetail - schedule display", () => {
     renderAt("/health/leanMass", "health");
     expect(screen.getByText("Schedule")).toBeInTheDocument();
     expect(screen.getByText("Irregular")).toBeInTheDocument();
+  });
+});
+
+describe("MetricDetail - Questions to Explore", () => {
+  beforeEach(() => {
+    demoModeMock.value = false;
+    customMetricsMock.metrics = [];
+    customMetricsMock.loading = false;
+  });
+
+  it("renders the section and a CODAP link for a metric that defines questionsToExplore", () => {
+    // leanMass carries a questionsToExplore string in the registry.
+    renderAt("/health/leanMass", "health");
+    expect(screen.getByText("Questions to Explore")).toBeInTheDocument();
+    // Body prose is rendered (a distinctive fragment of leanMass's text).
+    expect(
+      screen.getByText(/comparing measurements across multiple assessments/i),
+    ).toBeInTheDocument();
+
+    const link = screen.getByRole("link", { name: /codap/i });
+    // Opens the same wrapped CODAP URL the dashboard button uses; demo off.
+    expect(link.getAttribute("href")).toBe(buildCodapWrappedUrl(false));
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.getAttribute("rel")).toMatch(/noopener/);
+  });
+
+  it("threads demo mode into the CODAP link URL", () => {
+    demoModeMock.value = true;
+    renderAt("/health/leanMass", "health");
+    const link = screen.getByRole("link", { name: /codap/i });
+    expect(link.getAttribute("href")).toBe(buildCodapWrappedUrl(true));
+  });
+
+  it("omits the section for a metric with no questionsToExplore", () => {
+    // A custom metric has no questionsToExplore, so neither the heading
+    // nor the CODAP link should render.
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
+    renderAt("/health/c_w", "health");
+    expect(screen.queryByText("Questions to Explore")).toBeNull();
+    expect(screen.queryByRole("link", { name: /codap/i })).toBeNull();
   });
 });

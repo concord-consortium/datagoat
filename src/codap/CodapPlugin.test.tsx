@@ -323,13 +323,13 @@ describe("CodapPlugin", () => {
       tableName: "Health",
       attributes: [
         { name: "date", type: "date" },
-        { name: "Hydration", type: "numeric", unit: "level" },
+        { name: "Urine Color", type: "numeric", unit: "level" },
         { name: "Total Sleep Time", type: "numeric", unit: "hr" },
         { name: "Total Sleep Time (h:mm)", type: "categorical" },
       ],
       rows: [{
         date: "2026-04-01",
-        Hydration: 64,
+        "Urine Color": 64,
         "Total Sleep Time": 7,
         "Total Sleep Time (h:mm)": "7:00",
       }],
@@ -412,8 +412,10 @@ describe("CodapPlugin", () => {
   });
 
   it("resolves a tracked built-in health metric from ADDABLE_HEALTH (regression: was silently dropped)", async () => {
-    // hrv lives in ADDABLE_HEALTH (not HEALTH_METRICS) and is not a custom
-    // metric; readHealthField reads it from the customMetrics bag.
+    // perceivedExertion lives in ADDABLE_HEALTH (not HEALTH_METRICS) and is not
+    // a custom metric; readHealthField reads it from the customMetrics bag.
+    // (Was hrv until Aug 2026 removed hrv as a choice; perceivedExertion is the
+    // remaining addable-health case, an ordinal that exports two columns.)
     ctx.authState = {
       user: { emailVerified: true, email: "athlete@school.edu" },
       loading: false,
@@ -422,7 +424,7 @@ describe("CodapPlugin", () => {
       status: "loaded",
       profile: {
         ...makeCompleteProfile().profile,
-        trackedHealthMetrics: ["hrv"],
+        trackedHealthMetrics: ["perceivedExertion"],
         trackedPerformanceMetrics: [],
         trackedCompetitionMetrics: [],
       },
@@ -430,7 +432,12 @@ describe("CodapPlugin", () => {
     dataState.health = {
       status: "loaded",
       entries: [
-        { version: 1, date: "2026-04-01", availability: {}, customMetrics: { hrv: 55 } },
+        {
+          version: 1,
+          date: "2026-04-01",
+          availability: {},
+          customMetrics: { perceivedExertion: 5 },
+        },
       ],
     };
     dataState.performance = { status: "loaded", entries: [] };
@@ -446,9 +453,16 @@ describe("CodapPlugin", () => {
       expect.objectContaining({
         name: "DataGOAT-Health",
         attributes: expect.arrayContaining([
-          { name: "HRV", type: "numeric", unit: "ms" },
+          { name: "Perceived Exertion", type: "categorical" },
+          { name: "Perceived Exertion (level)", type: "numeric" },
         ]),
-        rows: [{ date: "2026-04-01", HRV: 55 }],
+        rows: [
+          {
+            date: "2026-04-01",
+            "Perceived Exertion": "5",
+            "Perceived Exertion (level)": 5,
+          },
+        ],
       }),
     );
   });

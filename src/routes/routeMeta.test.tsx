@@ -62,7 +62,7 @@ describe("resolveRouteMeta — custom metric routing", () => {
     // the lookup order from regressing.
     const customs = [customDef("hydration", "Override", "health")];
     const meta = resolveRouteMeta("/health/hydration", customs);
-    expect(meta?.title).toBe("Hydration");
+    expect(meta?.title).toBe("Urine Color");
   });
 
   it("titles the create form at /add-metric/:type/new", () => {

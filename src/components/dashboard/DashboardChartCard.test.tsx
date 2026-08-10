@@ -86,11 +86,11 @@ describe("DashboardChartCard", () => {
       />,
     );
     expect(getSelect(container).value).toBe("hydration");
-    expect(getSvgTitle(container)).toBe("Hydration");
+    expect(getSvgTitle(container)).toBe("Urine Color");
     // Range picker label includes the metric name (per the
     // DashboardChartCard wiring `${metric.name} time range`).
     expect(
-      container.querySelector('[role="group"][aria-label="Hydration time range"]'),
+      container.querySelector('[role="group"][aria-label="Urine Color time range"]'),
     ).toBeTruthy();
   });
 
@@ -153,10 +153,10 @@ describe("DashboardChartCard", () => {
     // The selected value falls back to the first remaining tracked metric.
     expect(select.value).toBe("hydration");
     // Chart <title> tracks the new metric (the seam exposed to SR users).
-    expect(getSvgTitle(container)).toBe("Hydration");
+    expect(getSvgTitle(container)).toBe("Urine Color");
     // <desc> SR phrasing is also keyed on the new metric name, not the
     // stale "Total Sleep Time".
-    expect(getSvgDesc(container)).toContain("Hydration");
+    expect(getSvgDesc(container)).toContain("Urine Color");
     expect(getSvgDesc(container)).not.toContain("Total Sleep Time");
   });
 
@@ -173,7 +173,7 @@ describe("DashboardChartCard", () => {
     const text = container.querySelector("svg text");
     expect(text?.textContent).toBe("Loading chart data...");
     // SR description switches to the loading sentence.
-    expect(getSvgDesc(container)).toBe("Hydration chart is loading.");
+    expect(getSvgDesc(container)).toBe("Urine Color chart is loading.");
   });
 
   it("works with competition metric definitions and renders an empty state when nothing is tracked", () => {
@@ -222,7 +222,7 @@ describe("DashboardChartCard", () => {
     // Order matches the canonical HEALTH_METRICS order, not the
     // input array order (filter-by-includes preserves the metric
     // catalog's order). Both names should be present.
-    expect(labels).toContain("Hydration");
+    expect(labels).toContain("Urine Color");
     expect(labels).toContain("Protein Intake");
     expect(labels.length).toBe(2);
     // And the visible <label> for the field is the health variant
@@ -299,7 +299,7 @@ describe("DashboardChartCard - persisted graph picks (DGT-64)", () => {
       />,
     );
     expect(getSelect(container).value).toBe("hydration");
-    expect(getSvgTitle(container)).toBe("Hydration");
+    expect(getSvgTitle(container)).toBe("Urine Color");
   });
 
   it("ignores an unknown persisted range and falls back to 7d", () => {

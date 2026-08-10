@@ -25,7 +25,14 @@ export interface MetricDefinition {
   type: MetricType;
   whoCollects: string;
   howCollected: string;
+  // Optional external link rendered under MetricDetail's "How Collected"
+  // section (e.g. a collection-protocol doc), styled like learnMoreUrl.
+  howCollectedUrl?: string;
   description: string;
+  // Optional "Questions to Explore" section in MetricDetail: prompts /
+  // research questions inviting the athlete to investigate the metric.
+  // Omitted => the section is not rendered.
+  questionsToExplore?: string;
   min?: number;
   max?: number;
   inputType: MetricInputType;
@@ -46,6 +53,10 @@ export interface MetricDefinition {
   // MetricDetail prefers this over min/max when set, since the prototype's
   // string carries unit + qualifier context that min/max alone can't.
   estimatedRange?: string;
+  // When true, MetricDetail's "Estimated Range" section omits the range value
+  // (and its unit/min-max fallback) but still renders the heading and goal
+  // line. For metrics whose goal already conveys the meaningful range.
+  hideEstimatedRange?: boolean;
   // Verbatim "When / How Many Times Collected" string (e.g., "Daily",
   // "2-3x/year"). MetricDetail's "When Collected" section reads this; the
   // log-table per-row hint stays on `hint`.

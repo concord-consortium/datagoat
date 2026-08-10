@@ -1,8 +1,8 @@
 import type { MetricDefinition } from "./types";
 
 // Shared 1-N ordinal level builder. Used by Pain (0-10), Readiness
-// (1-10), Soreness (1-5), Perceived Fatigue (1-5), Perceived Exertion
-// (0-10). Labels are the numbers themselves; values mirror them.
+// (1-10), Soreness (1-5). Labels are the numbers themselves; values
+// mirror them.
 function ordinalRange(min: number, max: number) {
   const out: Array<{ label: string; value: number }> = [];
   for (let n = min; n <= max; n++) {
@@ -10,6 +10,37 @@ function ordinalRange(min: number, max: number) {
   }
   return out;
 }
+
+// Perceived Exertion (0-10, Borg CR10) and Perceived Fatigue (0-10) render as
+// a dropdown (scaleDisplay: "dropdown"), so each level's `label` is its
+// description. Unlabeled rungs use "" so the dropdown shows just the number.
+const EXERTION_LEVELS = [
+  { value: 0, label: "No exertion at all" },
+  { value: 1, label: "Very Light" },
+  { value: 2, label: "Light" },
+  { value: 3, label: "Moderate" },
+  { value: 4, label: "Somewhat hard" },
+  { value: 5, label: "" },
+  { value: 6, label: "Hard" },
+  { value: 7, label: "Very hard" },
+  { value: 8, label: "" },
+  { value: 9, label: "Extremely Hard" },
+  { value: 10, label: "Maximum Effort" },
+];
+
+const FATIGUE_LEVELS = [
+  { value: 0, label: "Not Fatigued at All" },
+  { value: 1, label: "" },
+  { value: 2, label: "A Little Fatigued" },
+  { value: 3, label: "" },
+  { value: 4, label: "" },
+  { value: 5, label: "Moderately Fatigued" },
+  { value: 6, label: "" },
+  { value: 7, label: "Very Fatigued" },
+  { value: 8, label: "" },
+  { value: 9, label: "" },
+  { value: 10, label: "Total Fatigue & Exhaustion" },
+];
 
 // Default-off Health metrics from DGT-51 design source ("Metrics" tab
 // of the design spreadsheet). All start hidden; users opt in via the
@@ -59,7 +90,8 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     min: 0,
     max: 10,
     inputType: "ordinal",
-    levels: ordinalRange(0, 10),
+    levels: EXERTION_LEVELS,
+    scaleDisplay: "dropdown",
     estimatedRange: "0–10",
     whenCollected: "Daily",
     schedule: { period: "daily" },
@@ -70,14 +102,15 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     unit: "",
     type: "health",
     whoCollects: "Self",
-    howCollected: "Self-report on a 1–5 scale.",
+    howCollected: "Self-report on a 0–10 scale.",
     description:
-      "Subjective rating of fatigue on a 1 (none) to 5 (extreme) scale.",
-    min: 1,
-    max: 5,
+      "Subjective rating of fatigue on a 0 (none) to 10 (total exhaustion) scale.",
+    min: 0,
+    max: 10,
     inputType: "ordinal",
-    levels: ordinalRange(1, 5),
-    estimatedRange: "1–5",
+    levels: FATIGUE_LEVELS,
+    scaleDisplay: "dropdown",
+    estimatedRange: "0–10",
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },

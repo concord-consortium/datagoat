@@ -167,6 +167,8 @@ function buildPayload(
     // explicitly so it can't leak through `|| 0` short-circuit logic and
     // corrupt chart scaling/formatting downstream.
     ...(draft.topLevel === "yn" ? {} : { goalRaw: parseCategoricalGoal(draft.goalRaw) }),
+    // Display style is a Categorical-only choice; Y/N is always a radio pair.
+    ...(draft.topLevel === "yn" ? {} : { scaleDisplay: draft.scaleDisplay }),
     yTopRaw,
     yBottomRaw,
     referenceUrl: trimmedRef,
@@ -218,6 +220,8 @@ interface DraftState {
   avgDecimals: string;
   referenceUrl: string;
   levels: CustomMetricLevel[];
+  // Categorical-scale display style. Only read when topLevel === "categorical".
+  scaleDisplay: "cards" | "dropdown";
   schedule: MetricSchedule;
 }
 
@@ -248,6 +252,7 @@ const EMPTY_DRAFT: Omit<DraftState, "schedule"> = {
   avgDecimals: "1",
   referenceUrl: "",
   levels: [],
+  scaleDisplay: "cards",
 };
 
 // Outer gate. Resolves the route's :type and :metricId, waits for the
@@ -389,6 +394,7 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
       // future Categorical detour by carrying the Y/N rows into the
       // editable table.
       levels: topLevel === "yn" ? [] : (editing.levels ?? []),
+      scaleDisplay: editing.scaleDisplay === "dropdown" ? "dropdown" : "cards",
     };
   });
   const [error, setError] = useState<string | null>(null);
@@ -812,6 +818,19 @@ function CustomMetricFormBody({ type, editing }: BodyProps) {
             onChange={(next) => update("levels", next)}
           />
         </div>
+        <SelectField
+          id="cm-scale-display"
+          label="Display style"
+          hint="Cards show colored buttons; Dropdown lists the levels in a menu."
+          options={[
+            { value: "cards", label: "Cards" },
+            { value: "dropdown", label: "Dropdown" },
+          ]}
+          value={draft.scaleDisplay}
+          onChange={(e) =>
+            update("scaleDisplay", e.target.value as "cards" | "dropdown")
+          }
+        />
       </If>
 
       <TextField

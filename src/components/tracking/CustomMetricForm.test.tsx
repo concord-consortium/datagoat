@@ -666,6 +666,40 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     expect(payload.yBottomRaw).toBe(1);
   });
 
+  async function fillTwoLevelScale(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText(/^metric name$/i), "My Mood");
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Low");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "High");
+    await user.type(values[1], "5");
+  }
+
+  it("defaults a Scale metric's display style to cards", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await fillTwoLevelScale(user);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.scaleDisplay).toBe("cards");
+  });
+
+  it("persists scaleDisplay='dropdown' when the user picks Dropdown", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await fillTwoLevelScale(user);
+    await user.selectOptions(screen.getByLabelText("Display style"), "dropdown");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.scaleDisplay).toBe("dropdown");
+  });
+
   it("rejects Scale submit when any level is missing a value", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();

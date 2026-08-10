@@ -9,6 +9,7 @@ import { resolveTimeLayout } from "../../utils/timeValue";
 import type { HealthEntry } from "../../types/data";
 import type { CustomMetricLevel } from "../../types/customMetrics";
 import { ScaleCards } from "./ScaleCards";
+import { ScaleDropdown } from "./ScaleDropdown";
 import { LevelRadioGroup } from "./LevelRadioGroup";
 import { resolveScaleColors } from "../../data/scaleColors";
 import { MoodFace } from "../../icons/MoodFace";
@@ -157,25 +158,33 @@ export function MetricInputRow(props: MetricInputRowProps) {
             labelledBy={nameId}
           />
         )}
-        {props.inputType === "ordinal" && (
-          <ScaleCards
-            levels={props.levels}
-            colors={resolveScaleColors({ metricId: metric.id, levels: props.levels })}
-            value={props.value}
-            onChange={props.onChange}
-            labelledBy={nameId}
-            // Mood shows an outline face icon per card; the level word is the
-            // card's accessible name (the icon itself is decorative).
-            renderLabel={
-              metric.id === "mood"
-                ? (level) => <MoodFace value={level.value ?? 3} />
-                : undefined
-            }
-            ariaLabelFormat={
-              metric.id === "mood" ? (_i, _n, level) => level.label : undefined
-            }
-          />
-        )}
+        {props.inputType === "ordinal" &&
+          (metric.scaleDisplay === "dropdown" ? (
+            <ScaleDropdown
+              levels={props.levels}
+              value={props.value}
+              onChange={props.onChange}
+              label={metric.name}
+            />
+          ) : (
+            <ScaleCards
+              levels={props.levels}
+              colors={resolveScaleColors({ metricId: metric.id, levels: props.levels })}
+              value={props.value}
+              onChange={props.onChange}
+              labelledBy={nameId}
+              // Mood shows an outline face icon per card; the level word is the
+              // card's accessible name (the icon itself is decorative).
+              renderLabel={
+                metric.id === "mood"
+                  ? (level) => <MoodFace value={level.value ?? 3} />
+                  : undefined
+              }
+              ariaLabelFormat={
+                metric.id === "mood" ? (_i, _n, level) => level.label : undefined
+              }
+            />
+          ))}
         {props.inputType === "radio" && (
           <LevelRadioGroup
             levels={props.levels}

@@ -299,6 +299,7 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       if (def.yTopRaw !== undefined) writePayload.yTopRaw = def.yTopRaw;
       if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;
       if (def.avgDecimals !== undefined) writePayload.avgDecimals = def.avgDecimals;
+      if (def.scaleDisplay !== undefined) writePayload.scaleDisplay = def.scaleDisplay;
       if (levelsForWrite !== undefined) writePayload.levels = levelsForWrite;
       if (def.schedule !== undefined) {
         writePayload.schedule = scheduleToFirestore(def.schedule);

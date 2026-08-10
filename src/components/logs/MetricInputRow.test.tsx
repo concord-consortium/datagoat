@@ -201,6 +201,76 @@ describe("MetricInputRow Ordinal", () => {
   });
 });
 
+const DROPDOWN_LEVELS: CustomMetricLevel[] = [
+  { value: 0, label: "No exertion at all" },
+  { value: 5, label: "" }, // an unlabeled rung: dropdown shows just the number
+  { value: 10, label: "Maximum Effort" },
+];
+
+const DROPDOWN_METRIC: MetricDefinition = {
+  id: "perceivedExertion",
+  name: "Perceived Exertion",
+  unit: "",
+  type: "health",
+  whoCollects: "",
+  howCollected: "",
+  description: "",
+  inputType: "ordinal",
+  scaleDisplay: "dropdown",
+};
+
+function renderDropdown(initial: number | undefined = undefined) {
+  const onChange = vi.fn<(next: number) => void>();
+  const utils = render(
+    <MemoryRouter>
+      <table>
+        <tbody>
+          <MetricInputRow
+            inputType="ordinal"
+            metric={DROPDOWN_METRIC}
+            levels={DROPDOWN_LEVELS}
+            value={initial}
+            onChange={onChange}
+          />
+        </tbody>
+      </table>
+    </MemoryRouter>,
+  );
+  return { onChange, ...utils };
+}
+
+describe("MetricInputRow ordinal dropdown (scaleDisplay)", () => {
+  it("renders a <select> instead of the card radiogroup", () => {
+    renderDropdown();
+    expect(screen.getByRole("combobox")).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
+
+  it("labels described rungs '<value> – <desc>' and shows only the number for blank ones", () => {
+    renderDropdown();
+    expect(
+      screen.getByRole("option", { name: "0 – No exertion at all" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("option", { name: "10 – Maximum Effort" }),
+    ).toBeTruthy();
+    // The unlabeled rung renders its number alone.
+    expect(screen.getByRole("option", { name: "5" })).toBeTruthy();
+  });
+
+  it("fires onChange with the numeric value when an option is selected", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderDropdown();
+    await user.selectOptions(screen.getByRole("combobox"), "10");
+    expect(onChange).toHaveBeenCalledWith(10);
+  });
+
+  it("reflects the current value as the selected option", () => {
+    renderDropdown(5);
+    expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("5");
+  });
+});
+
 const MOOD_FACE_LEVELS: CustomMetricLevel[] = [
   { label: "Very sad", value: 1 },
   { label: "Neutral", value: 3 },

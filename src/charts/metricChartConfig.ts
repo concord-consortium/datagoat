@@ -167,6 +167,25 @@ const MOOD: MetricChartConfig = {
   random: (rng) => randomInt(rng, 1, 5),
 };
 
+// Perceived Exertion and Perceived Fatigue — 0–10 self-report scales (shown as
+// dropdowns). Without an explicit entry they fell through to the 0–100
+// DEFAULT_CONFIG, so a 10 charted at a tenth of full height — "max effort looks
+// like 0" (DGT-89). No goal line: neither is content-defined.
+const PERCEIVED_EXERTION: MetricChartConfig = {
+  chartType: "bar",
+  yTopRaw: 10,
+  yBottomRaw: 0,
+  formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 0, 10),
+};
+const PERCEIVED_FATIGUE: MetricChartConfig = {
+  chartType: "bar",
+  yTopRaw: 10,
+  yBottomRaw: 0,
+  formatValue: fmtRaw,
+  random: (rng) => randomInt(rng, 0, 10),
+};
+
 // Competition metrics — placeholder set (Wins/Losses/Goals/Assists/Yards/Tackles).
 // All numeric, all sport-counter-shaped. Demo random values span the
 // metric's full [yBottomRaw, yTopRaw] range so bars exercise the full
@@ -264,6 +283,8 @@ const CONFIG: Record<string, MetricChartConfig> = {
   leanMass: LEAN_MASS,
   availability: AVAILABILITY,
   mood: MOOD,
+  perceivedExertion: PERCEIVED_EXERTION,
+  perceivedFatigue: PERCEIVED_FATIGUE,
   winningPercentage: WINNING_PERCENTAGE,
   goals: competitionConfig(0, 10),
   assists: competitionConfig(0, 10),

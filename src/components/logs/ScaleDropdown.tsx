@@ -33,10 +33,15 @@ export function ScaleDropdown({
   label,
   placeholder = "Select…",
 }: ScaleDropdownProps) {
-  const options: SelectOption[] = levels.map((level) => ({
-    value: String(level.value),
-    label: optionText(level),
-  }));
+  // Guard against levels without a numeric value (nominal levels omit it):
+  // they can't be a valid ordinal selection, and would otherwise render an
+  // option whose value parses to NaN.
+  const options: SelectOption[] = levels
+    .filter((level) => Number.isFinite(level.value))
+    .map((level) => ({
+      value: String(level.value),
+      label: optionText(level),
+    }));
   return (
     <SelectField
       label={label}
@@ -45,9 +50,9 @@ export function ScaleDropdown({
       placeholder={placeholder}
       value={value === undefined ? "" : String(value)}
       onChange={(e) => {
-        const next = e.target.value;
-        if (next === "") return;
-        onChange(Number(next));
+        const next = Number(e.target.value);
+        if (!Number.isFinite(next)) return;
+        onChange(next);
       }}
     />
   );

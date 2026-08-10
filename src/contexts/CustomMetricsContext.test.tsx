@@ -118,6 +118,32 @@ describe("CustomMetricsContext.fromDoc", () => {
     ]);
   });
 
+  it("round-trips scaleDisplay so a saved dropdown survives snapshot re-hydrate", () => {
+    const base = {
+      ownerId: "u1",
+      name: "Mood",
+      metricType: "health",
+      primitive: "ordinal",
+      levels: [
+        { label: "Low", value: 1 },
+        { label: "High", value: 3 },
+      ],
+      inputType: "radio",
+      referenceUrl: "",
+    };
+    expect(fromDoc("c_d", { ...base, scaleDisplay: "dropdown" }).scaleDisplay).toBe(
+      "dropdown",
+    );
+    expect(fromDoc("c_c", { ...base, scaleDisplay: "cards" }).scaleDisplay).toBe(
+      "cards",
+    );
+    // Absent or bogus => undefined (cards renderer).
+    expect(fromDoc("c_n", base).scaleDisplay).toBeUndefined();
+    expect(
+      fromDoc("c_b", { ...base, scaleDisplay: "wat" }).scaleDisplay,
+    ).toBeUndefined();
+  });
+
   it("reads primitive='numeric' without levels", () => {
     const def = fromDoc("c_y", {
       ownerId: "u1",

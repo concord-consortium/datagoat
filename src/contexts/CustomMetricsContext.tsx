@@ -149,6 +149,16 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
           : "health",
     primitive: readPrimitive(data.primitive),
     inputType: data.inputType === "radio" ? "radio" : "numeric",
+    // Explicit comparisons (like timePrecision below) so anything that
+    // isn't a real display style reads as undefined (= cards). Without
+    // this read-back a saved "dropdown" reverts to cards on the next
+    // snapshot re-hydrate.
+    scaleDisplay:
+      data.scaleDisplay === "dropdown"
+        ? "dropdown"
+        : data.scaleDisplay === "cards"
+          ? "cards"
+          : undefined,
     // `== null` (loose) so a Firestore `null` is treated the same as
     // an absent field. Strict `=== undefined` here would let
     // `String(null)` surface as the literal `"null"` in the UI and

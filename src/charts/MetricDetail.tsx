@@ -247,21 +247,36 @@ export function MetricDetail({ type }: MetricDetailProps) {
         )}
       </div>
 
-      <h2 className={css.infoSectionHeading}>Estimated Range</h2>
-      <div className={css.metricDescription}>
-        {!metric.hideEstimatedRange &&
-          (metric.estimatedRange ??
-            (metric.min !== undefined && metric.max !== undefined
-              ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
-              : metric.unit || "—"))}
-        {metric.id === "hydration" && <HydrationColorScale />}
-        {goalText && (
-          <p className={css.goalLine}>
-            <GoalDot />
-            As {article} {profileLabel} athlete, your goal is {goalText}.
-          </p>
-        )}
-      </div>
+      {/* Gated on the same three things the body can hold - range value,
+          hydration scale, goal line - so the heading never stands over an
+          empty section. A hideEstimatedRange metric has only the goal line
+          left, and goal text comes from metricGoals rather than the registry:
+          resolveGoalText returns null for any id in neither goal map, which
+          is every performance metric by design. */}
+      <If
+        condition={
+          !metric.hideEstimatedRange || metric.id === "hydration" || !!goalText
+        }
+      >
+        <h2 className={css.infoSectionHeading}>Estimated Range</h2>
+        <div className={css.metricDescription}>
+          <If condition={!metric.hideEstimatedRange}>
+            {metric.estimatedRange ??
+              (metric.min !== undefined && metric.max !== undefined
+                ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
+                : metric.unit || "—")}
+          </If>
+          <If condition={metric.id === "hydration"}>
+            <HydrationColorScale />
+          </If>
+          <If condition={!!goalText}>
+            <p className={css.goalLine}>
+              <GoalDot />
+              As {article} {profileLabel} athlete, your goal is {goalText}.
+            </p>
+          </If>
+        </div>
+      </If>
 
       {metric.whenCollected && (
         <>

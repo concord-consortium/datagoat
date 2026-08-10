@@ -108,6 +108,23 @@ vi.mock("../contexts/MetricOverridesContext", async () => {
   };
 });
 
+// Lets one test simulate a hideEstimatedRange metric whose id is in neither
+// goal map - the case that would leave the Estimated Range section empty.
+// No such metric exists in the registry today, and the gate is what keeps it
+// from rendering a bare heading if one is ever added.
+const goalTextMock = vi.hoisted(() => ({ forceNull: false }));
+vi.mock("../data/metricGoals", async () => {
+  const actual =
+    await vi.importActual<typeof import("../data/metricGoals")>(
+      "../data/metricGoals",
+    );
+  return {
+    ...actual,
+    resolveGoalText: (...args: Parameters<typeof actual.resolveGoalText>) =>
+      goalTextMock.forceNull ? null : actual.resolveGoalText(...args),
+  };
+});
+
 import { MetricDetail } from "./MetricDetail";
 import { buildCodapWrappedUrl } from "../codap/codapUrl";
 
@@ -342,6 +359,7 @@ describe("MetricDetail - Estimated Range", () => {
     demoModeMock.value = false;
     customMetricsMock.metrics = [];
     customMetricsMock.loading = false;
+    goalTextMock.forceNull = false;
   });
 
   // The section body is the div immediately after the heading; reading it
@@ -366,6 +384,26 @@ describe("MetricDetail - Estimated Range", () => {
   it("renders the range value for a metric without hideEstimatedRange", () => {
     // hydration keeps its estimatedRange string - the positive control for
     // the assertion above.
+    renderAt("/health/hydration", "health");
+    expect(
+      estimatedRangeBody().textContent?.trim().startsWith("8 levels"),
+    ).toBe(true);
+  });
+
+  it("omits the whole section when the range is hidden and there is no goal text", () => {
+    // Every metric that hides its range has goal text today, so this stands
+    // in for the metric that doesn't - a performance metric, say, since those
+    // resolve no goal by design. The heading must not outlive its content.
+    goalTextMock.forceNull = true;
+    renderAt("/health/leanMass", "health");
+    expect(screen.queryByRole("heading", { name: "Estimated Range" })).toBeNull();
+    // Neighbouring sections still render, so this is a section-level omission
+    // rather than the page failing to render.
+    expect(screen.getByText("How Collected")).toBeInTheDocument();
+  });
+
+  it("keeps the section for a metric that shows its range even with no goal text", () => {
+    goalTextMock.forceNull = true;
     renderAt("/health/hydration", "health");
     expect(
       estimatedRangeBody().textContent?.trim().startsWith("8 levels"),

@@ -51,6 +51,19 @@ describe("getMetricChartConfig", () => {
     expect(c.goalRaw).toBeUndefined();
   });
 
+  it("scales the 0-10 self-report metrics to their own range, not the 0-100 default", () => {
+    // Regression: with no CONFIG entry these fell through to DEFAULT_CONFIG's
+    // 0-100 range, so a max-effort 10 charted at a tenth of full height.
+    for (const id of ["perceivedExertion", "perceivedFatigue"]) {
+      const c = getMetricChartConfig(id);
+      expect(c.chartType).toBe("bar");
+      expect(c.yTopRaw).toBe(10);
+      expect(c.yBottomRaw).toBe(0);
+      expect(c.formatValue(10)).toBe("10");
+      expect(c.goalRaw).toBeUndefined();
+    }
+  });
+
   it("returns sane defaults for unknown metric ids", () => {
     const c = getMetricChartConfig("not-a-real-metric");
     expect(c.chartType).toBe("bar");

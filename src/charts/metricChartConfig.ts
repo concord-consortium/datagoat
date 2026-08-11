@@ -167,10 +167,10 @@ const MOOD: MetricChartConfig = {
   random: (rng) => randomInt(rng, 1, 5),
 };
 
-// Perceived Exertion and Perceived Fatigue — 0–10 self-report scales (shown as
-// dropdowns). Without an explicit entry they fell through to the 0–100
-// DEFAULT_CONFIG, so a 10 charted at a tenth of full height — "max effort looks
-// like 0" (DGT-89). No goal line: neither is content-defined.
+// Perceived Exertion and Perceived Fatigue - 0-10 self-report scales (shown
+// as dropdowns). Added Aug 2026: without an explicit entry they fell through
+// to the 0-100 DEFAULT_CONFIG, so a 10 charted at a tenth of full height -
+// max effort looked like 0. No goal line: neither is content-defined.
 const PERCEIVED_EXERTION: MetricChartConfig = {
   chartType: "bar",
   yTopRaw: 10,

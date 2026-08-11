@@ -22,6 +22,7 @@ export function customAsMetricDefinition(
     howCollected: "",
     description: "",
     inputType: def.inputType,
+    scaleDisplay: def.scaleDisplay,
     learnMoreUrl: def.referenceUrl || undefined,
     schedule: def.schedule,
     timePrecision: def.timePrecision,

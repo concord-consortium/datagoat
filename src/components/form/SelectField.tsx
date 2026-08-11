@@ -50,6 +50,10 @@ export interface SelectFieldProps {
   onBlur?: React.FocusEventHandler<HTMLSelectElement>;
   disabled?: boolean;
   labelVisuallyHidden?: boolean;
+  // Raise the open panel's height cap so a whole rating scale is visible
+  // without scrolling. Default (false) keeps the shorter cap that suits
+  // long, scannable lists like the metric picker.
+  tallPicker?: boolean;
 }
 
 // Native HTML <select> per the Step-9 spec decision. The prototype's
@@ -75,6 +79,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
       onBlur,
       disabled,
       labelVisuallyHidden,
+      tallPicker,
     }: SelectFieldProps,
     ref: Ref<HTMLSelectElement>,
   ) {
@@ -106,6 +111,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
       fields.fieldSelect,
       filled && fields.hasValue,
       error && fields.fieldError,
+      tallPicker && fields.tallPicker,
       TriggerIcon && css.hasTriggerIcon,
     );
 

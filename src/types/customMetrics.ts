@@ -51,6 +51,11 @@ export interface CustomMetricDef {
   levels?: CustomMetricLevel[];
 
   inputType: CustomMetricInputType;
+  // How an ordinal (categorical scale) metric renders its log-row input:
+  // "cards" (default) = the colored ScaleCards picker; "dropdown" = a <select>
+  // listing each level. Only meaningful for ordinal customs; ignored for
+  // numeric and Y/N. Mirrors MetricDefinition.scaleDisplay.
+  scaleDisplay?: "cards" | "dropdown";
   referenceUrl: string;
 
   // How often entries are expected. Optional so custom metrics created

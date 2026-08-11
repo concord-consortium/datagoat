@@ -149,6 +149,16 @@ export function fromDoc(id: string, data: Record<string, unknown>): CustomMetric
           : "health",
     primitive: readPrimitive(data.primitive),
     inputType: data.inputType === "radio" ? "radio" : "numeric",
+    // Explicit comparisons (like timePrecision below) so anything that
+    // isn't a real display style reads as undefined (= cards). Without
+    // this read-back a saved "dropdown" reverts to cards on the next
+    // snapshot re-hydrate.
+    scaleDisplay:
+      data.scaleDisplay === "dropdown"
+        ? "dropdown"
+        : data.scaleDisplay === "cards"
+          ? "cards"
+          : undefined,
     // `== null` (loose) so a Firestore `null` is treated the same as
     // an absent field. Strict `=== undefined` here would let
     // `String(null)` surface as the literal `"null"` in the UI and
@@ -299,6 +309,7 @@ export function CustomMetricsProvider({ children, initialMetrics }: ProviderProp
       if (def.yTopRaw !== undefined) writePayload.yTopRaw = def.yTopRaw;
       if (def.yBottomRaw !== undefined) writePayload.yBottomRaw = def.yBottomRaw;
       if (def.avgDecimals !== undefined) writePayload.avgDecimals = def.avgDecimals;
+      if (def.scaleDisplay !== undefined) writePayload.scaleDisplay = def.scaleDisplay;
       if (levelsForWrite !== undefined) writePayload.levels = levelsForWrite;
       if (def.schedule !== undefined) {
         writePayload.schedule = scheduleToFirestore(def.schedule);

@@ -17,6 +17,11 @@ vi.mock("firebase/firestore", () => ({
   setDoc: vi.fn(async () => {}),
   updateDoc: vi.fn(async () => {}),
   deleteDoc: vi.fn(async () => {}),
+  // updateMetric maps an explicit null in the patch to deleteField(), and
+  // the edit path always passes `timePrecision: payload.timePrecision ??
+  // null`. Without this export any edit-mode save throws before reaching
+  // updateDoc, which is why the save assertions below need it.
+  deleteField: vi.fn(() => ({ __op: "delete" })),
   where: () => ({}),
 }));
 vi.mock("../../firebase", () => ({ db: {} }));
@@ -86,6 +91,7 @@ import {
 import {
   onSnapshot as mockedOnSnapshot,
   setDoc as mockedSetDoc,
+  updateDoc as mockedUpdateDoc,
 } from "firebase/firestore";
 import { CustomMetricsProvider } from "../../contexts/CustomMetricsContext";
 import { MetricOverridesProvider } from "../../contexts/MetricOverridesContext";
@@ -666,6 +672,40 @@ describe("CustomMetricForm — submit shape per top-level type", () => {
     expect(payload.yBottomRaw).toBe(1);
   });
 
+  async function fillTwoLevelScale(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText(/^metric name$/i), "My Mood");
+    await user.click(screen.getByRole("radio", { name: /scale/i }));
+    const labels = screen.getAllByLabelText(/^label/i);
+    const values = screen.getAllByLabelText(/^value/i);
+    await user.type(labels[0], "Low");
+    await user.type(values[0], "1");
+    await user.type(labels[1], "High");
+    await user.type(values[1], "5");
+  }
+
+  it("defaults a Scale metric's display style to cards", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await fillTwoLevelScale(user);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.scaleDisplay).toBe("cards");
+  });
+
+  it("persists scaleDisplay='dropdown' when the user picks Dropdown", async () => {
+    (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderCreateForm("health");
+    await fillTwoLevelScale(user);
+    await user.selectOptions(screen.getByLabelText("Display style"), "dropdown");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(mockedSetDoc).toHaveBeenCalled());
+    const payload = (mockedSetDoc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(payload.scaleDisplay).toBe("dropdown");
+  });
+
   it("rejects Scale submit when any level is missing a value", async () => {
     (mockedSetDoc as ReturnType<typeof vi.fn>).mockClear();
     const user = userEvent.setup();
@@ -842,6 +882,71 @@ describe("CustomMetricForm — edit-mode inference", () => {
       updatedAt: 0,
     });
     expect((screen.getByRole("radio", { name: /y\/n/i }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  // A saved display style has to survive a round trip through the form.
+  // The create path is covered above; these pin the edit path, where the
+  // draft is seeded from the stored metric rather than from EMPTY_DRAFT -
+  // a re-seed regression would silently reset a user's dropdown to cards
+  // the next time they touched anything else on the metric.
+  const DROPDOWN_SCALE: CustomMetricDef = {
+    id: "c_d",
+    ownerId: "u1",
+    name: "Effort",
+    metricType: "health",
+    primitive: "ordinal",
+    levels: [
+      { label: "Low", value: 1 },
+      { label: "High", value: 5 },
+    ],
+    yTopRaw: 5,
+    yBottomRaw: 1,
+    avgDecimals: 1,
+    inputType: "radio",
+    scaleDisplay: "dropdown",
+    referenceUrl: "",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+
+  it("opens with Display style on Dropdown for a metric saved that way", () => {
+    renderEditForm("health", DROPDOWN_SCALE);
+    expect(
+      (screen.getByLabelText("Display style") as HTMLSelectElement).value,
+    ).toBe("dropdown");
+  });
+
+  it("keeps a saved dropdown when the metric is edited and saved", async () => {
+    (mockedUpdateDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderEditForm("health", DROPDOWN_SCALE);
+
+    // Touch an unrelated field, so this asserts the display style survives
+    // an ordinary edit rather than a no-op save.
+    await user.clear(screen.getByLabelText(/^metric name$/i));
+    await user.type(screen.getByLabelText(/^metric name$/i), "Effort Level");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await waitFor(() => expect(mockedUpdateDoc).toHaveBeenCalled());
+    const patch = (mockedUpdateDoc as ReturnType<typeof vi.fn>).mock.calls.at(
+      -1,
+    )![1];
+    expect(patch.scaleDisplay).toBe("dropdown");
+  });
+
+  it("persists a switch back to cards", async () => {
+    (mockedUpdateDoc as ReturnType<typeof vi.fn>).mockClear();
+    const user = userEvent.setup();
+    renderEditForm("health", DROPDOWN_SCALE);
+
+    await user.selectOptions(screen.getByLabelText("Display style"), "cards");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await waitFor(() => expect(mockedUpdateDoc).toHaveBeenCalled());
+    const patch = (mockedUpdateDoc as ReturnType<typeof vi.fn>).mock.calls.at(
+      -1,
+    )![1];
+    expect(patch.scaleDisplay).toBe("cards");
   });
 
   it("opens with Scale selected for an ordinal metric with other levels", () => {

@@ -113,13 +113,20 @@ export function normalizeMetric(
 // `l.value === raw`. Falls back to the raw string or a stringified number
 // when no level matches - nominal custom input is not fully wired yet, so
 // that string passthrough is defensive for when it is.
+//
+// A matched level with a blank label takes that same fallback: the
+// partially-labeled scales (exertion, fatigue) leave intermediate rungs
+// unlabeled so the log-row dropdown can show just the number, and
+// returning "" here would export a blank cell indistinguishable from
+// "not logged" - and would collapse every unlabeled rung into a single
+// category. Mirrors ScaleDropdown's optionText.
 function labelFor(
   levels: CustomMetricLevel[] | undefined,
   raw: RawValue,
 ): string | null {
   if (raw == null) return null;
   const hit = levels?.find((l) => l.value === raw);
-  if (hit) return hit.label;
+  if (hit?.label) return hit.label;
   return typeof raw === "string" ? raw : String(raw);
 }
 

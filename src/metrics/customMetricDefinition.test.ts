@@ -45,4 +45,11 @@ describe("customAsMetricDefinition", () => {
       "competition",
     );
   });
+
+  it("forwards scaleDisplay so ordinal customs can render as a dropdown", () => {
+    const def = baseDef({ primitive: "ordinal", scaleDisplay: "dropdown" });
+    expect(customAsMetricDefinition(def, "health").scaleDisplay).toBe("dropdown");
+    // Absent by default (cards renderer).
+    expect(customAsMetricDefinition(baseDef(), "health").scaleDisplay).toBeUndefined();
+  });
 });

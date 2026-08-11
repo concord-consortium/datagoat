@@ -67,6 +67,11 @@ export interface MetricDefinition {
   // ScaleCards, but a canonical No/Yes two-level scale (see isYesNoLevels)
   // renders as a LevelRadioGroup instead.
   levels?: CustomMetricLevel[];
+  // How an ordinal/scale metric renders its input on the log row. Absent or
+  // "cards" => the colored ScaleCards picker (default). "dropdown" => a <select>
+  // listing each level as "<value> – <description>", for scales too long or
+  // description-heavy to read as cards (e.g. the 0–10 exertion/fatigue scales).
+  scaleDisplay?: "cards" | "dropdown";
   // How often entries are expected (drives reminders / "done for the
   // day" in a follow-up). Omitted => irregular (no cadence). Mirrors the
   // verbatim `whenCollected` prose as a structured value: "Daily" =>

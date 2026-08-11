@@ -1,8 +1,11 @@
 import type { MetricDefinition } from "./types";
 
-// Shared 1-N ordinal level builder. Used by Pain (0-10), Readiness
-// (1-10), Soreness (1-5), Perceived Fatigue (1-5), Perceived Exertion
-// (0-10). Labels are the numbers themselves; values mirror them.
+// Shared 1-N ordinal level builder: labels are the numbers themselves and
+// values mirror them. Its only remaining callers are Pain (0-10), Readiness
+// (1-10) and Soreness (1-5), all commented out below, so it is commented out
+// alongside them to keep the build free of unused code. Restore it when
+// restoring any of those metrics.
+/*
 function ordinalRange(min: number, max: number) {
   const out: Array<{ label: string; value: number }> = [];
   for (let n = min; n <= max; n++) {
@@ -10,6 +13,38 @@ function ordinalRange(min: number, max: number) {
   }
   return out;
 }
+*/
+
+// Perceived Exertion (0-10, Borg CR10) and Perceived Fatigue (0-10) render as
+// a dropdown (scaleDisplay: "dropdown"), so each level's `label` is its
+// description. Unlabeled rungs use "" so the dropdown shows just the number.
+const EXERTION_LEVELS = [
+  { value: 0, label: "No exertion at all" },
+  { value: 1, label: "Very Light" },
+  { value: 2, label: "Light" },
+  { value: 3, label: "Moderate" },
+  { value: 4, label: "Somewhat hard" },
+  { value: 5, label: "" },
+  { value: 6, label: "Hard" },
+  { value: 7, label: "Very hard" },
+  { value: 8, label: "" },
+  { value: 9, label: "Extremely Hard" },
+  { value: 10, label: "Maximum Effort" },
+];
+
+const FATIGUE_LEVELS = [
+  { value: 0, label: "Not Fatigued at All" },
+  { value: 1, label: "" },
+  { value: 2, label: "A Little Fatigued" },
+  { value: 3, label: "" },
+  { value: 4, label: "" },
+  { value: 5, label: "Moderately Fatigued" },
+  { value: 6, label: "" },
+  { value: 7, label: "Very Fatigued" },
+  { value: 8, label: "" },
+  { value: 9, label: "" },
+  { value: 10, label: "Total Fatigue & Exhaustion" },
+];
 
 // Default-off Health metrics from the design source ("Metrics" tab
 // of the design spreadsheet). All start hidden; users opt in via the
@@ -66,7 +101,8 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     min: 0,
     max: 10,
     inputType: "ordinal",
-    levels: ordinalRange(0, 10),
+    levels: EXERTION_LEVELS,
+    scaleDisplay: "dropdown",
     estimatedRange: "0–10",
     whenCollected: "Daily",
     schedule: { period: "daily" },
@@ -77,18 +113,19 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     unit: "",
     type: "health",
     whoCollects: "Self",
-    howCollected: "Self-report on a 1–5 scale.",
+    howCollected: "Self-report on a 0–10 scale.",
     howCollectedUrl:
       "https://drive.google.com/file/d/19U0R1L4YMEKyEEghYVbOKyOcG__uv_Ur/view?usp=drive_link",
     description:
       "Your rating of how tired or fatigued you feel right now. It reflects your overall level of physical and mental fatigue and provides a quick assessment of how much energy you have available for training, competition, and daily activities.",
     questionsToExplore:
       "Are changes in fatigue associated with changes in performance or availability? Does fatigue increase during periods of higher training volume or intensity? Tracking fatigue may provide valuable insight into your recovery, readiness, and response to training. By monitoring fatigue alongside measures such as sleep, training load, and perceived exertion, you may be able to identify patterns that show inadequate recovery or high training stress.",
-    min: 1,
-    max: 5,
+    min: 0,
+    max: 10,
     inputType: "ordinal",
-    levels: ordinalRange(1, 5),
-    estimatedRange: "1–5",
+    levels: FATIGUE_LEVELS,
+    scaleDisplay: "dropdown",
+    estimatedRange: "0–10",
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },

@@ -54,6 +54,9 @@ export function ScaleDropdown({
     <SelectField
       label={label}
       labelVisuallyHidden
+      // The rungs are the content: a capped panel hides the top of the
+      // scale behind a scroll the athlete has no reason to expect.
+      tallPicker
       options={options}
       placeholder={placeholder}
       value={selected}

@@ -269,6 +269,16 @@ describe("MetricInputRow ordinal dropdown (scaleDisplay)", () => {
     renderDropdown(5);
     expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("5");
   });
+
+  it("shows nothing selected when the stored value matches no level", () => {
+    // Reachable when a custom metric's level values are edited after entries
+    // exist. Passing the stale value through would let React's controlled
+    // select fall back to the first option, so level 0 would look chosen.
+    renderDropdown(7);
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(select.value).toBe("");
+    expect(select.selectedOptions[0]?.disabled).toBe(true);
+  });
 });
 
 const MOOD_FACE_LEVELS: CustomMetricLevel[] = [

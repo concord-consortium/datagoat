@@ -11,6 +11,8 @@ export interface ScaleDropdownProps {
   // hidden since the log row already shows the name in its own cell.
   label: string;
   // Shown as the disabled first option when nothing is selected yet.
+  // Omitted => SelectField's shared default, so the log row reads the same
+  // as every other select in the app.
   placeholder?: string;
 }
 
@@ -31,7 +33,7 @@ export function ScaleDropdown({
   value,
   onChange,
   label,
-  placeholder = "Select…",
+  placeholder,
 }: ScaleDropdownProps) {
   // Guard against levels without a numeric value (nominal levels omit it):
   // they can't be a valid ordinal selection, and would otherwise render an
@@ -42,13 +44,19 @@ export function ScaleDropdown({
       value: String(level.value),
       label: optionText(level),
     }));
+  // A stored value matching no level reads as "nothing selected", the same
+  // way ScaleCards treats a findIndex miss. Passing it through would let
+  // React's controlled-select fall back to the first option, showing a rung
+  // the athlete never picked as though they had.
+  const asString = value === undefined ? "" : String(value);
+  const selected = options.some((o) => o.value === asString) ? asString : "";
   return (
     <SelectField
       label={label}
       labelVisuallyHidden
       options={options}
       placeholder={placeholder}
-      value={value === undefined ? "" : String(value)}
+      value={selected}
       onChange={(e) => {
         const next = Number(e.target.value);
         if (!Number.isFinite(next)) return;

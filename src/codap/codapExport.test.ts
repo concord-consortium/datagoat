@@ -113,6 +113,23 @@ describe("metricColumns - ordinal, nominal, compound", () => {
     expect(cols[0].toValue(3)).toBe("3");
   });
 
+  it("ordinal falls back to the number for a matched level with a blank label", () => {
+    // The partially-labeled scales (exertion, fatigue) leave intermediate
+    // rungs unlabeled. Exporting "" would read as "not logged" and collapse
+    // every unlabeled rung into one category.
+    const cols = metricColumns({
+      id: "perceivedExertion", name: "Perceived Exertion", flavor: "ordinal",
+      levels: [
+        { label: "No exertion at all", value: 0 },
+        { label: "", value: 5 },
+        { label: "Maximum Effort", value: 10 },
+      ],
+    });
+    expect(cols[0].toValue(5)).toBe("5");
+    expect(cols[0].toValue(0)).toBe("No exertion at all");
+    expect(cols[0].toValue(null)).toBeNull();
+  });
+
   it("nominal produces a single categorical label column", () => {
     const cols = metricColumns({
       id: "surface", name: "Surface", flavor: "nominal",

@@ -41,6 +41,7 @@ import {
 import { getMetricChartConfig, useChartConfigSync } from "./metricChartConfig";
 import { useChartSeries } from "./useChartSeries";
 import { useDemoMode } from "../contexts/DemoModeContext";
+import { buildCodapWrappedUrl } from "../codap/codapUrl";
 import { If } from "../components/common/If";
 import ExternalLinkIcon from "@/icons/external-link.svg?react";
 import css from "./MetricDetail.module.css";
@@ -227,22 +228,55 @@ export function MetricDetail({ type }: MetricDetailProps) {
       <h2 className={css.infoSectionHeading}>How Collected</h2>
       <div className={css.metricDescription}>
         {renderMultiline(metric.howCollected)}
-      </div>
-
-      <h2 className={css.infoSectionHeading}>Estimated Range</h2>
-      <div className={css.metricDescription}>
-        {metric.estimatedRange ??
-          (metric.min !== undefined && metric.max !== undefined
-            ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
-            : metric.unit || "—")}
-        {metric.id === "hydration" && <HydrationColorScale />}
-        {goalText && (
-          <p className={css.goalLine}>
-            <GoalDot />
-            As {article} {profileLabel} athlete, your goal is {goalText}.
+        {metric.howCollectedUrl && (
+          <p className={css.learnMoreWrap}>
+            <a
+              className={css.learnMore}
+              href={metric.howCollectedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className={css.linkText}>
+                How {metric.name} is collected{" "}
+                <span className={css.linkIconWrap}>
+                  <ExternalLinkIcon className={css.linkIcon} />
+                </span>
+              </span>
+            </a>
           </p>
         )}
       </div>
+
+      {/* Gated on the same three things the body can hold - range value,
+          hydration scale, goal line - so the heading never stands over an
+          empty section. A hideEstimatedRange metric has only the goal line
+          left, and goal text comes from metricGoals rather than the registry:
+          resolveGoalText returns null for any id in neither goal map, which
+          is every performance metric by design. */}
+      <If
+        condition={
+          !metric.hideEstimatedRange || metric.id === "hydration" || !!goalText
+        }
+      >
+        <h2 className={css.infoSectionHeading}>Estimated Range</h2>
+        <div className={css.metricDescription}>
+          <If condition={!metric.hideEstimatedRange}>
+            {metric.estimatedRange ??
+              (metric.min !== undefined && metric.max !== undefined
+                ? `${metric.min}–${metric.max}${metric.unit ? ` ${metric.unit}` : ""}`
+                : metric.unit || "—")}
+          </If>
+          <If condition={metric.id === "hydration"}>
+            <HydrationColorScale />
+          </If>
+          <If condition={!!goalText}>
+            <p className={css.goalLine}>
+              <GoalDot />
+              As {article} {profileLabel} athlete, your goal is {goalText}.
+            </p>
+          </If>
+        </div>
+      </If>
 
       {metric.whenCollected && (
         <>
@@ -259,6 +293,29 @@ export function MetricDetail({ type }: MetricDetailProps) {
           {formatSchedule(effectiveSchedule)}
         </div>
       </If>
+
+      {metric.questionsToExplore && (
+        <>
+          <h2 className={css.infoSectionHeading}>Questions to Explore</h2>
+          <div className={css.metricDescription}>
+            {renderMultiline(metric.questionsToExplore)}
+            <p>
+              You can explore these questions using your data in{" "}
+              <a
+                className={css.inlineLink}
+                href={buildCodapWrappedUrl(demoMode)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                CODAP
+                <span className={css.linkIconWrap}>
+                  <ExternalLinkIcon className={css.linkIcon} />
+                </span>
+              </a>
+            </p>
+          </div>
+        </>
+      )}
 
       {metric.references && metric.references.length > 0 && (
         <>

@@ -1,8 +1,11 @@
 import type { MetricDefinition } from "./types";
 
-// Shared 1-N ordinal level builder. Used by Pain (0-10), Readiness
-// (1-10), Soreness (1-5). Labels are the numbers themselves; values
-// mirror them.
+// Shared 1-N ordinal level builder: labels are the numbers themselves and
+// values mirror them. Its only remaining callers are Pain (0-10), Readiness
+// (1-10) and Soreness (1-5), all commented out below, so it is commented out
+// alongside them to keep the build free of unused code. Restore it when
+// restoring any of those metrics.
+/*
 function ordinalRange(min: number, max: number) {
   const out: Array<{ label: string; value: number }> = [];
   for (let n = min; n <= max; n++) {
@@ -10,6 +13,7 @@ function ordinalRange(min: number, max: number) {
   }
   return out;
 }
+*/
 
 // Perceived Exertion (0-10, Borg CR10) and Perceived Fatigue (0-10) render as
 // a dropdown (scaleDisplay: "dropdown"), so each level's `label` is its
@@ -42,12 +46,14 @@ const FATIGUE_LEVELS = [
   { value: 10, label: "Total Fatigue & Exhaustion" },
 ];
 
-// Default-off Health metrics from DGT-51 design source ("Metrics" tab
+// Default-off Health metrics from the design source ("Metrics" tab
 // of the design spreadsheet). All start hidden; users opt in via the
 // AddMetric flow. The categorical/ordinal entries reuse the generic
 // "ordinal" inputType and ScaleCards renderer; numeric entries
 // fall through MetricInputRow's numeric branch.
 export const ADDABLE_HEALTH: MetricDefinition[] = [
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "hrv",
     name: "HRV",
@@ -78,6 +84,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  */
   {
     id: "perceivedExertion",
     name: "Perceived Exertion",
@@ -85,8 +92,12 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     type: "health",
     whoCollects: "Self",
     howCollected: "Self-report on a 0–10 scale after training.",
+    howCollectedUrl:
+      "https://hr.umich.edu/sites/default/files/perceived-exertion-v2_0.pdf",
     description:
-      "Subjective rating of effort during training on a 0 (none) to 10 (maximal) scale.",
+      "Your rating of how much effort you had to exert during a training session. It provides a quick assessment for how hard or demanding the training session felt to you, both mentally and physically. It is best to complete this scale during or immediately after exercise.",
+    questionsToExplore:
+      "How strongly is perceived exertion associated with heart rate during training? How does sleep efficiency influence perceived exertion during training? Does accumulated training load predict changes in perceived exertion? It may be interesting to track perceived exertion during training to better understand how you respond to training demands. Monitoring perceived exertion alongside heart rate, sleep efficiency, and training load may provide insight into how physiological recovery and accumulated workload influence how difficult training feels on a day-to-day basis.",
     min: 0,
     max: 10,
     inputType: "ordinal",
@@ -103,8 +114,12 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     type: "health",
     whoCollects: "Self",
     howCollected: "Self-report on a 0–10 scale.",
+    howCollectedUrl:
+      "https://drive.google.com/file/d/19U0R1L4YMEKyEEghYVbOKyOcG__uv_Ur/view?usp=drive_link",
     description:
-      "Subjective rating of fatigue on a 0 (none) to 10 (total exhaustion) scale.",
+      "Your rating of how tired or fatigued you feel right now. It reflects your overall level of physical and mental fatigue and provides a quick assessment of how much energy you have available for training, competition, and daily activities.",
+    questionsToExplore:
+      "Are changes in fatigue associated with changes in performance or availability? Does fatigue increase during periods of higher training volume or intensity? Tracking fatigue may provide valuable insight into your recovery, readiness, and response to training. By monitoring fatigue alongside measures such as sleep, training load, and perceived exertion, you may be able to identify patterns that show inadequate recovery or high training stress.",
     min: 0,
     max: 10,
     inputType: "ordinal",
@@ -114,6 +129,8 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "readiness",
     name: "Readiness",
@@ -161,6 +178,7 @@ export const ADDABLE_HEALTH: MetricDefinition[] = [
     whenCollected: "Daily",
     schedule: { period: "daily" },
   },
+  */
 ];
 
 // Default-off Performance metrics from the same design source. All
@@ -179,6 +197,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell bench press through a full range of motion.",
     inputType: "numeric",
   },
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "oneRepMaxDeadlift",
     name: "1 Rep Max Deadlift",
@@ -201,6 +221,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell hang clean through a full range of motion.",
     inputType: "numeric",
   },
+  */
   {
     id: "oneRepMaxPowerClean",
     name: "1 Rep Max Power Clean",
@@ -223,6 +244,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "The maximum load achievable for 1 repetition of barbell back squat through a full range of motion.",
     inputType: "numeric",
   },
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "oneMileRun",
     name: "1-Mile Run",
@@ -255,6 +278,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     // Quarterly == 4x per year.
     schedule: { period: "yearly", count: 4 },
   },
+  */
   {
     id: "fortyYardDash",
     name: "40-Yard Dash",
@@ -273,7 +297,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "averageVelocity",
-    name: "Average Velocity",
+    name: "GPS Average Velocity",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -298,7 +322,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "deceleration",
-    name: "Deceleration",
+    name: "GPS Deceleration",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -318,7 +342,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "forwardAcceleration",
-    name: "Forward Acceleration",
+    name: "GPS Forward Acceleration",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -327,6 +351,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "Rate of change of velocity in the horizontal plane (start at rest or in motion, change of direction).",
     inputType: "numeric",
   },
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "heartRateZone",
     name: "Heart Rate Zone",
@@ -339,9 +365,10 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "HR zones: Z1 50–60% / Z2 60–70% / Z3 70–80% / Z4 80–90% / Z5 90–100% of Max HR.",
     inputType: "numeric",
   },
+  */
   {
     id: "peakVelocity",
-    name: "Peak Velocity",
+    name: "GPS Peak Velocity",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",
@@ -349,6 +376,8 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
     description: "Highest velocity achieved in a session or specific drill.",
     inputType: "numeric",
   },
+  // Removed as a choice Aug 2026 (restore by uncommenting). Existing entries are orphaned.
+  /*
   {
     id: "reactiveStrengthIndex",
     name: "Reactive Strength Index",
@@ -360,6 +389,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
       "RSI-modified: ratio of jump height to movement time, an indicator of lower-body explosive ability.",
     inputType: "numeric",
   },
+  */
   {
     id: "standingBroadJump",
     name: "Standing Broad Jump",
@@ -377,7 +407,7 @@ export const ADDABLE_PERFORMANCE: MetricDefinition[] = [
   },
   {
     id: "upwardAcceleration",
-    name: "Upward Acceleration",
+    name: "GPS Upward Acceleration",
     unit: "m/s or mph",
     type: "performance",
     whoCollects: "S&C (Strength & Conditioning Coach), Sports Scientist",

@@ -945,7 +945,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^metric name$/i), "Hydration");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Urine Color");
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument();
     expect(
@@ -958,7 +958,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^metric name$/i), "hYdRaTiOn");
+    await user.type(screen.getByLabelText(/^metric name$/i), "uRiNe cOlOr");
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument();
   });
@@ -968,13 +968,13 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     const user = userEvent.setup();
     renderAt("/add-metric/health/new");
 
-    await user.type(screen.getByLabelText(/^metric name$/i), "Hydration");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Urine Color");
     await user.click(
-      screen.getByRole("button", { name: /use .*hydration \(2\).* instead/i }),
+      screen.getByRole("button", { name: /use .*urine color \(2\).* instead/i }),
     );
 
     expect((screen.getByLabelText(/^metric name$/i) as HTMLInputElement).value).toBe(
-      "Hydration (2)",
+      "Urine Color (2)",
     );
     expect(screen.queryByText(/already exists/i)).toBeNull();
 
@@ -984,7 +984,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     });
     expect(mockedSetDoc).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ name: "Hydration (2)" }),
+      expect.objectContaining({ name: "Urine Color (2)" }),
     );
   });
 
@@ -1068,7 +1068,7 @@ describe("CustomMetricForm (duplicate-name validation)", () => {
     });
 
     await user.clear(screen.getByLabelText(/^metric name$/i));
-    await user.type(screen.getByLabelText(/^metric name$/i), "Hydration");
+    await user.type(screen.getByLabelText(/^metric name$/i), "Urine Color");
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument();
   });

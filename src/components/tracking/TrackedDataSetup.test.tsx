@@ -207,7 +207,7 @@ describe("TrackedDataSetup — custom-metric integration", () => {
   it("preserves the info-link affordance for built-in metrics", () => {
     renderWith();
     expect(
-      screen.getByRole("link", { name: /^hydration info$/i }),
+      screen.getByRole("link", { name: /^urine color info$/i }),
     ).toBeInTheDocument();
   });
 });

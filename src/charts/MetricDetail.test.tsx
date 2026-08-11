@@ -90,8 +90,9 @@ vi.mock("../contexts/DataContext", () => ({
   usePerformanceData: () => dataMock.performance,
 }));
 
+const demoModeMock = vi.hoisted(() => ({ value: false }));
 vi.mock("../contexts/DemoModeContext", () => ({
-  useDemoMode: () => false,
+  useDemoMode: () => demoModeMock.value,
 }));
 
 const metricOverridesMock = vi.hoisted(() => ({
@@ -107,7 +108,25 @@ vi.mock("../contexts/MetricOverridesContext", async () => {
   };
 });
 
+// Lets one test simulate a hideEstimatedRange metric whose id is in neither
+// goal map - the case that would leave the Estimated Range section empty.
+// No such metric exists in the registry today, and the gate is what keeps it
+// from rendering a bare heading if one is ever added.
+const goalTextMock = vi.hoisted(() => ({ forceNull: false }));
+vi.mock("../data/metricGoals", async () => {
+  const actual =
+    await vi.importActual<typeof import("../data/metricGoals")>(
+      "../data/metricGoals",
+    );
+  return {
+    ...actual,
+    resolveGoalText: (...args: Parameters<typeof actual.resolveGoalText>) =>
+      goalTextMock.forceNull ? null : actual.resolveGoalText(...args),
+  };
+});
+
 import { MetricDetail } from "./MetricDetail";
+import { buildCodapWrappedUrl } from "../codap/codapUrl";
 
 function customDef(
   id: string,
@@ -264,5 +283,130 @@ describe("MetricDetail - schedule display", () => {
     renderAt("/health/leanMass", "health");
     expect(screen.getByText("Schedule")).toBeInTheDocument();
     expect(screen.getByText("Irregular")).toBeInTheDocument();
+  });
+});
+
+describe("MetricDetail - Questions to Explore", () => {
+  beforeEach(() => {
+    demoModeMock.value = false;
+    customMetricsMock.metrics = [];
+    customMetricsMock.loading = false;
+  });
+
+  it("renders the section and a CODAP link for a metric that defines questionsToExplore", () => {
+    // leanMass carries a questionsToExplore string in the registry.
+    renderAt("/health/leanMass", "health");
+    expect(screen.getByText("Questions to Explore")).toBeInTheDocument();
+    // Body prose is rendered (a distinctive fragment of leanMass's text).
+    expect(
+      screen.getByText(/comparing measurements across multiple assessments/i),
+    ).toBeInTheDocument();
+
+    const link = screen.getByRole("link", { name: /codap/i });
+    // Opens the same wrapped CODAP URL the dashboard button uses; demo off.
+    expect(link.getAttribute("href")).toBe(buildCodapWrappedUrl(false));
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.getAttribute("rel")).toMatch(/noopener/);
+  });
+
+  it("threads demo mode into the CODAP link URL", () => {
+    demoModeMock.value = true;
+    renderAt("/health/leanMass", "health");
+    const link = screen.getByRole("link", { name: /codap/i });
+    expect(link.getAttribute("href")).toBe(buildCodapWrappedUrl(true));
+  });
+
+  it("omits the section for a metric with no questionsToExplore", () => {
+    // A custom metric has no questionsToExplore, so neither the heading
+    // nor the CODAP link should render.
+    customMetricsMock.metrics = [customDef("c_w", "Stretch Time", "health")];
+    renderAt("/health/c_w", "health");
+    expect(screen.queryByText("Questions to Explore")).toBeNull();
+    expect(screen.queryByRole("link", { name: /codap/i })).toBeNull();
+  });
+});
+
+describe("MetricDetail - How Collected link", () => {
+  beforeEach(() => {
+    demoModeMock.value = false;
+    customMetricsMock.metrics = [];
+    customMetricsMock.loading = false;
+  });
+
+  it("renders a protocol link for a metric that defines howCollectedUrl", () => {
+    // perceivedExertion lives in ADDABLE_HEALTH and carries a howCollectedUrl.
+    renderAt("/health/perceivedExertion", "health");
+    const link = screen.getByRole("link", {
+      name: /how perceived exertion is collected/i,
+    });
+    expect(link.getAttribute("href")).toBe(
+      "https://hr.umich.edu/sites/default/files/perceived-exertion-v2_0.pdf",
+    );
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.getAttribute("rel")).toMatch(/noopener/);
+  });
+
+  it("omits the link for a metric with no howCollectedUrl", () => {
+    // leanMass has howCollected prose but no protocol URL.
+    renderAt("/health/leanMass", "health");
+    expect(screen.getByText("How Collected")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /is collected/i })).toBeNull();
+  });
+});
+
+describe("MetricDetail - Estimated Range", () => {
+  beforeEach(() => {
+    demoModeMock.value = false;
+    customMetricsMock.metrics = [];
+    customMetricsMock.loading = false;
+    goalTextMock.forceNull = false;
+  });
+
+  // The section body is the div immediately after the heading; reading it
+  // directly is what distinguishes "range omitted" from "range rendered",
+  // since the goal line lives in the same div either way.
+  function estimatedRangeBody(): HTMLElement {
+    const heading = screen.getByRole("heading", { name: "Estimated Range" });
+    return heading.nextElementSibling as HTMLElement;
+  }
+
+  it("omits the range value but keeps the heading and goal line when hideEstimatedRange is set", () => {
+    // leanMass sets hideEstimatedRange, so neither an estimatedRange string
+    // nor the unit fallback ("kg") should precede the goal line.
+    renderAt("/health/leanMass", "health");
+    const body = estimatedRangeBody();
+    expect(body.textContent?.trim().startsWith("As a")).toBe(true);
+    expect(
+      screen.getByText(/to keep your lean mass between 55-69 kg/i),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the range value for a metric without hideEstimatedRange", () => {
+    // hydration keeps its estimatedRange string - the positive control for
+    // the assertion above.
+    renderAt("/health/hydration", "health");
+    expect(
+      estimatedRangeBody().textContent?.trim().startsWith("8 levels"),
+    ).toBe(true);
+  });
+
+  it("omits the whole section when the range is hidden and there is no goal text", () => {
+    // Every metric that hides its range has goal text today, so this stands
+    // in for the metric that doesn't - a performance metric, say, since those
+    // resolve no goal by design. The heading must not outlive its content.
+    goalTextMock.forceNull = true;
+    renderAt("/health/leanMass", "health");
+    expect(screen.queryByRole("heading", { name: "Estimated Range" })).toBeNull();
+    // Neighbouring sections still render, so this is a section-level omission
+    // rather than the page failing to render.
+    expect(screen.getByText("How Collected")).toBeInTheDocument();
+  });
+
+  it("keeps the section for a metric that shows its range even with no goal text", () => {
+    goalTextMock.forceNull = true;
+    renderAt("/health/hydration", "health");
+    expect(
+      estimatedRangeBody().textContent?.trim().startsWith("8 levels"),
+    ).toBe(true);
   });
 });

@@ -40,7 +40,7 @@ const DEMO_NULL_RATE = 0.2;
 const SESSION_SEED = Math.floor(Math.random() * 0xffffffff);
 
 // The five HealthEntry fields that are typed numeric slots (everything
-// else on a health entry - mood, relativeProteinIntake, custom metrics -
+// else on a health entry - mood, custom metrics -
 // lives in the customMetrics bag, matching readHealthField).
 // Single source list for the 5 typed numeric health fields; the union
 // type and the runtime lookup set both derive from it so they cannot drift.
@@ -84,10 +84,6 @@ export function generateDemoHealthEntries(
     };
     const bag: Record<string, number | string> = {};
     for (const m of HEALTH_METRICS) {
-      // relativeProteinIntake is auto-calculated (no chart config), so it
-      // would fall back to DEFAULT_CONFIG's 0-100 random rather than its
-      // real 0.6-3 g/kg range. Skip it in demo rather than emit nonsense.
-      if (m.id === "relativeProteinIntake") continue;
       const rng = rngFor(seed, "health", m.id, i);
       if (m.id === "availability") {
         entry.availability = randomAvailability(rng);

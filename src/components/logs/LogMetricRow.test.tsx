@@ -226,11 +226,6 @@ describe("LogMetricRow", () => {
     expect(setAvailability).not.toHaveBeenCalled();
   });
 
-  it("renders the relativeProteinIntake placeholder", () => {
-    renderRow(healthTracked("relativeProteinIntake"));
-    expect(screen.getByText(/Auto-calculated/)).toBeTruthy();
-  });
-
   it("renders nothing for a nominal custom", () => {
     const def: CustomMetricDef = {
       id: "label",

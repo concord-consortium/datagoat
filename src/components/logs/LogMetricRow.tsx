@@ -24,8 +24,7 @@ export interface LogMetricRowProps {
 // One row dispatcher for every metric type. Reads the value through the
 // accessor, resolves the widget by metric identity/primitive, and renders the
 // shared MetricInputRow body. Health-only widgets (hydration color scale,
-// availability tree, the relativeProteinIntake placeholder) are keyed on metric
-// id. Built-in ordinals always render as scale cards; only custom ordinals
+// availability tree) are keyed on metric id. Built-in ordinals always render as scale cards; only custom ordinals
 // choose radio vs scale cards.
 export function LogMetricRow(props: LogMetricRowProps) {
   const { tracked, summary, summaryCell, competitionTerm, setValue, setAvailability } = props;
@@ -74,9 +73,6 @@ export function LogMetricRow(props: LogMetricRowProps) {
         detailHref={detailHref}
       />
     );
-  }
-  if (tracked.type === "health" && tracked.id === "relativeProteinIntake") {
-    return <MetricInputRow metric={metric} inputType="placeholder" detailHref={detailHref} />;
   }
 
   if (tracked.builtInDef?.inputType === "ordinal" && tracked.builtInDef.levels) {

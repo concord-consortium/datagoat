@@ -102,12 +102,9 @@ export function MetricsDataEntryLog() {
   // due-today engine counts daily every day and weekly on its anchor weekdays,
   // and never counts monthly/quarterly/yearly/as-needed (they don't nag on
   // dates we'd have to invent). Counting those not-due cadences would leave
-  // "All" permanently unreachable for anyone tracking one. relativeProteinIntake
-  // is excluded too: it's an auto-calculated placeholder with no input, so it
-  // can never be "filled" and would also pin the chip below "All".
+  // "All" permanently unreachable for anyone tracking one.
   const dueMetrics = tracked.filter(
     (m) =>
-      m.id !== "relativeProteinIntake" &&
       metricRendersRow(m) &&
       m.schedule !== undefined &&
       isScheduleDueOn(m.schedule, displayedDate),

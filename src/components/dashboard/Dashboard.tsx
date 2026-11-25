@@ -37,7 +37,7 @@ export function Dashboard() {
 
   const profile = loadState.status === "loaded" ? loadState.profile : null;
 
-  const trackedHealthIds =
+  const storedHealthIds =
     profile?.trackedHealthMetrics ?? HEALTH_METRICS.map((m) => m.id);
   const trackedPerformanceIds =
     profile?.trackedPerformanceMetrics ??
@@ -65,16 +65,17 @@ export function Dashboard() {
   // Resolve each tracked id to its effective schedule, spanning built-in,
   // addable, and custom health metrics, with a user override winning. Custom
   // metric values already flow through getChipState above, so this is the only
-  // place custom metrics needed wiring into the due-today count.
-  const trackedHealthMetrics: ScheduledMetric[] = trackedHealthIds.map((id) => {
+  // place custom metrics needed wiring into the due-today count. Ids that no
+  // longer resolve (a removed metric, or a deleted custom not yet pruned) are
+  // skipped, as the log page does, so they never count as due or unfilled.
+  const trackedHealthMetrics: ScheduledMetric[] = storedHealthIds.flatMap((id) => {
     const base =
       HEALTH_DEFS.find((m) => m.id === id) ??
       allCustom.find((m) => m.id === id && m.metricType === "health");
-    return {
-      id,
-      schedule: resolveSchedule(base?.schedule, getOverride(id)?.schedule),
-    };
+    if (!base) return [];
+    return [{ id, schedule: resolveSchedule(base.schedule, getOverride(id)?.schedule) }];
   });
+  const trackedHealthIds = trackedHealthMetrics.map((m) => m.id);
   const healthDueCount = metricsDueOn(trackedHealthMetrics, today).length;
   const healthRemainingCount = remainingToLog(
     trackedHealthMetrics,

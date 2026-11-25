@@ -40,8 +40,8 @@ const DEMO_NULL_RATE = 0.2;
 const SESSION_SEED = Math.floor(Math.random() * 0xffffffff);
 
 // The five HealthEntry fields that are typed numeric slots (everything
-// else on a health entry - mood, custom metrics -
-// lives in the customMetrics bag, matching readHealthField).
+// else on a health entry - mood, custom metrics - lives in the
+// customMetrics bag, matching readHealthField).
 // Single source list for the 5 typed numeric health fields; the union
 // type and the runtime lookup set both derive from it so they cannot drift.
 const NUMERIC_HEALTH_FIELD_IDS = [

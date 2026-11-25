@@ -226,10 +226,9 @@ describe("MetricsDataEntryLog", () => {
     expect(screen.getByRole("status").textContent).toMatch(/All metrics entered/);
   });
 
-  it("excludes the auto-calculated placeholder from completeness", () => {
-    // relativeProteinIntake is a daily metric but renders as a non-enterable
-    // "coming soon" placeholder, so it can never be filled. It must not pin
-    // the chip below "all"; only the fillable daily hydration should count.
+  it("ignores a stored tracked id for a removed metric in completeness", () => {
+    // relativeProteinIntake was removed as a metric but older profiles still
+    // list it. It must not pin the chip below "all".
     ctx.loadState = {
       status: "loaded",
       profile: {

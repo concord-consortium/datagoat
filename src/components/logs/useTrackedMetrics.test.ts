@@ -151,13 +151,5 @@ describe("metricRendersRow", () => {
     expect(
       metricRendersRow({ id: "hydration", name: "Hydration", type: "health", section: "daily" }),
     ).toBe(true);
-    expect(
-      metricRendersRow({
-        id: "relativeProteinIntake",
-        name: "RPI",
-        type: "health",
-        section: "daily",
-      }),
-    ).toBe(true);
   });
 });
